@@ -21,6 +21,10 @@
   --fs-xl: 1.5rem; /* 24px  big figures */
   --fs-2xl: 2rem; /* 32px  scoreboard */
   --bs-body-font-size: var(--fs-base);
+
+  /* The fixed PageHeader on screens outside the main menu: Layout.css pads
+     those screens by it and their sticky tab bars pin under it. */
+  --cv-header-h: 60px;
 }
 
 body {

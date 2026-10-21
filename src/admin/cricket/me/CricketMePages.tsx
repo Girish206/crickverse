@@ -38,7 +38,7 @@ function useMyCricket(title: string): { me: CricketMe; fallback: null } | { me: 
                 : "Your account has no mobile number. "}
               {admin?.isSuperAdmin
                 ? "Add your mobile number to your Girish Creations account (Admin Accounts there) and to your player in Players — the same number links them."
-                : "Ask the organiser to add your mobile number to your player profile."}
+                : "Check the mobile number in My Profile, or ask the organiser to add it to your player."}
             </p>
           </div>
         </ListCard>

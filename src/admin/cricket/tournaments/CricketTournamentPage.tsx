@@ -10,6 +10,7 @@ import type { CricketMatch, CricketPlayer, CricketTournament } from "../../../ap
 import { avatarColorFor } from "../avatarColor";
 import { pointsTable } from "../stats";
 import { ListCard } from "../../components/ListCard";
+import { PageHeader, PageHeaderAction } from "../../components/PageHeader";
 import { Button } from "../../components/Button";
 import { confirmAction } from "../../components/confirmDelete";
 import { BottomSheet } from "../BottomSheet";
@@ -113,12 +114,16 @@ export function CricketTournamentPage() {
   const canManage = Boolean(admin?.isSuperAdmin);
 
   const playerById = useMemo(() => new Map((players ?? []).map((player) => [player.id, player])), [players]);
+  const backTo = canManage ? "/tournaments" : "/my-tournaments";
 
   if (isLoading || !tournament) {
     return (
-      <ListCard title="Tournament">
-        <p>{isLoading ? "Loading..." : "Tournament not found."}</p>
-      </ListCard>
+      <>
+        <PageHeader title="Tournament" back={backTo} />
+        <ListCard title="Tournament">
+          <p>{isLoading ? "Loading..." : "Tournament not found."}</p>
+        </ListCard>
+      </>
     );
   }
 
@@ -174,26 +179,19 @@ export function CricketTournamentPage() {
 
   return (
     <div className="cricket-page">
+      <PageHeader
+        title={tournament.name}
+        subtitle="Tournament"
+        back={backTo}
+        backLabel={canManage ? "All tournaments" : "My tournaments"}
+        actions={
+          canManage && <PageHeaderAction icon="fa-solid fa-pen" label="Edit tournament" onClick={() => setEditing(true)} />
+        }
+      />
       {/* Banner + tabs: one header that stays pinned on phones. */}
       <div className="cricket-th-sticky">
         <div className="card cricket-th-card">
-          <TournamentBanner
-            tournament={tournament}
-            back={
-              <Link to={canManage ? "/tournaments" : "/my-tournaments"} className="cricket-th-glass">
-                <i className="fa-solid fa-arrow-left" aria-hidden="true"></i>
-                <span>{canManage ? "All tournaments" : "My tournaments"}</span>
-              </Link>
-            }
-            actions={
-              canManage && (
-                <button type="button" className="cricket-th-glass" onClick={() => setEditing(true)}>
-                  <i className="fa-solid fa-pen" aria-hidden="true"></i>
-                  <span>Edit</span>
-                </button>
-              )
-            }
-          />
+          <TournamentBanner tournament={tournament} />
         </div>
   
         <div className="cricket-match-tabs" role="tablist" aria-label="Tournament sections">

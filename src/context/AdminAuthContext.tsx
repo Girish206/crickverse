@@ -1,10 +1,12 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiClient, getAdminToken, setAdminToken } from "../api/client";
 import type { ApiEnvelope } from "../api/types";
 
 // Namma Aaata signs in with the shared Girish Creations account (same API,
 // same /admin/auth/login), but only accounts with cricket access get in.
+// Players can also sign themselves up. Sessions are "remembered" (long-lived
+// tokens, renewed each time the app opens), so nobody signs in every visit.
 interface AdminIdentity {
   sub: string;
   // Null for an account that signs in with its mobile number.
@@ -22,6 +24,10 @@ interface AdminAuthContextValue {
   admin: AdminIdentity | null;
   // `identifier` is a mobile number or an email address.
   login: (identifier: string, password: string) => Promise<void>;
+  register: (input: { name: string; mobile: string; password: string }) => Promise<void>;
+  // Signs in with a token the API just issued (e.g. after a profile edit,
+  // which changes the name and mobile it carries).
+  applyToken: (token: string) => void;
   logout: () => void;
   // A user-selectable background tint for the shell (Layout reads it).
   mainBg: string;
@@ -66,20 +72,50 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     setMainBgState(bg);
   }
 
+  // Once per app open: swap the stored token for a fresh one, so the
+  // session slides forward and picks up any change to the account (a new
+  // name, organiser access). A token the API rejects signs out (client.ts).
+  useEffect(() => {
+    if (!getAdminToken()) return;
+    apiClient
+      .post<ApiEnvelope<{ token: string }>>("/admin/auth/refresh", { remember: true })
+      .then(({ data }) => {
+        const identity = decodeAdminFromToken(data.data.token);
+        if (!identity?.hasCricketAccess) return;
+        setAdminToken(data.data.token);
+        setAdmin(identity);
+      })
+      .catch(() => undefined);
+  }, []);
+
+  // Same source as a page reload: the response's `admin` carries `id`, not
+  // the `sub` the rest of the app reads.
+  function signInWith(token: string, clearCache: boolean) {
+    const identity = decodeAdminFromToken(token);
+    if (!identity?.hasCricketAccess) {
+      throw new NoCricketAccessError();
+    }
+    setAdminToken(token);
+    if (clearCache) queryClient.clear();
+    setAdmin(identity);
+  }
+
   async function login(identifier: string, password: string) {
     const { data } = await apiClient.post<ApiEnvelope<{ token: string }>>("/admin/auth/login", {
       email: identifier.trim(),
       password,
+      remember: true,
     });
-    // Same source as a page reload: the response's `admin` carries `id`, not
-    // the `sub` the rest of the app reads.
-    const identity = decodeAdminFromToken(data.data.token);
-    if (!identity?.hasCricketAccess) {
-      throw new NoCricketAccessError();
-    }
-    setAdminToken(data.data.token);
-    queryClient.clear();
-    setAdmin(identity);
+    signInWith(data.data.token, true);
+  }
+
+  async function register(input: { name: string; mobile: string; password: string }) {
+    const { data } = await apiClient.post<ApiEnvelope<{ token: string }>>("/admin/cricket/register", input);
+    signInWith(data.data.token, true);
+  }
+
+  function applyToken(token: string) {
+    signInWith(token, false);
   }
 
   function logout() {
@@ -89,7 +125,9 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AdminAuthContext.Provider value={{ isAuthenticated: admin !== null, admin, login, logout, mainBg, setMainBg }}>
+    <AdminAuthContext.Provider
+      value={{ isAuthenticated: admin !== null, admin, login, register, applyToken, logout, mainBg, setMainBg }}
+    >
       {children}
     </AdminAuthContext.Provider>
   );

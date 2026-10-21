@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import type { CricketMatch } from "../../../api/types";
 import { monogram } from "../../../utils/format";
 import { avatarColorFor } from "../avatarColor";
@@ -8,16 +7,13 @@ import { formatMatchDate, battingOrder, stageLabel, teamScore } from "./matchUti
 
 interface MatchHeroProps {
   match: CricketMatch;
-  tournamentName?: string;
   nameOf: NameOf;
-  // Super admin controls; left out for players.
-  onEdit?: () => void;
-  onDelete?: () => void;
 }
 
-// The match card at the top of the match page: both sides facing each other
-// with their scores, a one-line state of play, then when/where.
-export function MatchHero({ match, tournamentName, nameOf, onEdit, onDelete }: MatchHeroProps) {
+// The match card at the top of the match page (under its PageHeader): both
+// sides facing each other with their scores, a one-line state of play, then
+// when/where.
+export function MatchHero({ match, nameOf }: MatchHeroProps) {
   const current = match.innings[match.innings.length - 1];
   // Each side's badge colour, nudged apart when both names hash alike.
   const colorA = avatarColorFor(match.teams[0].name);
@@ -47,29 +43,7 @@ export function MatchHero({ match, tournamentName, nameOf, onEdit, onDelete }: M
   return (
     <div className={`card cricket-hero is-${match.status}`}>
       <div className="cricket-hero-top">
-        <Link to={`/tournaments/${match.tournamentId}?tab=matches`} className="cricket-hero-back">
-          <i className="fa-solid fa-chevron-left" aria-hidden="true"></i>
-          <span>{tournamentName ?? "Tournament"}</span>
-        </Link>
-        <div className="cricket-hero-actions">
-          <MatchStatusBadge status={match.status} />
-          {onEdit && (
-            <button type="button" className="cricket-hero-icon" onClick={onEdit} title="Edit match" aria-label="Edit match">
-              <i className="fa-solid fa-pen" aria-hidden="true"></i>
-            </button>
-          )}
-          {onDelete && (
-            <button
-              type="button"
-              className="cricket-hero-icon is-danger"
-              onClick={onDelete}
-              title="Delete match"
-              aria-label="Delete match"
-            >
-              <i className="fa-solid fa-trash" aria-hidden="true"></i>
-            </button>
-          )}
-        </div>
+        <MatchStatusBadge status={match.status} />
       </div>
 
       <div className="cricket-hero-board">

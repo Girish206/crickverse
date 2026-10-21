@@ -31,6 +31,7 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    // A wrong password on the sign-in screen isn't a lost session.
     if (error.response?.status === 401 && !error.config?.url?.endsWith("/auth/login")) {
       setAdminToken(null);
       if (window.location.pathname !== "/login") {

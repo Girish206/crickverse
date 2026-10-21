@@ -69,13 +69,15 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
                         <i className={`fa-solid ${isDark ? "fa-sun" : "fa-moon"}`} aria-hidden="true"></i>
                     </button>
                     <div className="navbar-user-chip">
-                        <div
-                            className="user-avatar text-white rounded-circle d-flex align-items-center justify-content-center fw-bold"
-                            style={{ width: "36px", height: "36px", fontSize: "var(--fs-sm)", flexShrink: 0 }}
-                        >
-                            {(admin?.name || admin?.email || "U").charAt(0).toUpperCase()}
-                        </div>
-                        <span className="navbar-user-email d-none d-sm-inline">{admin?.name || admin?.email}</span>
+                        <Link to="/profile" className="navbar-user-link" title="My profile">
+                            <div
+                                className="user-avatar text-white rounded-circle d-flex align-items-center justify-content-center fw-bold"
+                                style={{ width: "36px", height: "36px", fontSize: "var(--fs-sm)", flexShrink: 0 }}
+                            >
+                                {(admin?.name || admin?.email || "U").charAt(0).toUpperCase()}
+                            </div>
+                            <span className="navbar-user-email d-none d-sm-inline">{admin?.name || admin?.email}</span>
+                        </Link>
                         <button className="navbar-signout-btn" onClick={handleLogout} title="Sign out">
                             <i className="fa-solid fa-right-from-bracket"></i>
                             <span className="d-none d-md-inline">Sign Out</span>

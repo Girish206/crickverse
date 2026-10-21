@@ -1307,53 +1307,8 @@
 .cricket-hero-top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-.cricket-hero-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  color: var(--muted-color);
-  text-decoration: none;
-}
-.cricket-hero-back span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.cricket-hero-back:hover {
-  color: var(--primary);
-}
-.cricket-hero-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-.cricket-hero-icon {
-  width: 30px;
-  height: 30px;
-  display: inline-flex;
-  align-items: center;
   justify-content: center;
-  border: 1px solid var(--border-color);
-  border-radius: 50%;
-  background: transparent;
-  color: var(--muted-color);
-  font-size: var(--fs-xs);
-  cursor: pointer;
-}
-.cricket-hero-icon:hover {
-  color: var(--primary);
-  border-color: var(--primary);
-}
-.cricket-hero-icon.is-danger:hover {
-  color: #dc2626;
-  border-color: #dc2626;
+  gap: 10px;
 }
 
 .cricket-hero-board {
@@ -1485,9 +1440,6 @@
     padding: 12px;
     gap: 10px;
     border-radius: 14px !important;
-  }
-  .cricket-hero-back {
-    font-size: var(--fs-xs);
   }
   .cricket-hero-row {
     padding: 7px 10px;
@@ -2176,43 +2128,6 @@
   height: 72px;
   background: var(--primary-gradient);
 }
-.cricket-th-bar {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px var(--th-gutter);
-}
-.cricket-th-actions {
-  display: flex;
-  gap: 6px;
-  margin-left: auto;
-}
-.cricket-th-glass {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 28px;
-  padding: 0 11px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  color: #fff;
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  white-space: nowrap;
-  text-decoration: none;
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
-.cricket-th-glass:hover,
-.cricket-th-glass:focus-visible {
-  background: rgba(0, 0, 0, 0.55);
-  border-color: rgba(255, 255, 255, 0.5);
-  color: #fff;
-}
 
 /* Pulled up so about half of it sits on the cover. Solid surface, so the
    name reads whatever the banner image is. */
@@ -2377,9 +2292,6 @@
   }
   .cricket-th-cover.is-empty {
     height: 84px;
-  }
-  .cricket-th-bar {
-    padding: 12px var(--th-gutter);
   }
   .cricket-th-identity {
     gap: 14px;
@@ -2923,15 +2835,15 @@
 
 /* Tighter match screens: tabs, info, awards, recent overs */
 /* Match and tournament tabs: a solid bar that sticks under the fixed
-   64px navbar while the page scrolls. */
-/* The tournament page's banner + tabs wrapper only pins on phones; elsewhere
-   it steps aside so the tabs stick on their own as before. */
+   PageHeader while the page scrolls. */
+/* The tournament and team pages' banner + tabs wrapper steps aside so the
+   tabs stick on their own and the banner scrolls away. */
 .cricket-th-sticky {
   display: contents;
 }
 .cricket-match-tabs {
   position: sticky;
-  top: 64px;
+  top: calc(var(--cv-header-h) + env(safe-area-inset-top));
   z-index: 30;
   margin: 0;
   padding: 0 4px;
@@ -3002,25 +2914,14 @@
   .cricket-over-card-runs {
     width: 40px;
   }
-  /* Banner + tabs pinned as one header flush under the 64px navbar and
-     across the full width, cancelling the page's 75px top padding and 6px
-     side gutter. */
-  .cricket-th-sticky {
-    display: block;
-    position: sticky;
-    top: 64px;
-    z-index: 30;
-    margin: -11px -6px 0;
-    background: var(--adm-surface, #fff);
-  }
+  /* The banner sits flush under the PageHeader across the full width
+     (cancelling the page's 11px top padding and 6px side gutter) and
+     scrolls away; the tabs stay pinned under the header. */
   .cricket-th-sticky > .cricket-th-card {
+    margin: -11px -6px 0;
     border: 0;
     border-radius: 0 !important;
     box-shadow: none !important;
-  }
-  .cricket-th-sticky > .cricket-match-tabs {
-    position: static;
-    margin: 8px 0 0;
   }
   /* Tab bar runs edge to edge, cancelling the 6px cricket page gutter. */
   .cricket-match-tabs {
@@ -3824,38 +3725,6 @@ button.cricket-app-row {
   display: flex;
   flex-direction: column;
   gap: 14px;
-}
-.cricket-setup-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.cricket-setup-back {
-  flex: none;
-  width: 40px;
-  height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--border-color);
-  border-radius: 50%;
-  background: transparent;
-  color: var(--theme-text-dark);
-  cursor: pointer;
-}
-.cricket-setup-title small {
-  display: block;
-  font-size: var(--fs-2xs);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--muted-color);
-}
-.cricket-setup-title h1 {
-  margin: 0;
-  font-size: var(--fs-lg);
-  font-weight: 700;
-  color: var(--theme-text-dark);
 }
 .cricket-setup-steps {
   display: grid;

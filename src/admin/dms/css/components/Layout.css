@@ -117,7 +117,7 @@
 .scrollable-main {
    min-height: 100vh;
    padding: 24px;
-   padding-top: 104px;
+   padding-top: calc(104px + env(safe-area-inset-top));
    /* 64px Navbar + 40px spacing */
    transition: padding-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
    position: relative;
@@ -163,7 +163,7 @@
    /* Main content adjustments */
    .scrollable-main {
       padding: 15px !important;
-      padding-top: 75px !important;
+      padding-top: calc(75px + env(safe-area-inset-top)) !important;
       margin: 0 !important;
       width: 100% !important;
    }
@@ -261,22 +261,41 @@
    }
 }
 
+/* Each screen fades in as it opens. Opacity only: a transform would make
+   the page the containing block of its fixed PageHeader mid-animation. */
+.cricket-module > * {
+   animation: cvPageIn 0.2s ease-out;
+}
+
+@keyframes cvPageIn {
+   from {
+      opacity: 0;
+   }
+   to {
+      opacity: 1;
+   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+   .cricket-module > * {
+      animation: none;
+   }
+}
+
 /* ===========================
    SUB-PAGES (no navbar / sidebar)
    =========================== */
 
-/* Screens outside the menu (a tournament, team, match, match setup) carry
-   their own header with a back button, so the content starts at the top and
-   runs the full width. */
+/* Screens outside the menu (a tournament, team, match, setup, profile)
+   carry their own fixed PageHeader instead, so the content starts under it
+   and runs the full width. */
 .scrollable-main.is-subpage,
 .scrollable-main.is-subpage.sidebar-open,
 .scrollable-main.is-subpage.sidebar-closed {
    padding: 24px;
-}
-
-.layout-wrapper.is-subpage .cricket-match-tabs,
-.layout-wrapper.is-subpage .cricket-th-sticky {
-   top: 0;
+   padding-top: calc(var(--cv-header-h) + env(safe-area-inset-top) + 20px);
+   max-width: 1280px;
+   margin: 0 auto;
 }
 
 .layout-wrapper.is-subpage .cricket-action-bar {
@@ -286,6 +305,6 @@
 @media (max-width: 769px) {
    /* 11px matches the pinned tournament header's -11px top margin. */
    .scrollable-main.is-subpage {
-      padding-top: 11px !important;
+      padding-top: calc(var(--cv-header-h) + env(safe-area-inset-top) + 11px) !important;
    }
 }

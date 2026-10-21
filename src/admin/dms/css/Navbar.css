@@ -4,7 +4,9 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 64px;
+  /* The home-screen app draws under the status bar (black-translucent). */
+  height: calc(64px + env(safe-area-inset-top));
+  padding-top: env(safe-area-inset-top) !important;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   background: rgba(255, 255, 255, 0.95);
@@ -639,4 +641,17 @@
   .navbar-signout-btn {
     padding: 6px 10px;
   }
+}
+
+/* Avatar + name open My Profile. */
+.navbar-user-link {
+  display: flex;
+  align-items: center;
+  gap: inherit;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+.navbar-user-link:hover .navbar-user-email {
+  color: var(--primary);
 }

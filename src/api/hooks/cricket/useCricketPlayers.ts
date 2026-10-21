@@ -123,3 +123,40 @@ export function useRevokeCricketPlayerLogin() {
     },
   });
 }
+
+export interface CricketProfileInput {
+  name: string;
+  mobile: string;
+  role: CricketPlayerRole | null;
+  // Both, to change the password.
+  currentPassword?: string;
+  newPassword?: string;
+}
+
+// The signed-in user's own name, mobile, role and password. Returns a fresh
+// token (the name and mobile ride in it) for AdminAuthContext.applyToken.
+export function useUpdateMyProfile() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: CricketProfileInput) => {
+      const { data } = await apiClient.put<ApiEnvelope<{ token: string }>>("/admin/cricket/me/profile", input);
+      return data.data.token;
+    },
+    onSuccess: () => invalidate(queryClient),
+  });
+}
+
+// The signed-in player's own photo; null removes it.
+export function useSetMyPhoto() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (photo: File | null) => {
+      const form = new FormData();
+      if (photo) form.append("photo", photo);
+      else form.append("removePhoto", "true");
+      const { data } = await apiClient.put<ApiEnvelope<CricketPlayer>>("/admin/cricket/me/photo", form);
+      return data.data;
+    },
+    onSuccess: () => invalidate(queryClient),
+  });
+}

@@ -9,6 +9,7 @@ import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers"
 import { useCricketTournament } from "../../../api/hooks/cricket/useCricketTournaments";
 import type { CricketMatch } from "../../../api/types";
 import { ListCard } from "../../components/ListCard";
+import { PageHeader } from "../../components/PageHeader";
 import { avatarColorFor } from "../avatarColor";
 import { BottomSheet } from "../BottomSheet";
 import { PlayerAvatar } from "../players/PlayerAvatar";
@@ -38,9 +39,12 @@ export function CricketMatchSetupPage() {
 
   if (isLoading || !match) {
     return (
-      <ListCard title="Start Match">
-        <p>{isLoading ? "Loading..." : "Match not found."}</p>
-      </ListCard>
+      <>
+        <PageHeader title="Start Match" back={`/matches/${id}`} />
+        <ListCard title="Start Match">
+          <p>{isLoading ? "Loading..." : "Match not found."}</p>
+        </ListCard>
+      </>
     );
   }
   // Only an upcoming match is set up; once started it's scored from its page.
@@ -173,20 +177,12 @@ function MatchSetup({ match, nameOf, onExit, onStarted }: MatchSetupProps) {
 
   return (
     <div className="cricket-page cricket-setup-page has-action-bar">
-      <header className="cricket-setup-head">
-        <button
-          type="button"
-          className="cricket-setup-back"
-          onClick={step === "toss" ? () => setStep("edit") : onExit}
-          aria-label={step === "toss" ? "Back to match details" : "Back to match"}
-        >
-          <i className="fa-solid fa-arrow-left" aria-hidden="true"></i>
-        </button>
-        <div className="cricket-setup-title">
-          <small>Step {step === "edit" ? 1 : 2} of 2</small>
-          <h1>{step === "edit" ? "Start Match" : "Toss & Openers"}</h1>
-        </div>
-      </header>
+      <PageHeader
+        title={step === "edit" ? "Start Match" : "Toss & Openers"}
+        subtitle={`Step ${step === "edit" ? 1 : 2} of 2 · ${match.teams[0].name} vs ${match.teams[1].name}`}
+        back={step === "toss" ? () => setStep("edit") : onExit}
+        backLabel={step === "toss" ? "Back to match details" : "Back to match"}
+      />
       <div className="cricket-setup-steps" aria-hidden="true">
         <span className="is-done"></span>
         <span className={step === "toss" ? "is-done" : ""}></span>

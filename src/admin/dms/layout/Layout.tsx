@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
+import BottomNav from "./BottomNav";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { useAdminBodyClass } from "../../useAdminBodyClass";
 import "../global.css";
@@ -113,6 +114,8 @@ const Layout = ({
                     />
                 </div>
             )}
+
+            {isMainScreen && <BottomNav onMore={() => setSidebarOpen(true)} />}
 
             <main
                 className={`scrollable-main ${

@@ -41,6 +41,13 @@ const Sidebar = ({
                     link: "/my-tournaments",
                     submenu: [],
                 },
+                {
+                    id: "cricket-profile",
+                    label: "My Profile",
+                    icon: "fa-solid fa-user-gear",
+                    link: "/profile",
+                    submenu: [],
+                },
             ],
         },
         ...(admin?.isSuperAdmin

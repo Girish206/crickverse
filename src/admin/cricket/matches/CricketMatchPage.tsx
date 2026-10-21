@@ -2,6 +2,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useCricketMatch, useDeleteCricketMatch } from "../../../api/hooks/cricket/useCricketMatches";
 import { useCricketTournament } from "../../../api/hooks/cricket/useCricketTournaments";
 import { ListCard } from "../../components/ListCard";
+import { PageHeader, PageHeaderAction } from "../../components/PageHeader";
 import { Button } from "../../components/Button";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { confirmDelete } from "../../components/confirmDelete";
@@ -36,9 +37,12 @@ export function CricketMatchPage() {
 
   if (isLoading || !match) {
     return (
-      <ListCard title="Match">
-        <p>{isLoading ? "Loading..." : "Match not found."}</p>
-      </ListCard>
+      <>
+        <PageHeader title="Match" back={canManage ? "/matches" : "/my-matches"} />
+        <ListCard title="Match">
+          <p>{isLoading ? "Loading..." : "Match not found."}</p>
+        </ListCard>
+      </>
     );
   }
 
@@ -75,12 +79,24 @@ export function CricketMatchPage() {
 
   return (
     <div className={`cricket-page ${canManage && upcoming ? "has-action-bar" : ""}`.trim()}>
-      <MatchHero
-        match={match}
-        tournamentName={tournament?.name}
-        nameOf={nameOf}
-        onDelete={canManage ? handleDelete : undefined}
+      <PageHeader
+        title={`${match.teams[0].name} vs ${match.teams[1].name}`}
+        subtitle={tournament?.name ?? "Match"}
+        back={`/tournaments/${match.tournamentId}?tab=matches`}
+        backLabel="Back to tournament"
+        actions={
+          canManage && (
+            <PageHeaderAction
+              icon="fa-solid fa-trash"
+              label="Delete match"
+              danger
+              disabled={deleteMatch.isPending}
+              onClick={handleDelete}
+            />
+          )
+        }
       />
+      <MatchHero match={match} nameOf={nameOf} />
 
       <div className="cricket-match-tabs" role="tablist" aria-label="Match sections">
         {tabs.map((t) => (

@@ -11,6 +11,7 @@ import {
 import type { CricketPlayer } from "../../../api/types";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { ListCard } from "../../components/ListCard";
+import { PageHeader, PageHeaderAction } from "../../components/PageHeader";
 import { confirmAction } from "../../components/confirmDelete";
 import { BottomSheet } from "../BottomSheet";
 import { avatarColorFor } from "../avatarColor";
@@ -58,15 +59,18 @@ export function CricketTeamPage() {
   const playerById = useMemo(() => new Map((players ?? []).map((player) => [player.id, player])), [players]);
 
   const team = tournament?.teams[teamIndex];
+  const backTo = `/tournaments/${id}?tab=teams`;
   if (isLoading || !tournament || !team) {
     return (
-      <ListCard title="Team">
-        <p>{isLoading ? "Loading..." : "Team not found."}</p>
-      </ListCard>
+      <>
+        <PageHeader title="Team" back={backTo} />
+        <ListCard title="Team">
+          <p>{isLoading ? "Loading..." : "Team not found."}</p>
+        </ListCard>
+      </>
     );
   }
 
-  const backTo = `/tournaments/${id}?tab=teams`;
   const teamMatches = (matches ?? []).filter((match) => match.teams.some((t) => t.teamIndex === teamIndex));
   const standings = pointsTable(tournament, matches ?? []);
   const position = standings.findIndex((row) => row.teamIndex === teamIndex);
@@ -89,37 +93,33 @@ export function CricketTeamPage() {
 
   return (
     <div className="cricket-page">
+      <PageHeader
+        title={team.name}
+        subtitle={tournament.name}
+        back={backTo}
+        backLabel="All teams"
+        actions={
+          canManage && (
+            <>
+              <PageHeaderAction icon="fa-solid fa-pen" label="Edit team" onClick={() => setEditing(true)} />
+              <PageHeaderAction
+                icon="fa-solid fa-trash"
+                label="Remove team"
+                danger
+                disabled={removeTeam.isPending}
+                onClick={handleRemove}
+              />
+            </>
+          )
+        }
+      />
       <div className="cricket-th-sticky">
         <div className="card cricket-th-card">
           <div className="cricket-th">
             <div
               className={`cricket-th-cover ${tournament.bannerUrl ? "" : "is-empty"}`}
               style={tournament.bannerUrl ? { backgroundImage: `url(${tournament.bannerUrl})` } : undefined}
-            >
-              <div className="cricket-th-bar">
-                <Link to={backTo} className="cricket-th-glass">
-                  <i className="fa-solid fa-arrow-left" aria-hidden="true"></i>
-                  <span>All teams</span>
-                </Link>
-                {canManage && (
-                  <div className="cricket-th-actions">
-                    <button type="button" className="cricket-th-glass" onClick={() => setEditing(true)}>
-                      <i className="fa-solid fa-pen" aria-hidden="true"></i>
-                      <span>Edit</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="cricket-th-glass"
-                      disabled={removeTeam.isPending}
-                      onClick={handleRemove}
-                    >
-                      <i className="fa-solid fa-trash" aria-hidden="true"></i>
-                      <span>Remove</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
+            />
             <div className="cricket-th-identity">
               <span className="cricket-tour-logo" style={{ background: avatarColorFor(team.name) }} aria-hidden="true">
                 {team.name.charAt(0).toUpperCase()}

@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import type { CricketTournament } from "../../../api/types";
 
 const shortDate = (value: string) =>
@@ -15,20 +14,12 @@ function phaseOf(t: CricketTournament): { label: string; tone: string } | null {
   return { label: "Live", tone: "is-live" };
 }
 
-// The top of a tournament's page: cover image with the back link and
-// actions over it, a floating card with the logo, name, status, dates and
+// The top of a tournament's page (under its PageHeader): cover image, a
+// floating card with the logo, name, status, dates and
 // place straddling its bottom edge. The rest of the details are on the
 // Info tab (TournamentInfo). Older tournaments without a banner get a
 // gradient cover.
-export function TournamentBanner({
-  tournament: t,
-  back,
-  actions,
-}: {
-  tournament: CricketTournament;
-  back?: ReactNode;
-  actions?: ReactNode;
-}) {
+export function TournamentBanner({ tournament: t }: { tournament: CricketTournament }) {
   const place = [t.ground, t.city].filter(Boolean).join(", ");
   const dates = t.startDate
     ? `${shortDate(t.startDate)}${t.endDate && t.endDate !== t.startDate ? ` – ${shortDate(t.endDate)}` : ""}`
@@ -40,12 +31,7 @@ export function TournamentBanner({
       <div
         className={`cricket-th-cover ${t.bannerUrl ? "" : "is-empty"}`}
         style={t.bannerUrl ? { backgroundImage: `url(${t.bannerUrl})` } : undefined}
-      >
-        <div className="cricket-th-bar">
-          {back}
-          {actions && <div className="cricket-th-actions">{actions}</div>}
-        </div>
-      </div>
+      />
 
       {/* Floating card straddling the cover's bottom edge. */}
       <div className="cricket-th-identity">

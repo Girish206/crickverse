@@ -1,0 +1,82 @@
+/* Phone tab bar on the main screens (BottomNav.tsx). Hidden from tablet
+   width up, where the sidebar is always on screen. */
+.cv-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 769px) {
+  .cv-bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1050;
+    display: flex;
+    align-items: stretch;
+    height: calc(62px + env(safe-area-inset-bottom));
+    padding: 0 6px env(safe-area-inset-bottom);
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -6px 20px rgba(var(--brand-navy-rgb), 0.06);
+  }
+  :root[data-bs-theme="dark"] .cv-bottom-nav {
+    background: rgba(15, 16, 18, 0.94);
+    box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Room for the bar under the last card. */
+  .layout-wrapper:not(.is-subpage) .scrollable-main {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+.cv-bottom-tab {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--muted-color);
+  font-size: var(--fs-3xs);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.cv-bottom-tab i {
+  font-size: 1.05rem;
+  transition: transform 0.15s ease;
+}
+.cv-bottom-tab span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cv-bottom-tab:active i {
+  transform: scale(0.9);
+}
+.cv-bottom-tab.is-active {
+  color: var(--primary);
+}
+/* The active tab's marker: a short flag-gradient bar along the top edge. */
+.cv-bottom-tab.is-active::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 28px;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: var(--brand-gradient-vivid);
+  transform: translateX(-50%);
+}
