@@ -1,0 +1,216 @@
+/* ==========================================================================
+   SELECT INPUT STYLES (REACT-SELECT)
+   Custom overrides for react-select to support sizing and floating labels.
+   ========================================================================== */
+
+/* -------- 1. CORE SELECT BASE -------- */
+
+.select__control {
+  border-radius: 10px !important;
+  min-height: calc(3rem + 2px) !important;
+  height: auto !important;
+  margin-right: 2px !important;
+  background-color: #fff !important;
+  border: 1px solid #c8c6c6 !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.select__control:hover {
+  border-color: var(--primary) !important;
+}
+
+/* Base focus state */
+.select__control--is-focused {
+  border: 2px solid var(--primary) !important;
+  box-shadow: 0 0 0 0.2rem var(--primary-light-6) !important;
+}
+
+/* Internal padding for the value container */
+.select__value-container {
+  padding: 2px 0.85rem !important;
+}
+
+/* Ensure single value text is centered correctly */
+.select__single-value {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Remove internal focus ring on input */
+.select__control input {
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+
+/* -------- 2. SIZING VARIANTS -------- */
+
+/* Small (SM) */
+.select-sm .select__control {
+  min-height: calc(2.65rem + 2px) !important;
+  height: auto !important;
+}
+
+/* Medium (MD) - Default */
+.select-md .select__control {
+  min-height: calc(3rem + 2px) !important;
+  height: auto !important;
+}
+
+/* Large (LG) */
+.select-lg .select__control {
+  min-height: calc(3.25rem + 2px) !important;
+  height: auto !important;
+}
+
+
+/* -------- 3. DROPDOWN & OPTION STYLES -------- */
+
+/* Hovered/Focused option in dropdown */
+.select__option--is-focused {
+  background-color: var(--primary-light-6) !important;
+  color: #000 !important;
+}
+
+/* Selected option in dropdown */
+.select__option--is-selected {
+  background-color: var(--primary) !important;
+  color: #fff !important;
+}
+
+/* Combined focused and selected state */
+.select__option--is-selected.select__option--is-focused {
+  background-color: var(--primary) !important;
+  color: #fff !important;
+}
+
+
+/* -------- 4. FLOATING LABEL SYSTEM -------- */
+
+/* Base container for floating select */
+.form-floating {
+  position: relative;
+}
+
+.select-label {
+  font-size: 1rem;
+}
+
+.select-sm .select-label {
+  font-size: 0.9rem;
+}
+
+.select-lg .select-label {
+  font-size: 1.1rem;
+}
+
+/* Label base styling */
+.select-floating-label {
+  position: absolute;
+  left: 0.85rem;
+  pointer-events: none;
+  transition: all 0.2s ease;
+  color: #6c757d;
+  z-index: 5;
+  transform-origin: 0 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  top: 0;
+}
+
+/* Ensure centering when NOT floating */
+.select-floating-label:not(.floating-label-active) {
+  /* padding-top: 0 !important; */
+  margin-top: 0 !important;
+}
+
+/* Size-specific label adjustments - Default Centered State */
+.select-sm .select-floating-label {
+  font-size: 1rem;
+  /* padding-top: 1.4rem !important; */
+}
+
+.select-md .select-floating-label {
+  font-size: 1rem;
+  /* padding-top: 1.3rem !important; */
+}
+
+.select-lg .select-floating-label {
+  font-size: 1.1rem;
+  /* padding-top: 1.2rem !important; */
+}
+
+/* Active Floating State (Triggered when value exists or focused) */
+.floating-label-active {
+  opacity: 1;
+  transform: scale(0.8) translateY(-0.75rem) translateX(0.15rem);
+  height: auto;
+  top: 0.35rem;
+  /* Precise offset for active state */
+}
+
+.select-sm .floating-label-active {
+  top: 0.25rem;
+}
+
+.select-lg .floating-label-active {
+  transform: scale(0.85) translateY(-0.8rem) translateX(0.15rem);
+  top: 0.45rem;
+}
+
+
+.form-floating .select__value-container {
+  padding-top: 0.8rem !important;
+  padding-left: 0.6rem !important;
+  display: grid !important;
+  align-items: center !important;
+}
+
+/* Container padding for different sizes when floating */
+.form-floating.select-sm .select__value-container {
+  padding-top: 0.8rem !important;
+  padding-left: 0.66rem !important;
+  font-size: 0.9rem !important;
+}
+
+.form-floating.select-lg .select__value-container {
+  padding-top: 1rem !important;
+  padding-left: 0.6rem !important;
+  font-size: 1.1rem !important;
+}
+
+
+/* -------- 5. INDICATORS & UI FIXES -------- */
+
+/* Dropdown arrow alignment */
+.select__indicators {
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  align-self: center !important;
+}
+
+.select__indicator {
+  display: flex !important;
+  align-items: center !important;
+  align-self: center !important;
+}
+
+.select__indicator-separator {
+  align-self: center !important;
+  height: 60% !important;
+  /* Standard centered separator height */
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+
+
+/* -------- 6. PLACEHOLDER LOGIC -------- */
+
+/* Hide placeholder completely in floating state */
+.select-floating .select__placeholder {
+  display: none !important;
+}

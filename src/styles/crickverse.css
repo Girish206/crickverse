@@ -1,0 +1,89 @@
+/* CrickVerse typography and brand touches on top of the shared admin shell.
+   Colours live in brand.css; this file only sets fonts, the wordmark and
+   the look of the big numbers. One family (Outfit) for everything. */
+
+:root {
+  --cv-font: "Outfit", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --cv-display: var(--cv-font);
+  /* Bootstrap's own font (tooltips, popovers, buttons) follows suit. */
+  --bs-font-sans-serif: var(--cv-font);
+  --bs-body-font-family: var(--cv-font);
+}
+
+body {
+  font-family: var(--cv-font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Form controls don't inherit the page font in every browser. */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+/* Page and section titles. */
+.admin-page-header h1,
+.admin-login-heading,
+.cricket-section-title,
+.cricket-panel-head h2,
+.cricket-team-head h3,
+.cricket-innings-team {
+  font-family: var(--cv-display);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Scores and stat figures: digits of equal width so columns line up. */
+.cricket-mvp-total,
+.cricket-over-card-runs strong,
+.cricket-table td,
+.cricket-award-points,
+.cricket-hero-score,
+.cricket-scorer-score,
+.cricket-match-card-score,
+.cricket-innings-score strong,
+.cricket-pad-btn:not(.is-extra):not(.is-wicket),
+.cricket-board-value,
+.cricket-crease-batter strong,
+.cricket-run-choice button,
+.admin-user-stat strong {
+  font-family: var(--cv-display);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Wordmark in the navbar: "Crick" in text colour, "Verse" in the primary
+   colour (amber on the dark theme). */
+.cv-wordmark {
+  font-family: var(--cv-display);
+  font-size: 1.45rem;
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--theme-text-dark);
+}
+.cv-wordmark em {
+  color: var(--primary);
+}
+:root[data-bs-theme="dark"] .cv-wordmark {
+  color: #f1eff9;
+}
+:root[data-bs-theme="dark"] .cv-wordmark em {
+  color: var(--brand-amber);
+}
+
+.navbar-logo-box img {
+  width: 100%;
+  height: 100%;
+}
+
+.admin-login-badge {
+  font-family: var(--cv-display);
+  font-size: 1rem;
+  font-style: italic;
+  letter-spacing: 0.06em;
+}

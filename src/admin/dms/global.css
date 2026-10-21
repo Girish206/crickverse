@@ -1,0 +1,40 @@
+/* Ported from the reference DMS app's src/main.tsx global CSS import list
+   (index.css, style.css, loader.css, tabs.css, Sidebar.css, cards.css,
+   ribbons.css, table.css) — same order, so component-local CSS files
+   (imported directly by each ported component, exactly as DMS does it)
+   layer correctly on top. Bootstrap itself is NOT re-imported here: the
+   public site already loads /assets/css/bootstrap.min.css via a <link> tag
+   in index.html, which (being a static link) resolves before Vite injects
+   these JS-imported styles — so the cascade order DMS relies on for its
+   `!important` overrides already holds without a duplicate import. */
+@import "./index.css";
+@import "./css/style.css";
+@import "./css/loader.css";
+@import "./css/tabs.css";
+@import "./css/Sidebar.css";
+@import "./css/cards.css";
+@import "./css/ribbons.css";
+@import "./css/table.css";
+/* Last, so its dark overrides sit on top of everything above. */
+@import "./css/dark.css";
+@import "bootstrap-icons/font/bootstrap-icons.css";
+
+/* The public site ships Font Awesome 5 Free (fas/far/fab prefixes), but
+   every ported DMS component uses Font Awesome 6/7's combined prefix
+   classes (fa-solid/fa-regular) plus a few icon names that don't exist in
+   FA5 at all (e.g. fa-shield-halved). Loading FA7 here — scoped to the
+   admin section only, since every /admin/* route is lazy-loaded — gives
+   those classes an actual icon font without touching the public site. */
+@import "@fortawesome/fontawesome-free/css/all.min.css";
+
+/* The public site's global style.css sets `body { padding: 24px 0 }` and
+   `min-height: 100vh`, which (stacked with .login-wrapper's own
+   min-height: 100vh, or the fixed-position admin shell) adds extra empty
+   space above/below the admin UI. useAdminBodyClass() tags <body> with
+   .admin-page while any admin route is mounted; neutralize that padding
+   here (rather than in admin.css) so it applies even on routes — like the
+   login page — that don't import admin.css. */
+body.admin-page {
+  padding: 0;
+  min-height: 0;
+}

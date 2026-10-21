@@ -1,0 +1,122 @@
+/* ------------------- KI Card ------------------- */
+.ki-card {
+  display: flex;
+  align-items: center;
+  justify-content: start;
+  padding: 1rem;
+  background-color: white;
+  border-radius: 1.25rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.05);
+  height: 100%;
+  transition: all 0.3s ease-in-out;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 1rem;
+  cursor: pointer;
+  position: relative !important;
+  z-index: 1000 !important;
+  border: 2px solid #e7e7e8;
+}
+
+.ki-card:hover {
+  transform: scale(1.03);
+}
+
+.ki-card i {
+  font-size: 2rem;
+  background-color: #f8f9fa;
+  padding: 0.75rem;
+  border-radius: 1rem;
+  color: #dc3545;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ki-card h5 {
+  color: #333 !important;
+  font-size: 1.25rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.ki-card h6 {
+  color: #333 !important;
+  margin: 0;
+}
+
+.ki-card small {
+  font-size: 0.875rem;
+  color: #666;
+  display: block;
+  margin-top: 0.25rem;
+}
+
+/* Medium screens */
+@media (max-width: 991.98px) {
+  .ki-card {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+  .ki-card i {
+    font-size: 1.5rem;
+    padding: 0.5rem;
+  }
+  .ki-card h5 {
+    font-size: 1.1rem;
+  }
+  .ki-card small {
+    font-size: 0.8rem;
+  }
+}
+
+/* Small screens */
+@media (max-width: 576px) {
+  .ki-card {
+    flex-direction: row;
+    align-items: center;
+    text-align: left;
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+  .ki-card i {
+    font-size: 1.25rem;
+    padding: 0.5rem;
+  }
+  .ki-card small {
+    font-size: 0.75rem;
+  }
+}
+
+/* ------------------- Bootstrap Card ------------------- */
+.card {
+  border-radius: 20px !important;
+  border: 2px solid #e7e7e8;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+  /* position: relative !important;
+  z-index: 1000 !important;  */
+}
+
+.card-header {
+  border-radius: 20px 20px 0px 0px !important;
+}
+
+@media (max-width: 767.98px) {
+  .card-header {
+    padding: 0.85rem 1rem !important;
+  }
+
+  .card-header.d-flex:not(.flex-nowrap) {
+    flex-wrap: wrap !important;
+    gap: 0.75rem !important;
+  }
+
+  .card-header .btn {
+    white-space: normal;
+  }
+}
+
+.icon-img {
+  max-width: 50px !important;
+}

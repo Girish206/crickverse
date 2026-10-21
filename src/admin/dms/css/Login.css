@@ -1,0 +1,203 @@
+/* Admin login screen: a soft pastel wash of the logo's own colors
+   (--logo-*-light in index.css — navy/crimson/orange/gold mixed ~18% into
+   white) under two slowly rotating glows in the logo colours (CSS radial
+   gradients from src/styles/brand.css, 60s linear rotateAnimation), sized
+   large so they still span most of the page. */
+
+.admin-login-shell {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: linear-gradient(
+    135deg,
+    var(--logo-navy-light) 0%,
+    var(--logo-crimson-light) 35%,
+    var(--logo-orange-light) 65%,
+    var(--logo-gold-light) 100%
+  );
+}
+
+.admin-login-ash {
+  position: absolute;
+  width: 65vmax;
+  height: 65vmax;
+  pointer-events: none;
+  z-index: 0;
+  animation: rotateAnimation 60s infinite linear;
+  /* Soft glow in the logo colours (src/styles/brand.css), drawn in CSS
+     instead of the old template's purple banner-shape-1.png. */
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(var(--brand-orange-rgb), 0.32) 0%,
+    rgba(var(--brand-crimson-rgb), 0.18) 38%,
+    rgba(var(--brand-amber-rgb), 0.12) 58%,
+    transparent 72%
+  );
+}
+
+.admin-login-ash-1 {
+  top: -20%;
+  left: -20%;
+}
+
+.admin-login-ash-2 {
+  bottom: -20%;
+  right: -20%;
+}
+
+@keyframes rotateAnimation {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Card */
+.admin-login-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 28px;
+  padding: 2.75rem 2.25rem 2.25rem;
+  text-align: center;
+  overflow: hidden;
+  box-shadow:
+    0 30px 70px rgba(var(--primary-rgb), 0.35),
+    0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.admin-login-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 7px;
+  background: linear-gradient(90deg, var(--logo-gold) 0%, var(--logo-orange) 40%, var(--logo-crimson) 75%, var(--logo-navy) 100%);
+}
+
+/* Glow ring behind the logo */
+.admin-login-logo-ring {
+  position: relative;
+  width: 92px;
+  height: 92px;
+  margin: 0.25rem auto 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--secondary-rgb), 0.28) 0%, rgba(var(--brand-crimson-rgb), 0.12) 60%, transparent 75%);
+}
+
+.admin-login-logo-ring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px dashed rgba(var(--primary-rgb), 0.35);
+  animation: adminLoginRingSpin 18s linear infinite;
+}
+
+@keyframes adminLoginRingSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.admin-login-logo {
+  position: relative;
+  z-index: 1;
+  width: 68px;
+  height: 68px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(var(--primary-rgb), 0.35));
+}
+
+.admin-login-badge {
+  display: inline-block;
+  margin-bottom: 0.6rem;
+  padding: 5px 16px;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.08);
+  border: 1px solid rgba(var(--primary-rgb), 0.25);
+  color: var(--primary-dark-1);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+}
+
+.admin-login-heading {
+  margin: 0 0 0.35rem;
+  font-weight: 800;
+  font-size: 1.85rem;
+  background: linear-gradient(90deg, var(--primary-dark-1) 0%, var(--primary) 55%, var(--secondary-dark-1) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.admin-login-subtitle {
+  margin: 0 0 1.6rem;
+  color: var(--muted-color);
+  font-size: 0.95rem;
+}
+
+.admin-login-form {
+  text-align: left;
+}
+
+.admin-login-footnote {
+  margin: 1.5rem 0 0;
+  color: var(--muted-color);
+  font-size: 0.78rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.admin-login-footnote i {
+  color: var(--secondary-dark-1);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animated {
+  animation-duration: 0.7s;
+  animation-fill-mode: both;
+}
+
+.fadeInUp {
+  animation-name: fadeInUp;
+}
+
+@media (max-width: 480px) {
+  .admin-login-card {
+    padding: 2.25rem 1.5rem 1.75rem;
+    border-radius: 22px;
+  }
+
+  .admin-login-heading {
+    font-size: 1.55rem;
+  }
+}

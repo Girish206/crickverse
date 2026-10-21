@@ -1,0 +1,37 @@
+.donor-card {
+  border: 1px solid #dee2e6;
+  border-radius: 12px;
+  padding: 24px;
+  background-color: #fff;
+  max-width: 500px;
+  margin: auto;
+}
+.profile-img {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: #f0f0f0;
+}
+.badge-pill {
+  font-size: 0.75rem;
+  padding: 0.35em 0.75em;
+  border-radius: 999px;
+}
+.icon-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #6c757d;
+  font-size: 0.95rem;
+}
+.donor-btn {
+  padding: 10px 16px;
+  font-size: 0.95rem;
+}
+.progress {
+  height: 6px;
+  background-color: #e9ecef;
+}
+.progress-bar {
+  background-color: #000;
+}

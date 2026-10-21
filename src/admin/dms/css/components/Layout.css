@@ -1,0 +1,262 @@
+/* ===========================
+   LAYOUT WRAPPER
+   =========================== */
+
+.layout-wrapper {
+   position: relative;
+   min-height: 100vh;
+   width: 100%;
+   /* No overflow-x here: the public site's global `body { overflow-x:
+      hidden }` (style.css) already clips horizontal bleed at the document
+      level. Setting overflow-x here too (without an explicit overflow-y)
+      makes the browser implicitly compute overflow-y: auto for this
+      element per the CSS overflow spec, turning it into its OWN vertical
+      scroll container — a second scrollbar alongside the page's real one,
+      which only became visually obvious once .admin-bg-shape's corner
+      images started actually bleeding past this container's edges. */
+   /* Blend the chosen background overlay (mainBg swatch) above the same
+      soft pastel logo-color wash used on the login screen (index.css's
+      --logo-*-light), instead of the reference DMS app's own stock photo
+      (education-bg-1.jpg), which had nothing to do with this site. */
+   background-image: var(--bg-overlay, linear-gradient(rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.88))),
+      linear-gradient(135deg, var(--logo-navy-light) 0%, var(--logo-crimson-light) 35%, var(--logo-orange-light) 65%, var(--logo-gold-light) 100%);
+   background-size: cover;
+   background-position: center;
+   background-attachment: fixed;
+   background-repeat: no-repeat;
+   transition: background-image 0.3s ease;
+}
+
+/* Same rotating corner-glow treatment as the login screen (see
+   admin-login-ash in ../Login.css), reusing the exact public-site
+   .background-shapes .common-shape rotateAnimation (60s linear) from
+   public/assets/css/style.css. Rendered as the first children of
+   .layout-wrapper so normal DOM order keeps them behind .scrollable-main.
+   position: fixed (matching the public site's own .shape-1/.shape-2,
+   which are also `position: fixed`) rather than absolute — a fixed
+   element is pinned to the viewport and doesn't contribute to the
+   document's scrollable height, whereas an absolutely-positioned one
+   bleeding -20% past .layout-wrapper's edges was adding a large chunk of
+   empty scrollable space below the real content. */
+.admin-bg-shape {
+   position: fixed;
+   width: 60vmax;
+   height: 60vmax;
+   pointer-events: none;
+   z-index: 0;
+   animation: adminBgShapeRotate 60s infinite linear;
+  /* Soft glow in the logo colours (src/styles/brand.css), drawn in CSS
+     instead of the old template's purple banner-shape-1.png. */
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(var(--brand-orange-rgb), 0.32) 0%,
+    rgba(var(--brand-crimson-rgb), 0.18) 38%,
+    rgba(var(--brand-amber-rgb), 0.12) 58%,
+    transparent 72%
+  );
+}
+
+.admin-bg-shape-1 {
+   top: -20%;
+   left: -20%;
+}
+
+.admin-bg-shape-2 {
+   bottom: -20%;
+   right: -20%;
+}
+
+@keyframes adminBgShapeRotate {
+   from {
+      transform: rotate(0deg);
+   }
+   to {
+      transform: rotate(360deg);
+   }
+}
+
+/* Blended theme overlays above the background image */
+.layout-wrapper.bg-white {
+   --bg-overlay: linear-gradient(rgba(255, 255, 255, 0.90), rgba(255, 255, 255, 0.90));
+}
+
+.layout-wrapper.bg-light {
+   --bg-overlay: linear-gradient(rgba(248, 250, 252, 0.88), rgba(241, 245, 249, 0.88));
+}
+
+.layout-wrapper.bg-danger-light {
+   --bg-overlay: linear-gradient(rgba(254, 226, 226, 0.88), rgba(254, 202, 202, 0.88));
+}
+
+.layout-wrapper.bg-warning-light {
+   --bg-overlay: linear-gradient(rgba(254, 243, 199, 0.88), rgba(253, 230, 138, 0.88));
+}
+
+.layout-wrapper.bg-primary-light {
+   --bg-overlay: linear-gradient(rgba(224, 231, 255, 0.88), rgba(199, 210, 254, 0.88));
+}
+
+.layout-wrapper.bg-success-light {
+   --bg-overlay: linear-gradient(rgba(220, 252, 231, 0.88), rgba(187, 247, 208, 0.88));
+}
+
+.layout-wrapper.bg-info-light {
+   --bg-overlay: linear-gradient(rgba(224, 242, 254, 0.88), rgba(186, 230, 253, 0.88));
+}
+
+.layout-wrapper.bg-dark-light {
+   --bg-overlay: linear-gradient(rgba(226, 232, 240, 0.90), rgba(203, 213, 225, 0.90));
+}
+
+
+/* ===========================
+   MAIN CONTENT AREA
+   =========================== */
+
+.scrollable-main {
+   min-height: 100vh;
+   padding: 24px;
+   padding-top: 104px;
+   /* 64px Navbar + 40px spacing */
+   transition: padding-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+   position: relative;
+   z-index: auto;
+}
+
+/* Sidebar open state */
+.scrollable-main.sidebar-open {
+   padding-left: 260px;
+   /* 240px Sidebar + 20px gap */
+}
+
+/* Sidebar closed state (Mini Mode) */
+.scrollable-main.sidebar-closed {
+   padding-left: 100px;
+   /* 80px Sidebar + 20px gap */
+}
+
+/* ===========================
+   SIDEBAR DISPLAY CONTROLS
+   =========================== */
+
+/* Desktop sidebar always visible */
+.sidebar-desktop {
+   display: block;
+}
+
+/* Mobile sidebar hidden by default */
+.sidebar-mobile-overlay {
+   display: none;
+}
+
+.sidebar-mobile {
+   display: none;
+}
+
+/* ===========================
+   RESPONSIVE STYLES
+   =========================== */
+
+@media (max-width: 769px) {
+
+   /* Main content adjustments */
+   .scrollable-main {
+      padding: 15px !important;
+      padding-top: 75px !important;
+      margin: 0 !important;
+      width: 100% !important;
+   }
+
+   /* Hide desktop sidebar on mobile */
+   .sidebar-desktop {
+      display: none !important;
+   }
+
+   /* Mobile overlay */
+   .sidebar-mobile-overlay {
+      display: flex;
+      justify-content: flex-start;
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background: rgba(0, 0, 0, 0.4);
+      z-index: 9999 !important;
+   }
+
+   /* Mobile sidebar container - Wrapper should be transparent */
+   .sidebar-mobile {
+      display: flex;
+      flex-direction: column;
+      width: 240px;
+      /* Match sidebar width */
+      height: 100%;
+      background: transparent !important;
+      box-shadow: none !important;
+      border: none !important;
+      position: absolute !important;
+      left: 0;
+   }
+
+   /* ===========================
+     MOBILE ANIMATIONS
+     =========================== */
+
+   .slide-in-left {
+      animation: slideInLeft 0.3s forwards;
+   }
+
+   .slide-out-left {
+      animation: slideOutLeft 0.3s forwards;
+   }
+
+   @keyframes slideInLeft {
+      from {
+         transform: translateX(-100%);
+      }
+
+      to {
+         transform: translateX(0);
+      }
+   }
+
+   @keyframes slideOutLeft {
+      from {
+         transform: translateX(0);
+      }
+
+      to {
+         transform: translateX(-100%);
+      }
+   }
+
+   .fade-in {
+      animation: fadeIn 0.3s forwards;
+   }
+
+   .fade-out {
+      animation: fadeOut 0.3s forwards;
+   }
+
+   @keyframes fadeIn {
+      from {
+         opacity: 0;
+      }
+
+      to {
+         opacity: 1;
+      }
+   }
+
+   @keyframes fadeOut {
+      from {
+         opacity: 1;
+      }
+
+      to {
+         opacity: 0;
+      }
+   }
+}

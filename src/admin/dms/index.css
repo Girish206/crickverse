@@ -1,0 +1,68 @@
+/* Ported from the reference DMS app's src/index.css :root block — same
+   variable names/structure (so every other ported DMS component/CSS file
+   works unmodified). The VALUES all come from the shared logo palette in
+   src/styles/brand.css, so the admin matches the public portfolio: change a
+   brand colour there and both follow. */
+:root {
+  /* Primary: the logo's orange (deep shade, readable under white text) */
+  --primary: var(--brand-orange-deep);
+  /* Same as --primary, as an "r, g, b" triplet for rgba(var(--primary-rgb), alpha) */
+  --primary-rgb: var(--brand-orange-deep-rgb);
+  /* Crimson → orange, for primary buttons and highlights */
+  --primary-gradient: var(--brand-gradient);
+
+  /* Lighter shades (tints) */
+  --primary-light-1: color-mix(in srgb, var(--primary) 88%, #fff);
+  --primary-light-2: color-mix(in srgb, var(--primary) 70%, #fff);
+  --primary-light-3: color-mix(in srgb, var(--primary) 52%, #fff);
+  --primary-light-4: color-mix(in srgb, var(--primary) 34%, #fff);
+  --primary-light-5: color-mix(in srgb, var(--primary) 20%, #fff);
+  --primary-light-6: color-mix(in srgb, var(--primary) 9%, #fff);
+  --primary-light-7: color-mix(in srgb, var(--primary) 5%, #fff);
+
+  /* Darker shades */
+  --primary-dark-1: color-mix(in srgb, var(--primary) 82%, #000);
+  --primary-dark-2: color-mix(in srgb, var(--primary) 62%, #000);
+  --primary-dark-3: color-mix(in srgb, var(--primary) 42%, #000);
+  --primary-dark-4: color-mix(in srgb, var(--primary) 20%, #000);
+
+  /* Secondary: the logo's amber rays */
+  --secondary: var(--brand-amber);
+  /* Same as --secondary, as an "r, g, b" triplet for rgba(var(--secondary-rgb), alpha) */
+  --secondary-rgb: var(--brand-amber-rgb);
+
+  /* Lighter shades (tints) */
+  --secondary-light-1: color-mix(in srgb, var(--secondary) 88%, #fff);
+  --secondary-light-2: color-mix(in srgb, var(--secondary) 70%, #fff);
+  --secondary-light-3: color-mix(in srgb, var(--secondary) 52%, #fff);
+  --secondary-light-4: color-mix(in srgb, var(--secondary) 34%, #fff);
+  --secondary-light-5: color-mix(in srgb, var(--secondary) 18%, #fff);
+  --secondary-light-6: color-mix(in srgb, var(--secondary) 8%, #fff);
+
+  /* Darker shades */
+  --secondary-dark-1: color-mix(in srgb, var(--secondary) 82%, #000);
+  --secondary-dark-2: color-mix(in srgb, var(--secondary) 62%, #000);
+  --secondary-dark-3: color-mix(in srgb, var(--secondary) 42%, #000);
+  --secondary-dark-4: color-mix(in srgb, var(--secondary) 20%, #000);
+
+  /* Common */
+  --theme-text-dark: var(--brand-navy);
+  --muted-color: #5b5d78;
+  --border-color: #e2dfe6;
+  --background-color: #f6f3ef;
+  --theme-text-light: #ffffff;
+
+  /* The four logo colours, for the login screen's gradient and other
+     places that echo the logo itself rather than primary/secondary. */
+  --logo-navy: var(--brand-navy);
+  --logo-crimson: var(--brand-crimson);
+  --logo-orange: var(--brand-orange);
+  --logo-gold: var(--brand-amber);
+
+  /* Same 4 logo colours mixed ~18% into white: a soft pastel background
+     wash (used by the login screen's backdrop and the admin shell). */
+  --logo-navy-light: color-mix(in srgb, var(--brand-navy) 18%, #fff);
+  --logo-crimson-light: color-mix(in srgb, var(--brand-crimson) 18%, #fff);
+  --logo-orange-light: color-mix(in srgb, var(--brand-orange) 18%, #fff);
+  --logo-gold-light: color-mix(in srgb, var(--brand-amber) 18%, #fff);
+}

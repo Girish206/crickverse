@@ -1,0 +1,492 @@
+/* ==========================================================================
+   Admin dark theme — the navy palette of the public site's dark mode
+   (src/styles/brand.css), applied while useAdminTheme() sets
+   <html data-bs-theme="dark">.
+
+   Most admin CSS reads the variables in ../index.css (and Bootstrap's own
+   --bs-* variables), so redefining those does most of the work. The rules
+   below that are for the places the ported DMS CSS hardcodes white / light
+   grey. Every selector starts with :root[data-bs-theme="dark"], which
+   out-ranks the single-class light rules regardless of load order;
+   `!important` is only repeated where the light rule uses it.
+   ========================================================================== */
+
+:root[data-bs-theme="dark"] {
+  color-scheme: dark;
+
+  --adm-bg: var(--brand-navy-night);
+  --adm-surface: var(--brand-navy-surface);
+  --adm-raised: var(--brand-navy-raised);
+  --adm-glass: rgba(14, 16, 48, 0.86);
+  --adm-line: rgba(255, 255, 255, 0.09);
+  --adm-line-strong: rgba(255, 255, 255, 0.16);
+  --adm-hover: rgba(255, 255, 255, 0.05);
+  --adm-text: #f1eff9;
+  --adm-text-2: #c9c7de;
+
+  /* Brand: the vivid orange reads on navy (deep orange is too dark). */
+  --primary: var(--brand-orange);
+  --primary-rgb: var(--brand-orange-rgb);
+  --primary-gradient: var(--brand-gradient-night);
+  --secondary: var(--brand-amber-bright);
+
+  /* "light" tints are used as soft backgrounds → mix into the surface;
+     "dark" shades are used as stronger text → mix towards white. */
+  --primary-light-1: color-mix(in srgb, var(--primary) 85%, var(--adm-surface));
+  --primary-light-2: color-mix(in srgb, var(--primary) 65%, var(--adm-surface));
+  --primary-light-3: color-mix(in srgb, var(--primary) 45%, var(--adm-surface));
+  --primary-light-4: color-mix(in srgb, var(--primary) 30%, var(--adm-surface));
+  --primary-light-5: color-mix(in srgb, var(--primary) 18%, var(--adm-surface));
+  --primary-light-6: color-mix(in srgb, var(--primary) 10%, var(--adm-surface));
+  --primary-light-7: color-mix(in srgb, var(--primary) 6%, var(--adm-surface));
+  --primary-dark-1: color-mix(in srgb, var(--primary) 82%, #fff);
+  --primary-dark-2: color-mix(in srgb, var(--primary) 65%, #fff);
+  --primary-dark-3: color-mix(in srgb, var(--primary) 45%, #fff);
+  --primary-dark-4: color-mix(in srgb, var(--primary) 25%, #fff);
+
+  --secondary-light-1: color-mix(in srgb, var(--secondary) 85%, var(--adm-surface));
+  --secondary-light-2: color-mix(in srgb, var(--secondary) 65%, var(--adm-surface));
+  --secondary-light-3: color-mix(in srgb, var(--secondary) 45%, var(--adm-surface));
+  --secondary-light-4: color-mix(in srgb, var(--secondary) 30%, var(--adm-surface));
+  --secondary-light-5: color-mix(in srgb, var(--secondary) 16%, var(--adm-surface));
+  --secondary-light-6: color-mix(in srgb, var(--secondary) 8%, var(--adm-surface));
+  --secondary-dark-1: color-mix(in srgb, var(--secondary) 85%, #fff);
+  --secondary-dark-2: color-mix(in srgb, var(--secondary) 70%, #fff);
+  --secondary-dark-3: color-mix(in srgb, var(--secondary) 50%, #fff);
+  --secondary-dark-4: color-mix(in srgb, var(--secondary) 30%, #fff);
+
+  --theme-text-dark: var(--adm-text);
+  --muted-color: #a3a2bf;
+  --border-color: var(--adm-line-strong);
+  --background-color: rgba(255, 255, 255, 0.04);
+
+  --logo-navy-light: var(--adm-bg);
+  --logo-crimson-light: color-mix(in srgb, var(--brand-crimson) 10%, var(--adm-bg));
+  --logo-orange-light: color-mix(in srgb, var(--brand-orange) 8%, var(--adm-bg));
+  --logo-gold-light: color-mix(in srgb, var(--brand-amber) 6%, var(--adm-bg));
+
+  /* Legacy template variables still read by admin.css */
+  --black: var(--adm-text);
+  --light-black: #a3a2bf;
+  --background: rgba(255, 255, 255, 0.04);
+  --border: var(--adm-line-strong);
+
+  --sidebar-bg: var(--adm-surface);
+  --sidebar-text-muted: #a3a2bf;
+  --sidebar-shadow: 0 30px 70px rgba(0, 0, 0, 0.5);
+
+  /* Bootstrap, so its components use the same navy surfaces. */
+  --bs-body-bg: var(--adm-surface);
+  --bs-body-bg-rgb: 14, 16, 48;
+  --bs-body-color: var(--adm-text-2);
+  --bs-emphasis-color: var(--adm-text);
+  --bs-heading-color: var(--adm-text);
+  --bs-secondary-color: #a3a2bf;
+  --bs-secondary-bg: var(--adm-raised);
+  --bs-tertiary-bg: #12143a;
+  --bs-border-color: var(--adm-line-strong);
+  --bs-border-color-translucent: var(--adm-line);
+  --bs-link-color: var(--brand-orange-bright);
+  --bs-link-hover-color: var(--brand-amber-bright);
+}
+
+/* ---------- Shell ---------- */
+
+:root[data-bs-theme="dark"] body.admin-page {
+  background: var(--adm-bg);
+  color: var(--adm-text-2);
+}
+:root[data-bs-theme="dark"] .layout-wrapper,
+:root[data-bs-theme="dark"] .layout-wrapper[class*="bg-"] {
+  --bg-overlay: linear-gradient(rgba(7, 8, 32, 0.82), rgba(7, 8, 32, 0.82));
+}
+:root[data-bs-theme="dark"] .admin-bg-shape {
+  opacity: 0.55;
+}
+:root[data-bs-theme="dark"] .text-dark {
+  color: var(--adm-text) !important;
+}
+:root[data-bs-theme="dark"] .bg-white,
+:root[data-bs-theme="dark"] .bg-light {
+  background-color: var(--adm-surface) !important;
+}
+
+/* ---------- Navbar ---------- */
+
+:root[data-bs-theme="dark"] .navbar {
+  background: rgba(7, 8, 32, 0.9);
+  border-bottom-color: var(--adm-line);
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.3);
+}
+:root[data-bs-theme="dark"] .navbar-scrolled {
+  background: rgba(7, 8, 32, 0.96);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+}
+:root[data-bs-theme="dark"] .navbar .nav {
+  background: var(--adm-hover);
+}
+:root[data-bs-theme="dark"] .navbar .nav .nav-link {
+  color: #a3a2bf;
+}
+:root[data-bs-theme="dark"] .navbar .nav .nav-item:not(.active) .nav-link:hover {
+  color: var(--adm-text);
+  background: var(--adm-hover);
+}
+:root[data-bs-theme="dark"] .navbar .nav .nav-item.active .nav-link {
+  background: var(--adm-raised);
+}
+:root[data-bs-theme="dark"] .navbar-user-chip {
+  background: rgba(255, 255, 255, 0.06);
+}
+:root[data-bs-theme="dark"] .navbar-notif-dropdown,
+:root[data-bs-theme="dark"] .profile-sidebar {
+  background: var(--adm-surface);
+  border-color: var(--adm-line);
+}
+:root[data-bs-theme="dark"] .notif-dropdown-header {
+  background: var(--adm-raised);
+  border-bottom-color: var(--adm-line);
+}
+:root[data-bs-theme="dark"] .notif-dropdown-item {
+  border-bottom-color: var(--adm-line);
+}
+:root[data-bs-theme="dark"] .notif-dropdown-item:hover,
+:root[data-bs-theme="dark"] .notif-dropdown-item.unread {
+  background: var(--adm-hover);
+}
+:root[data-bs-theme="dark"] .notif-title {
+  color: var(--adm-text);
+}
+:root[data-bs-theme="dark"] .notif-message,
+:root[data-bs-theme="dark"] .navbar-notif-btn {
+  color: #a3a2bf;
+}
+:root[data-bs-theme="dark"] .user-img,
+:root[data-bs-theme="dark"] .user-avatar {
+  border-color: var(--adm-raised);
+}
+
+/* Theme toggle (Navbar.tsx) */
+.navbar-theme-btn {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid rgba(var(--primary-rgb), 0.25);
+  background: transparent;
+  color: var(--primary);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.navbar-theme-btn:hover {
+  background: rgba(var(--primary-rgb), 0.1);
+}
+
+/* ---------- Sidebar ---------- */
+
+:root[data-bs-theme="dark"] .sidebar {
+  background: var(--adm-glass);
+  border-right-color: var(--adm-line);
+}
+:root[data-bs-theme="dark"] .sidebar-footer {
+  background: rgba(255, 255, 255, 0.02) !important;
+  border-top-color: var(--adm-line);
+}
+:root[data-bs-theme="dark"] .submenu-link {
+  color: #a3a2bf !important;
+}
+:root[data-bs-theme="dark"] .submenu-link:hover {
+  color: var(--adm-text) !important;
+}
+:root[data-bs-theme="dark"] .submenu-item.active .submenu-link {
+  background: var(--adm-raised) !important;
+}
+:root[data-bs-theme="dark"] .user-role-text {
+  color: #a3a2bf;
+}
+:root[data-bs-theme="dark"] .logout-btn {
+  background: rgba(244, 63, 94, 0.1);
+  color: #ff6b85 !important;
+}
+@media (max-width: 767px) {
+  :root[data-bs-theme="dark"] .sidebar {
+    background: var(--adm-surface) !important;
+  }
+}
+
+/* ---------- Cards ---------- */
+
+:root[data-bs-theme="dark"] .card,
+:root[data-bs-theme="dark"] .ki-card {
+  --bs-card-bg: var(--adm-surface);
+  --bs-card-cap-bg: rgba(255, 255, 255, 0.03);
+  background-color: var(--adm-surface);
+  border-color: var(--adm-line);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35) !important;
+}
+:root[data-bs-theme="dark"] .ki-card i {
+  background-color: var(--adm-raised);
+}
+:root[data-bs-theme="dark"] .ki-card h5,
+:root[data-bs-theme="dark"] .ki-card h6 {
+  color: var(--adm-text) !important;
+}
+:root[data-bs-theme="dark"] .ki-card small {
+  color: #a3a2bf;
+}
+:root[data-bs-theme="dark"] .card-header-gradient-primary {
+  background: linear-gradient(135deg, var(--primary-light-6) 0%, var(--adm-surface) 100%) !important;
+}
+:root[data-bs-theme="dark"] .card-header-gradient-secondary {
+  background: linear-gradient(135deg, var(--secondary-light-5) 0%, var(--adm-surface) 100%) !important;
+}
+:root[data-bs-theme="dark"] .admin-timeline-marker {
+  border-color: var(--adm-surface);
+}
+:root[data-bs-theme="dark"] .admin-profile-hero-body {
+  background: radial-gradient(circle at 12% 30%, var(--primary-light-5), transparent 45%),
+    linear-gradient(120deg, var(--primary-light-7) 0%, var(--adm-surface) 50%, var(--secondary-light-6) 100%);
+}
+:root[data-bs-theme="dark"] .admin-profile-avatar,
+:root[data-bs-theme="dark"] .admin-profile-avatar-edit {
+  border-color: var(--adm-surface);
+}
+:root[data-bs-theme="dark"] .admin-detail-row,
+:root[data-bs-theme="dark"] .admin-txn-row {
+  border-color: var(--adm-line);
+}
+
+/* Status colours: the light-theme shades are too dark to read on navy. */
+:root[data-bs-theme="dark"] .admin-txn-tag-savings,
+:root[data-bs-theme="dark"] .admin-profile-status-saved i,
+:root[data-bs-theme="dark"] .admin-banner-success {
+  color: #4ade80;
+}
+:root[data-bs-theme="dark"] .admin-txn-tag-split,
+:root[data-bs-theme="dark"] .admin-txn-tag-expenses {
+  color: #7cb4ff;
+}
+:root[data-bs-theme="dark"] .admin-txn-tag-owner {
+  color: #fbbf5a;
+}
+:root[data-bs-theme="dark"] .admin-txn-tag-portfolio {
+  color: #b9a4ff;
+}
+:root[data-bs-theme="dark"] .admin-txn-tag-danger,
+:root[data-bs-theme="dark"] .admin-txn-amount,
+:root[data-bs-theme="dark"] .admin-profile-status-error {
+  color: #ff7b72;
+}
+:root[data-bs-theme="dark"] .admin-remove-btn {
+  border-color: #ff7b72;
+  color: #ff7b72;
+}
+
+/* ---------- Forms ---------- */
+
+:root[data-bs-theme="dark"] .form-control,
+:root[data-bs-theme="dark"] .form-select {
+  background-color: rgba(255, 255, 255, 0.04);
+  border-color: var(--adm-line-strong) !important;
+  color: var(--adm-text);
+}
+:root[data-bs-theme="dark"] .form-control:read-only {
+  background-color: rgba(255, 255, 255, 0.02) !important;
+}
+:root[data-bs-theme="dark"] .form-control::placeholder {
+  color: #77769a !important;
+}
+:root[data-bs-theme="dark"] .form-floating > label,
+:root[data-bs-theme="dark"] .select-floating-label,
+:root[data-bs-theme="dark"] .input-icon {
+  color: #a3a2bf;
+}
+/* Floating labels sit on a strip of the field's own background. */
+:root[data-bs-theme="dark"] .form-floating > .form-control:focus ~ label::after,
+:root[data-bs-theme="dark"] .form-floating > .form-control:not(:placeholder-shown) ~ label::after {
+  background-color: transparent;
+}
+:root[data-bs-theme="dark"] .select__control {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  border-color: var(--adm-line-strong) !important;
+}
+:root[data-bs-theme="dark"] .select__menu {
+  background-color: var(--adm-raised) !important;
+}
+:root[data-bs-theme="dark"] .select__single-value,
+:root[data-bs-theme="dark"] .select__input-container,
+:root[data-bs-theme="dark"] .select__multi-value__label {
+  color: var(--adm-text) !important;
+}
+:root[data-bs-theme="dark"] .select__option {
+  color: var(--adm-text-2);
+}
+:root[data-bs-theme="dark"] .select__option--is-focused {
+  background-color: rgba(255, 255, 255, 0.07) !important;
+  color: var(--adm-text) !important;
+}
+:root[data-bs-theme="dark"] .select__multi-value {
+  background-color: var(--adm-surface) !important;
+}
+:root[data-bs-theme="dark"] .btn-clear-filters {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border-color: var(--adm-line-strong) !important;
+  color: var(--adm-text-2) !important;
+}
+:root[data-bs-theme="dark"] .btn-clear-filters:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: var(--adm-text) !important;
+}
+
+/* ---------- Tabs ---------- */
+
+:root[data-bs-theme="dark"] .custom-nav-pills,
+:root[data-bs-theme="dark"] .custom-tabs {
+  background-color: var(--adm-raised);
+  border-color: var(--adm-line);
+}
+:root[data-bs-theme="dark"] .custom-nav-pills .nav-link,
+:root[data-bs-theme="dark"] .custom-tabs .nav-link {
+  color: #a3a2bf;
+}
+:root[data-bs-theme="dark"] .custom-nav-pills .nav-link:hover {
+  background-color: var(--adm-hover);
+  color: var(--adm-text);
+}
+/* tabs.css's global `.nav-link.active` (white, !important). :where() keeps
+   this just above it, but below the sidebar's own active-link rule. */
+:root[data-bs-theme="dark"] :where(.nav-link).active {
+  background-color: var(--adm-surface) !important;
+  color: var(--adm-text) !important;
+}
+
+/* ---------- Tables (Bootstrap tables + react-data-table) ---------- */
+
+:root[data-bs-theme="dark"] table,
+:root[data-bs-theme="dark"] table td,
+:root[data-bs-theme="dark"] table.sticky-header,
+:root[data-bs-theme="dark"] table.sticky-header td {
+  border-color: var(--adm-line) !important;
+}
+:root[data-bs-theme="dark"] table td {
+  color: var(--adm-text-2);
+}
+:root[data-bs-theme="dark"] table th,
+:root[data-bs-theme="dark"] table.sticky-header thead th,
+:root[data-bs-theme="dark"] .sticky-header-container > table.sticky-header > thead,
+:root[data-bs-theme="dark"] .table-report thead th,
+:root[data-bs-theme="dark"] .sticky-top-left-1,
+:root[data-bs-theme="dark"] .sticky-top-left-2,
+:root[data-bs-theme="dark"] .sticky-top-left-3 {
+  background-color: color-mix(in srgb, var(--primary) 14%, var(--adm-surface)) !important;
+  color: var(--adm-text) !important;
+  border-color: var(--adm-line) !important;
+}
+:root[data-bs-theme="dark"] .sticky-header-container table table thead,
+:root[data-bs-theme="dark"] .sticky-header-container table table thead th {
+  background-color: var(--adm-raised) !important;
+  color: var(--adm-text) !important;
+}
+:root[data-bs-theme="dark"] table.table-striped > tbody > tr:nth-of-type(odd),
+:root[data-bs-theme="dark"] table.sticky-header.table-striped > tbody > tr:nth-of-type(odd),
+:root[data-bs-theme="dark"] .rdt_TableBody > .rdt_TableRow:nth-of-type(odd),
+:root[data-bs-theme="dark"] .sticky-left-1,
+:root[data-bs-theme="dark"] .sticky-left-2,
+:root[data-bs-theme="dark"] .sticky-left-3 {
+  background-color: var(--adm-surface) !important;
+}
+:root[data-bs-theme="dark"] table.table-striped > tbody > tr:nth-of-type(even),
+:root[data-bs-theme="dark"] table.sticky-header.table-striped > tbody > tr:nth-of-type(even),
+:root[data-bs-theme="dark"] .rdt_TableBody > .rdt_TableRow:nth-of-type(even) {
+  background-color: #11133a !important;
+}
+:root[data-bs-theme="dark"] table.table-striped > tbody > tr:hover,
+:root[data-bs-theme="dark"] table.sticky-header.table-striped > tbody > tr:hover,
+:root[data-bs-theme="dark"] .rdt_TableBody > .rdt_TableRow:hover {
+  background-color: var(--adm-raised) !important;
+}
+:root[data-bs-theme="dark"] .table-report .report-total-col {
+  background-color: rgba(var(--brand-amber-rgb), 0.08) !important;
+}
+:root[data-bs-theme="dark"] .sticky-right-1,
+:root[data-bs-theme="dark"] .sticky-right-2,
+:root[data-bs-theme="dark"] .sticky-right-3,
+:root[data-bs-theme="dark"] .sticky-top-right-1,
+:root[data-bs-theme="dark"] .sticky-top-right-2,
+:root[data-bs-theme="dark"] .sticky-top-right-3 {
+  box-shadow: -1px 0 0 0 var(--adm-line);
+}
+/* react-data-table paints its own containers and cells (VirtualTable's
+   customStyles); these win over its generated classes. */
+:root[data-bs-theme="dark"] .virtual-table-container .rdt_Table,
+:root[data-bs-theme="dark"] .virtual-table-container .rdt_TableBody,
+:root[data-bs-theme="dark"] .virtual-table-container .rdt_Pagination,
+:root[data-bs-theme="dark"] .virtual-table-container .rdt_TableHeader,
+:root[data-bs-theme="dark"] .virtual-table-container nav {
+  background-color: var(--adm-surface) !important;
+  color: var(--adm-text-2) !important;
+}
+:root[data-bs-theme="dark"] .virtual-table-container .rdt_TableHeadRow,
+:root[data-bs-theme="dark"] .virtual-table-container .rdt_TableCol {
+  background-color: color-mix(in srgb, var(--primary) 14%, var(--adm-surface)) !important;
+  color: var(--adm-text) !important;
+  border-color: var(--adm-line) !important;
+}
+:root[data-bs-theme="dark"] .virtual-table-container .rdt_TableRow {
+  color: var(--adm-text-2) !important;
+}
+:root[data-bs-theme="dark"] .virtual-table-container .rdt_TableCell {
+  border-color: var(--adm-line) !important;
+}
+:root[data-bs-theme="dark"] .virtual-table-container .rdt_TableCell:hover {
+  background-color: transparent !important;
+}
+:root[data-bs-theme="dark"] .virtual-table-container .rdt_Pagination svg {
+  fill: var(--adm-text-2);
+}
+/* The loading skeleton is all inline light colours; inverting it (and
+   turning the hue back) gives a dark version without duplicating them. */
+:root[data-bs-theme="dark"] .virtual-table-skeleton {
+  filter: invert(0.92) hue-rotate(180deg);
+}
+:root[data-bs-theme="dark"] .virtual-table-container input[type="checkbox"] {
+  background-color: transparent !important;
+  border-color: var(--adm-line-strong) !important;
+}
+
+/* ---------- Modals, tooltips, login ---------- */
+
+:root[data-bs-theme="dark"] .modal-content {
+  background-color: var(--adm-surface);
+  border: 1px solid var(--adm-line);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+}
+:root[data-bs-theme="dark"] .modal-header,
+:root[data-bs-theme="dark"] .modal-footer {
+  border-color: var(--adm-line);
+}
+:root[data-bs-theme="dark"] .modal-close-btn {
+  border-color: var(--adm-line-strong);
+}
+:root[data-bs-theme="dark"] .admin-login-card {
+  background: var(--adm-surface);
+  border: 1px solid var(--adm-line);
+  box-shadow: 0 30px 70px rgba(var(--primary-rgb), 0.18), 0 6px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* ---------- SweetAlert (confirmDelete) ---------- */
+
+:root[data-bs-theme="dark"] .swal2-popup {
+  background: var(--adm-surface);
+  color: var(--adm-text-2);
+  border: 1px solid var(--adm-line);
+}
+:root[data-bs-theme="dark"] .swal2-title {
+  color: var(--adm-text);
+}
+:root[data-bs-theme="dark"] .swal2-html-container {
+  color: var(--adm-text-2);
+}

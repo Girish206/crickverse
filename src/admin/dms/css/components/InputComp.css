@@ -1,0 +1,289 @@
+/* ==========================================================================
+   INPUT COMPONENT STYLES
+   Main stylesheet for form controls, floating labels, and icons.
+   ========================================================================== */
+
+/* -------- 1. CORE INPUT BASE -------- */
+.form-control:not(textarea) {
+  height: calc(3rem + 2px) !important;
+  min-height: calc(3rem + 2px) !important;
+}
+
+.form-control {
+  border: 1px solid #c8c6c6 !important;
+  border-radius: 10px !important;
+  font-size: 1rem !important;
+}
+
+.form-control-label {
+  font-size: 1rem;
+}
+
+/* Base focus state */
+.form-control:focus {
+  border: 2px solid var(--primary) !important;
+  box-shadow: 0 0 0 3px var(--primary-light-6) !important;
+  outline: none;
+}
+
+/* Read-only state background */
+.form-control:read-only {
+  background-color: #f7f5f5 !important;
+}
+
+/* Wrapper classes for grouped inputs */
+.input-with-icon {
+  position: relative;
+  display: block;
+}
+
+.input-group-custom {
+  position: relative;
+}
+
+/* Shadow fix for custom focus class */
+.input-group-custom.focused .form-control {
+  box-shadow: 0 0 0 3px var(--primary-light-6) !important;
+}
+
+
+/* -------- 2. SIZING VARIANTS -------- */
+
+/* Small (SM) Variant */
+.form-control-sm:not(textarea) {
+  height: calc(2.65rem + 2px) !important;
+  min-height: calc(2.65rem + 2px) !important;
+}
+
+.form-control-sm {
+  font-size: 0.9rem !important;
+}
+
+/* Large (LG) Variant */
+.form-control-lg:not(textarea) {
+  height: calc(3.25rem + 2px) !important;
+  min-height: calc(3.25rem + 2px) !important;
+}
+
+.form-control-lg {
+  font-size: 1.1rem !important;
+}
+
+.form-control-sm .form-control-label {
+  font-size: 0.9rem;
+}
+
+.form-control-lg .form-control-label {
+  font-size: 1.1rem;
+}
+
+
+/* -------- 3. FLOATING LABEL SYSTEM -------- */
+
+/*
+  FIX: padding-top is only applied when there IS a label (i.e. NOT .no-label).
+  Without this guard, no-label floating inputs have their placeholder/text
+  pushed down instead of being vertically centered.
+*/
+.form-floating:not(.no-label) > .form-control {
+  padding-top: 1.4rem !important;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+/* Small floating WITH label */
+.form-floating:not(.no-label) > .form-control-sm:not(textarea) {
+  padding-top: 1.1rem !important;
+  padding-bottom: 0.2rem !important;
+}
+
+/* Large floating WITH label */
+.form-floating:not(.no-label) > .form-control-lg:not(textarea) {
+  padding-top: 1.6rem !important;
+}
+
+/*
+  FIX: no-label floating inputs — reset padding so text/placeholder
+  is vertically centered exactly like a normal (non-floating) input.
+*/
+.form-floating.no-label > .form-control {
+  padding-top: 0.375rem !important;
+  padding-bottom: 0.375rem !important;
+}
+
+.form-floating.no-label > .form-control-sm {
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
+}
+
+.form-floating.no-label > .form-control-lg {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
+/* Base label styling */
+.form-floating > label {
+  padding: 0.85rem !important;
+  display: flex !important;
+  align-items: center !important;
+  height: 100% !important;
+  top: 0 !important;
+  color: #6c757d;
+  transition: all 0.2s ease !important;
+  pointer-events: none;
+}
+
+/* Label truncation for long text */
+.form-floating.input-group-custom label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 3rem);
+}
+
+/* Small input label adjustment */
+.form-floating > .form-control-sm ~ label {
+  font-size: 0.85rem;
+}
+
+/* Floating animation (when focused or filled) */
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-control:not(:placeholder-shown) ~ label {
+  transform: scale(0.8) translateY(-0.75rem) translateX(0.15rem) !important;
+  height: auto !important;
+  top: 0.1rem !important;
+}
+
+
+/* -------- 4. ICON INTEGRATION -------- */
+
+/* Base Icon Style */
+.input-icon {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #888;
+  font-size: 1.2rem !important;
+  z-index: 10 !important;
+  padding: 5px;
+  border-radius: 10px !important;
+  transition: color 0.2s ease !important;
+}
+
+.input-icon:hover {
+  cursor: pointer;
+  color: var(--primary);
+}
+
+/* Icon sizing for floating/sm variants */
+.form-floating .input-icon {
+  font-size: 1.3rem !important;
+}
+
+.form-floating .form-control-sm ~ .input-icon {
+  font-size: 1.1rem !important;
+}
+
+/* Icon Position: Left */
+.input-icon-left {
+  left: 0.5rem !important;
+  right: auto !important;
+}
+
+/* Icon Position: Right */
+.input-icon-right {
+  right: 0.5rem !important;
+  left: auto !important;
+}
+
+/* Standard Padding Adjustments when icons are present */
+.pl-icon {
+  padding-left: 2.5rem !important;
+}
+
+.pr-icon {
+  padding-right: 2.5rem !important;
+}
+
+.input-group-custom .form-control.pl-icon {
+  padding-left: 2.8rem !important;
+}
+
+.input-group-custom .form-control-sm.pl-icon {
+  padding-left: 2.8rem !important;
+}
+
+.input-group-custom .form-control-lg.pl-icon {
+  padding-left: 2.8rem !important;
+}
+
+/* Padding adjustments for Floating Labels with Left Icons */
+.form-floating.input-group-custom .pl-icon {
+  padding-left: 3rem !important;
+}
+
+.form-floating.input-group-custom .form-control-sm.pl-icon {
+  padding-top: 1rem !important;
+  padding-left: 2.8rem !important;
+}
+
+.form-floating.input-group-custom .form-control-lg.pl-icon {
+  padding-top: 1.5rem !important;
+}
+
+.form-floating.input-group-custom .pr-icon {
+  padding-right: 3rem !important;
+}
+
+.form-floating.input-group-custom .form-control-sm.pr-icon {
+  padding-right: 2.8rem !important;
+}
+
+.form-floating.input-group-custom .pl-icon + label {
+  left: 2.2rem !important;
+}
+
+.form-floating.input-group-custom .form-control-sm.pl-icon + label {
+  left: 2rem !important;
+}
+
+.form-floating.input-group-custom .form-control-lg.pl-icon + label {
+  left: 2.25rem !important;
+}
+
+
+/* -------- 5. PLACEHOLDER STYLE -------- */
+
+/* Standard placeholders */
+.form-control::placeholder {
+  color: #a2a4a6 !important;
+  font-size: 14px !important;
+}
+
+/* Hide placeholder in floating state until label moves up */
+.form-floating:not(.no-label) > .form-control::placeholder {
+  color: transparent !important;
+  opacity: 0 !important;
+}
+
+/* Show placeholder only when floating label is active/focused */
+.form-floating > .form-control:focus::placeholder,
+.form-floating.no-label > .form-control::placeholder {
+  color: #a2a4a6 !important;
+  opacity: 1 !important;
+  font-size: 14px !important;
+}
+
+
+/* -------- 6. UTILITIES & FIXES -------- */
+
+/* Prevent white flash/background change on autofill */
+input.form-control:-webkit-autofill,
+textarea.form-control:-webkit-autofill,
+select.form-control:-webkit-autofill {
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Custom rounded input for comments */
+.comment-input {
+  border-radius: 50px !important;
+}

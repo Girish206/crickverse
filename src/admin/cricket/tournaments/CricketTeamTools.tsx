@@ -1,0 +1,264 @@
+import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
+import {
+  useAddCricketTeams,
+  useCricketTournaments,
+  useUpdateCricketTeam,
+} from "../../../api/hooks/cricket/useCricketTournaments";
+import type { CricketTournament } from "../../../api/types";
+import { Button } from "../../components/Button";
+import { ModalForm } from "../../components/ModalForm";
+import { SubmitButton } from "../../components/SubmitButton";
+import InputComp from "../../dms/components/InputComp";
+import { roleOf } from "../playerRoles";
+
+const MAX_TEAMS = 8;
+
+const nameKey = (name: string) => name.trim().toLowerCase();
+
+// "Team A", "Team B", ... skipping names the tournament already has.
+function defaultTeamNames(tournament: CricketTournament, count: number) {
+  const taken = new Set(tournament.teams.map((team) => nameKey(team.name)));
+  const names: string[] = [];
+  for (let i = 0; names.length < count; i++) {
+    const name = `Team ${i < 26 ? String.fromCharCode(65 + i) : i + 1}`;
+    if (!taken.has(nameKey(name))) names.push(name);
+  }
+  return names;
+}
+
+// Which team each player of this tournament is on.
+const teamOfPlayer = (tournament: CricketTournament) =>
+  new Map(tournament.teams.flatMap((team, index) => team.playerIds.map((id) => [id, index] as const)));
+
+// "Automatically": pick how many teams, then the squad / matched sets /
+// generate steps fill them.
+export function AutoTeamCount({ tournament }: { tournament: CricketTournament }) {
+  const addTeams = useAddCricketTeams();
+  const have = tournament.teams.length;
+  const [count, setCount] = useState(Math.max(2, have));
+  const counts = Array.from({ length: MAX_TEAMS - 1 }, (_, i) => i + 2).filter((n) => n >= Math.max(2, have));
+
+  return (
+    <div className="mb-2">
+      <p className="admin-hint">
+        How many teams? Then pick the squad, match players of equal strength, and generate — each matched set is
+        dealt out so every team gets one of each.
+      </p>
+      <div className="d-flex gap-2 flex-wrap align-items-center">
+        <div className="admin-segmented" role="radiogroup" aria-label="Number of teams">
+          {counts.map((n) => (
+            <button
+              key={n}
+              type="button"
+              role="radio"
+              aria-checked={count === n}
+              className={count === n ? "active" : ""}
+              onClick={() => setCount(n)}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+        <Button
+          variant="primary"
+          disabled={addTeams.isPending || count <= have}
+          onClick={() =>
+            addTeams.mutate({
+              id: tournament.id,
+              teams: defaultTeamNames(tournament, count - have).map((name) => ({ name, playerIds: [] })),
+            })
+          }
+        >
+          <i className="fa-solid fa-plus" aria-hidden="true"></i>{" "}
+          {have === 0 ? `Create ${count} teams` : `Add ${count - have} more`}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// "Manually": a new team (or an existing one being edited) — its name and
+// players picked from the shared list.
+export function TeamForm({
+  tournament,
+  index,
+  onSaved,
+}: {
+  tournament: CricketTournament;
+  index?: number;
+  onSaved: () => void;
+}) {
+  const { data: players } = useCricketPlayers();
+  const addTeams = useAddCricketTeams();
+  const updateTeam = useUpdateCricketTeam();
+  const existing = index === undefined ? undefined : tournament.teams[index];
+  const [name, setName] = useState(existing?.name ?? defaultTeamNames(tournament, 1)[0]);
+  const [picked, setPicked] = useState<number[]>(existing?.playerIds ?? []);
+  const [search, setSearch] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const onTeam = teamOfPlayer(tournament);
+  const visible = (players ?? []).filter((player) => player.name.toLowerCase().includes(search.trim().toLowerCase()));
+  const saving = addTeams.isPending || updateTeam.isPending;
+
+  function toggle(playerId: number) {
+    setPicked((current) =>
+      current.includes(playerId) ? current.filter((id) => id !== playerId) : [...current, playerId],
+    );
+  }
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    const trimmed = name.trim();
+    if (!trimmed) return setError("Give the team a name.");
+    if (tournament.teams.some((team, i) => i !== index && nameKey(team.name) === nameKey(trimmed))) {
+      return setError(`There's already a team called "${trimmed}".`);
+    }
+    const team = { name: trimmed, playerIds: picked };
+    if (index === undefined) await addTeams.mutateAsync({ id: tournament.id, teams: [team] });
+    else await updateTeam.mutateAsync({ id: tournament.id, index, ...team });
+    onSaved();
+  }
+
+  return (
+    <ModalForm onSubmit={onSubmit}>
+      <InputComp
+        label="Team Name"
+        required
+        maxLength={60}
+        value={name}
+        error={error ?? undefined}
+        onChange={(e: ChangeEvent<HTMLInputElement>) => {
+          setName(e.target.value);
+          setError(null);
+        }}
+      />
+      <div className="d-flex justify-content-between align-items-center mb-2">
+        <label className="form-label m-0">Players ({picked.length})</label>
+        {picked.length > 0 && (
+          <button type="button" className="admin-link-btn" onClick={() => setPicked([])}>
+            Clear
+          </button>
+        )}
+      </div>
+      <input
+        type="search"
+        className="form-control shadow-none mb-2"
+        placeholder="Search players"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+      <div className="cricket-pick-list cricket-team-pick-list">
+        {visible.length === 0 ? (
+          <div className="admin-empty-state">{players?.length ? "No players match." : "No players yet."}</div>
+        ) : (
+          visible.map((player) => {
+            const isPicked = picked.includes(player.id);
+            const otherTeam = onTeam.get(player.id);
+            const taken = otherTeam !== undefined && otherTeam !== index;
+            const role = roleOf(player.role);
+            return (
+              <button
+                type="button"
+                key={player.id}
+                className={`cricket-pick ${isPicked ? "is-picked" : ""}`}
+                aria-pressed={isPicked}
+                disabled={taken}
+                title={taken ? `Already on ${tournament.teams[otherTeam].name}` : undefined}
+                onClick={() => toggle(player.id)}
+              >
+                <i className={`fa-${isPicked ? "solid fa-circle-check" : "regular fa-circle"}`} aria-hidden="true"></i>
+                <span className="cricket-player-name">{player.name}</span>
+                {role && <i className={`fa-solid ${role.icon} cricket-role-icon`} title={role.label}></i>}
+                {taken && <small className="text-muted ms-auto">{tournament.teams[otherTeam].name}</small>}
+              </button>
+            );
+          })
+        )}
+      </div>
+      <SubmitButton loading={saving}>{index === undefined ? "Add Team" : "Save"}</SubmitButton>
+    </ModalForm>
+  );
+}
+
+// "Choose from existing teams": every team in every other tournament,
+// copied in (name and players). Players already on a team here are left out.
+export function ExistingTeamPicker({ tournament, onSaved }: { tournament: CricketTournament; onSaved: () => void }) {
+  const { data: tournaments } = useCricketTournaments();
+  const addTeams = useAddCricketTeams();
+  const [search, setSearch] = useState("");
+
+  // The same team (name + players) in several tournaments shows once, from
+  // its newest one (the list comes newest first).
+  const options = useMemo(() => {
+    const seen = new Set<string>();
+    return (tournaments ?? [])
+      .filter((t) => t.id !== tournament.id)
+      .flatMap((t) => t.teams.map((team) => ({ ...team, from: t.name })))
+      .filter((team) => {
+        const key = `${nameKey(team.name)}|${[...team.playerIds].sort((a, b) => a - b).join(",")}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+  }, [tournaments, tournament.id]);
+
+  const onTeam = teamOfPlayer(tournament);
+  const names = new Set(tournament.teams.map((team) => nameKey(team.name)));
+  const full = tournament.teams.length >= MAX_TEAMS;
+  const query = search.trim().toLowerCase();
+  const visible = options.filter(
+    (team) => team.name.toLowerCase().includes(query) || team.from.toLowerCase().includes(query),
+  );
+
+  async function add(team: (typeof options)[number]) {
+    const playerIds = team.playerIds.filter((id) => !onTeam.has(id));
+    await addTeams.mutateAsync({ id: tournament.id, teams: [{ name: team.name, playerIds }] });
+    onSaved();
+  }
+
+  return (
+    <div>
+      <input
+        type="search"
+        className="form-control shadow-none mb-2"
+        placeholder="Search teams or tournaments"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+      {full && <div className="admin-banner admin-banner-error mb-2">This tournament already has {MAX_TEAMS} teams.</div>}
+      <div className="cricket-pick-list cricket-team-pick-list">
+        {visible.length === 0 ? (
+          <div className="admin-empty-state">
+            {options.length ? "No teams match." : "Teams from your other tournaments show up here."}
+          </div>
+        ) : (
+          visible.map((team, i) => {
+            const added = names.has(nameKey(team.name));
+            const busy = team.playerIds.filter((id) => onTeam.has(id)).length;
+            return (
+              <div key={i} className="cricket-existing-team">
+                <span className="cricket-existing-team-body">
+                  <span className="cricket-player-name">{team.name}</span>
+                  <small className="text-muted">
+                    {team.from} · {team.playerIds.length} player{team.playerIds.length === 1 ? "" : "s"}
+                    {busy > 0 && !added && ` · ${busy} already on a team here (left out)`}
+                  </small>
+                </span>
+                <Button
+                  variant="outline"
+                  disabled={added || full || addTeams.isPending}
+                  title={added ? "A team with this name is already in the tournament" : undefined}
+                  onClick={() => add(team)}
+                >
+                  {added ? "Added" : "Add"}
+                </Button>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,64 @@
+.custom-nav-pills {
+  background-color: #ebe9e9;
+  border-radius: 10px;
+  padding: 5px !important; /* Add padding to the container */
+}
+
+.custom-nav-pills .nav-link {
+  border-radius: 10px;
+  font-size: 14px; /* Reduced font size */
+  font-weight: 500;
+  /* padding: 6px 20px;  */
+  transition: all 0.3s ease;
+  /* background-color: #f0f0f0; */
+  color: #333; /* Dark text color */
+  border: none; /* Remove the default border */
+}
+
+.custom-nav-pills .nav-link.active {
+  background-color: var(--primary); /* Active state background color */
+  color: white; /* Active text color */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add shadow on active state */
+}
+
+.custom-nav-pills .nav-link:hover {
+  background-color: #ddd; /* Slightly darker on hover */
+  color: #000; /* Darker text on hover */
+}
+
+.custom-nav-pills .nav-link .tab-text {
+  display: inline-block;
+  /* padding: 5px 0; */
+}
+
+.nav-link.active {
+  background-color: #ffffff !important;
+  color: rgb(58, 57, 57) !important;
+}
+
+.custom-tabs {
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  padding: 5px;
+  background-color: #fff;
+}
+
+.custom-tabs .nav-link {
+  color: #6c757d;
+  border: none;
+  background: none;
+  font-weight: 500;
+  margin-right: 1rem;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+}
+
+.custom-tabs .nav-link.active {
+  color: rgb(178, 35, 49);
+  border-color: rgb(178, 35, 49);
+  background-color: transparent;
+}
+
+.custom-tabs .nav-link:hover {
+  color: rgb(178, 35, 49);
+}

@@ -1,0 +1,157 @@
+.loader-overlay.modern-loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* Soft light gradient with brand tint */
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.98) 0%, rgba(253, 244, 244, 0.95) 100%);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000 !important;
+  transition: all 0.3s ease;
+}
+
+/* Logo Animation Styles */
+.logo-container {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loader-logo {
+  width: 85px;
+  height: 85px;
+  z-index: 2;
+  /* filter: drop-shadow(0 4px 8px rgba(236, 51, 51, 0.2)); */
+  animation: floating 3s ease-in-out infinite;
+}
+
+.logo-pulse {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: var(--primary-light-4);
+  border-radius: 50%;
+  z-index: 0;
+  opacity: 0.2;
+  animation: ripple 2s ease-out infinite;
+}
+
+.logo-ring {
+  position: absolute;
+  width: 110px;
+  height: 110px;
+  border: 4px solid rgba(236, 51, 51, 0.1);
+  border-top: 4px solid var(--primary);
+  border-right: 4px solid var(--primary);
+  border-radius: 50%;
+  z-index: 1;
+  animation: rotate-ring 1s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+}
+
+/* Animations */
+@keyframes floating {
+  0% {
+    transform: translateY(0px) scale(1);
+  }
+
+  50% {
+    transform: translateY(-12px) scale(1.05);
+  }
+
+  100% {
+    transform: translateY(0px) scale(1);
+  }
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+@keyframes rotate-ring {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Text Styles */
+.loader-main-text {
+  font-weight: 700;
+  color: var(--primary-dark-2);
+  letter-spacing: 0.5px;
+  font-size: 1.5rem;
+}
+
+.loader-sub-text {
+  color: var(--muted-color);
+  font-size: 1rem;
+  font-weight: 400;
+  min-height: 1.5rem;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.animate-flicker {
+  animation: fadeInOut 3s infinite;
+}
+
+@keyframes fadeInOut {
+
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Progress Bar */
+.loading-bar-container {
+  width: 240px;
+  height: 6px;
+  background: rgba(236, 51, 51, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.loading-bar-progress {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light-1) 100%);
+  border-radius: 12px;
+  animation: progress-animation 2s infinite ease-in-out;
+  transform-origin: 0% 50%;
+}
+
+@keyframes progress-animation {
+  0% {
+    transform: translateX(-100%) scaleX(0.2);
+  }
+
+  50% {
+    transform: translateX(0%) scaleX(0.5);
+  }
+
+  100% {
+    transform: translateX(100%) scaleX(0.2);
+  }
+}
