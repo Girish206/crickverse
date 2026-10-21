@@ -2,6 +2,11 @@ import { Outlet, useLocation } from "react-router-dom";
 import Layout from "./Layout";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 
+// The menu's own screens get the navbar and sidebar; every other screen
+// (a tournament, team, match or match setup) brings its own header with a
+// back button instead.
+const MAIN_SCREENS = ["/", "/me", "/my-matches", "/my-tournaments", "/dashboard", "/tournaments", "/matches", "/players", "/leaderboard"];
+
 const LayoutWrapper = () => {
     const { admin } = useAdminAuth();
     const path = useLocation().pathname;
@@ -19,8 +24,10 @@ const LayoutWrapper = () => {
         return admin?.isSuperAdmin ? "cricket-dashboard" : "cricket-me";
     };
 
+    const isMainScreen = MAIN_SCREENS.includes(path.replace(/\/+$/, "") || "/");
+
     return (
-        <Layout activeItem={getActiveItem()} activeSubItem="">
+        <Layout activeItem={getActiveItem()} activeSubItem="" isMainScreen={isMainScreen}>
             {/* .cricket-module scopes the cricket pages' compact phone layout. */}
             <div className="cricket-module">
                 <Outlet />

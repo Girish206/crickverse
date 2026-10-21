@@ -9,10 +9,12 @@ import "../css/components/Layout.css";
 const Layout = ({
     activeItem,
     activeSubItem,
+    isMainScreen,
     children,
 }: {
     activeItem: string;
     activeSubItem: string;
+    isMainScreen: boolean;
     children: React.ReactNode;
 }) => {
     useAdminBodyClass();
@@ -62,17 +64,21 @@ const Layout = ({
 
     return (
         <div
-            className={`layout-wrapper ${mainBg} ${isSidebarOpen ? "sidebar-open" : "sidebar-closed"}`}
+            className={`layout-wrapper ${mainBg} ${isSidebarOpen ? "sidebar-open" : "sidebar-closed"} ${
+                isMainScreen ? "" : "is-subpage"
+            }`}
         >
             <div className="admin-bg-shape admin-bg-shape-1" aria-hidden="true" />
             <div className="admin-bg-shape admin-bg-shape-2" aria-hidden="true" />
 
-            <Navbar
-                toggleSidebar={toggleSidebar}
-                isSidebarOpen={isSidebarOpen}
-            />
+            {isMainScreen && (
+                <Navbar
+                    toggleSidebar={toggleSidebar}
+                    isSidebarOpen={isSidebarOpen}
+                />
+            )}
 
-            {isSidebarOpen && (
+            {isMainScreen && isSidebarOpen && (
                 <div
                     className={`sidebar-mobile-overlay ${
                         closing ? "fade-out" : "fade-in"
@@ -96,20 +102,22 @@ const Layout = ({
                 </div>
             )}
 
-            <div className="fixed-sidebar sidebar-desktop d-none d-md-block">
-                <Sidebar
-                    activeItem={activeItem}
-                    activeSubItem={activeSubItem}
-                    isSidebarOpen={isSidebarOpen}
-                    toggleSidebar={toggleSidebar}
-                    setSidebarOpen={setSidebarOpen}
-                />
-            </div>
+            {isMainScreen && (
+                <div className="fixed-sidebar sidebar-desktop d-none d-md-block">
+                    <Sidebar
+                        activeItem={activeItem}
+                        activeSubItem={activeSubItem}
+                        isSidebarOpen={isSidebarOpen}
+                        toggleSidebar={toggleSidebar}
+                        setSidebarOpen={setSidebarOpen}
+                    />
+                </div>
+            )}
 
             <main
                 className={`scrollable-main ${
                     isSidebarOpen ? "sidebar-open" : "sidebar-closed"
-                }`}
+                } ${isMainScreen ? "" : "is-subpage"}`}
             >
                 {children}
             </main>
