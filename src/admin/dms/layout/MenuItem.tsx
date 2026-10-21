@@ -70,7 +70,7 @@ const TooltipPortal = ({
                 WebkitBackdropFilter: "blur(12px)",
                 color: "#1e293b",
                 borderRadius: "10px",
-                fontSize: "0.84rem",
+                fontSize: "var(--fs-sm)",
                 fontWeight: 600,
                 whiteSpace: "nowrap",
                 boxShadow: "0 4px 6px -1px rgba(0,0,0,0.08), 0 10px 20px -4px rgba(0,0,0,0.12)",
@@ -106,7 +106,7 @@ const TooltipPortal = ({
                 flexShrink: 0,
                 borderRadius: "9px 0 0 9px",
             }}>
-                <i className={`${icon}`} style={{ color: "rgba(255,255,255,0.9)", fontSize: "0.82rem" }} />
+                <i className={`${icon}`} style={{ color: "rgba(255,255,255,0.9)", fontSize: "var(--fs-sm)" }} />
             </div>
             {/* Label */}
             <div style={{
@@ -172,7 +172,7 @@ export const MenuItem = ({
                         className={`fa-solid ms-auto ${
                             isSubMenuOpen ? "fa-chevron-down" : "fa-chevron-right"
                         }`}
-                        style={{ fontSize: "0.7rem", opacity: 0.5 }}
+                        style={{ fontSize: "var(--fs-2xs)", opacity: 0.5 }}
                     ></i>
                 )}
             </Link>

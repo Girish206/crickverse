@@ -422,6 +422,198 @@ export function pointsTable(tournament: CricketTournament, matches: CricketMatch
   return rows.sort((x, y) => y.points - x.points || y.nrr - x.nrr || y.won - x.won);
 }
 
+// ===== Team stats =====
+
+export interface TeamStats {
+  matches: number;
+  won: number;
+  lost: number;
+  // Batting: the team's own innings.
+  innings: number;
+  runs: number;
+  wicketsLost: number;
+  ballsFaced: number;
+  fours: number;
+  sixes: number;
+  dotsFaced: number;
+  extrasReceived: number;
+  highest: number | null;
+  lowest: number | null;
+  // Bowling and fielding: the opponents' innings.
+  wickets: number;
+  runsConceded: number;
+  ballsBowled: number;
+  dotsBowled: number;
+  maidens: number;
+  wides: number;
+  noBalls: number;
+  foursConceded: number;
+  sixesConceded: number;
+  catches: number;
+  runOuts: number;
+  stumpings: number;
+}
+
+// Totals for one team (its index in the tournament) over the given matches:
+// what it scored batting and what it gave away / took bowling and fielding.
+// A dot is a legal ball with nothing scored off it.
+export function teamStats(matches: CricketMatch[], teamIndex: number): TeamStats {
+  const t: TeamStats = {
+    matches: 0, won: 0, lost: 0,
+    innings: 0, runs: 0, wicketsLost: 0, ballsFaced: 0, fours: 0, sixes: 0, dotsFaced: 0, extrasReceived: 0,
+    highest: null, lowest: null,
+    wickets: 0, runsConceded: 0, ballsBowled: 0, dotsBowled: 0, maidens: 0, wides: 0, noBalls: 0,
+    foursConceded: 0, sixesConceded: 0, catches: 0, runOuts: 0, stumpings: 0,
+  };
+  for (const match of matches) {
+    const slot = match.teams.findIndex((team) => team.teamIndex === teamIndex);
+    if (slot === -1 || !match.innings.some((innings) => innings.balls.length > 0)) continue;
+    t.matches += 1;
+    if (match.status === "completed" && match.winner !== null) {
+      if (match.winner === slot) t.won += 1;
+      else t.lost += 1;
+    }
+    for (const innings of match.innings) {
+      if (innings.balls.length === 0) continue;
+      const summary = inningsSummary(innings);
+      const dot = (ball: CricketBall) => isLegal(ball) && ballTotal(ball) === 0;
+      if (innings.battingTeam === slot) {
+        t.innings += 1;
+        t.runs += summary.runs;
+        t.wicketsLost += summary.wickets;
+        t.ballsFaced += summary.legalBalls;
+        t.extrasReceived += summary.extras.total;
+        for (const ball of innings.balls) {
+          if (ball.runs === 4) t.fours += 1;
+          if (ball.runs === 6) t.sixes += 1;
+          if (dot(ball)) t.dotsFaced += 1;
+        }
+        if (innings.closed) {
+          t.highest = Math.max(t.highest ?? 0, summary.runs);
+          t.lowest = Math.min(t.lowest ?? Infinity, summary.runs);
+        }
+      } else {
+        t.wickets += summary.wickets;
+        t.runsConceded += summary.runs;
+        t.ballsBowled += summary.legalBalls;
+        t.wides += summary.extras.wides;
+        t.noBalls += summary.extras.noBalls;
+        for (const ball of innings.balls) {
+          if (ball.runs === 4) t.foursConceded += 1;
+          if (ball.runs === 6) t.sixesConceded += 1;
+          if (dot(ball)) t.dotsBowled += 1;
+          if (ball.wicketType === "caught") t.catches += 1;
+          if (ball.wicketType === "run-out") t.runOuts += 1;
+          if (ball.wicketType === "stumped") t.stumpings += 1;
+        }
+        for (const over of oversOf(innings)) {
+          if (over.balls.filter(isLegal).length === 6 && over.balls.every((ball) => conceded(ball) === 0)) t.maidens += 1;
+        }
+      }
+    }
+  }
+  return t;
+}
+
+export interface InningsTotal {
+  teamName: string;
+  runs: number;
+  wickets: number;
+  overs: string;
+}
+
+export interface TournamentStats {
+  matches: number;
+  completed: number;
+  wonBattingFirst: number;
+  wonChasing: number;
+  tiedOrNoResult: number;
+  runs: number;
+  balls: number;
+  wickets: number;
+  fours: number;
+  sixes: number;
+  dots: number;
+  extras: number;
+  wides: number;
+  noBalls: number;
+  maidens: number;
+  bowled: number;
+  caught: number;
+  lbw: number;
+  runOuts: number;
+  stumpings: number;
+  fifties: number;
+  hundreds: number;
+  ducks: number;
+  highest: InningsTotal | null;
+  lowest: InningsTotal | null;
+  firstInningsRuns: number;
+  firstInnings: number;
+}
+
+// Totals over every scored match of a tournament. Highest / lowest totals and
+// the average first-innings score only count finished innings.
+export function tournamentStats(matches: CricketMatch[]): TournamentStats {
+  const t: TournamentStats = {
+    matches: 0, completed: 0, wonBattingFirst: 0, wonChasing: 0, tiedOrNoResult: 0,
+    runs: 0, balls: 0, wickets: 0, fours: 0, sixes: 0, dots: 0, extras: 0, wides: 0, noBalls: 0, maidens: 0,
+    bowled: 0, caught: 0, lbw: 0, runOuts: 0, stumpings: 0, fifties: 0, hundreds: 0, ducks: 0,
+    highest: null, lowest: null, firstInningsRuns: 0, firstInnings: 0,
+  };
+  for (const match of matches) {
+    if (!match.innings.some((innings) => innings.balls.length > 0)) continue;
+    t.matches += 1;
+    if (match.status === "completed" || match.status === "abandoned") {
+      t.completed += 1;
+      const first = match.innings[0]?.battingTeam;
+      if (match.status === "abandoned" || match.winner === null) t.tiedOrNoResult += 1;
+      else if (match.winner === first) t.wonBattingFirst += 1;
+      else t.wonChasing += 1;
+    }
+    match.innings.forEach((innings, index) => {
+      if (innings.balls.length === 0) return;
+      const summary = inningsSummary(innings);
+      t.runs += summary.runs;
+      t.balls += summary.legalBalls;
+      t.wickets += summary.wickets;
+      t.extras += summary.extras.total;
+      t.wides += summary.extras.wides;
+      t.noBalls += summary.extras.noBalls;
+      for (const ball of innings.balls) {
+        if (ball.runs === 4) t.fours += 1;
+        if (ball.runs === 6) t.sixes += 1;
+        if (isLegal(ball) && ballTotal(ball) === 0) t.dots += 1;
+        if (ball.wicketType === "bowled") t.bowled += 1;
+        if (ball.wicketType === "caught") t.caught += 1;
+        if (ball.wicketType === "lbw") t.lbw += 1;
+        if (ball.wicketType === "run-out") t.runOuts += 1;
+        if (ball.wicketType === "stumped") t.stumpings += 1;
+      }
+      for (const row of battingCard(innings)) {
+        if (row.runs >= 100) t.hundreds += 1;
+        else if (row.runs >= 50) t.fifties += 1;
+        if (row.runs === 0 && row.outBall !== null && row.outBall.wicketType !== "retired-hurt") t.ducks += 1;
+      }
+      for (const row of bowlingCard(innings)) t.maidens += row.maidens;
+      if (!innings.closed) return;
+      const total = {
+        teamName: match.teams[innings.battingTeam].name,
+        runs: summary.runs,
+        wickets: summary.wickets,
+        overs: summary.overs,
+      };
+      if (!t.highest || total.runs > t.highest.runs) t.highest = total;
+      if (!t.lowest || total.runs < t.lowest.runs) t.lowest = total;
+      if (index === 0) {
+        t.firstInningsRuns += summary.runs;
+        t.firstInnings += 1;
+      }
+    });
+  }
+  return t;
+}
+
 // ===== Impact points =====
 // One number per player per match that weighs batting, bowling and fielding
 // against how the match went, so a quick 30 in a low-scoring game counts for

@@ -131,7 +131,7 @@
   background: rgba(var(--primary-rgb), 0.08);
   border: 1px solid rgba(var(--primary-rgb), 0.25);
   color: var(--primary-dark-1);
-  font-size: 0.72rem;
+  font-size: var(--fs-2xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1.2px;
@@ -140,7 +140,7 @@
 .admin-login-heading {
   margin: 0 0 0.35rem;
   font-weight: 800;
-  font-size: 1.85rem;
+  font-size: var(--fs-2xl);
   background: linear-gradient(90deg, var(--primary-dark-1) 0%, var(--primary) 55%, var(--secondary-dark-1) 100%);
   -webkit-background-clip: text;
   background-clip: text;
@@ -150,7 +150,7 @@
 .admin-login-subtitle {
   margin: 0 0 1.6rem;
   color: var(--muted-color);
-  font-size: 0.95rem;
+  font-size: var(--fs-base);
 }
 
 .admin-login-form {
@@ -160,7 +160,7 @@
 .admin-login-footnote {
   margin: 1.5rem 0 0;
   color: var(--muted-color);
-  font-size: 0.78rem;
+  font-size: var(--fs-xs);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -198,6 +198,6 @@
   }
 
   .admin-login-heading {
-    font-size: 1.55rem;
+    font-size: var(--fs-xl);
   }
 }

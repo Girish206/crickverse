@@ -94,15 +94,15 @@
 }
 
 .select-label {
-  font-size: 1rem;
+  font-size: var(--fs-md);
 }
 
 .select-sm .select-label {
-  font-size: 0.9rem;
+  font-size: var(--fs-base);
 }
 
 .select-lg .select-label {
-  font-size: 1.1rem;
+  font-size: var(--fs-md);
 }
 
 /* Label base styling */
@@ -128,17 +128,17 @@
 
 /* Size-specific label adjustments - Default Centered State */
 .select-sm .select-floating-label {
-  font-size: 1rem;
+  font-size: var(--fs-md);
   /* padding-top: 1.4rem !important; */
 }
 
 .select-md .select-floating-label {
-  font-size: 1rem;
+  font-size: var(--fs-md);
   /* padding-top: 1.3rem !important; */
 }
 
 .select-lg .select-floating-label {
-  font-size: 1.1rem;
+  font-size: var(--fs-md);
   /* padding-top: 1.2rem !important; */
 }
 
@@ -172,13 +172,13 @@
 .form-floating.select-sm .select__value-container {
   padding-top: 0.8rem !important;
   padding-left: 0.66rem !important;
-  font-size: 0.9rem !important;
+  font-size: var(--fs-base) !important;
 }
 
 .form-floating.select-lg .select__value-container {
   padding-top: 1rem !important;
   padding-left: 0.6rem !important;
-  font-size: 1.1rem !important;
+  font-size: var(--fs-md) !important;
 }
 
 

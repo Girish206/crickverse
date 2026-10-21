@@ -4,7 +4,7 @@ import { useCricketTournaments } from "../../../api/hooks/cricket/useCricketTour
 import type { CricketMatch, CricketMatchStatus } from "../../../api/types";
 import { ListCard } from "../../components/ListCard";
 import { Button } from "../../components/Button";
-import DefaultModal from "../../dms/components/DefaultModal";
+import { BottomSheet } from "../BottomSheet";
 import SelectInput from "../../dms/components/SelectInput";
 import { CricketKpis } from "../CricketKpis";
 import { CricketMatchForm } from "./CricketMatchForm";
@@ -132,13 +132,9 @@ export function CricketMatchesList() {
       )}
 
       {creating && (
-        <DefaultModal
-          title="Schedule Match"
-          onClose={() => setCreating(false)}
-          showFooter={false}
-          size="lg"
-          component={<CricketMatchForm tournamentId={tournamentId ?? undefined} onSaved={() => setCreating(false)} />}
-        />
+        <BottomSheet title="Schedule Match" onClose={() => setCreating(false)} wide>
+          <CricketMatchForm tournamentId={tournamentId ?? undefined} onSaved={() => setCreating(false)} />
+        </BottomSheet>
       )}
     </ListCard>
   );

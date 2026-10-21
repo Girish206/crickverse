@@ -9,8 +9,24 @@ export interface CricketKpi {
   hint?: string;
 }
 
-// A row of stat tiles at the top of a cricket page.
-export function CricketKpis({ items }: { items: CricketKpi[] }) {
+// A row of stat tiles at the top of a cricket page. "strip" packs them into
+// one slim bar of columns, for headers that are already busy.
+export function CricketKpis({ items, variant = "tiles" }: { items: CricketKpi[]; variant?: "tiles" | "strip" }) {
+  if (variant === "strip") {
+    return (
+      <div className="cricket-kpi-strip">
+        {items.map((item) => (
+          <div className={`cricket-kpi-cell admin-user-stat-${item.tone}`} key={item.label} title={item.hint}>
+            <strong>
+              <i className={`fa-solid ${item.icon}`} aria-hidden="true"></i>
+              {item.value}
+            </strong>
+            <small>{item.label}</small>
+          </div>
+        ))}
+      </div>
+    );
+  }
   return (
     <div className="cricket-kpis">
       {items.map((item) => (

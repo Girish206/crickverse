@@ -6,7 +6,7 @@ import { ListCard } from "../../components/ListCard";
 import { Button } from "../../components/Button";
 import { RowActions } from "../../components/RowActions";
 import { confirmDelete } from "../../components/confirmDelete";
-import DefaultModal from "../../dms/components/DefaultModal";
+import { BottomSheet } from "../BottomSheet";
 import { CricketTournamentForm } from "./CricketTournamentForm";
 import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
 import { CricketKpis } from "../CricketKpis";
@@ -108,13 +108,13 @@ export function CricketTournamentsList() {
       )}
 
       {modal && (modal.mode === "new" || editing) && (
-        <DefaultModal
+        <BottomSheet
           title={modal.mode === "edit" ? "Edit Tournament" : "New Tournament"}
           onClose={() => setModal(null)}
-          showFooter={false}
-          size="lg"
-          component={<CricketTournamentForm existing={editing} onSaved={() => setModal(null)} />}
-        />
+          wide
+        >
+          <CricketTournamentForm existing={editing} onSaved={() => setModal(null)} />
+        </BottomSheet>
       )}
     </ListCard>
   );

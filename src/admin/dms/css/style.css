@@ -20,7 +20,7 @@
   color: #fff;
   padding: 8px 14px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 500;
   white-space: nowrap;
   z-index: 999999 !important;
@@ -72,7 +72,7 @@
   /* smaller vertical and horizontal padding */
   margin-bottom: 0.5rem;
   /* optional: reduce bottom spacing */
-  font-size: 1rem;
+  font-size: var(--fs-md);
   /* slightly smaller font */
   line-height: 1.2;
   /* tighter line height */
@@ -118,7 +118,7 @@
 
 .header1 {
   color: var(--primary);
-  font-size: 35px !important;
+  font-size: var(--fs-2xl) !important;
   font-weight: 600 !important;
 }
 
@@ -225,13 +225,13 @@
 }
 
 .swal2-title {
-  font-size: 1.05rem !important;
+  font-size: var(--fs-md) !important;
   padding: 0 !important;
   margin-bottom: 0.25rem !important;
 }
 
 .swal2-html-container {
-  font-size: 0.82rem !important;
+  font-size: var(--fs-sm) !important;
   margin: 0.4rem 0 1rem !important;
 }
 
@@ -242,6 +242,6 @@
 
 .swal2-confirm,
 .swal2-cancel {
-  font-size: 0.82rem !important;
+  font-size: var(--fs-sm) !important;
   padding: 0.5em 1.1em !important;
 }

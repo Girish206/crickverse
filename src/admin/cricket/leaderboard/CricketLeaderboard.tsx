@@ -4,7 +4,9 @@ import { useCricketTournaments } from "../../../api/hooks/cricket/useCricketTour
 import type { CricketMatch, CricketTournament } from "../../../api/types";
 import { ListCard } from "../../components/ListCard";
 import SelectInput from "../../dms/components/SelectInput";
-import { usePlayerNames } from "../matches/matchUtils";
+import { usePlayerNames, usePlayerPhotos } from "../matches/matchUtils";
+import { AwardCard } from "../matches/AwardCard";
+import { PlayerAvatar } from "../players/PlayerAvatar";
 import {
   battingAverage,
   bestBowling,
@@ -20,9 +22,19 @@ import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
 
+type Category = "overall" | "batting" | "bowling" | "fielding";
+
+const CATEGORIES: { value: Category; label: string }[] = [
+  { value: "overall", label: "Overall" },
+  { value: "batting", label: "Batting" },
+  { value: "bowling", label: "Bowling" },
+  { value: "fielding", label: "Fielding" },
+];
+
 interface Board {
   title: string;
   icon: string;
+  category: Category;
   // Who qualifies, best first.
   rank: (rows: PlayerStats[]) => PlayerStats[];
   value: (s: PlayerStats) => string | number;
@@ -35,29 +47,15 @@ const BOARDS: Board[] = [
   {
     title: "MVP",
     icon: "fa-star",
+    category: "overall",
     rank: (rows) => rows.filter((s) => s.impact > 0).sort((a, b) => b.impact - a.impact || b.playerOfMatch - a.playerOfMatch),
     value: (s) => points(s.impact),
     detail: (s) => `${impactPerMatch(s)} pts/match · ${s.runs} runs · ${s.wickets} wkts`,
   },
   {
-    title: "Best Batter",
-    icon: "fa-baseball-bat-ball",
-    rank: (rows) =>
-      rows.filter((s) => s.runs > 0).sort((a, b) => b.battingImpact - a.battingImpact || b.runs - a.runs),
-    value: (s) => points(s.battingImpact),
-    detail: (s) => `${s.runs} runs · avg ${battingAverage(s)} · SR ${strikeRate(s.runs, s.ballsFaced)}`,
-  },
-  {
-    title: "Best Bowler",
-    icon: "fa-baseball",
-    rank: (rows) =>
-      rows.filter((s) => s.ballsBowled > 0).sort((a, b) => b.bowlingImpact - a.bowlingImpact || b.wickets - a.wickets),
-    value: (s) => points(s.bowlingImpact),
-    detail: (s) => `${s.wickets} wkts · econ ${rate(s.runsConceded, s.ballsBowled)} · best ${bestBowling(s)}`,
-  },
-  {
     title: "Best Fielder",
     icon: "fa-hands",
+    category: "fielding",
     rank: (rows) =>
       rows.filter((s) => dismissals(s) > 0).sort((a, b) => b.fieldingImpact - a.fieldingImpact || dismissals(b) - dismissals(a)),
     value: (s) => points(s.fieldingImpact),
@@ -66,6 +64,7 @@ const BOARDS: Board[] = [
   {
     title: "Most Runs",
     icon: "fa-person-running",
+    category: "batting",
     rank: (rows) => rows.filter((s) => s.runs > 0).sort((a, b) => b.runs - a.runs || a.ballsFaced - b.ballsFaced),
     value: (s) => s.runs,
     detail: (s) => `${s.innings} inns · avg ${battingAverage(s)} · SR ${strikeRate(s.runs, s.ballsFaced)}`,
@@ -73,6 +72,7 @@ const BOARDS: Board[] = [
   {
     title: "Most Wickets",
     icon: "fa-crosshairs",
+    category: "bowling",
     rank: (rows) => rows.filter((s) => s.wickets > 0).sort((a, b) => b.wickets - a.wickets || a.runsConceded - b.runsConceded),
     value: (s) => s.wickets,
     detail: (s) => `best ${bestBowling(s)} · econ ${rate(s.runsConceded, s.ballsBowled)}`,
@@ -80,6 +80,7 @@ const BOARDS: Board[] = [
   {
     title: "Highest Score",
     icon: "fa-arrow-trend-up",
+    category: "batting",
     rank: (rows) => rows.filter((s) => s.innings > 0).sort((a, b) => b.highest - a.highest),
     value: (s) => `${s.highest}${s.highestNotOut ? "*" : ""}`,
     detail: (s) => `${s.fifties} fifties · ${s.hundreds} hundreds`,
@@ -87,6 +88,7 @@ const BOARDS: Board[] = [
   {
     title: "Best Bowling",
     icon: "fa-bullseye",
+    category: "bowling",
     rank: (rows) =>
       rows.filter((s) => s.bestWickets > 0).sort((a, b) => b.bestWickets - a.bestWickets || a.bestRuns - b.bestRuns),
     value: (s) => bestBowling(s),
@@ -95,6 +97,7 @@ const BOARDS: Board[] = [
   {
     title: "Most Sixes",
     icon: "fa-6",
+    category: "batting",
     rank: (rows) => rows.filter((s) => s.sixes > 0).sort((a, b) => b.sixes - a.sixes),
     value: (s) => s.sixes,
     detail: (s) => `${s.runs} runs`,
@@ -102,6 +105,7 @@ const BOARDS: Board[] = [
   {
     title: "Most Fours",
     icon: "fa-4",
+    category: "batting",
     rank: (rows) => rows.filter((s) => s.fours > 0).sort((a, b) => b.fours - a.fours),
     value: (s) => s.fours,
     detail: (s) => `${s.runs} runs`,
@@ -109,6 +113,7 @@ const BOARDS: Board[] = [
   {
     title: "Best Strike Rate",
     icon: "fa-bolt",
+    category: "batting",
     // At least 10 balls faced.
     rank: (rows) =>
       rows.filter((s) => s.ballsFaced >= 10).sort((a, b) => b.runs / b.ballsFaced - a.runs / a.ballsFaced),
@@ -118,6 +123,7 @@ const BOARDS: Board[] = [
   {
     title: "Best Economy",
     icon: "fa-shield-halved",
+    category: "bowling",
     // At least 2 overs bowled.
     rank: (rows) =>
       rows
@@ -129,6 +135,7 @@ const BOARDS: Board[] = [
   {
     title: "Most Catches",
     icon: "fa-hand",
+    category: "fielding",
     rank: (rows) => rows.filter((s) => s.catches > 0).sort((a, b) => b.catches - a.catches),
     value: (s) => s.catches,
     detail: (s) => `${s.stumpings} stumpings · ${s.runOuts} run-outs`,
@@ -136,91 +143,160 @@ const BOARDS: Board[] = [
   {
     title: "Player of the Match",
     icon: "fa-medal",
+    category: "overall",
     rank: (rows) => rows.filter((s) => s.playerOfMatch > 0).sort((a, b) => b.playerOfMatch - a.playerOfMatch),
     value: (s) => s.playerOfMatch,
     detail: (s) => `in ${s.matches} matches`,
   },
 ];
 
-// Leaderboard cards (top 5 each) over the given matches; `only` limits it
-// to some boards by title.
+// Tournament (or all-time) stats over the given matches: award cards for the
+// headline boards, then one board at a time picked by category tab and
+// dropdown. `only` instead shows those boards side by side as compact cards
+// (the dashboard). `playerIds` narrows it to those players (a team's page),
+// with `scope` naming whose heroes they are.
 export function LeaderboardGrid({
   matches,
   limit = 5,
   only,
+  playerIds,
+  scope = "tournament",
 }: {
   matches: CricketMatch[];
   limit?: number;
   only?: string[];
+  playerIds?: number[];
+  scope?: string;
 }) {
   const nameOf = usePlayerNames();
-  const rows = [...playerStats(matches).values()];
+  const photoOf = usePlayerPhotos();
+  const rows = [...playerStats(matches).values()].filter((row) => !playerIds || playerIds.includes(row.playerId));
   if (!matches.some((match) => match.innings.some((innings) => innings.balls.length > 0))) {
     return <div className="admin-empty-state">Stats appear once matches are scored.</div>;
   }
-  // The #1 of the headline boards, shown as award cards above the full grid.
-  const headline = only
-    ? []
-    : [
-        { title: "Player of the tournament", board: BOARDS[0], featured: true },
-        { title: "Best batter", board: BOARDS[1] },
-        { title: "Best bowler", board: BOARDS[2] },
-        { title: "Best fielder", board: BOARDS[3] },
-      ]
-        .map((award) => ({ ...award, top: award.board.rank(rows)[0] }))
-        .filter((award) => award.top);
-  return (
-    <>
-      {headline.length > 0 && (
-        <div className="cricket-award-grid cricket-tour-awards">
-          {headline.map((award) => (
-            <div key={award.title} className={`cricket-award ${award.featured ? "is-featured" : ""}`}>
-              <span className="cricket-award-title">
-                <i className={`fa-solid ${award.board.icon}`} aria-hidden="true"></i> {award.title}
-              </span>
-              <strong className="cricket-award-name">{nameOf(award.top.playerId)}</strong>
-              <span className="cricket-award-line">{award.board.detail(award.top)}</span>
-              <span className="cricket-award-points">{award.board.value(award.top)} pts</span>
-            </div>
-          ))}
-        </div>
-      )}
-      <LeaderboardCards rows={rows} limit={limit} only={only} />
-    </>
-  );
-}
-
-function LeaderboardCards({ rows, limit, only }: { rows: PlayerStats[]; limit: number; only?: string[] }) {
-  const nameOf = usePlayerNames();
-  return (
-    <div className="cricket-board-grid">
-      {BOARDS.filter((board) => !only || only.includes(board.title)).map((board) => {
-        const ranked = board.rank(rows).slice(0, limit);
-        return (
+  if (only) {
+    return (
+      <div className="cricket-board-grid">
+        {BOARDS.filter((board) => only.includes(board.title)).map((board) => (
           <section className="cricket-panel" key={board.title}>
             <h2 className="cricket-section-title">
               <i className={`fa-solid ${board.icon}`} aria-hidden="true"></i> {board.title}
             </h2>
-            {ranked.length === 0 ? (
-              <p className="admin-hint mb-0">No one yet.</p>
-            ) : (
-              <ol className="cricket-board-list">
-                {ranked.map((s, index) => (
-                  <li key={s.playerId}>
-                    <span className="cricket-board-rank">{index + 1}</span>
-                    <span className="cricket-board-name">
-                      <strong>{nameOf(s.playerId)}</strong>
-                      <small>{board.detail(s)}</small>
-                    </span>
-                    <span className="cricket-board-value">{board.value(s)}</span>
-                  </li>
-                ))}
-              </ol>
-            )}
+            <BoardList board={board} rows={rows} limit={limit} />
           </section>
+        ))}
+      </div>
+    );
+  }
+  // The #1 of the headline boards, shown as award cards above the boards.
+  const board = (title: string) => BOARDS.find((b) => b.title === title)!;
+  const headline = [
+    { title: `Player of the ${scope}`, board: board("MVP"), label: "MVP", featured: true },
+    { title: "Top run scorer", board: board("Most Runs"), label: "Runs" },
+    { title: "Top wicket taker", board: board("Most Wickets"), label: "Wkts" },
+    { title: "Best fielder", board: board("Best Fielder"), label: "Pts" },
+  ]
+    .map((award) => ({ ...award, top: award.board.rank(rows)[0] }))
+    .filter((award) => award.top);
+  return (
+    <>
+      {headline.length > 0 && (
+        <section className="cricket-awards cricket-tour-awards">
+          <h2 className="cricket-section-title">
+            <i className="fa-solid fa-award" aria-hidden="true"></i> Heroes of the {scope}
+          </h2>
+          <div className="cricket-award-grid">
+            {headline.map((award) => (
+              <AwardCard
+                key={award.title}
+                title={award.title}
+                icon={award.board.icon}
+                name={nameOf(award.top.playerId)}
+                photoUrl={photoOf(award.top.playerId)}
+                line={award.board.detail(award.top)}
+                pointsLabel={award.label}
+                points={award.board.value(award.top)}
+                featured={award.featured}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+      <StatsBoards rows={rows} />
+    </>
+  );
+}
+
+// Category tabs, a dropdown of that category's boards, and the chosen
+// board's top ten.
+function StatsBoards({ rows }: { rows: PlayerStats[] }) {
+  const [category, setCategory] = useState<Category>("overall");
+  const [title, setTitle] = useState(BOARDS[0].title);
+  const boards = BOARDS.filter((board) => board.category === category);
+  const board = boards.find((b) => b.title === title) ?? boards[0];
+  return (
+    <section className="cricket-stats">
+      <div className="admin-segmented cricket-tabs cricket-stats-tabs" role="tablist" aria-label="Stat category">
+        {CATEGORIES.map((c) => (
+          <button
+            key={c.value}
+            type="button"
+            role="tab"
+            aria-selected={category === c.value}
+            className={category === c.value ? "active" : ""}
+            onClick={() => {
+              setCategory(c.value);
+              setTitle(BOARDS.find((b) => b.category === c.value)!.title);
+            }}
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
+      <div className="cricket-stats-head">
+        <h2 className="cricket-section-title mb-0">
+          <i className={`fa-solid ${board.icon}`} aria-hidden="true"></i> {board.title}
+        </h2>
+        <select
+          className="cricket-pill-select"
+          aria-label="Leaderboard"
+          value={board.title}
+          onChange={(event) => setTitle(event.target.value)}
+        >
+          {boards.map((b) => (
+            <option key={b.title} value={b.title}>
+              {b.title}
+            </option>
+          ))}
+        </select>
+      </div>
+      <BoardList board={board} rows={rows} limit={10} />
+    </section>
+  );
+}
+
+function BoardList({ board, rows, limit }: { board: Board; rows: PlayerStats[]; limit: number }) {
+  const nameOf = usePlayerNames();
+  const photoOf = usePlayerPhotos();
+  const ranked = board.rank(rows).slice(0, limit);
+  if (ranked.length === 0) return <p className="admin-hint mb-0">No one yet.</p>;
+  return (
+    <ol className="cricket-board-list">
+      {ranked.map((s, index) => {
+        const name = nameOf(s.playerId);
+        return (
+          <li key={s.playerId} className={index < 3 ? `is-podium is-rank-${index + 1}` : ""}>
+            <span className="cricket-board-rank">{index + 1}</span>
+            <PlayerAvatar name={name} photoUrl={photoOf(s.playerId)} className="cricket-board-avatar" />
+            <span className="cricket-board-name">
+              <strong>{name}</strong>
+              <small>{board.detail(s)}</small>
+            </span>
+            <span className="cricket-board-value">{board.value(s)}</span>
+          </li>
         );
       })}
-    </div>
+    </ol>
   );
 }
 

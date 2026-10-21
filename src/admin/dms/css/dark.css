@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Admin dark theme — the navy palette of the public site's dark mode
+   Admin dark theme — the charcoal palette of the public site's dark mode
    (src/styles/brand.css), applied while useAdminTheme() sets
    <html data-bs-theme="dark">.
 
@@ -17,14 +17,14 @@
   --adm-bg: var(--brand-navy-night);
   --adm-surface: var(--brand-navy-surface);
   --adm-raised: var(--brand-navy-raised);
-  --adm-glass: rgba(14, 16, 48, 0.86);
+  --adm-glass: rgba(23, 24, 27, 0.86);
   --adm-line: rgba(255, 255, 255, 0.09);
   --adm-line-strong: rgba(255, 255, 255, 0.16);
   --adm-hover: rgba(255, 255, 255, 0.05);
-  --adm-text: #f1eff9;
-  --adm-text-2: #c9c7de;
+  --adm-text: #f3f4f6;
+  --adm-text-2: #c9ccd2;
 
-  /* Brand: the vivid orange reads on navy (deep orange is too dark). */
+  /* Brand: the vivid orange reads on the dark base (deep orange is too dark). */
   --primary: var(--brand-orange);
   --primary-rgb: var(--brand-orange-rgb);
   --primary-gradient: var(--brand-gradient-night);
@@ -75,9 +75,9 @@
   --sidebar-text-muted: #a3a2bf;
   --sidebar-shadow: 0 30px 70px rgba(0, 0, 0, 0.5);
 
-  /* Bootstrap, so its components use the same navy surfaces. */
+  /* Bootstrap, so its components use the same charcoal surfaces. */
   --bs-body-bg: var(--adm-surface);
-  --bs-body-bg-rgb: 14, 16, 48;
+  --bs-body-bg-rgb: 23, 24, 27;
   --bs-body-color: var(--adm-text-2);
   --bs-emphasis-color: var(--adm-text);
   --bs-heading-color: var(--adm-text);
@@ -98,7 +98,7 @@
 }
 :root[data-bs-theme="dark"] .layout-wrapper,
 :root[data-bs-theme="dark"] .layout-wrapper[class*="bg-"] {
-  --bg-overlay: linear-gradient(rgba(7, 8, 32, 0.82), rgba(7, 8, 32, 0.82));
+  --bg-overlay: linear-gradient(rgba(15, 16, 18, 0.82), rgba(15, 16, 18, 0.82));
 }
 :root[data-bs-theme="dark"] .admin-bg-shape {
   opacity: 0.55;
@@ -114,12 +114,12 @@
 /* ---------- Navbar ---------- */
 
 :root[data-bs-theme="dark"] .navbar {
-  background: rgba(7, 8, 32, 0.9);
+  background: rgba(15, 16, 18, 0.9);
   border-bottom-color: var(--adm-line);
   box-shadow: 0 2px 15px rgba(0, 0, 0, 0.3);
 }
 :root[data-bs-theme="dark"] .navbar-scrolled {
-  background: rgba(7, 8, 32, 0.96);
+  background: rgba(15, 16, 18, 0.96);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
 }
 :root[data-bs-theme="dark"] .navbar .nav {

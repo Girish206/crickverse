@@ -1,5 +1,7 @@
 import type { CricketMatch } from "../../../api/types";
-import { impactLine, matchAwards, points, type ImpactRow, type NameOf } from "../stats";
+import { impactLine, matchAwards, oversText, points, type ImpactRow, type NameOf } from "../stats";
+import { AwardCard } from "./AwardCard";
+import { usePlayerPhotos } from "./matchUtils";
 
 interface Award {
   title: string;
@@ -10,9 +12,42 @@ interface Award {
   featured?: boolean;
 }
 
+// The scorecard-style figures: 23(15) 2·4s 1·6s | 3.0-1-10-3, then any
+// fielding. Falls back to the plain impact line when the player did neither.
+function HeroFigures({ row }: { row: ImpactRow }) {
+  const { bat, bowl } = row;
+  const bowled = bowl && bowl.legalBalls > 0;
+  const fielding = [
+    row.catches && `${row.catches} ct`,
+    row.stumpings && `${row.stumpings} st`,
+    row.runOuts && `${row.runOuts} ro`,
+  ].filter(Boolean);
+  if (!bat && !bowled) return <>{impactLine(row) || "—"}</>;
+  return (
+    <>
+      {bat && (
+        <span className="cricket-award-fig">
+          {bat.runs}
+          {bat.out ? "" : "*"}
+          <small>({bat.balls})</small> {bat.fours}
+          <small>4s</small> {bat.sixes}
+          <small>6s</small>
+        </span>
+      )}
+      {bowled && (
+        <span className="cricket-award-fig">
+          {oversText(bowl.legalBalls)}-{bowl.maidens}-{bowl.runs}-{bowl.wickets}
+        </span>
+      )}
+      {fielding.length > 0 && <span className="cricket-award-fig">{fielding.join(" · ")}</span>}
+    </>
+  );
+}
+
 // Player of the match and best batter / bowler / fielder, picked from the
 // impact points (see matchImpact in stats.ts). The full ranking is the MVP tab.
 export function MatchAwards({ match, nameOf }: { match: CricketMatch; nameOf: NameOf }) {
+  const photoOf = usePlayerPhotos();
   const awards = matchAwards(match);
   if (awards.rows.length === 0) return null;
   const finished = match.status === "completed";
@@ -40,23 +75,25 @@ export function MatchAwards({ match, nameOf }: { match: CricketMatch; nameOf: Na
   return (
     <section className="cricket-awards">
       <h2 className="cricket-section-title">
-        <i className="fa-solid fa-award" aria-hidden="true"></i> {finished ? "Match awards" : "Top performers"}
+        <i className="fa-solid fa-award" aria-hidden="true"></i> {finished ? "Heroes of the match" : "Top performers"}
       </h2>
       <div className="cricket-award-grid">
         {cards
           .filter((card) => card.row)
           .map((card) => (
-            <div key={card.title} className={`cricket-award ${card.featured ? "is-featured" : ""}`}>
-              <span className="cricket-award-title">
-                <i className={`fa-solid ${card.icon}`} aria-hidden="true"></i> {card.title}
-              </span>
-              <strong className="cricket-award-name">{nameOf(card.row!.playerId)}</strong>
-              <span className="cricket-award-line">{impactLine(card.row!)}</span>
-              <span className="cricket-award-points">
-                {points(card.score(card.row!))} pts
-                {card.note && <small> · {card.note}</small>}
-              </span>
-            </div>
+            <AwardCard
+              key={card.title}
+              title={card.title}
+              icon={card.icon}
+              name={nameOf(card.row!.playerId)}
+              photoUrl={photoOf(card.row!.playerId)}
+              team={match.teams[card.row!.team]?.name}
+              line={<HeroFigures row={card.row!} />}
+              pointsLabel={card.featured ? "MVP" : "Pts"}
+              points={points(card.score(card.row!))}
+              note={card.note}
+              featured={card.featured}
+            />
           ))}
       </div>
     </section>

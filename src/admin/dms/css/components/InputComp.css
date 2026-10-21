@@ -12,11 +12,11 @@
 .form-control {
   border: 1px solid #c8c6c6 !important;
   border-radius: 10px !important;
-  font-size: 1rem !important;
+  font-size: var(--fs-md) !important;
 }
 
 .form-control-label {
-  font-size: 1rem;
+  font-size: var(--fs-md);
 }
 
 /* Base focus state */
@@ -56,7 +56,7 @@
 }
 
 .form-control-sm {
-  font-size: 0.9rem !important;
+  font-size: var(--fs-base) !important;
 }
 
 /* Large (LG) Variant */
@@ -66,15 +66,15 @@
 }
 
 .form-control-lg {
-  font-size: 1.1rem !important;
+  font-size: var(--fs-md) !important;
 }
 
 .form-control-sm .form-control-label {
-  font-size: 0.9rem;
+  font-size: var(--fs-base);
 }
 
 .form-control-lg .form-control-label {
-  font-size: 1.1rem;
+  font-size: var(--fs-md);
 }
 
 
@@ -142,7 +142,7 @@
 
 /* Small input label adjustment */
 .form-floating > .form-control-sm ~ label {
-  font-size: 0.85rem;
+  font-size: var(--fs-sm);
 }
 
 /* Floating animation (when focused or filled) */
@@ -162,7 +162,7 @@
   top: 50%;
   transform: translateY(-50%);
   color: #888;
-  font-size: 1.2rem !important;
+  font-size: var(--fs-lg) !important;
   z-index: 10 !important;
   padding: 5px;
   border-radius: 10px !important;
@@ -176,11 +176,11 @@
 
 /* Icon sizing for floating/sm variants */
 .form-floating .input-icon {
-  font-size: 1.3rem !important;
+  font-size: var(--fs-lg) !important;
 }
 
 .form-floating .form-control-sm ~ .input-icon {
-  font-size: 1.1rem !important;
+  font-size: var(--fs-md) !important;
 }
 
 /* Icon Position: Left */
@@ -256,7 +256,7 @@
 /* Standard placeholders */
 .form-control::placeholder {
   color: #a2a4a6 !important;
-  font-size: 14px !important;
+  font-size: var(--fs-base) !important;
 }
 
 /* Hide placeholder in floating state until label moves up */
@@ -270,7 +270,7 @@
 .form-floating.no-label > .form-control::placeholder {
   color: #a2a4a6 !important;
   opacity: 1 !important;
-  font-size: 14px !important;
+  font-size: var(--fs-base) !important;
 }
 
 

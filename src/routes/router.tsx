@@ -32,6 +32,10 @@ export const router = createBrowserRouter([
             lazy: page(() => import("../admin/cricket/tournaments/CricketTournamentPage"), (m) => m.CricketTournamentPage),
           },
           {
+            path: "tournaments/:id/teams/:team",
+            lazy: page(() => import("../admin/cricket/tournaments/CricketTeamPage"), (m) => m.CricketTeamPage),
+          },
+          {
             path: "matches/:id",
             lazy: page(() => import("../admin/cricket/matches/CricketMatchPage"), (m) => m.CricketMatchPage),
           },
@@ -53,6 +57,10 @@ export const router = createBrowserRouter([
               {
                 path: "matches",
                 lazy: page(() => import("../admin/cricket/matches/CricketMatchesList"), (m) => m.CricketMatchesList),
+              },
+              {
+                path: "matches/:id/setup",
+                lazy: page(() => import("../admin/cricket/matches/MatchSetup"), (m) => m.CricketMatchSetupPage),
               },
               {
                 path: "leaderboard",

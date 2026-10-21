@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { apiClient, getAdminToken, setAdminToken } from "../api/client";
 import type { ApiEnvelope } from "../api/types";
 
-// CrickVerse signs in with the shared Girish Creations account (same API,
+// Namma Aaata signs in with the shared Girish Creations account (same API,
 // same /admin/auth/login), but only accounts with cricket access get in.
 interface AdminIdentity {
   sub: string;
@@ -95,10 +95,10 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// A valid Girish Creations account that hasn't been given CrickVerse access.
+// A valid Girish Creations account that hasn't been given Namma Aaata access.
 export class NoCricketAccessError extends Error {
   constructor() {
-    super("This account doesn't have CrickVerse access yet. Ask your organiser to turn it on.");
+    super("This account doesn't have Namma Aaata access yet. Ask your organiser to turn it on.");
   }
 }
 

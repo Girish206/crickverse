@@ -118,7 +118,19 @@ export interface CricketMatchTeam {
 
 export type CricketMatchStatus = "scheduled" | "live" | "completed" | "abandoned";
 
-export type CricketMatchStage = "league" | "quarter-final" | "semi-final" | "final";
+export type CricketMatchStage =
+  | "league"
+  | "group"
+  | "super-league"
+  | "round-of-16"
+  | "quarter-final"
+  | "eliminator"
+  | "qualifier-1"
+  | "qualifier-2"
+  | "semi-final"
+  | "third-place"
+  | "final"
+  | "friendly";
 
 export interface CricketMatch {
   id: number;

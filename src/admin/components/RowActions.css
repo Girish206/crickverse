@@ -10,7 +10,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8rem;
+  font-size: var(--fs-sm);
   line-height: 1;
 }
 

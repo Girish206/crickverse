@@ -1,13 +1,13 @@
 {
   "id": "/",
-  "name": "CrickVerse",
-  "short_name": "CrickVerse",
+  "name": "Namma Aaata — ನಮ್ಮ ಆಟ",
+  "short_name": "Namma Aaata",
   "description": "Cricket tournaments, live scoring and stats.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#070820",
-  "theme_color": "#070820",
+  "background_color": "#0f1012",
+  "theme_color": "#0f1012",
   "icons": [
     { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
     { "src": "/icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }

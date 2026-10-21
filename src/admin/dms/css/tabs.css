@@ -6,7 +6,7 @@
 
 .custom-nav-pills .nav-link {
   border-radius: 10px;
-  font-size: 14px; /* Reduced font size */
+  font-size: var(--fs-base); /* Reduced font size */
   font-weight: 500;
   /* padding: 6px 20px;  */
   transition: all 0.3s ease;

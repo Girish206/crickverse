@@ -1,5 +1,9 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { ModalContext } from "../dms/components/modalContext";
+
+// Open sheets, innermost last — Escape closes only the top one.
+const openSheets: object[] = [];
 
 interface BottomSheetProps {
   title: string;
@@ -11,17 +15,25 @@ interface BottomSheetProps {
   footer?: ReactNode;
   // Fill the whole screen on phones (long lists).
   fullScreen?: boolean;
+  // Wider card on desktop, for full forms.
+  wide?: boolean;
 }
 
 // A sheet that slides up from the bottom of the screen (a centred card on
 // wider screens) — quicker to reach with a thumb than a modal mid-screen.
-export function BottomSheet({ title, icon, onClose, children, footer, fullScreen = false }: BottomSheetProps) {
+// Admin forms (SubmitButton / ModalActions) portal their Cancel/Save buttons
+// into its footer, just as they do inside a DefaultModal.
+export function BottomSheet({ title, icon, onClose, children, footer, fullScreen = false, wide = false }: BottomSheetProps) {
+  const [footerSlot, setFooterSlot] = useState<HTMLElement | null>(null);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const self = {};
+    openSheets.push(self);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && openSheets.at(-1) === self && onClose();
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     document.addEventListener("keydown", onKey);
     return () => {
+      openSheets.splice(openSheets.indexOf(self), 1);
       document.body.style.overflow = previous;
       document.removeEventListener("keydown", onKey);
     };
@@ -30,7 +42,7 @@ export function BottomSheet({ title, icon, onClose, children, footer, fullScreen
   return createPortal(
     <div className="cricket-sheet-backdrop" onClick={onClose}>
       <div
-        className={`cricket-sheet ${fullScreen ? "is-full" : ""}`}
+        className={`cricket-sheet ${fullScreen ? "is-full" : ""} ${wide ? "is-wide" : ""}`}
         role="dialog"
         aria-modal="true"
         aria-label={title}
@@ -48,8 +60,15 @@ export function BottomSheet({ title, icon, onClose, children, footer, fullScreen
             <i className="fa-solid fa-xmark" aria-hidden="true"></i>
           </button>
         </header>
-        <div className="cricket-sheet-body">{children}</div>
-        {footer && <footer className="cricket-sheet-foot">{footer}</footer>}
+        <ModalContext.Provider value={{ footer: footerSlot, close: onClose }}>
+          <div className="cricket-sheet-body">{children}</div>
+        </ModalContext.Provider>
+        {footer ? (
+          <footer className="cricket-sheet-foot">{footer}</footer>
+        ) : (
+          // Empty until a form portals its actions in; hidden while empty.
+          <footer className="cricket-sheet-foot cricket-sheet-slot" ref={setFooterSlot} />
+        )}
       </div>
     </div>,
     document.body,

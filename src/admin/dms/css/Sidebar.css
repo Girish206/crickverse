@@ -87,12 +87,12 @@
 
 .brand-name {
   font-weight: 800;
-  font-size: 1.1rem;
+  font-size: var(--fs-md);
   color: var(--primary-dark-2);
 }
 
 .brand-tagline {
-  font-size: 0.72rem;
+  font-size: var(--fs-2xs);
   color: var(--sidebar-text-muted);
   font-weight: 600;
 }
@@ -100,7 +100,7 @@
 /* Group Labels */
 .menu-group-label {
   padding: 12px 20px 4px;
-  font-size: 0.62rem;
+  font-size: var(--fs-3xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1.5px;
@@ -120,7 +120,7 @@
   padding: 10px 4px 4px !important;
   width: 100% !important;
   overflow: hidden;
-  font-size: 0.52rem;
+  font-size: var(--fs-3xs);
   text-align: center;
   letter-spacing: 0.5px;
   font-weight: 800;
@@ -186,7 +186,7 @@
   padding: 10px 18px !important;
   color: var(--sidebar-text) !important;
   font-weight: 500 !important;
-  font-size: 0.92rem !important;
+  font-size: var(--fs-base) !important;
   transition: all 0.2s var(--transition-cubic) !important;
   display: flex !important;
   align-items: center;
@@ -218,12 +218,12 @@
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  font-size: 1.25rem !important;
+  font-size: var(--fs-lg) !important;
   text-align: center !important;
 }
 
 .sidebar .nav-link i.icon {
-  font-size: 1.25rem;
+  font-size: var(--fs-lg);
   width: 24px;
   min-width: 24px;
   display: flex;
@@ -263,7 +263,7 @@
   z-index: 1100;
   box-shadow: 0 4px 10px rgba(var(--primary-rgb), 0.3);
   transition: all 0.3s ease;
-  font-size: 0.7rem;
+  font-size: var(--fs-2xs);
 }
 
 .sidebar-toggle-btn:hover {
@@ -346,7 +346,7 @@
 
 .submenu-link {
   padding: 10px 15px !important;
-  font-size: 0.9rem !important;
+  font-size: var(--fs-base) !important;
   border-radius: 14px !important;
   color: #64748b !important;
   display: flex !important;
@@ -391,14 +391,14 @@
 .user-name-highlight {
   font-weight: 800;
   color: var(--theme-text-dark);
-  font-size: 1rem;
+  font-size: var(--fs-md);
   line-height: 1.2;
 }
 
 .user-role-text {
   font-weight: 600;
   color: #64748b;
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
 }
 
 .logout-btn {
@@ -417,7 +417,7 @@
 }
 
 .logout-btn i {
-  font-size: 1.1rem;
+  font-size: var(--fs-md);
 }
 
 .logout-btn:hover {

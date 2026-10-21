@@ -23,7 +23,7 @@
 }
 
 .ki-card i {
-  font-size: 2rem;
+  font-size: var(--fs-2xl);
   background-color: #f8f9fa;
   padding: 0.75rem;
   border-radius: 1rem;
@@ -36,7 +36,7 @@
 
 .ki-card h5 {
   color: #333 !important;
-  font-size: 1.25rem;
+  font-size: var(--fs-lg);
   margin: 0;
   font-weight: 600;
 }
@@ -47,7 +47,7 @@
 }
 
 .ki-card small {
-  font-size: 0.875rem;
+  font-size: var(--fs-base);
   color: #666;
   display: block;
   margin-top: 0.25rem;
@@ -60,14 +60,14 @@
     gap: 0.75rem;
   }
   .ki-card i {
-    font-size: 1.5rem;
+    font-size: var(--fs-xl);
     padding: 0.5rem;
   }
   .ki-card h5 {
-    font-size: 1.1rem;
+    font-size: var(--fs-md);
   }
   .ki-card small {
-    font-size: 0.8rem;
+    font-size: var(--fs-sm);
   }
 }
 
@@ -81,11 +81,11 @@
     gap: 0.75rem;
   }
   .ki-card i {
-    font-size: 1.25rem;
+    font-size: var(--fs-lg);
     padding: 0.5rem;
   }
   .ki-card small {
-    font-size: 0.75rem;
+    font-size: var(--fs-xs);
   }
 }
 

@@ -1,4 +1,4 @@
-# CrickVerse
+# Namma Aaata (ನಮ್ಮ ಆಟ)
 
 Cricket tournaments, live scoring and stats. A Girish Creations project.
 

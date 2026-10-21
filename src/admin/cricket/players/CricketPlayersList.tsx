@@ -5,7 +5,7 @@ import { ListCard } from "../../components/ListCard";
 import { Button } from "../../components/Button";
 import { RowActions } from "../../components/RowActions";
 import { confirmDelete } from "../../components/confirmDelete";
-import DefaultModal from "../../dms/components/DefaultModal";
+import { BottomSheet } from "../BottomSheet";
 import { CricketPlayerForm, CricketPlayerLoginForm, CricketPlayersBulkForm } from "./CricketPlayerForm";
 import { formatMobile } from "../mobile";
 import { roleOf } from "../playerRoles";
@@ -148,51 +148,41 @@ export function CricketPlayersList() {
       )}
 
       {modal?.mode === "view" && players?.find((p) => p.id === modal.id) && (
-        <DefaultModal
-          title="Player Profile"
-          onClose={() => setModal(null)}
-          showFooter={false}
-          size="lg"
-          component={<CricketPlayerProfileLoader player={players.find((p) => p.id === modal.id)!} />}
-        />
+        <BottomSheet title="Player Profile" onClose={() => setModal(null)} wide>
+          <CricketPlayerProfileLoader player={players.find((p) => p.id === modal.id)!} />
+        </BottomSheet>
       )}
 
       {modal?.mode === "login" && modalPlayer && (
-        <DefaultModal
-          title="App Login"
-          onClose={() => setModal(null)}
-          showFooter={false}
-          size="md"
-          component={<CricketPlayerLoginForm player={modalPlayer} onDone={() => setModal(null)} />}
-        />
+        <BottomSheet title="App Login" onClose={() => setModal(null)}>
+          <CricketPlayerLoginForm player={modalPlayer} onDone={() => setModal(null)} />
+        </BottomSheet>
       )}
 
       {modal && modal.mode !== "view" && modal.mode !== "login" && (
-        <DefaultModal
+        <BottomSheet
           title={modal.mode === "edit" ? "Edit Player" : modal.mode === "bulk" ? "Add Players List" : "New Player"}
           onClose={() => setModal(null)}
-          showFooter={false}
-          size={modal.mode === "bulk" ? "lg" : "md"}
-          component={
-            modal.mode === "bulk" ? (
-              <CricketPlayersBulkForm
-                onSaved={({ added, skipped, skippedNames }) => {
-                  setModal(null);
-                  void Swal.fire({
-                    toast: true,
-                    position: "top-end",
-                    icon: "success",
-                    showConfirmButton: false,
-                    timer: 4000,
-                    title: `Added ${added} player${added === 1 ? "" : "s"}${skipped ? `, skipped ${skipped} already listed (${skippedNames.slice(0, 3).join(", ")}${skipped > 3 ? "…" : ""})` : ""}.`,
-                  });
-                }}
-              />
-            ) : (
-              <CricketPlayerForm id={modal.mode === "edit" ? modal.id : undefined} onSaved={() => setModal(null)} />
-            )
-          }
-        />
+          wide={modal.mode === "bulk"}
+        >
+          {modal.mode === "bulk" ? (
+            <CricketPlayersBulkForm
+              onSaved={({ added, skipped, skippedNames }) => {
+                setModal(null);
+                void Swal.fire({
+                  toast: true,
+                  position: "top-end",
+                  icon: "success",
+                  showConfirmButton: false,
+                  timer: 4000,
+                  title: `Added ${added} player${added === 1 ? "" : "s"}${skipped ? `, skipped ${skipped} already listed (${skippedNames.slice(0, 3).join(", ")}${skipped > 3 ? "…" : ""})` : ""}.`,
+                });
+              }}
+            />
+          ) : (
+            <CricketPlayerForm id={modal.mode === "edit" ? modal.id : undefined} onSaved={() => setModal(null)} />
+          )}
+        </BottomSheet>
       )}
     </ListCard>
   );

@@ -43,14 +43,15 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
 
                         <div className="navbar-brand-container d-flex align-items-center">
                             <div className="navbar-logo-box">
-                                <img src="/favicon.svg" alt="CrickVerse" className="img-fluid" />
+                                <img src="/favicon.svg" alt="Namma Aaata" className="img-fluid" />
                             </div>
                             <div className="navbar-brand-info ms-2 d-none d-sm-flex" style={{ flexDirection: "column", lineHeight: 1.3 }}>
-                                <span style={{ fontSize: "1rem", whiteSpace: "nowrap" }}>
+                                <span style={{ fontSize: "var(--fs-md)", whiteSpace: "nowrap" }}>
                                     <span className="cv-wordmark">
-                                        Crick<em>Verse</em>
+                                        Namma <em>Aaata</em>
                                     </span>
                                 </span>
+                                <span className="cv-wordmark-kn" lang="kn">ನಮ್ಮ ಆಟ</span>
                             </div>
                         </div>
                     </div>
@@ -70,7 +71,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
                     <div className="navbar-user-chip">
                         <div
                             className="user-avatar text-white rounded-circle d-flex align-items-center justify-content-center fw-bold"
-                            style={{ width: "36px", height: "36px", fontSize: "0.85rem", flexShrink: 0 }}
+                            style={{ width: "36px", height: "36px", fontSize: "var(--fs-sm)", flexShrink: 0 }}
                         >
                             {(admin?.name || admin?.email || "U").charAt(0).toUpperCase()}
                         </div>

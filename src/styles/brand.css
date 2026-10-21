@@ -1,8 +1,11 @@
 /* ==========================================================================
-   CrickVerse brand colours — the Girish Creations palette (navy, crimson,
-   amber) with one CrickVerse twist: the "orange" role is a cricket-ball
-   red-orange instead of the bulb orange. Every screen reads these through
+   Namma Aaata brand colours — the Karnataka flag: yellow (ಹಳದಿ) over red
+   (ಕೆಂಪು), with a red-orange between them for gradients and a deep
+   neutral charcoal for the dark theme. Every screen reads these through
    admin/dms/index.css and dark.css; change a value here and the app follows.
+
+   The variable names are roles kept from the original palette, so "navy"
+   is the dark base, "crimson" is the flag red and "amber" is the flag yellow.
 
    Which variant to use:
    - plain (--brand-orange …): vivid colours — gradients, decoration, icons
@@ -10,45 +13,46 @@
    - -deep: darker shades that keep white text on them, and small text on a
      white background, readable (≥ 4.5:1). Use for buttons and links on
      light backgrounds.
-   - -bright: lighter shades for text and accents on the navy background.
+   - -bright: lighter shades for text and accents on the dark background.
    ========================================================================== */
 
 :root {
   /* Logo colours */
-  --brand-navy: #0d0f2e;
-  --brand-crimson: #e8174f;
-  --brand-orange: #e8452c;
-  --brand-amber: #ffb308;
+  --brand-navy: #2a0f12;
+  --brand-crimson: #d7261e;
+  --brand-orange: #e8501f;
+  --brand-amber: #ffcd00;
 
   /* Readable on white / under white text */
-  --brand-crimson-deep: #c8103e;
+  --brand-crimson-deep: #b3141b;
   --brand-orange-deep: #c0311b;
-  --brand-amber-deep: #b45309;
+  --brand-amber-deep: #a16207;
 
-  /* Readable on navy */
-  --brand-crimson-bright: #ff4d6d;
-  --brand-orange-bright: #ff6a4d;
-  --brand-amber-bright: #ffc23d;
+  /* Readable on the dark base */
+  --brand-crimson-bright: #ff5a4e;
+  --brand-orange-bright: #ff7a45;
+  --brand-amber-bright: #ffd83d;
 
-  /* Navy surfaces (dark theme) */
-  --brand-navy-night: #070820;
-  --brand-navy-surface: #0e1030;
-  --brand-navy-raised: #171a42;
+  /* Charcoal surfaces (dark theme) */
+  --brand-navy-night: #0f1012;
+  --brand-navy-surface: #17181b;
+  --brand-navy-raised: #222428;
 
   /* "r, g, b" triplets, for rgba(var(--brand-…-rgb), alpha) */
-  --brand-navy-rgb: 13, 15, 46;
-  --brand-crimson-rgb: 232, 23, 79;
-  --brand-orange-rgb: 232, 69, 44;
+  --brand-navy-rgb: 42, 15, 18;
+  --brand-navy-night-rgb: 15, 16, 18;
+  --brand-crimson-rgb: 215, 38, 30;
+  --brand-orange-rgb: 232, 80, 31;
   --brand-orange-deep-rgb: 192, 49, 27;
-  --brand-amber-rgb: 255, 179, 8;
+  --brand-amber-rgb: 255, 205, 0;
 
-  /* Gradients (crimson → orange → amber, like the bulb). The button
-     gradients stop at orange so white text stays readable; amber only
-     appears in text and decorative gradients. */
-  --brand-gradient: linear-gradient(120deg, var(--brand-crimson-deep) 0%, #cc3a1c 55%, var(--brand-orange-deep) 100%);
-  --brand-gradient-night: linear-gradient(120deg, var(--brand-crimson) 0%, #e8452c 55%, #dc4a12 100%);
+  /* Gradients (red → orange → yellow, the flag read top to bottom in
+     reverse). The button gradients stop at orange so white text stays
+     readable; yellow only appears in text and decorative gradients. */
+  --brand-gradient: linear-gradient(120deg, var(--brand-crimson-deep) 0%, #c42a1a 55%, var(--brand-orange-deep) 100%);
+  --brand-gradient-night: linear-gradient(120deg, var(--brand-crimson) 0%, #e2401f 55%, #e0560f 100%);
   --brand-gradient-vivid: linear-gradient(120deg, var(--brand-crimson) 0%, var(--brand-orange) 55%, var(--brand-amber) 100%);
-  --brand-gradient-text: linear-gradient(100deg, var(--brand-crimson-deep) 0%, #e2520f 50%, #d97706 100%);
+  --brand-gradient-text: linear-gradient(100deg, var(--brand-crimson-deep) 0%, #d1400f 50%, var(--brand-amber-deep) 100%);
   --brand-gradient-text-night: linear-gradient(
     100deg,
     var(--brand-crimson-bright) 0%,

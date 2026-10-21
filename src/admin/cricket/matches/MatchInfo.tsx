@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { CricketMatch, CricketTournament } from "../../../api/types";
 import { BallTypeBadge } from "../CricketChoices";
+import { OrganiserCard } from "../OrganiserCard";
 import { labelOf, MATCH_TYPES, PITCH_TYPES } from "../cricketOptions";
 import { stageLabel } from "./matchUtils";
 
@@ -80,17 +81,8 @@ export function MatchInfo({
       </dl>
 
       {(tournament?.organiserName || tournament?.organiserMobile) && (
-        <p className="admin-hint mt-2 mb-0">
-          <i className="fa-solid fa-user-tie" aria-hidden="true"></i> Organised by {tournament.organiserName}
-          {tournament.organiserMobile && (
-            <>
-              {" · "}
-              <a href={`tel:${tournament.organiserMobile}`}>{tournament.organiserMobile}</a>
-            </>
-          )}
-        </p>
+        <OrganiserCard name={tournament.organiserName} mobile={tournament.organiserMobile} />
       )}
-
     </div>
   );
 }

@@ -4,20 +4,18 @@ import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers"
 import {
   useCricketTournament,
   useGenerateCricketTeams,
-  useMoveCricketPlayer,
-  useRemoveCricketTeam,
   useSetCricketMatchSets,
-  useSwapCricketPlayers,
 } from "../../../api/hooks/cricket/useCricketTournaments";
-import type { CricketPlayer } from "../../../api/types";
+import type { CricketMatch, CricketPlayer, CricketTournament } from "../../../api/types";
+import { avatarColorFor } from "../avatarColor";
+import { pointsTable } from "../stats";
 import { ListCard } from "../../components/ListCard";
 import { Button } from "../../components/Button";
 import { confirmAction } from "../../components/confirmDelete";
-import DefaultModal from "../../dms/components/DefaultModal";
+import { BottomSheet } from "../BottomSheet";
 import { CricketTournamentForm } from "./CricketTournamentForm";
 import { CricketSquadPicker } from "./CricketSquadPicker";
 import { AutoTeamCount, ExistingTeamPicker, TeamForm } from "./CricketTeamTools";
-import { CricketKpis } from "../CricketKpis";
 import { roleOf } from "../playerRoles";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { useCricketMatches } from "../../../api/hooks/cricket/useCricketMatches";
@@ -25,23 +23,28 @@ import { MatchesBoard } from "../matches/CricketMatchesList";
 import { CricketMatchForm } from "../matches/CricketMatchForm";
 import { LeaderboardGrid, PointsTable } from "../leaderboard/CricketLeaderboard";
 import { TournamentBanner } from "./TournamentBanner";
+import { TournamentInfo } from "./TournamentInfo";
+import { TournamentStats } from "./TournamentStats";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
 
-type Tab = "teams" | "matches" | "points" | "stats";
+type Tab = "info" | "teams" | "matches" | "points" | "stats" | "totals";
 
 // How the teams are filled: generated from matched sets, or built by hand
 // (new teams or copies of other tournaments' teams).
 type BuildMode = "auto" | "manual";
 
-type TeamModal = { kind: "new" } | { kind: "edit"; index: number } | { kind: "existing" };
+type TeamModal = { kind: "new" } | { kind: "existing" };
 
-const TABS: { value: Tab; label: string; icon: string }[] = [
-  { value: "teams", label: "Teams", icon: "fa-people-group" },
-  { value: "matches", label: "Matches", icon: "fa-calendar-days" },
-  { value: "points", label: "Points Table", icon: "fa-table-list" },
-  { value: "stats", label: "Stats", icon: "fa-ranking-star" },
+// Same underlined, sticky tabs as the match page.
+const TABS: { value: Tab; label: string }[] = [
+  { value: "info", label: "Info" },
+  { value: "matches", label: "Matches" },
+  { value: "teams", label: "Teams" },
+  { value: "points", label: "Points Table" },
+  { value: "stats", label: "Leaderboard" },
+  { value: "totals", label: "Stats" },
 ];
 
 function sameMembers(a: number[], b: number[]) {
@@ -60,26 +63,50 @@ function PlayerLabel({ player }: { player: CricketPlayer | undefined }) {
   );
 }
 
+// The Teams tab: one card per team — initial, name, player count and
+// record — opening the team's own page (CricketTeamPage).
+function TeamCards({ tournament, matches }: { tournament: CricketTournament; matches: CricketMatch[] }) {
+  const record = new Map(pointsTable(tournament, matches).map((row) => [row.teamIndex, row]));
+  return (
+    <div className="cricket-team-cards">
+      {tournament.teams.map((team, teamIndex) => {
+        const row = record.get(teamIndex);
+        return (
+          <Link key={teamIndex} to={`/tournaments/${tournament.id}/teams/${teamIndex}`} className="cricket-team-card">
+            <span className="cricket-team-card-logo" style={{ background: avatarColorFor(team.name) }} aria-hidden="true">
+              {team.name.charAt(0).toUpperCase()}
+            </span>
+            <span className="cricket-team-card-text">
+              <strong>{team.name}</strong>
+              <small>
+                {team.playerIds.length} player{team.playerIds.length === 1 ? "" : "s"}
+                {row && row.played > 0 && ` · W${row.won} L${row.lost} · ${row.points} pts`}
+              </small>
+            </span>
+            <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
 export function CricketTournamentPage() {
   const id = Number(useParams().id);
   const { data: tournament, isLoading } = useCricketTournament(id);
   const { data: players } = useCricketPlayers();
   const setMatchSets = useSetCricketMatchSets();
   const generateTeams = useGenerateCricketTeams();
-  const swapPlayers = useSwapCricketPlayers();
-  const movePlayer = useMoveCricketPlayer();
-  const removeTeam = useRemoveCricketTeam();
   const [mode, setMode] = useState<BuildMode | null>(null);
   const [teamModal, setTeamModal] = useState<TeamModal | null>(null);
 
   const [picked, setPicked] = useState<number[]>([]);
   const [search, setSearch] = useState("");
-  // Player tapped in the teams view, waiting for a swap partner or a team to move to.
-  const [selected, setSelected] = useState<number | null>(null);
   const [editing, setEditing] = useState(false);
   const [schedulingMatch, setSchedulingMatch] = useState(false);
   const [params, setParams] = useSearchParams();
-  const tab = (params.get("tab") as Tab | null) ?? "teams";
+  const requested = params.get("tab") as Tab | null;
+  const tab: Tab = requested && TABS.some((t) => t.value === requested) ? requested : "info";
   const { data: matches } = useCricketMatches(id);
   // Players see their tournament read-only; super admins manage it.
   const { admin } = useAdminAuth();
@@ -99,7 +126,6 @@ export function CricketTournamentPage() {
   const sets = tournament.matchSets.map((set) => set.playerIds);
   const matchedIds = sets.flat();
   const matched = new Set(matchedIds);
-  const setIndexOf = new Map(sets.flatMap((set, index) => set.map((playerId) => [playerId, index] as const)));
   // Only the squad can be matched.
   const squad = (players ?? []).filter((player) => tournament.playerIds.includes(player.id));
   const unmatched = squad.filter((player) => !matched.has(player.id));
@@ -108,7 +134,7 @@ export function CricketTournamentPage() {
   const hasRosters = teamPlayerIds.length > 0;
   const teamsOutdated = tournament.generatedAt !== null && !sameMembers(teamPlayerIds, matchedIds);
   const busy =
-    setMatchSets.isPending || generateTeams.isPending || swapPlayers.isPending || movePlayer.isPending || removeTeam.isPending;
+    setMatchSets.isPending || generateTeams.isPending;
   // Until one is picked: generating if they've started matching, by hand if
   // the teams were filled some other way.
   const buildMode: BuildMode = mode ?? (sets.length > 0 || tournament.generatedAt || !hasRosters ? "auto" : "manual");
@@ -143,146 +169,61 @@ export function CricketTournamentPage() {
     ) {
       return;
     }
-    setSelected(null);
     generateTeams.mutate(tournament!.id);
   }
 
-  function handlePlayerTap(playerId: number, teamIndex: number) {
-    if (selected === null) {
-      setSelected(playerId);
-      return;
-    }
-    if (selected === playerId) {
-      setSelected(null);
-      return;
-    }
-    const selectedTeam = tournament!.teams.findIndex((team) => team.playerIds.includes(selected));
-    if (selectedTeam === teamIndex) {
-      setSelected(playerId);
-      return;
-    }
-    swapPlayers.mutate({ id: tournament!.id, playerA: selected, playerB: playerId });
-    setSelected(null);
-  }
-
-  async function handleRemoveTeam(index: number) {
-    const team = tournament!.teams[index];
-    if (
-      await confirmAction(
-        `Remove ${team.name}?`,
-        team.playerIds.length
-          ? `Its ${team.playerIds.length} player${team.playerIds.length === 1 ? "" : "s"} stay in the squad.`
-          : "It has no players yet.",
-        "Yes, remove",
-      )
-    ) {
-      setSelected(null);
-      removeTeam.mutate({ id: tournament!.id, index });
-    }
-  }
-
-  function handleMoveHere(teamIndex: number) {
-    if (selected === null) return;
-    movePlayer.mutate({ id: tournament!.id, playerId: selected, toTeamIndex: teamIndex });
-    setSelected(null);
-  }
-
-  const selectedTeamIndex =
-    selected === null ? -1 : tournament.teams.findIndex((team) => team.playerIds.includes(selected));
-
   return (
     <div className="cricket-page">
-      <ListCard
-        title={tournament.name}
-        action={
-          <div className="d-flex gap-2 flex-wrap">
-            <Link
-              to={canManage ? "/tournaments" : "/my-tournaments"}
-              className="btn btn-link"
+      {/* Banner + tabs: one header that stays pinned on phones. */}
+      <div className="cricket-th-sticky">
+        <div className="card cricket-th-card">
+          <TournamentBanner
+            tournament={tournament}
+            back={
+              <Link to={canManage ? "/tournaments" : "/my-tournaments"} className="cricket-th-glass">
+                <i className="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                <span>{canManage ? "All tournaments" : "My tournaments"}</span>
+              </Link>
+            }
+            actions={
+              canManage && (
+                <button type="button" className="cricket-th-glass" onClick={() => setEditing(true)}>
+                  <i className="fa-solid fa-pen" aria-hidden="true"></i>
+                  <span>Edit</span>
+                </button>
+              )
+            }
+          />
+        </div>
+  
+        <div className="cricket-match-tabs" role="tablist" aria-label="Tournament sections">
+          {TABS.map((t) => (
+            <button
+              key={t.value}
+              type="button"
+              role="tab"
+              aria-selected={tab === t.value}
+              className={tab === t.value ? "active" : ""}
+              onClick={() => setParams({ tab: t.value }, { replace: true })}
             >
-              <i className="fa-solid fa-arrow-left" aria-hidden="true"></i> {canManage ? "All tournaments" : "My tournaments"}
-            </Link>
-            {canManage && (
-              <Button variant="outline" onClick={() => setEditing(true)}>
-                <i className="fa-solid fa-pen" aria-hidden="true"></i> Edit
-              </Button>
-            )}
-          </div>
-        }
-      >
-        <TournamentBanner tournament={tournament} />
-        <CricketKpis
-          items={[
-            { label: "In the squad", value: squad.length, icon: "fa-users", tone: "total" },
-            ...(canManage
-              ? [
-                  { label: "Matched sets", value: sets.length, icon: "fa-link", tone: "active" as const },
-                  { label: "Not matched yet", value: unmatched.length, icon: "fa-user-clock", tone: "login" as const },
-                ]
-              : [
-                  { label: "Matches", value: matches?.length ?? 0, icon: "fa-calendar-days", tone: "active" as const },
-                  {
-                    label: "Completed",
-                    value: (matches ?? []).filter((m) => m.status === "completed").length,
-                    icon: "fa-flag-checkered",
-                    tone: "login" as const,
-                  },
-                ]),
-            {
-              label: "Players per team",
-              value: hasRosters ? tournament.teams.map((team) => team.playerIds.length).join(" / ") : "—",
-              icon: "fa-people-group",
-              tone: "guest",
-              hint: tournament.teams.map((team) => team.name).join(" / "),
-            },
-          ]}
-        />
-        <div className="cricket-chip-row">
-          {tournament.teams.map((team, index) => (
-            <span className="cricket-chip" key={index}>
-              <i className="fa-solid fa-shield-halved" aria-hidden="true"></i> {team.name}
-            </span>
+              {t.label}
+            </button>
           ))}
         </div>
-      </ListCard>
-
-      <div className="admin-segmented cricket-tabs cricket-page-tabs" role="tablist" aria-label="Tournament sections">
-        {TABS.map((t) => (
-          <button
-            key={t.value}
-            type="button"
-            role="tab"
-            aria-selected={tab === t.value}
-            className={tab === t.value ? "active" : ""}
-            onClick={() => setParams({ tab: t.value }, { replace: true })}
-          >
-            <i className={`fa-solid ${t.icon}`} aria-hidden="true"></i> {t.label}
-          </button>
-        ))}
       </div>
+
+      {tab === "info" && (
+        <ListCard title="">
+          <TournamentInfo tournament={tournament} matches={matches ?? []} />
+        </ListCard>
+      )}
 
       {tab === "teams" && !canManage && (
         <ListCard title="Teams">
-          {!hasRosters ? (
+          {teamCount === 0 ? (
             <div className="admin-empty-state">The teams haven't been picked yet.</div>
           ) : (
-            <div className="cricket-team-grid">
-              {tournament.teams.map((team, teamIndex) => (
-                <section className="cricket-team" key={teamIndex}>
-                  <header className="cricket-team-head">
-                    <h3>{team.name}</h3>
-                    <span className="cricket-chip">{team.playerIds.length}</span>
-                  </header>
-                  <ul className="cricket-team-list">
-                    {team.playerIds.map((playerId) => (
-                      <li key={playerId} className="cricket-team-player is-static">
-                        <PlayerLabel player={playerById.get(playerId)} />
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              ))}
-            </div>
+            <TeamCards tournament={tournament} matches={matches ?? []} />
           )}
         </ListCard>
       )}
@@ -299,77 +240,7 @@ export function CricketTournamentPage() {
                   The matched sets have changed since the teams were generated. Regenerate to include the changes.
                 </div>
               )}
-              {hasRosters && (
-                <p className="admin-hint">
-                  {selected === null
-                    ? "Tap a player, then tap a player on another team to swap them — or use “Move here” to move them without a swap."
-                    : `Swapping ${playerById.get(selected)?.name ?? "player"} — tap a player on another team, or tap again to cancel.`}
-                </p>
-              )}
-              <div className="cricket-team-grid">
-                {tournament.teams.map((team, teamIndex) => (
-                  <section className="cricket-team" key={teamIndex}>
-                    <header className="cricket-team-head">
-                      <h3>{team.name}</h3>
-                      <span className="d-flex align-items-center gap-1">
-                        <span className="cricket-chip">{team.playerIds.length}</span>
-                        <button
-                          type="button"
-                          className="cricket-icon-btn"
-                          title="Edit team"
-                          aria-label={`Edit ${team.name}`}
-                          disabled={busy}
-                          onClick={() => setTeamModal({ kind: "edit", index: teamIndex })}
-                        >
-                          <i className="fa-solid fa-pen" aria-hidden="true"></i>
-                        </button>
-                        <button
-                          type="button"
-                          className="cricket-icon-btn"
-                          title="Remove team"
-                          aria-label={`Remove ${team.name}`}
-                          disabled={busy}
-                          onClick={() => handleRemoveTeam(teamIndex)}
-                        >
-                          <i className="fa-solid fa-trash" aria-hidden="true"></i>
-                        </button>
-                      </span>
-                    </header>
-                    {team.playerIds.length === 0 && <small className="text-muted">No players yet.</small>}
-                    <ul className="cricket-team-list">
-                      {team.playerIds.map((playerId) => (
-                        <li key={playerId}>
-                          <button
-                            type="button"
-                            className={`cricket-team-player ${selected === playerId ? "is-selected" : ""} ${
-                              selected !== null && selectedTeamIndex !== teamIndex ? "is-target" : ""
-                            }`}
-                            disabled={busy}
-                            onClick={() => handlePlayerTap(playerId, teamIndex)}
-                          >
-                            <PlayerLabel player={playerById.get(playerId)} />
-                            {setIndexOf.has(playerId) && (
-                              <span className="cricket-set-tag" title="Matched set">
-                                #{setIndexOf.get(playerId)! + 1}
-                              </span>
-                            )}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                    {selected !== null && selectedTeamIndex !== teamIndex && (
-                      <button
-                        type="button"
-                        className="cricket-move-btn"
-                        disabled={busy}
-                        onClick={() => handleMoveHere(teamIndex)}
-                      >
-                        <i className="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i> Move here
-                      </button>
-                    )}
-                  </section>
-                ))}
-              </div>
+              <TeamCards tournament={tournament} matches={matches ?? []} />
             </>
           )}
         </ListCard>
@@ -556,7 +427,7 @@ export function CricketTournamentPage() {
             {sets.length === 0
               ? "Match some players first, then generate the teams."
               : tournament.generatedAt
-                ? "Teams generated — swap or move players in Teams above."
+                ? "Teams generated — open a team above to move or swap its players."
                 : `${sets.length} set${sets.length === 1 ? "" : "s"} ready — generate to deal them out across the teams.`}
           </div>
         </ListCard>
@@ -587,50 +458,41 @@ export function CricketTournamentPage() {
       )}
 
       {tab === "stats" && (
-        <ListCard title="Tournament Stats">
+        <ListCard title="Leaderboard">
           <LeaderboardGrid matches={matches ?? []} />
         </ListCard>
       )}
 
-      {schedulingMatch && (
-        <DefaultModal
-          title="Schedule Match"
-          onClose={() => setSchedulingMatch(false)}
-          showFooter={false}
-          size="lg"
-          component={<CricketMatchForm tournamentId={tournament.id} onSaved={() => setSchedulingMatch(false)} />}
-        />
+      {tab === "totals" && (
+        <ListCard title="Tournament Stats">
+          <TournamentStats matches={matches ?? []} />
+        </ListCard>
       )}
 
+      {schedulingMatch && (
+        <BottomSheet title="Schedule Match" onClose={() => setSchedulingMatch(false)} wide>
+          <CricketMatchForm tournamentId={tournament.id} onSaved={() => setSchedulingMatch(false)} />
+        </BottomSheet>
+      )}
 
       {teamModal && (
-        <DefaultModal
-          title={teamModal.kind === "new" ? "New Team" : teamModal.kind === "edit" ? "Edit Team" : "Choose From Existing Teams"}
+        <BottomSheet
+          title={teamModal.kind === "new" ? "New Team" : "Choose From Existing Teams"}
           onClose={() => setTeamModal(null)}
-          showFooter={false}
-          size="lg"
-          component={
-            teamModal.kind === "existing" ? (
-              <ExistingTeamPicker tournament={tournament} onSaved={() => setTeamModal(null)} />
-            ) : (
-              <TeamForm
-                tournament={tournament}
-                index={teamModal.kind === "edit" ? teamModal.index : undefined}
-                onSaved={() => setTeamModal(null)}
-              />
-            )
-          }
-        />
+          wide
+        >
+          {teamModal.kind === "existing" ? (
+            <ExistingTeamPicker tournament={tournament} onSaved={() => setTeamModal(null)} />
+          ) : (
+            <TeamForm tournament={tournament} onSaved={() => setTeamModal(null)} />
+          )}
+        </BottomSheet>
       )}
 
       {editing && (
-        <DefaultModal
-          title="Edit Tournament"
-          onClose={() => setEditing(false)}
-          showFooter={false}
-          size="lg"
-          component={<CricketTournamentForm existing={tournament} onSaved={() => setEditing(false)} />}
-        />
+        <BottomSheet title="Edit Tournament" onClose={() => setEditing(false)} wide>
+          <CricketTournamentForm existing={tournament} onSaved={() => setEditing(false)} />
+        </BottomSheet>
       )}
     </div>
   );

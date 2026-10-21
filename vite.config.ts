@@ -1,7 +1,7 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
-// CrickVerse uses the same API as Girish Creations (portfolio-server):
+// Namma Aaata uses the same API as Girish Creations (portfolio-server):
 // locally through this proxy, on Vercel through the rewrite in vercel.json.
 // Port 5174 so it can run next to portfolio-client (5173).
 export default defineConfig({

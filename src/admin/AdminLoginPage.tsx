@@ -8,7 +8,7 @@ import { useAdminTheme } from "./useAdminTheme";
 import "./dms/global.css";
 import "./dms/css/Login.css";
 
-// CrickVerse sign-in: players use the mobile number their organiser
+// Namma Aaata sign-in: players use the mobile number their organiser
 // registered; organisers can also use their email.
 export function AdminLoginPage() {
   useAdminBodyClass();
@@ -43,10 +43,12 @@ export function AdminLoginPage() {
 
       <div className="admin-login-card animated fadeInUp">
         <div className="admin-login-logo-ring">
-          <img src="/favicon.svg" alt="CrickVerse" className="admin-login-logo" />
+          <img src="/favicon.svg" alt="Namma Aaata" className="admin-login-logo" />
         </div>
 
-        <span className="admin-login-badge">CrickVerse</span>
+        <span className="admin-login-badge">
+          Namma Aaata <span className="cv-kannada" lang="kn">· ನಮ್ಮ ಆಟ</span>
+        </span>
         <h1 className="admin-login-heading">Welcome Back</h1>
         <p className="admin-login-subtitle">Every ball. Every stat. Sign in with your mobile number.</p>
 

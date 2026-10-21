@@ -1,4 +1,4 @@
-/* CrickVerse typography and brand touches on top of the shared admin shell.
+/* Namma Aaata typography and brand touches on top of the shared admin shell.
    Colours live in brand.css; this file only sets fonts, the wordmark and
    the look of the big numbers. One family (Outfit) for everything. */
 
@@ -8,9 +8,23 @@
   /* Bootstrap's own font (tooltips, popovers, buttons) follows suit. */
   --bs-font-sans-serif: var(--cv-font);
   --bs-body-font-family: var(--cv-font);
+
+  /* Compact type scale. Every font-size in the app is one of these, so the
+     same kind of text is the same size on every screen. */
+  --fs-3xs: 0.625rem; /* 10px  micro labels in tight spots */
+  --fs-2xs: 0.6875rem; /* 11px  badges, tags */
+  --fs-xs: 0.75rem; /* 12px  hints, captions, chips */
+  --fs-sm: 0.8125rem; /* 13px  secondary text */
+  --fs-base: 0.875rem; /* 14px  body, inputs, buttons */
+  --fs-md: 1rem; /* 16px  card and section titles */
+  --fs-lg: 1.25rem; /* 20px  page titles */
+  --fs-xl: 1.5rem; /* 24px  big figures */
+  --fs-2xl: 2rem; /* 32px  scoreboard */
+  --bs-body-font-size: var(--fs-base);
 }
 
 body {
+  font-size: var(--fs-base);
   font-family: var(--cv-font);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -55,11 +69,11 @@ textarea {
   font-variant-numeric: tabular-nums;
 }
 
-/* Wordmark in the navbar: "Crick" in text colour, "Verse" in the primary
-   colour (amber on the dark theme). */
+/* Wordmark in the navbar: "Namma" in text colour, "Aaata" in the primary
+   colour (flag yellow on the dark theme), with the Kannada name beneath. */
 .cv-wordmark {
   font-family: var(--cv-display);
-  font-size: 1.45rem;
+  font-size: var(--fs-xl);
   font-weight: 800;
   font-style: italic;
   letter-spacing: 0.03em;
@@ -70,10 +84,27 @@ textarea {
   color: var(--primary);
 }
 :root[data-bs-theme="dark"] .cv-wordmark {
-  color: #f1eff9;
+  color: #f3f4f6;
 }
 :root[data-bs-theme="dark"] .cv-wordmark em {
   color: var(--brand-amber);
+}
+
+/* Outfit has no Kannada glyphs, so Kannada text gets its own family. */
+.cv-kannada,
+.cv-wordmark-kn {
+  font-family: "Baloo Tamma 2", "Noto Sans Kannada", "Nirmala UI", var(--cv-font);
+  font-style: normal;
+  letter-spacing: 0;
+}
+.cv-wordmark-kn {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--brand-crimson-deep);
+}
+:root[data-bs-theme="dark"] .cv-wordmark-kn {
+  color: var(--brand-crimson-bright);
 }
 
 .navbar-logo-box img {
@@ -83,7 +114,7 @@ textarea {
 
 .admin-login-badge {
   font-family: var(--cv-display);
-  font-size: 1rem;
+  font-size: var(--fs-md);
   font-style: italic;
   letter-spacing: 0.06em;
 }

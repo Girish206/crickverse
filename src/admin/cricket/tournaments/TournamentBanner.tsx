@@ -1,35 +1,54 @@
+import type { ReactNode } from "react";
 import type { CricketTournament } from "../../../api/types";
-import { BallTypeBadge } from "../CricketChoices";
-import { CATEGORIES, labelOf, MATCH_TYPES, PITCH_TYPES } from "../cricketOptions";
 
 const shortDate = (value: string) =>
   new Date(value).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 
-// Banner, logo and the tournament's details at the top of its page. Shows
-// nothing extra for older tournaments that have no details.
-export function TournamentBanner({ tournament: t }: { tournament: CricketTournament }) {
-  const place = [t.ground, t.city].filter(Boolean).join(", ");
-  const dates = t.startDate ? `${shortDate(t.startDate)}${t.endDate ? ` – ${shortDate(t.endDate)}` : ""}` : null;
-  const facts = [
-    dates && { icon: "fa-regular fa-calendar", text: dates },
-    place && { icon: "fa-solid fa-location-dot", text: place },
-    labelOf(CATEGORIES, t.category) && { icon: "fa-solid fa-tag", text: labelOf(CATEGORIES, t.category) },
-    labelOf(MATCH_TYPES, t.matchType) && {
-      icon: "fa-solid fa-trophy",
-      text: `${labelOf(MATCH_TYPES, t.matchType)}${t.overs ? ` · ${t.overs} ov` : ""}`,
-    },
-    labelOf(PITCH_TYPES, t.pitchType) && { icon: "fa-solid fa-road", text: `${labelOf(PITCH_TYPES, t.pitchType)} pitch` },
-  ].filter((fact): fact is { icon: string; text: string } => Boolean(fact));
+// Upcoming / live / completed from the tournament's dates (UTC days).
+function phaseOf(t: CricketTournament): { label: string; tone: string } | null {
+  if (!t.startDate) return null;
+  const today = new Date().toISOString().slice(0, 10);
+  const start = t.startDate.slice(0, 10);
+  const end = (t.endDate ?? t.startDate).slice(0, 10);
+  if (today < start) return { label: "Upcoming", tone: "is-upcoming" };
+  if (today > end) return { label: "Completed", tone: "is-done" };
+  return { label: "Live", tone: "is-live" };
+}
 
-  if (!t.bannerUrl && !t.logoUrl && facts.length === 0 && !t.ballType && !t.organiserName) return null;
+// The top of a tournament's page: cover image with the back link and
+// actions over it, a floating card with the logo, name, status, dates and
+// place straddling its bottom edge. The rest of the details are on the
+// Info tab (TournamentInfo). Older tournaments without a banner get a
+// gradient cover.
+export function TournamentBanner({
+  tournament: t,
+  back,
+  actions,
+}: {
+  tournament: CricketTournament;
+  back?: ReactNode;
+  actions?: ReactNode;
+}) {
+  const place = [t.ground, t.city].filter(Boolean).join(", ");
+  const dates = t.startDate
+    ? `${shortDate(t.startDate)}${t.endDate && t.endDate !== t.startDate ? ` – ${shortDate(t.endDate)}` : ""}`
+    : null;
+  const phase = phaseOf(t);
 
   return (
-    <div className="cricket-tour-banner">
+    <div className="cricket-th">
       <div
-        className={`cricket-tour-banner-image ${t.bannerUrl ? "" : "is-empty"}`}
+        className={`cricket-th-cover ${t.bannerUrl ? "" : "is-empty"}`}
         style={t.bannerUrl ? { backgroundImage: `url(${t.bannerUrl})` } : undefined}
-      ></div>
-      <div className="cricket-tour-banner-body">
+      >
+        <div className="cricket-th-bar">
+          {back}
+          {actions && <div className="cricket-th-actions">{actions}</div>}
+        </div>
+      </div>
+
+      {/* Floating card straddling the cover's bottom edge. */}
+      <div className="cricket-th-identity">
         <span
           className="cricket-tour-logo"
           style={t.logoUrl ? { backgroundImage: `url(${t.logoUrl})` } : undefined}
@@ -37,23 +56,22 @@ export function TournamentBanner({ tournament: t }: { tournament: CricketTournam
         >
           {!t.logoUrl && t.name.charAt(0).toUpperCase()}
         </span>
-        <div className="cricket-tour-facts">
-          {facts.map((fact) => (
-            <span key={fact.text}>
-              <i className={fact.icon} aria-hidden="true"></i> {fact.text}
-            </span>
-          ))}
-          {t.ballType && <BallTypeBadge value={t.ballType} />}
-          {t.organiserName && (
-            <span>
-              <i className="fa-solid fa-user-tie" aria-hidden="true"></i> {t.organiserName}
-              {t.organiserMobile && (
-                <>
-                  {" · "}
-                  <a href={`tel:${t.organiserMobile}`}>{t.organiserMobile}</a>
-                </>
+        <div className="cricket-th-title">
+          <h1>{t.name}</h1>
+          {(phase || dates || place) && (
+            <div className="cricket-th-meta">
+              {phase && <span className={`cricket-th-phase ${phase.tone}`}>{phase.label}</span>}
+              {dates && (
+                <span>
+                  <i className="fa-regular fa-calendar" aria-hidden="true"></i> {dates}
+                </span>
               )}
-            </span>
+              {place && (
+                <span>
+                  <i className="fa-solid fa-location-dot" aria-hidden="true"></i> {place}
+                </span>
+              )}
+            </div>
           )}
         </div>
       </div>
