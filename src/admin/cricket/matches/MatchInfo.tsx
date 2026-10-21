@@ -4,7 +4,7 @@ import type { CricketMatch, CricketTournament } from "../../../api/types";
 import { BallTypeBadge } from "../CricketChoices";
 import { OrganiserCard } from "../OrganiserCard";
 import { labelOf, MATCH_TYPES, PITCH_TYPES } from "../cricketOptions";
-import { stageLabel } from "./matchUtils";
+import { matchStageLabel } from "./matchUtils";
 
 const dateText = (value: string) =>
   new Date(value).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).replace(/ /g, "-");
@@ -30,7 +30,7 @@ export function MatchInfo({
         </Link>
       ),
     ],
-    ["Round", `${stageLabel(match.stage)} Matches`],
+    ["Round", match.tournamentId === null ? matchStageLabel(match) : `${matchStageLabel(match)} Matches`],
     ["Match type", labelOf(MATCH_TYPES, match.matchType) ?? "Limited Overs"],
     ["Overs", match.overs],
     [

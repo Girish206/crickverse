@@ -365,15 +365,22 @@ export function RosterPlayer({
 }) {
   const name = player?.name ?? "Removed player";
   const role = roleOf(player?.role ?? null);
-  // The captain (or vice-captain) is marked on the avatar too.
+  // C / VC / WK are marked on the avatar only, side by side at its
+  // bottom-right.
   const lead = tags.find((tag) => tag === "C" || tag === "VC");
+  const keeper = tags.includes("WK");
+  const roleNames = tags.map((tag) => roleTagInfo(tag)?.label ?? tag).join(", ");
   return (
     <>
-      <span className={`cricket-roster-avatar-wrap${lead ? ` is-lead-${lead.toLowerCase()}` : ""}`}>
+      <span
+        className={`cricket-roster-avatar-wrap${lead ? ` is-lead-${lead.toLowerCase()}` : ""}`}
+        title={roleNames || undefined}
+      >
         <PlayerAvatar name={name} photoUrl={player?.photoUrl} className="cricket-roster-avatar" />
-        {lead && (
-          <span className="cricket-roster-lead" aria-hidden="true">
-            {lead}
+        {(lead || keeper) && (
+          <span className="cricket-roster-leads" aria-hidden="true">
+            {lead && <span className="cricket-roster-lead">{lead}</span>}
+            {keeper && <span className="cricket-roster-lead is-wk">WK</span>}
           </span>
         )}
       </span>
@@ -381,22 +388,14 @@ export function RosterPlayer({
         <strong>
           <PlayerLink playerId={linked ? player?.id : null}>{name}</PlayerLink>
         </strong>
-        {(role || tags.length > 0) && (
+        {(role || roleNames) && (
           <small className="cricket-roster-meta">
             {role && (
               <span>
                 <i className={`fa-solid ${role.icon}`} aria-hidden="true"></i> {role.label}
               </span>
             )}
-            {tags.map((tag) => {
-              const info = roleTagInfo(tag);
-              return (
-                <span key={tag} className={`cricket-roster-badge is-${tag.toLowerCase()}`}>
-                  {info && <i className={`fa-solid ${info.icon}`} aria-hidden="true"></i>}
-                  {info?.label ?? tag}
-                </span>
-              );
-            })}
+            {roleNames && <span className="visually-hidden">{roleNames}</span>}
           </small>
         )}
       </span>

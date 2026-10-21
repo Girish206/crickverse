@@ -2,7 +2,7 @@ import { Fragment, useEffect, useId, useState, type FormEvent, type Ref } from "
 import { useNavigate } from "react-router-dom";
 import {
   useCreateCricketMatch,
-  useCricketMatches,
+  useCricketPlaces,
   useUpdateCricketMatch,
 } from "../../../api/hooks/cricket/useCricketMatches";
 import {
@@ -12,7 +12,6 @@ import {
   lookupCricketPlayer,
 } from "../../../api/hooks/cricket/useCricketPlayers";
 import { useCricketTournaments } from "../../../api/hooks/cricket/useCricketTournaments";
-import { useAdminAuth } from "../../../context/AdminAuthContext";
 import type {
   CricketBallType,
   CricketMatch,
@@ -30,7 +29,8 @@ import { BottomSheet } from "../BottomSheet";
 import { BallTypeChoice, ChipChoice } from "../CricketChoices";
 import { MATCH_TYPES, PITCH_TYPES } from "../cricketOptions";
 import { normalizeMobile } from "../mobile";
-import { STAGES, stageLabel, usePlayerNames } from "./matchUtils";
+import { STAGES, stageLabel, teamKeyOf, usePlayerNames } from "./matchUtils";
+import { useSuggestions } from "../useSuggestions";
 import { PlayerAvatar } from "../players/PlayerAvatar";
 import { PlayerPicker } from "./PlayerPicker";
 
@@ -41,27 +41,34 @@ function toLocalInput(value: string | null) {
   return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 }
 
-// Team names already in use (tournament teams and the matches you play in,
-// follow or organise), once each, for a one-off match's team pickers.
-// Every distinct non-empty value, case-insensitively, sorted — the grounds
-// and cities others have entered, offered as suggestions.
-function distinctValues(values: (string | null | undefined)[]) {
-  const byKey = new Map<string, string>();
-  for (const value of values) {
-    const trimmed = value?.trim();
-    if (trimmed && !byKey.has(trimmed.toLowerCase())) byKey.set(trimmed.toLowerCase(), trimmed);
+// Teams a one-off match can pick (tournament teams, and the one-off sides
+// of matches you play in, follow or organise), once each by teamKeyOf, so
+// two different teams with the same name are both listed and kept apart.
+function knownTeams(tournaments: CricketTournament[] | undefined, me: CricketMe | undefined) {
+  const teams = new Map<string, { key: string; name: string; note: string; playerIds: Set<number> }>();
+  for (const t of tournaments ?? []) {
+    t.teams.forEach((team, index) => {
+      const key = `t:${t.id}:${index}`;
+      teams.set(key, { key, name: team.name.trim(), note: t.name, playerIds: new Set(team.playerIds) });
+    });
   }
-  return [...byKey.values()].sort((a, b) => a.localeCompare(b));
-}
-
-function knownTeamNames(tournaments: CricketTournament[] | undefined, me: CricketMe | undefined) {
   const matches = me ? [...me.matches, ...me.followedMatches, ...me.followedPlayerMatches, ...me.createdMatches] : [];
-  const names = [
-    ...(tournaments ?? []).flatMap((t) => t.teams.map((team) => team.name)),
-    ...matches.flatMap((m) => m.teams.map((team) => team.name)),
-  ];
-  const byKey = new Map(names.map((name) => [name.trim().toLowerCase(), name.trim()]));
-  return [...byKey.values()].filter(Boolean).sort((a, b) => a.localeCompare(b));
+  for (const match of matches.filter((m) => m.tournamentId === null)) {
+    match.teams.forEach((side, slot) => {
+      const key = teamKeyOf(match, slot);
+      const team = teams.get(key) ?? { key, name: side.name.trim(), note: "Friendly team", playerIds: new Set<number>() };
+      side.playerIds.forEach((id) => team.playerIds.add(id));
+      teams.set(key, team);
+    });
+  }
+  return [...teams.values()]
+    .filter((team) => team.name)
+    .map((team) => ({
+      key: team.key,
+      name: team.name,
+      note: team.playerIds.size ? `${team.note} · ${team.playerIds.size} players` : team.note,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name) || a.note.localeCompare(b.note));
 }
 
 type CaptainLookup =
@@ -97,10 +104,7 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
   const navigate = useNavigate();
   const { data: tournaments } = useCricketTournaments();
   const { data: me } = useCricketMe();
-  const { admin } = useAdminAuth();
-  // Players can't list every match; their own suggest grounds and cities.
-  const { data: everyMatch } = useCricketMatches(undefined, { enabled: Boolean(admin?.isSuperAdmin) });
-  const allMatches = admin?.isSuperAdmin ? everyMatch : me && [...me.matches, ...me.createdMatches];
+  const { data: places } = useCricketPlaces();
   const createMatch = useCreateCricketMatch();
   const createPlayer = useCreateCricketPlayer();
   const { data: players } = useCricketPlayers();
@@ -113,6 +117,8 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
   // A standalone match names its own sides.
   const [teamAName, setTeamAName] = useState("");
   const [teamBName, setTeamBName] = useState("");
+  // Which known team each one-off side was picked from (null = a new team).
+  const [teamKeys, setTeamKeys] = useState<[string | null, string | null]>([null, null]);
   const [overs, setOvers] = useState(String(existing?.overs ?? 6));
   const [scheduledAt, setScheduledAt] = useState(toLocalInput(existing?.scheduledAt ?? null));
   const [venue, setVenue] = useState(existing?.venue ?? "");
@@ -198,26 +204,28 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
     return index === null ? "" : (tournament?.teams[index]?.name ?? "");
   };
   // The team sheet's list: a tournament's teams, or (one-off match) every
-  // known name, which can also be typed new. Either way it leaves out the
-  // side picked for the other slot.
+  // known team, or a new one typed in. Either way it leaves out the side
+  // picked for the other slot.
   function teamChoices(slot: 0 | 1) {
     if (!standalone) {
       const otherIndex = slot === 0 ? teamB : teamA;
       return (tournament?.teams ?? [])
-        .map((team, index) => ({ name: team.name, index }))
+        .map((team, index) => ({ name: team.name, index, key: null as string | null, note: null as string | null }))
         .filter(({ index }) => index !== otherIndex);
     }
     const other = sideName(slot === 0 ? 1 : 0).toLowerCase();
-    return knownTeamNames(tournaments, me)
-      .filter((name) => name.toLowerCase() !== other)
-      .map((name) => ({ name, index: null as number | null }));
+    return knownTeams(tournaments, me)
+      .filter((team) => team.name.toLowerCase() !== other)
+      .map((team) => ({ name: team.name, index: null as number | null, key: team.key as string | null, note: team.note as string | null }));
   }
-  // A new team comes with its captain (null for a known team).
-  function pickTeam(slot: 0 | 1, name: string, index: number | null, captainId: number | null = null) {
+  // A new team comes with its captain (null for a known team, which comes
+  // with its key instead).
+  function pickTeam(slot: 0 | 1, name: string, index: number | null, captainId: number | null = null, key: string | null = null) {
     const trimmed = name.trim().slice(0, 60);
     if (!trimmed) return;
     if (standalone) {
       (slot === 0 ? setTeamAName : setTeamBName)(trimmed);
+      setTeamKeys((current) => (slot === 0 ? [key, current[1]] : [current[0], key]));
       setCaptains((current) => (slot === 0 ? [captainId, current[1]] : [current[0], captainId]));
       setNewSides((current) => (slot === 0 ? [captainId !== null, current[1]] : [current[0], captainId !== null]));
     } else (slot === 0 ? setTeamA : setTeamB)(index);
@@ -336,7 +344,7 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
       const created = await createMatch.mutateAsync({
         tournamentId: tournament?.id ?? null,
         ...input,
-        ...(standalone && { teamNames: names, captainIds: captains }),
+        ...(standalone && { teamNames: names, teamKeys, captainIds: captains }),
       });
       onSaved();
       navigate(`/matches/${created.id}`);
@@ -344,14 +352,13 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
   }
 
   const oversNumber = Number(overs) || 0;
-  const knownGrounds = distinctValues([
-    ...(allMatches ?? []).map((m) => m.venue),
-    ...(tournaments ?? []).map((t) => t.ground),
-  ]);
-  const knownCities = distinctValues([
-    ...(allMatches ?? []).map((m) => m.city),
-    ...(tournaments ?? []).map((t) => t.city),
-  ]);
+  const groundSuggest = useSuggestions({ value: venue, suggestions: places?.grounds ?? [], onPick: setVenue });
+  const citySuggest = useSuggestions({
+    value: city,
+    suggestions: places?.cities ?? [],
+    onPick: setCity,
+    icon: "fa-solid fa-city",
+  });
   return (
     <FormIdContext.Provider value={formId}>
       <form id={formId} className="cricket-app-form" ref={formRef} onSubmit={onSubmit} noValidate>
@@ -462,16 +469,11 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
             <input
               placeholder="Add ground"
               maxLength={150}
-              list={`${formId}-grounds`}
-              autoComplete="off"
+              {...groundSuggest.inputProps}
               value={venue}
               onChange={(e) => setVenue(e.target.value)}
             />
-            <datalist id={`${formId}-grounds`}>
-              {knownGrounds.map((ground) => (
-                <option key={ground} value={ground} />
-              ))}
-            </datalist>
+            {groundSuggest.menu}
           </label>
           <label className="cricket-app-row">
             <span className="cricket-app-row-label">
@@ -480,16 +482,11 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
             <input
               placeholder="Add city"
               maxLength={100}
-              list={`${formId}-cities`}
-              autoComplete="off"
+              {...citySuggest.inputProps}
               value={city}
               onChange={(e) => setCity(e.target.value)}
             />
-            <datalist id={`${formId}-cities`}>
-              {knownCities.map((name) => (
-                <option key={name} value={name} />
-              ))}
-            </datalist>
+            {citySuggest.menu}
           </label>
         </div>
 
@@ -713,20 +710,23 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
                 <ul className="cricket-picker-list">
                   {teamChoices(choosingTeam)
                     .filter(({ name }) => name.toLowerCase().includes(teamSearch.trim().toLowerCase()))
-                    .map(({ name, index }) => {
-                      const selected = sideName(choosingTeam).toLowerCase() === name.toLowerCase();
+                    .map(({ name, index, key, note }) => {
+                      const selected = standalone
+                        ? teamKeys[choosingTeam] === key
+                        : sideName(choosingTeam).toLowerCase() === name.toLowerCase();
                       return (
-                        <li key={index ?? name}>
+                        <li key={key ?? index ?? name}>
                           <button
                             type="button"
                             className={`cricket-picker-item ${selected ? "is-selected" : ""}`}
-                            onClick={() => pickTeam(choosingTeam, name, index)}
+                            onClick={() => pickTeam(choosingTeam, name, index, null, key)}
                           >
                             <span className="cricket-picker-avatar" style={{ background: avatarColorFor(name) }}>
                               {name.charAt(0).toUpperCase()}
                             </span>
                             <span className="cricket-picker-text">
                               <strong>{name}</strong>
+                              {note && <small>{note}</small>}
                             </span>
                             {selected && (
                               <i className="fa-solid fa-circle-check cricket-picker-check" aria-hidden="true"></i>

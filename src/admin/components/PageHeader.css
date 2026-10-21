@@ -12,26 +12,26 @@
   gap: 12px;
   height: calc(var(--cv-header-h) + env(safe-area-inset-top));
   padding: env(safe-area-inset-top) max(16px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left));
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border-bottom: 1px solid var(--border-color);
-  box-shadow: 0 4px 18px rgba(var(--brand-navy-rgb), 0.06);
+  /* The logo's deep maroon fading into the flag red, with white text and
+     buttons on it. */
+  background: linear-gradient(120deg, var(--brand-navy) 0%, #5c1218 45%, var(--brand-crimson-deep) 100%);
+  color: #fff;
+  box-shadow: 0 4px 18px rgba(var(--brand-navy-rgb), 0.3);
 }
-/* The flag's colours as a thin line under the header. */
+/* The flag's red and yellow as a thin line under the header. */
 .cv-page-header::after {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
-  bottom: -1px;
+  bottom: 0;
   height: 2px;
   background: var(--brand-gradient-vivid);
-  opacity: 0.85;
+  opacity: 0.9;
 }
 :root[data-bs-theme="dark"] .cv-page-header {
-  background: rgba(15, 16, 18, 0.9);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
+  background: linear-gradient(120deg, var(--brand-navy-night) 0%, #3a0f14 50%, #8f1218 100%);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
 }
 
 .cv-page-header-title {
@@ -48,7 +48,7 @@
   font-size: var(--fs-md);
   font-weight: 700;
   letter-spacing: -0.01em;
-  color: var(--theme-text-dark);
+  color: #fff;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -58,7 +58,7 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--primary);
+  color: rgba(255, 255, 255, 0.8);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -77,30 +77,34 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--border-color);
+  border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 50%;
-  background: var(--adm-surface, #fff);
-  color: var(--theme-text-dark);
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
   font-size: var(--fs-sm);
   cursor: pointer;
   transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease, transform 0.1s ease;
 }
 .cv-page-header-btn:hover,
 .cv-page-header-btn:focus-visible {
-  color: var(--primary);
-  border-color: var(--primary);
+  background: rgba(255, 255, 255, 0.26);
+  border-color: rgba(255, 255, 255, 0.6);
 }
 .cv-page-header-btn:active {
   transform: scale(0.94);
 }
+/* Red on red doesn't show: a white button with red text instead. */
 .cv-page-header-btn.is-danger:hover,
 .cv-page-header-btn.is-danger:focus-visible {
+  background: #fff;
+  border-color: #fff;
   color: #dc2626;
-  border-color: #dc2626;
 }
+/* On (following): filled white with the brand colour. */
 .cv-page-header-btn.is-active {
+  background: #fff;
+  border-color: #fff;
   color: var(--primary);
-  border-color: var(--primary);
 }
 .cv-page-header-btn:disabled {
   opacity: 0.5;

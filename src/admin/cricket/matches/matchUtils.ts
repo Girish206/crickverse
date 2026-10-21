@@ -22,6 +22,13 @@ export const STAGES: { value: CricketMatchStage; label: string; note: string; ic
 
 export const stageLabel = (stage: CricketMatchStage | null) => STAGES.find((s) => s.value === stage)?.label ?? "League";
 
+// A match's stage. Outside a tournament there's no league, so a standalone
+// match with no stage (or the old "league" default) is just a "Match".
+export function matchStageLabel(match: CricketMatch) {
+  if (match.tournamentId === null && (match.stage === null || match.stage === "league")) return "Match";
+  return stageLabel(match.stage ?? "league");
+}
+
 export function formatMatchDate(value: string | null) {
   if (!value) return "Date not set";
   return new Date(value).toLocaleString(undefined, {
@@ -49,6 +56,16 @@ export function usePlayerPhotos() {
     const photos = new Map((players ?? []).map((player) => [player.id, player.photoUrl]));
     return (playerId: number) => photos.get(playerId) ?? null;
   }, [players]);
+}
+
+// Which team a side is, the same rule as the server's effectiveTeamKey: a
+// tournament match's sides are its tournament teams, and an older one-off
+// side without a key is its name plus the match's creator, so two people's
+// same-named teams stay apart.
+export function teamKeyOf(match: CricketMatch, slot: number) {
+  const side = match.teams[slot];
+  if (match.tournamentId !== null) return `t:${match.tournamentId}:${side.teamIndex}`;
+  return side.teamKey ?? `legacy:${match.createdById ?? 0}:${side.name.trim().toLowerCase()}`;
 }
 
 // Score of one side so far: "123/4 (15.2)", or nothing before they bat.

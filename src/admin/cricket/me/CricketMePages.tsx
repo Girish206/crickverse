@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from "react";
+import { useState, type ReactElement, type ReactNode } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useMyFollows } from "../../../api/hooks/cricket/useCricketFollows";
 import { useCricketMe } from "../../../api/hooks/cricket/useCricketPlayers";
@@ -12,12 +12,22 @@ import { MatchesBoard } from "../matches/CricketMatchesList";
 import { usePlayerNames } from "../matches/matchUtils";
 import { CricketPlayerProfile } from "../players/CricketPlayerProfile";
 import { battingCard, bowlingCard, oversText, playerOfMatch } from "../stats";
-import { TournamentLogo } from "../tournaments/TournamentLogo";
+import { TeamFootnote, TournamentCard, TournamentsBoard } from "../tournaments/TournamentCard";
 import { avatarColorFor } from "../avatarColor";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
 import { Loader } from "../../components/Loader";
+
+// The main menu pages' titles: icon (as in the sidebar) and what each is for.
+type PageTitle = { title: string; icon: string; subtitle: string };
+const TITLES = {
+  home: { title: "Home", icon: "fa-solid fa-house", subtitle: "Matches of the players you follow" },
+  stats: { title: "My Stats", icon: "fa-solid fa-id-card", subtitle: "Your whole career: every tournament and friendly match" },
+  matches: { title: "My Matches", icon: "fa-solid fa-baseball-bat-ball", subtitle: "Every game you've played, organised or followed" },
+  tournaments: { title: "My Tournaments", icon: "fa-solid fa-medal", subtitle: "The tournaments you play in, run or follow" },
+  teams: { title: "My Teams", icon: "fa-solid fa-people-group", subtitle: "The sides you've turned out for" },
+} satisfies Record<string, PageTitle>;
 
 // /: super admins start on the dashboard; players get their home page.
 export function CricketHome() {
@@ -26,23 +36,23 @@ export function CricketHome() {
 }
 
 function PlayerHome() {
-  const { me, fallback } = useMyCricket("Home");
+  const { me, fallback } = useMyCricket(TITLES.home);
   if (!me) return fallback;
   return <FollowedPlayerMatches me={me} />;
 }
 
 // Loads the signed-in player, or explains why there isn't one.
-function useMyCricket(title: string): { me: CricketMe; fallback: null } | { me: null; fallback: ReactElement } {
+function useMyCricket(title: PageTitle): { me: CricketMe; fallback: null } | { me: null; fallback: ReactElement } {
   const { data: me, isLoading } = useCricketMe();
   const { admin } = useAdminAuth();
   if (isLoading || !me) {
-    return { me: null, fallback: <ListCard title={title}><Loader /></ListCard> };
+    return { me: null, fallback: <ListCard {...title}><Loader /></ListCard> };
   }
   if (!me.player) {
     return {
       me: null,
       fallback: (
-        <ListCard title={title}>
+        <ListCard {...title}>
           <div className="admin-empty-state">
             <p className="mb-2">Your account isn't linked to a player yet.</p>
             <p className="admin-hint mb-0">
@@ -62,11 +72,11 @@ function useMyCricket(title: string): { me: CricketMe; fallback: null } | { me: 
 }
 
 export function MyCricketStats() {
-  const { me, fallback } = useMyCricket("My Stats");
+  const { me, fallback } = useMyCricket(TITLES.stats);
   if (!me) return fallback;
   return (
-    <ListCard title="My Stats">
-      <CricketPlayerProfile player={me.player!} matches={me.matches} tournaments={me.tournaments} />
+    <ListCard {...TITLES.stats} plain>
+      <CricketPlayerProfile player={me.player!} matches={me.matches} tournaments={me.tournaments} cards />
     </ListCard>
   );
 }
@@ -94,7 +104,7 @@ function FollowedPlayerMatches({ me }: { me: CricketMe }) {
   const { followedIds, footnote } = useFollowedPlayerLines();
   const tournamentNames = new Map((tournaments ?? []).map((t) => [t.id, t.name]));
   return (
-    <ListCard title="Players You Follow">
+    <ListCard {...TITLES.home} plain>
       {followedIds.length === 0 ? (
         <div className="admin-empty-state">
           Follow players to see their matches here. <Link to="/following">Find players to follow</Link>.
@@ -123,6 +133,14 @@ function myLine(match: CricketMatch, playerId: number) {
 }
 
 type Show = "mine" | "following" | "organising";
+
+// "Organising" also lists what they were made a scorer of, once each.
+const organisingMatches = (me: CricketMe) => [
+  ...new Map([...me.createdMatches, ...me.scoringMatches].map((m) => [m.id, m])).values(),
+];
+const organisingTournaments = (me: CricketMe) => [
+  ...new Map([...me.createdTournaments, ...me.scoringTournaments].map((t) => [t.id, t])).values(),
+];
 
 // Playing / Following / Organising dropdown in the header of My Matches and
 // My Tournaments. Organising shows up once they've created something.
@@ -161,14 +179,14 @@ function followingMatches(me: CricketMe) {
 
 export function MyCricketMatches() {
   const [show, setShow] = useState<Show>("mine");
-  const { me, fallback } = useMyCricket("My Matches");
+  const { me, fallback } = useMyCricket(TITLES.matches);
   const { data: tournaments } = useCricketTournaments();
   const { followedIds, footnote } = useFollowedPlayerLines();
   if (!me) return fallback;
   const playerId = me.player!.id;
   const following = followingMatches(me);
   const tournamentNames = new Map(
-    [...(tournaments ?? []), ...me.tournaments, ...me.followedTournaments, ...me.createdTournaments].map((t) => [
+    [...(tournaments ?? []), ...me.tournaments, ...me.followedTournaments, ...organisingTournaments(me)].map((t) => [
       t.id,
       t.name,
     ]),
@@ -178,13 +196,14 @@ export function MyCricketMatches() {
   const potm = me.matches.filter((m) => playerOfMatch(m) === playerId).length;
   return (
     <ListCard
-      title="My Matches"
+      {...TITLES.matches}
+      plain
       action={
         <ShowSelect
           value={show}
           onChange={setShow}
           followingCount={following.length}
-          organisingCount={me.createdMatches.length}
+          organisingCount={organisingMatches(me).length}
         />
       }
     >
@@ -210,7 +229,7 @@ export function MyCricketMatches() {
           />
         </>
       ) : show === "organising" ? (
-        <MatchesBoard key="organising" matches={me.createdMatches} tournamentNames={tournamentNames} />
+        <MatchesBoard key="organising" matches={organisingMatches(me)} tournamentNames={tournamentNames} />
       ) : me.followedTournaments.length === 0 && followedIds.length === 0 ? (
         nothingFollowed("tournaments, teams or players")
       ) : (
@@ -220,115 +239,58 @@ export function MyCricketMatches() {
   );
 }
 
-function TournamentCard({ tournament, chip, matchCount }: {
-  tournament: CricketTournament;
-  chip: { text: string; ready: boolean };
-  matchCount: number;
-}) {
-  const navigate = useNavigate();
-  const open = () => navigate(`/tournaments/${tournament.id}`);
-  return (
-    <div
-      className="card admin-item-card cricket-tournament-card"
-      role="button"
-      tabIndex={0}
-      onClick={open}
-      onKeyDown={(e) => e.key === "Enter" && open()}
-    >
-      <div className="cricket-tour-card-title">
-        <TournamentLogo tournament={tournament} />
-        <h3 className="admin-item-card-title">{tournament.name}</h3>
-      </div>
-      <div className="cricket-chip-row">
-        <span className={`cricket-status ${chip.ready ? "is-ready" : ""}`}>{chip.text}</span>
-        <span className="cricket-chip">
-          <i className="fa-solid fa-calendar-days" aria-hidden="true"></i> {matchCount} matches
-        </span>
-      </div>
-      <small className="text-muted">{tournament.teams.map((team) => team.name).join(" vs ")}</small>
-    </div>
-  );
-}
-
 export function MyCricketTournaments() {
   const [show, setShow] = useState<Show>("mine");
-  const { me, fallback } = useMyCricket("My Tournaments");
+  const { me, fallback } = useMyCricket(TITLES.tournaments);
   if (!me) return fallback;
   const playerId = me.player!.id;
   const allMatches = [
-    ...new Map([...me.matches, ...me.followedMatches, ...me.createdMatches].map((m) => [m.id, m])).values(),
+    ...new Map([...me.matches, ...me.followedMatches, ...organisingMatches(me)].map((m) => [m.id, m])).values(),
   ];
-  const matchCount = (tournament: CricketTournament) =>
-    allMatches.filter((m) => m.tournamentId === tournament.id).length;
-
-  let list: ReactElement;
-  if (show === "mine") {
-    list =
-      me.tournaments.length === 0 ? (
-        <div className="admin-empty-state">You haven't been picked for a tournament yet.</div>
-      ) : (
-        <div className="admin-card-grid">
-          {me.tournaments.map((tournament) => {
-            const myTeam = tournament.teams.find((team) => team.playerIds.includes(playerId));
-            return (
-              <TournamentCard
-                key={tournament.id}
-                tournament={tournament}
-                chip={{ text: myTeam ? `My team: ${myTeam.name}` : "Teams not picked yet", ready: Boolean(myTeam) }}
-                matchCount={matchCount(tournament)}
-              />
-            );
-          })}
-        </div>
-      );
-  } else if (show === "organising") {
-    list = (
-      <div className="admin-card-grid">
-        {me.createdTournaments.map((tournament) => (
-          <TournamentCard
-            key={tournament.id}
-            tournament={tournament}
-            chip={{ text: "Organiser", ready: true }}
-            matchCount={matchCount(tournament)}
-          />
-        ))}
-      </div>
-    );
-  } else {
-    list =
-      me.followedTournaments.length === 0 ? (
-        nothingFollowed("tournaments")
-      ) : (
-        <div className="admin-card-grid">
-          {me.followedTournaments.map((tournament) => (
-            <TournamentCard
-              key={tournament.id}
-              tournament={tournament}
-              chip={{ text: "Following", ready: true }}
-              matchCount={matchCount(tournament)}
-            />
-          ))}
-        </div>
-      );
-  }
+  const card = (footnote: (tournament: CricketTournament) => ReactNode) => (tournament: CricketTournament) => (
+    <TournamentCard
+      key={tournament.id}
+      tournament={tournament}
+      matchCount={allMatches.filter((m) => m.tournamentId === tournament.id).length}
+      footnote={footnote(tournament)}
+    />
+  );
 
   return (
     <ListCard
-      title="My Tournaments"
+      {...TITLES.tournaments}
+      plain
       action={
         <ShowSelect
           value={show}
           onChange={setShow}
           followingCount={me.followedTournaments.length}
-          organisingCount={me.createdTournaments.length}
+          organisingCount={organisingTournaments(me).length}
         />
       }
     >
-      {list}
-      <p className="admin-hint mt-3 mb-0">
-        Open a tournament for its teams, fixtures, points table and stats. <Link to="/me">My Stats</Link>{" "}
-        has your career numbers.
-      </p>
+      {show === "mine" ? (
+        <TournamentsBoard
+          key="mine"
+          tournaments={me.tournaments}
+          empty="You haven't been picked for a tournament yet."
+          renderCard={card((tournament) => {
+            const myTeam = tournament.teams.find((team) => team.playerIds.includes(playerId));
+            return <TeamFootnote teamName={myTeam?.name ?? null} />;
+          })}
+        />
+      ) : show === "organising" ? (
+        <TournamentsBoard
+          key="organising"
+          tournaments={organisingTournaments(me)}
+          empty="You haven't created or been made a scorer of a tournament yet."
+          renderCard={card(() => null)}
+        />
+      ) : me.followedTournaments.length === 0 ? (
+        nothingFollowed("tournaments")
+      ) : (
+        <TournamentsBoard key="following" tournaments={me.followedTournaments} empty={null} renderCard={card(() => null)} />
+      )}
     </ListCard>
   );
 }
@@ -436,25 +398,48 @@ function TeamCard({ team, playerId }: { team: MyTeam; playerId: number }) {
   );
 }
 
+type TeamFilter = "all" | "tournament" | "friendly";
+
+const TEAM_FILTERS: { value: TeamFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "tournament", label: "Tournament" },
+  { value: "friendly", label: "Friendly" },
+];
+
 export function MyCricketTeams() {
-  const { me, fallback } = useMyCricket("My Teams");
+  const [filter, setFilter] = useState<TeamFilter>("all");
+  const { me, fallback } = useMyCricket(TITLES.teams);
   if (!me) return fallback;
   const playerId = me.player!.id;
   const teams = myTeams(me, playerId);
+  const visible = teams.filter((team) => filter === "all" || (filter === "tournament") === Boolean(team.tournament));
   return (
-    <ListCard title="My Teams">
-      {teams.length === 0 ? (
-        <div className="admin-empty-state">You're not on a team yet.</div>
+    <ListCard {...TITLES.teams} plain>
+      <div className="cricket-squad-toolbar">
+        <div className="admin-segmented cricket-tabs cricket-text-tabs" role="tablist" aria-label="Team kind">
+          {TEAM_FILTERS.map((f) => (
+            <button
+              key={f.value}
+              type="button"
+              role="tab"
+              aria-selected={filter === f.value}
+              className={filter === f.value ? "active" : ""}
+              onClick={() => setFilter(f.value)}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {visible.length === 0 ? (
+        <div className="admin-empty-state">{teams.length === 0 ? "You're not on a team yet." : "No teams here."}</div>
       ) : (
         <div className="admin-card-grid">
-          {teams.map((team) => (
+          {visible.map((team) => (
             <TeamCard key={team.key} team={team} playerId={playerId} />
           ))}
         </div>
       )}
-      <p className="admin-hint mt-3 mb-0">
-        Tap a team for its profile: players, matches, leaderboard and stats.
-      </p>
     </ListCard>
   );
 }

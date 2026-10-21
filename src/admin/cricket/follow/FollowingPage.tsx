@@ -90,6 +90,12 @@ function FollowCard({ to, logo, title, detail, follow }: {
   );
 }
 
+const FOLLOWING_TITLE = {
+  title: "Following",
+  icon: "fa-solid fa-star",
+  subtitle: "Keep up with the players, teams and tournaments you care about",
+};
+
 // The players, teams and tournaments the signed-in player follows, and
 // (Discover) everything else they could follow.
 export function FollowingPage() {
@@ -105,14 +111,14 @@ export function FollowingPage() {
 
   if (isLoading || !mine) {
     return (
-      <ListCard title="Following">
+      <ListCard {...FOLLOWING_TITLE}>
         <Loader />
       </ListCard>
     );
   }
   if (myId === null) {
     return (
-      <ListCard title="Following">
+      <ListCard {...FOLLOWING_TITLE}>
         <div className="admin-empty-state">
           Your account isn't linked to a player yet, so you can't follow anyone. Check the mobile number in My Profile.
         </div>
@@ -216,7 +222,7 @@ export function FollowingPage() {
   }
 
   return (
-    <ListCard title="Following">
+    <ListCard {...FOLLOWING_TITLE}>
       <CricketKpis
         items={[
           { label: "Tournaments", value: followsKind("tournament").length, icon: "fa-trophy", tone: "total" },

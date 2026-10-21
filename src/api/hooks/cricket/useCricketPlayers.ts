@@ -1,6 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../../client";
-import type { ApiEnvelope, CricketMe, CricketPlayer, CricketPlayerRole } from "../../types";
+import type {
+  ApiEnvelope,
+  CricketMatch,
+  CricketMe,
+  CricketPlayer,
+  CricketPlayerRole,
+  CricketTournament,
+} from "../../types";
 
 export interface CricketPlayerInput {
   name: string;
@@ -24,6 +31,20 @@ export function useCricketPlayers() {
     queryKey: ["cricket-players"],
     queryFn: async () => {
       const { data } = await apiClient.get<ApiEnvelope<CricketPlayer[]>>("/admin/cricket/players");
+      return data.data;
+    },
+  });
+}
+
+// Any player's matches and tournaments, for their profile.
+export function useCricketPlayerCareer(id: number) {
+  return useQuery({
+    // Under "cricket-matches" so scoring a match refreshes it.
+    queryKey: ["cricket-matches", "player-career", id],
+    queryFn: async () => {
+      const { data } = await apiClient.get<ApiEnvelope<{ matches: CricketMatch[]; tournaments: CricketTournament[] }>>(
+        `/admin/cricket/players/${id}/career`,
+      );
       return data.data;
     },
   });

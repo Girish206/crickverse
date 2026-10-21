@@ -74,6 +74,13 @@ export function useCreateCricketTournament() {
   );
 }
 
+// Players who score every match in the tournament.
+export function useSetCricketTournamentScorers() {
+  return useTournamentMutation(({ id, playerIds }: { id: number; playerIds: number[] }) =>
+    apiClient.put(`/admin/cricket/tournaments/${id}/scorers`, { playerIds }),
+  );
+}
+
 export function useUpdateCricketTournament() {
   return useTournamentMutation(({ id, ...input }: CricketTournamentInput & { id: number }) =>
     apiClient.put(`/admin/cricket/tournaments/${id}`, input),

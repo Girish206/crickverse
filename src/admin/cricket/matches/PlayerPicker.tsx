@@ -23,10 +23,12 @@ interface PlayerPickerProps {
   onPick: (id: number) => void;
   onClose: () => void;
   footer?: ReactNode;
+  // A line above the list saying what the pick does.
+  hint?: ReactNode;
 }
 
 // Full-screen list for choosing a batter or bowler, with search.
-export function PlayerPicker({ title, icon, items, nameOf, selectedId, onPick, onClose, footer }: PlayerPickerProps) {
+export function PlayerPicker({ title, icon, items, nameOf, selectedId, onPick, onClose, footer, hint }: PlayerPickerProps) {
   const { data: players } = useCricketPlayers();
   const [search, setSearch] = useState("");
   const term = search.trim().toLowerCase();
@@ -35,6 +37,7 @@ export function PlayerPicker({ title, icon, items, nameOf, selectedId, onPick, o
 
   return (
     <BottomSheet title={title} icon={icon} onClose={onClose} footer={footer} fullScreen>
+      {hint && <p className="cricket-sheet-context">{hint}</p>}
       {items.length > 6 && (
         <input
           type="search"

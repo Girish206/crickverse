@@ -43,7 +43,7 @@ export function MatchesBoard({
   return (
     <>
       <div className="cricket-squad-toolbar">
-        <div className="admin-segmented cricket-tabs" role="tablist" aria-label="Match status">
+        <div className="admin-segmented cricket-tabs cricket-text-tabs" role="tablist" aria-label="Match status">
           {FILTERS.map((f) => (
             <button
               key={f.value}
@@ -97,6 +97,9 @@ export function CricketMatchesList() {
   return (
     <ListCard
       title="Matches"
+      icon="fa-solid fa-calendar-days"
+      subtitle="Fixtures, live games and results"
+      plain
       action={
         <Button variant="primary" onClick={() => setCreating(true)}>
           + Schedule

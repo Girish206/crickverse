@@ -3,7 +3,7 @@ import { monogram } from "../../../utils/format";
 import { avatarColorFor } from "../avatarColor";
 import { PlayerLink } from "../players/PlayerProfileSheet";
 import { chaseInfo, impactLine, inningsSummary, matchAwards, rate, type NameOf } from "../stats";
-import { formatMatchDate, battingOrder, stageLabel, teamScore } from "./matchUtils";
+import { formatMatchDate, battingOrder, matchStageLabel, teamScore } from "./matchUtils";
 
 interface MatchHeroProps {
   match: CricketMatch;
@@ -90,7 +90,7 @@ export function MatchHero({ match, nameOf }: MatchHeroProps) {
 
       <div className="cricket-hero-meta">
         <span>
-          <i className="fa-solid fa-trophy" aria-hidden="true"></i> {stageLabel(match.stage)} · {match.overs} ov
+          <i className="fa-solid fa-trophy" aria-hidden="true"></i> {matchStageLabel(match)} · {match.overs} ov
         </span>
         {match.status !== "scheduled" && match.scheduledAt && (
           <span>

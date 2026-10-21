@@ -350,7 +350,11 @@ export function CricketLeaderboardPage() {
   const { data: matches, isLoading } = useCricketMatches(tournamentId ?? undefined);
   const { data: tournaments } = useCricketTournaments();
   return (
-    <ListCard title="Leaderboard">
+    <ListCard
+      title="Leaderboard"
+      icon="fa-solid fa-ranking-star"
+      subtitle="Top run-scorers, wicket-takers and award winners"
+    >
       <div className="cricket-filter-select">
         <SelectInput
           label="Tournament (all if empty)"

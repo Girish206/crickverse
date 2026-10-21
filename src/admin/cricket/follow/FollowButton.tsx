@@ -1,4 +1,4 @@
-import { sameTarget, useFollowCounts, useMyFollows, useSetFollow } from "../../../api/hooks/cricket/useCricketFollows";
+import { sameTarget, useMyFollows, useSetFollow } from "../../../api/hooks/cricket/useCricketFollows";
 import type { CricketFollowTarget } from "../../../api/types";
 import { PageHeaderAction } from "../../components/PageHeader";
 
@@ -48,17 +48,5 @@ export function FollowHeaderAction({ target }: { target: CricketFollowTarget }) 
       disabled={pending}
       onClick={toggle}
     />
-  );
-}
-
-// "12 followers · 3 following" for a player's profile.
-export function FollowCounts({ playerId }: { playerId: number }) {
-  const { data } = useFollowCounts({ kind: "player", targetId: playerId, teamIndex: null });
-  if (!data) return null;
-  return (
-    <span className="cricket-follow-counts">
-      <strong>{data.followers}</strong> follower{data.followers === 1 ? "" : "s"} · <strong>{data.following ?? 0}</strong>{" "}
-      following
-    </span>
   );
 }

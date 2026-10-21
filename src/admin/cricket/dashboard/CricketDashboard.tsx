@@ -47,7 +47,11 @@ export function CricketDashboard() {
 
   return (
     <div className="cricket-page">
-      <ListCard title="Cricket Dashboard">
+      <ListCard
+        title="Cricket Dashboard"
+        icon="fa-solid fa-chart-pie"
+        subtitle="Players, tournaments and matches at a glance"
+      >
         <CricketKpis
           items={[
             { label: "Players", value: players?.length ?? 0, icon: "fa-users", tone: "total" },

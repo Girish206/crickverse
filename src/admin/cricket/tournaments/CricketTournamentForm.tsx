@@ -17,6 +17,8 @@ import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { ModalForm } from "../../components/ModalForm";
 import { SubmitButton } from "../../components/SubmitButton";
 import InputComp from "../../dms/components/InputComp";
+import { useCricketPlaces } from "../../../api/hooks/cricket/useCricketMatches";
+import { useSuggestions } from "../useSuggestions";
 import { BallTypeChoice, ChipChoice } from "../CricketChoices";
 import { CATEGORIES, MATCH_TYPES, PITCH_TYPES } from "../cricketOptions";
 import {
@@ -178,6 +180,24 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
     setter(e.target.value);
     clear(key);
   };
+  const { data: places } = useCricketPlaces();
+  const citySuggest = useSuggestions({
+    value: city,
+    suggestions: places?.cities ?? [],
+    onPick: (value) => {
+      setCity(value);
+      clear("city");
+    },
+    icon: "fa-solid fa-city",
+  });
+  const groundSuggest = useSuggestions({
+    value: ground,
+    suggestions: places?.grounds ?? [],
+    onPick: (value) => {
+      setGround(value);
+      clear("ground");
+    },
+  });
 
   return (
     <ModalForm onSubmit={onSubmit}>
@@ -221,8 +241,26 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
 
       <InputComp label="Tournament / series name" required value={name} error={errors.name} maxLength={150} onChange={text(setName, "name")} />
       <div className="cricket-form-row">
-        <InputComp label="City" required value={city} error={errors.city} maxLength={100} onChange={text(setCity, "city")} />
-        <InputComp label="Ground" required value={ground} error={errors.ground} maxLength={150} onChange={text(setGround, "ground")} />
+        <InputComp
+          label="City"
+          required
+          value={city}
+          error={errors.city}
+          maxLength={100}
+          {...citySuggest.inputProps}
+          onChange={text(setCity, "city")}
+        />
+        {citySuggest.menu}
+        <InputComp
+          label="Ground"
+          required
+          value={ground}
+          error={errors.ground}
+          maxLength={150}
+          {...groundSuggest.inputProps}
+          onChange={text(setGround, "ground")}
+        />
+        {groundSuggest.menu}
       </div>
       <div className="cricket-form-row">
         <InputComp

@@ -6,6 +6,7 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
+  min-width: 0;
 }
 
 .cricket-toolbar {
@@ -88,14 +89,6 @@
   background: rgba(var(--primary-rgb), 0.15);
   color: var(--primary);
 }
-.cricket-tournament-card {
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-.cricket-tournament-card:hover {
-  transform: translateY(-2px);
-}
-
 /* Tournament form */
 .cricket-team-name-grid {
   display: grid;
@@ -406,13 +399,13 @@
   gap: 10px;
   margin-bottom: 16px;
 }
+/* Solid tiles, like the match cards, since they sit straight on the page. */
+.cricket-kpis .admin-user-stat {
+  background: var(--adm-surface, #fff);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
 
 /* ===== Phones ===== */
-.cricket-match-card-note {
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  color: var(--primary);
-}
 .cricket-potm {
   margin: 8px 0 0;
   color: var(--theme-text-dark);
@@ -516,12 +509,6 @@
   .cricket-scorer-score {
     font-size: var(--fs-xl);
   }
-  .cricket-crease {
-    grid-template-columns: 1fr 1fr;
-  }
-  .cricket-crease-batter.is-bowler {
-    grid-column: 1 / -1;
-  }
   /* Scoring pad: four big buttons a row, kept in reach at the bottom. */
   .cricket-pad {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -566,9 +553,6 @@
   .cricket-board-grid,
   .cricket-match-grid {
     gap: 10px;
-  }
-  .cricket-match-card {
-    padding: 12px;
   }
   .cricket-match-meta {
     gap: 4px 10px;
@@ -761,30 +745,26 @@
 
   /* Match cards */
   .cricket-match-grid {
-    gap: 8px;
+    gap: 10px;
   }
   .cricket-match-card {
-    gap: 3px;
-    padding: 8px 10px;
-    border-radius: 12px;
+    gap: 8px;
+    padding: 12px 12px 12px 16px;
+    border-radius: 14px;
   }
-  .cricket-match-card-top {
-    font-size: var(--fs-2xs);
+  .cricket-match-card-badge {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
   }
-  .cricket-match-status {
-    padding: 1px 7px;
-    font-size: var(--fs-3xs);
-  }
-  .cricket-match-card-team {
+  .cricket-match-card-name,
+  .cricket-match-card-score {
     font-size: var(--fs-base);
   }
-  .cricket-match-card-when {
-    font-size: var(--fs-3xs);
-  }
-  .cricket-match-card-foot,
   .cricket-match-card-note {
-    font-size: var(--fs-2xs);
-    padding-top: 4px;
+    margin: 0 -12px -12px -16px;
+    padding: 7px 12px 7px 16px;
+    font-size: var(--fs-xs);
   }
   .cricket-dash-grid {
     gap: 12px;
@@ -846,9 +826,13 @@
     padding: 5px 10px;
     font-size: var(--fs-sm);
   }
-  .cricket-crease {
-    grid-template-columns: 1fr;
+  .cricket-crease,
+  .cricket-crease-pair {
     gap: 4px;
+  }
+  .cricket-crease-swap {
+    width: 48px;
+    border-radius: 9px;
   }
   .cricket-crease-batter {
     padding: 5px 10px;
@@ -1228,6 +1212,14 @@
   min-width: 24px;
 }
 
+/* Nothing on a cricket screen may widen the page and make it scroll
+   sideways. Clipped here, outside the side gutter, so the edge-to-edge bars
+   (which reach into it) aren't cut off; clip, unlike hidden, keeps the
+   sticky bars working. */
+.scrollable-main:has(> .cricket-module) {
+  overflow-x: clip;
+}
+
 /* Layout.css gives the whole admin a 15px side gutter on phones; cricket
    pages use the screen width more fully. */
 @media (max-width: 560px) {
@@ -1235,35 +1227,54 @@
     padding-left: 6px !important;
     padding-right: 6px !important;
   }
+  /* The Live tab's card hugs the scorer, leaving the pad as wide as it can be. */
+  .cricket-module .admin-card-body.cricket-live-body {
+    padding: 8px;
+  }
 }
 
-/* Scoring dock (this over + pad + actions): sticks to the bottom of the
-   screen on phones while the scorer is scrolled, like the pad alone did. */
+/* Scoring dock (this over + pad + actions): fixed to the bottom of the
+   screen on phones, always in thumb reach; the scorer leaves its height
+   (--cv-dock-h, measured in LiveScorer) free below the card. */
 .cricket-scorer-dock {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 @media (max-width: 560px) {
+  .cricket-page:has(.cricket-scorer-dock) {
+    padding-bottom: var(--cv-dock-h, 0px);
+  }
   .cricket-scorer-dock {
-    position: sticky;
+    position: fixed;
+    left: 0;
+    right: 0;
     bottom: 0;
-    z-index: 5;
+    z-index: 1010;
     gap: 6px;
-    padding: 6px 0 8px;
+    padding: 8px max(8px, env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom))
+      max(8px, env(safe-area-inset-left));
+    border-top: 1px solid var(--border-color);
+    border-radius: 14px 14px 0 0;
     background: var(--bs-body-bg, #fff);
+    box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.1);
   }
   .cricket-scorer-dock .cricket-pad {
     position: static;
     padding: 0;
     background: transparent;
   }
+  /* Just Undo, full width (the rest lives in the top bar's settings). */
   .cricket-scorer-dock .cricket-scorer-actions {
-    flex-wrap: nowrap;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 6px;
   }
+  .cricket-scorer-dock .cricket-scorer-actions > * {
+    min-width: 0;
+  }
   .cricket-scorer-dock .cricket-scorer-actions .btn {
-    padding: 0.3rem 0.5rem !important;
+    padding: 0.4rem 0.5rem !important;
     font-size: var(--fs-xs) !important;
     white-space: nowrap;
   }
@@ -2519,6 +2530,60 @@
 }
 
 /* ===== Match tabs: MVP, Squads, Overs (compact) ===== */
+/* useSuggestions: ground / city type-ahead under a form field. Fixed and
+   portalled to <body>, above bottom sheets, so nothing clips it. */
+.cricket-suggest-menu {
+  position: fixed;
+  z-index: 1100;
+  max-height: 260px;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: var(--adm-surface, var(--bs-body-bg, #fff));
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+  animation: cricket-pill-menu-in 0.14s ease-out;
+}
+.cricket-suggest-menu li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 9px;
+  color: var(--theme-text-dark);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+.cricket-suggest-menu li span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cricket-suggest-menu li i {
+  flex: none;
+  width: 14px;
+  font-size: var(--fs-xs);
+  color: var(--muted-color);
+  text-align: center;
+}
+.cricket-suggest-menu li.is-active {
+  background: rgba(var(--primary-rgb), 0.08);
+}
+.cricket-suggest-menu li.is-new {
+  color: var(--primary);
+}
+.cricket-suggest-menu li.is-new i {
+  color: var(--primary);
+}
+.cricket-suggest-menu li + li.is-new {
+  margin-top: 4px;
+  border-top: 1px dashed var(--border-color);
+  border-radius: 0 0 9px 9px;
+}
+
 /* PillSelect: a pill button and its own themed list (not the OS one). */
 .cricket-pill-select {
   position: relative;
@@ -2534,7 +2599,9 @@
   padding: 5px 12px 5px 14px;
   border: 1px solid rgba(var(--primary-rgb), 0.3);
   border-radius: 999px;
-  background: rgba(var(--primary-rgb), 0.07);
+  /* The tint over a solid surface, so it doesn't show the page through. */
+  background: linear-gradient(rgba(var(--primary-rgb), 0.07), rgba(var(--primary-rgb), 0.07)),
+    var(--adm-surface, #fff);
   color: var(--theme-text-dark);
   font-size: var(--fs-sm);
   font-weight: 600;
@@ -2983,9 +3050,26 @@
     border-right: 0;
     border-radius: 0;
   }
+  /* Straight under the header (no score card above it while live), it
+     sits flush against it too, cancelling the page's 11px top padding. */
+  .cv-page-header + .cricket-match-tabs {
+    margin-top: -11px;
+    border-top: 0;
+  }
   .cricket-match-tabs button {
     padding: 8px 10px;
   }
+}
+
+/* Scorers sheet: how to add one (squads / mobile), then each squad. */
+.cricket-scorer-mode {
+  margin-bottom: 12px;
+}
+.cricket-scorer-mode button {
+  flex: 1;
+}
+.cricket-scorer-squad + .cricket-scorer-squad {
+  margin-top: 12px;
 }
 
 /* Player photos: same box as the initial they replace. */
@@ -3382,31 +3466,6 @@
   gap: 4px 8px;
   margin-top: 2px;
 }
-.cricket-roster-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 20px;
-  padding: 0 8px;
-  border: 1px solid rgba(var(--primary-rgb), 0.3);
-  border-radius: 999px;
-  background: rgba(var(--primary-rgb), 0.08);
-  color: var(--primary);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-.cricket-roster-badge i {
-  font-size: 0.65rem;
-}
-.cricket-roster-badge.is-c {
-  border-color: rgba(var(--brand-amber-rgb), 0.5);
-  background: rgba(var(--brand-amber-rgb), 0.14);
-  color: var(--brand-amber-deep);
-}
-:root[data-bs-theme="dark"] .cricket-roster-badge.is-c {
-  color: var(--brand-amber-bright);
-}
 .cricket-roster-avatar-wrap {
   position: relative;
   flex: none;
@@ -3416,10 +3475,15 @@
 .cricket-roster-avatar-wrap.is-lead-c {
   box-shadow: 0 0 0 2px var(--bs-card-bg, #fff), 0 0 0 4px rgb(var(--brand-amber-rgb));
 }
-.cricket-roster-lead {
+/* The C / VC / WK badges, together at the avatar's bottom-right. */
+.cricket-roster-leads {
   position: absolute;
-  right: -4px;
+  right: -5px;
   bottom: -4px;
+  display: flex;
+  gap: 1px;
+}
+.cricket-roster-lead {
   min-width: 18px;
   height: 18px;
   padding: 0 4px;
@@ -3434,7 +3498,10 @@
   font-weight: 800;
   line-height: 1;
 }
-.cricket-roster-avatar-wrap.is-lead-c .cricket-roster-lead {
+.cricket-roster-lead.is-wk {
+  background: #475569;
+}
+.cricket-roster-avatar-wrap.is-lead-c .cricket-roster-lead:not(.is-wk) {
   background: rgb(var(--brand-amber-rgb));
   color: #3a2300;
 }
@@ -4391,7 +4458,14 @@ span.cricket-pick-tile-photo {
   }
 }
 
-/* Tournament cards (list, My tournaments): logo beside the name. */
+/* My Teams cards: avatar beside the name and where the team plays. */
+.cricket-tournament-card {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.cricket-tournament-card:hover {
+  transform: translateY(-2px);
+}
 .cricket-tour-card-title {
   display: flex;
   align-items: center;
@@ -4405,6 +4479,15 @@ span.cricket-pick-tile-photo {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.cricket-my-team-name {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.cricket-my-team-name .admin-item-card-title {
+  margin: 0;
+}
+
 .cricket-tour-badge {
   flex: none;
   width: 40px;
@@ -4438,14 +4521,6 @@ span.cricket-pick-tile-photo {
 .cricket-follow-btn:disabled {
   opacity: 0.6;
   cursor: default;
-}
-.cricket-follow-counts {
-  display: block;
-  font-size: var(--fs-sm);
-  color: var(--muted-color);
-}
-.cricket-follow-counts strong {
-  color: var(--theme-text-dark);
 }
 .cricket-profile-name {
   flex: 1;
@@ -4709,23 +4784,13 @@ span.cricket-pick-tile-photo {
   font-size: var(--fs-sm);
 }
 
-/* My Teams: team cards with the team's initial and where it plays. */
-.cricket-my-team-name {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-.cricket-my-team-name .admin-item-card-title {
-  margin: 0;
-}
-
 /* Team Info tab: captain strip, a win-rate ring beside the W / L / T
    record, then the team's facts as small tiles. */
 .cricket-team-record {
   --record-won: #15803d;
   --record-lost: var(--brand-crimson-deep);
   display: grid;
-  gap: 14px;
+  gap: 8px;
 }
 :root[data-bs-theme="dark"] .cricket-team-record {
   --record-won: #4ade80;
@@ -4734,21 +4799,21 @@ span.cricket-pick-tile-photo {
 .cricket-team-record-captain {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
+  gap: 10px;
+  padding: 8px 12px;
   border: 1px solid rgba(var(--brand-amber-rgb), 0.45);
-  border-radius: 14px;
+  border-radius: 12px;
   background: linear-gradient(100deg, rgba(var(--brand-amber-rgb), 0.16), rgba(var(--brand-amber-rgb), 0.03));
 }
 .cricket-team-record-captain > span:last-child {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  line-height: 1.3;
+  line-height: 1.25;
 }
 .cricket-team-record-captain small {
   color: var(--brand-amber-deep);
-  font-size: var(--fs-xs);
+  font-size: var(--fs-2xs);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -4761,17 +4826,18 @@ span.cricket-pick-tile-photo {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--theme-text-dark);
-  font-size: 1.05rem;
+  font-size: var(--fs-base);
 }
 .cricket-team-record-avatar {
   flex: none;
-  width: 44px;
-  height: 44px;
+  width: 32px;
+  height: 32px;
+  font-size: var(--fs-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  box-shadow: 0 0 0 2px var(--bs-card-bg, #fff), 0 0 0 4px rgb(var(--brand-amber-rgb));
+  box-shadow: 0 0 0 2px var(--bs-card-bg, #fff), 0 0 0 3px rgb(var(--brand-amber-rgb));
   color: #fff;
   font-weight: 700;
 }
@@ -4783,16 +4849,16 @@ span.cricket-pick-tile-photo {
 .cricket-team-record-main {
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 16px;
+  gap: 12px;
+  padding: 10px 12px;
   border: 1px solid var(--border-color);
-  border-radius: 14px;
+  border-radius: 12px;
 }
 .cricket-team-record-ring {
   position: relative;
   flex: none;
-  width: 96px;
-  height: 96px;
+  width: 64px;
+  height: 64px;
 }
 .cricket-team-record-ring svg {
   width: 100%;
@@ -4801,7 +4867,7 @@ span.cricket-pick-tile-photo {
 }
 .cricket-team-record-ring circle {
   fill: none;
-  stroke-width: 8;
+  stroke-width: 7;
 }
 .cricket-team-record-ring .track {
   stroke: var(--border-color);
@@ -4821,37 +4887,37 @@ span.cricket-pick-tile-photo {
 }
 .cricket-team-record-ring strong {
   color: var(--theme-text-dark);
-  font-size: 1.25rem;
+  font-size: var(--fs-base);
   font-weight: 800;
 }
 .cricket-team-record-ring small {
   color: var(--muted-color);
-  font-size: 0.65rem;
+  font-size: var(--fs-3xs);
 }
 .cricket-team-record-wlt {
   flex: 1;
   min-width: 0;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 6px;
 }
 .cricket-team-record-wlt > div {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 10px 4px;
-  border-radius: 12px;
+  padding: 5px 4px;
+  border-radius: 10px;
   background: rgba(var(--primary-rgb), 0.05);
   line-height: 1.2;
 }
 .cricket-team-record-wlt strong {
-  font-size: 1.4rem;
+  font-size: var(--fs-md);
   font-weight: 800;
   color: var(--theme-text-dark);
 }
 .cricket-team-record-wlt small {
   color: var(--muted-color);
-  font-size: var(--fs-xs);
+  font-size: var(--fs-2xs);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -4867,36 +4933,28 @@ span.cricket-pick-tile-photo {
 .cricket-team-record-facts {
   margin: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(min(110px, 100%), 1fr));
+  gap: 6px;
 }
 .cricket-team-record-facts > div {
   min-width: 0;
-  padding: 10px 14px;
+  padding: 6px 10px;
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 10px;
 }
 .cricket-team-record-facts dt {
   color: var(--muted-color);
-  font-size: var(--fs-xs);
+  font-size: var(--fs-2xs);
   font-weight: 500;
 }
 .cricket-team-record-facts dd {
-  margin: 2px 0 0;
+  margin: 1px 0 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--theme-text-dark);
-  font-size: 1.05rem;
+  font-size: var(--fs-sm);
   font-weight: 700;
-}
-@media (max-width: 400px) {
-  .cricket-team-record-main {
-    flex-direction: column;
-    gap: 12px;
-  }
-  .cricket-team-record-wlt {
-    width: 100%;
-  }
 }
 
 /* A player's name that opens their profile (PlayerLink). */

@@ -5,6 +5,7 @@ import {
   useCricketTournament,
   useGenerateCricketTeams,
   useSetCricketMatchSets,
+  useSetCricketTournamentScorers,
 } from "../../../api/hooks/cricket/useCricketTournaments";
 import type { CricketMatch, CricketPlayer, CricketTournament } from "../../../api/types";
 import { avatarColorFor } from "../avatarColor";
@@ -28,6 +29,7 @@ import { TournamentBanner } from "./TournamentBanner";
 import { TournamentInfo } from "./TournamentInfo";
 import { TournamentStats } from "./TournamentStats";
 import { FollowHeaderAction } from "../follow/FollowButton";
+import { ScorersSheet } from "../ScorersSheet";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
@@ -101,12 +103,14 @@ export function CricketTournamentPage() {
   const { data: players } = useCricketPlayers();
   const setMatchSets = useSetCricketMatchSets();
   const generateTeams = useGenerateCricketTeams();
+  const setScorers = useSetCricketTournamentScorers();
   const [mode, setMode] = useState<BuildMode | null>(null);
   const [teamModal, setTeamModal] = useState<TeamModal | null>(null);
 
   const [picked, setPicked] = useState<number[]>([]);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState(false);
+  const [pickingScorers, setPickingScorers] = useState(false);
   const [schedulingMatch, setSchedulingMatch] = useState(false);
   const [params, setParams] = useSearchParams();
   const location = useLocation();
@@ -197,7 +201,10 @@ export function CricketTournamentPage() {
           <>
             <FollowHeaderAction target={{ kind: "tournament", targetId: tournament.id, teamIndex: null }} />
             {canManage && (
-              <PageHeaderAction icon="fa-solid fa-pen" label="Edit tournament" onClick={() => setEditing(true)} />
+              <>
+                <PageHeaderAction icon="fa-solid fa-user-pen" label="Scorers" onClick={() => setPickingScorers(true)} />
+                <PageHeaderAction icon="fa-solid fa-pen" label="Edit tournament" onClick={() => setEditing(true)} />
+              </>
             )}
           </>
         }
@@ -510,6 +517,17 @@ export function CricketTournamentPage() {
         <BottomSheet title="Edit Tournament" onClose={() => setEditing(false)} wide>
           <CricketTournamentForm existing={tournament} onSaved={() => setEditing(false)} />
         </BottomSheet>
+      )}
+      {pickingScorers && (
+        <ScorersSheet
+          title="Tournament Scorers"
+          note="Scorers can edit and score every match in this tournament. Each match's captains can already score it."
+          scorerIds={tournament.scorerIds}
+          squads={tournament.teams}
+          saving={setScorers.isPending}
+          onSave={(playerIds) => setScorers.mutateAsync({ id: tournament.id, playerIds })}
+          onClose={() => setPickingScorers(false)}
+        />
       )}
     </div>
   );

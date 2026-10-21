@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   useAbandonCricketMatch,
   useAddCricketBall,
@@ -110,7 +110,17 @@ function RunChoice({
   );
 }
 
-export function LiveScorer({ match, nameOf }: { match: CricketMatch; nameOf: NameOf }) {
+interface LiveScorerProps {
+  match: CricketMatch;
+  nameOf: NameOf;
+  // The top bar's settings sheet (opened from the match page): the scorer's
+  // own options — players, shot map, ending — around the match's.
+  settingsOpen: boolean;
+  onCloseSettings: () => void;
+  matchSettings: ReactNode;
+}
+
+export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, matchSettings }: LiveScorerProps) {
   const innings = match.innings[match.innings.length - 1];
   const battingXi = match.teams[innings.battingTeam].playerIds;
   const bowlingXi = match.teams[1 - innings.battingTeam].playerIds;
@@ -165,9 +175,9 @@ export function LiveScorer({ match, nameOf }: { match: CricketMatch; nameOf: Nam
       .filter((id) => id !== exclude)
       .map((id) => {
         const row = batting.find((r) => r.playerId === id);
-        return retired.has(id)
-          ? { id, tag: "Retired hurt", note: `${row?.runs ?? 0} (${row?.balls ?? 0}) so far` }
-          : { id, note: "Yet to bat" };
+        // Retired hurt, or swapped out with Change: back in with their score.
+        if (retired.has(id)) return { id, tag: "Retired hurt", note: `${row?.runs ?? 0} (${row?.balls ?? 0}) so far` };
+        return row ? { id, note: `${row.runs} (${row.balls}) so far` } : { id, note: "Yet to bat" };
       });
   const bowlerItems: PickItem[] = bowlingXi.map((id) => {
     const row = bowling.find((r) => r.playerId === id);
@@ -178,6 +188,21 @@ export function LiveScorer({ match, nameOf }: { match: CricketMatch; nameOf: Nam
       tag: id === lastBowler ? "Bowled last over" : undefined,
     };
   });
+  // Replacing a player already in (a wrong pick, or a bowler who can't
+  // finish the over): any batter yet to bat, or another bowler — not the
+  // one who bowled the previous over.
+  const [changing, setChanging] = useState<Slot | null>(null);
+  const previousOverBowler =
+    legal.length >= 6 && !overJustEnded ? legal[Math.floor(legal.length / 6) * 6 - 1].bowlerId : null;
+  const changeBowlerItems: PickItem[] = bowlerItems
+    .filter((item) => item.id !== innings.bowlerId)
+    .map((item) =>
+      item.id === previousOverBowler ? { ...item, disabled: true, tag: "Bowled last over" } : { ...item, disabled: false, tag: undefined },
+    );
+  function change(slot: Slot, id: number) {
+    setChanging(null);
+    setPlayers.mutate({ id: match.id, [slot]: id });
+  }
   const emptySlots: Slot[] = (["strikerId", "nonStrikerId", "bowlerId"] as const).filter((slot) => innings[slot] === null);
 
   // After a pick, move straight on to the next empty slot; the last one
@@ -299,6 +324,21 @@ export function LiveScorer({ match, nameOf }: { match: CricketMatch; nameOf: Nam
 
   const bowlerRow = bowling.find((row) => row.playerId === innings.bowlerId);
 
+  // On phones the dock is fixed to the bottom of the screen; the page keeps
+  // that much room free below the card (--cv-dock-h) so nothing hides behind it.
+  const dockRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const dock = dockRef.current;
+    if (!dock) return;
+    const root = document.documentElement;
+    const observer = new ResizeObserver(() => root.style.setProperty("--cv-dock-h", `${dock.offsetHeight}px`));
+    observer.observe(dock);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty("--cv-dock-h");
+    };
+  }, []);
+
   return (
     <div className="cricket-scorer">
       <div className="cricket-scorer-head">
@@ -375,44 +415,61 @@ export function LiveScorer({ match, nameOf }: { match: CricketMatch; nameOf: Nam
       ) : null}
 
       <div className="cricket-crease">
-        {[innings.strikerId, innings.nonStrikerId].map((playerId, i) => {
-          const row = batting.find((r) => r.playerId === playerId);
-          return (
-            <div key={i} className={`cricket-crease-batter ${i === 0 ? "is-striker" : ""}`}>
-              <span>
-                {playerId === null ? "—" : nameOf(playerId)}
-                {i === 0 && playerId !== null && " *"}
-              </span>
-              <strong>
-                {row?.runs ?? 0} <small>({row?.balls ?? 0})</small>
-              </strong>
-            </div>
-          );
-        })}
-        <div className="cricket-crease-batter is-bowler">
+        <div className="cricket-crease-pair">
+          {(["strikerId", "nonStrikerId"] as const).map((slot, i) => {
+            const playerId = innings[slot];
+            const row = batting.find((r) => r.playerId === playerId);
+            return (
+              <button
+                key={slot}
+                type="button"
+                className={`cricket-crease-batter ${i === 0 ? "is-striker" : ""}`}
+                disabled={playerId === null || busy}
+                onClick={() => setChanging(slot)}
+                title={playerId === null ? undefined : `Change ${i === 0 ? "striker" : "non-striker"}`}
+              >
+                <span>
+                  {playerId === null ? "—" : nameOf(playerId)}
+                  {i === 0 && playerId !== null && " *"}
+                </span>
+                <strong>
+                  {row?.runs ?? 0} <small>({row?.balls ?? 0})</small>
+                </strong>
+              </button>
+            );
+          })}
+          <button
+            type="button"
+            className="cricket-crease-swap"
+            disabled={busy || innings.strikerId === null || innings.nonStrikerId === null}
+            onClick={() =>
+              setPlayers.mutate({ id: match.id, strikerId: innings.nonStrikerId, nonStrikerId: innings.strikerId })
+            }
+            title="Swap strike"
+            aria-label="Swap strike"
+          >
+            <i className="fa-solid fa-arrow-right-arrow-left fa-rotate-90" aria-hidden="true"></i>
+            <span>Swap</span>
+          </button>
+        </div>
+        <button
+          type="button"
+          className="cricket-crease-batter is-bowler"
+          disabled={innings.bowlerId === null || busy}
+          onClick={() => setChanging("bowlerId")}
+          title={innings.bowlerId === null ? undefined : "Change bowler"}
+        >
           <span>
             <i className="fa-solid fa-baseball" aria-hidden="true"></i> {innings.bowlerId === null ? "—" : nameOf(innings.bowlerId)}
           </span>
           <strong>
             {bowlerRow ? `${oversText(bowlerRow.legalBalls)}-${bowlerRow.maidens}-${bowlerRow.runs}-${bowlerRow.wickets}` : "0-0-0-0"}
           </strong>
-        </div>
-        {innings.strikerId !== null && innings.nonStrikerId !== null && (
-          <button
-            type="button"
-            className="admin-link-btn"
-            disabled={busy}
-            onClick={() =>
-              setPlayers.mutate({ id: match.id, strikerId: innings.nonStrikerId, nonStrikerId: innings.strikerId })
-            }
-          >
-            <i className="fa-solid fa-right-left" aria-hidden="true"></i> Swap strike
-          </button>
-        )}
+        </button>
       </div>
 
-      {/* Sticks to the bottom of the screen on phones while scrolling. */}
-      <div className="cricket-scorer-dock">
+      {/* Fixed to the bottom of the screen on phones. */}
+      <div className="cricket-scorer-dock" ref={dockRef}>
       <div className="cricket-this-over">
         <span>{overEndPending ? "Last over" : "This over"}</span>
         {showOver?.balls.map((ball, i) => (
@@ -459,23 +516,6 @@ export function LiveScorer({ match, nameOf }: { match: CricketMatch; nameOf: Nam
         <Button variant="outline" onClick={undo} disabled={busy || !canUndo}>
           <i className="fa-solid fa-rotate-left" aria-hidden="true"></i> Undo last ball
         </Button>
-        <Button variant="outline" onClick={handleEndInnings} disabled={busy}>
-          <i className="fa-solid fa-flag-checkered" aria-hidden="true"></i> {match.innings.length === 2 ? "End match" : "End innings"}
-        </Button>
-        <Button variant="danger-text" onClick={handleAbandon} disabled={busy}>
-          <i className="fa-solid fa-cloud-rain" aria-hidden="true"></i> Abandon
-        </Button>
-        <button
-          type="button"
-          className={`cricket-shot-toggle ${shotMapOn ? "is-on" : ""}`.trim()}
-          role="switch"
-          aria-checked={shotMapOn}
-          onClick={toggleShotMap}
-          title="Mark where each scoring shot went"
-        >
-          <i className="fa-solid fa-bullseye" aria-hidden="true"></i> Shot map
-          <span className="cricket-shot-toggle-knob" aria-hidden="true"></span>
-        </button>
       </div>
       </div>
 
@@ -538,6 +578,137 @@ export function LiveScorer({ match, nameOf }: { match: CricketMatch; nameOf: Nam
               </button>
             ) : undefined
           }
+        />
+      )}
+
+      {settingsOpen && (
+        <BottomSheet title="Match settings" icon="fa-solid fa-sliders" onClose={onCloseSettings}>
+          <h3 className="cricket-sheet-label">Players</h3>
+          <div className="cricket-settings-list">
+            {(
+              [
+                ["strikerId", "Change striker", "fa-baseball-bat-ball"],
+                ["nonStrikerId", "Change non-striker", "fa-user"],
+                ["bowlerId", "Change bowler", "fa-baseball"],
+              ] as const
+            ).map(([slot, label, icon]) => (
+              <button
+                key={slot}
+                type="button"
+                className="cricket-settings-item"
+                disabled={busy || innings[slot] === null}
+                onClick={() => {
+                  onCloseSettings();
+                  setChanging(slot);
+                }}
+              >
+                <i className={`fa-solid ${icon}`} aria-hidden="true"></i>
+                <span>
+                  {label}
+                  <small>{innings[slot] === null ? "Not picked yet" : nameOf(innings[slot])}</small>
+                </span>
+                <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
+              </button>
+            ))}
+            <button
+              type="button"
+              className="cricket-settings-item"
+              disabled={busy || innings.strikerId === null || innings.nonStrikerId === null}
+              onClick={() => {
+                onCloseSettings();
+                setPlayers.mutate({ id: match.id, strikerId: innings.nonStrikerId, nonStrikerId: innings.strikerId });
+              }}
+            >
+              <i className="fa-solid fa-arrow-right-arrow-left fa-rotate-90" aria-hidden="true"></i>
+              <span>
+                Swap strike
+                <small>{nameOf(innings.nonStrikerId)} faces the next ball</small>
+              </span>
+            </button>
+          </div>
+
+          <h3 className="cricket-sheet-label">Scoring</h3>
+          <div className="cricket-settings-list">
+            <button
+              type="button"
+              className="cricket-settings-item"
+              role="switch"
+              aria-checked={shotMapOn}
+              onClick={toggleShotMap}
+            >
+              <i className="fa-solid fa-bullseye" aria-hidden="true"></i>
+              <span>
+                Shot map
+                <small>Mark where each scoring shot went</small>
+              </span>
+              <span className={`cricket-shot-toggle-knob ${shotMapOn ? "is-on" : ""}`.trim()} aria-hidden="true"></span>
+            </button>
+          </div>
+
+          {matchSettings}
+
+          <h3 className="cricket-sheet-label">End play</h3>
+          <div className="cricket-settings-list">
+            <button
+              type="button"
+              className="cricket-settings-item"
+              disabled={busy}
+              onClick={() => {
+                onCloseSettings();
+                void handleEndInnings();
+              }}
+            >
+              <i className="fa-solid fa-flag-checkered" aria-hidden="true"></i>
+              <span>
+                {match.innings.length === 2 ? "End match" : "End innings"}
+                <small>
+                  {match.innings.length === 2 ? "Close the chase and work out the result" : "The other side bats next"}
+                </small>
+              </span>
+            </button>
+            <button
+              type="button"
+              className="cricket-settings-item is-danger"
+              disabled={busy}
+              onClick={() => {
+                onCloseSettings();
+                void handleAbandon();
+              }}
+            >
+              <i className="fa-solid fa-cloud-rain" aria-hidden="true"></i>
+              <span>
+                Abandon match
+                <small>Recorded as a no result</small>
+              </span>
+            </button>
+          </div>
+        </BottomSheet>
+      )}
+
+      {changing && innings[changing] !== null && (
+        <PlayerPicker
+          key={`change-${changing}`}
+          title={changing === "bowlerId" ? "Change bowler" : changing === "strikerId" ? "Change striker" : "Change non-striker"}
+          hint={
+            changing === "bowlerId" ? (
+              <>
+                <i className="fa-solid fa-baseball" aria-hidden="true"></i> Who finishes the over for{" "}
+                <strong>{nameOf(innings.bowlerId)}</strong>? Their figures so far stay with them.
+              </>
+            ) : (
+              <>
+                <i className="fa-solid fa-baseball-bat-ball" aria-hidden="true"></i> Who comes in for{" "}
+                <strong>{nameOf(innings[changing])}</strong>? They aren't out — they keep their score and can bat
+                again later.
+              </>
+            )
+          }
+          icon={`fa-solid ${changing === "bowlerId" ? "fa-baseball" : "fa-baseball-bat-ball"}`}
+          items={changing === "bowlerId" ? changeBowlerItems : batterItems(null)}
+          nameOf={nameOf}
+          selectedId={null}
+          onPick={(id) => change(changing, id)}
+          onClose={() => setChanging(null)}
         />
       )}
 

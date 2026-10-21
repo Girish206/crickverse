@@ -32,6 +32,10 @@ export interface CricketMe {
   // The ones they created (and so organise).
   createdTournaments: CricketTournament[];
   createdMatches: CricketMatch[];
+  // The ones they were made a scorer of (a tournament's scorers score all
+  // its matches).
+  scoringTournaments: CricketTournament[];
+  scoringMatches: CricketMatch[];
 }
 
 export type CricketFollowKind = "player" | "team" | "tournament";
@@ -111,6 +115,8 @@ export interface CricketTournament {
   matchType: CricketMatchType | null;
   // Default overs per innings for its matches.
   overs: number | null;
+  // Players who may score (and edit) its matches / it; see canManage.ts.
+  scorerIds: number[];
   // The account that created it (null on older ones); see canManage.ts.
   createdById: number | null;
   createdAt: string;
@@ -175,6 +181,10 @@ export interface CricketMatchTeam {
   captainId?: number | null;
   viceCaptainId?: number | null;
   keeperId?: number | null;
+  // Which team a one-off side is ("t:<tournamentId>:<index>" or "f:<uuid>");
+  // missing on tournament matches and older one-offs. Read it through
+  // teamKeyOf.
+  teamKey?: string | null;
 }
 
 export type CricketMatchStatus = "scheduled" | "live" | "completed" | "abandoned";
@@ -192,6 +202,12 @@ export type CricketMatchStage =
   | "third-place"
   | "final"
   | "friendly";
+
+// Every ground and city already used on a match or tournament.
+export interface CricketPlaces {
+  grounds: string[];
+  cities: string[];
+}
 
 export interface CricketMatch {
   id: number;
@@ -214,6 +230,12 @@ export interface CricketMatch {
   winner: number | null;
   resultText: string | null;
   playerOfMatchId: number | null;
+  // Players who may score (and edit) its matches / it; see canManage.ts.
+  scorerIds: number[];
+  // Who's scoring it right now (one person at a time; see useScoringSeat):
+  // their account and name.
+  scoringById?: number | null;
+  scoringByName?: string | null;
   // The account that created it (null on older ones); see canManage.ts.
   createdById: number | null;
   createdAt: string;

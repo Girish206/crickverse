@@ -53,6 +53,8 @@ export function CricketPlayersList() {
   return (
     <ListCard
       title="Players"
+      icon="fa-solid fa-users"
+      subtitle="Everyone on the roster, and who can sign in"
       action={
         <div className="d-flex gap-2 flex-wrap">
           <Button variant="outline" onClick={() => setModal({ mode: "bulk" })}>

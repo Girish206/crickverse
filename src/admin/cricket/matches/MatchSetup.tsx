@@ -4,6 +4,7 @@ import {
   useCricketMatch,
   useSetCricketCurrentPlayers,
   useStartCricketMatch,
+  useTeamPlayers,
 } from "../../../api/hooks/cricket/useCricketMatches";
 import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
 import { useCricketTournament } from "../../../api/hooks/cricket/useCricketTournaments";
@@ -18,7 +19,7 @@ import { PlayerCard } from "../players/PlayerCard";
 import type { NameOf } from "../stats";
 import { rolesOf, rolesWithout, TeamRoleChips } from "../tournaments/TeamRoleChips";
 import { CricketMatchForm } from "./CricketMatchForm";
-import { usePlayerNames } from "./matchUtils";
+import { teamKeyOf, usePlayerNames } from "./matchUtils";
 import { PlayerPicker } from "./PlayerPicker";
 import "../../admin.css";
 import "../cricket.css";
@@ -103,8 +104,22 @@ function MatchSetup({ match, nameOf, onExit, onStarted }: MatchSetupProps) {
   const { data: players } = useCricketPlayers();
   const playerById = new Map((players ?? []).map((player) => [player.id, player]));
   const photoOf = (playerId: number) => playerById.get(playerId)?.photoUrl;
-  const rostered = new Set(match.teams.flatMap((team) => team.playerIds));
-  const inTournament = new Set(match.tournamentId === null ? [] : (tournament?.playerIds ?? []));
+  // Each side's whole team, not just who's in this match yet: the tournament
+  // team's current roster, or everyone who has played for that one-off team
+  // (the same team, not just the same name).
+  const standalone = match.tournamentId === null;
+  const { data: friendlyA } = useTeamPlayers(teamKeyOf(match, 0), standalone);
+  const { data: friendlyB } = useTeamPlayers(teamKeyOf(match, 1), standalone);
+  const teamRoster = (slot: 0 | 1) => [
+    ...new Set([
+      ...match.teams[slot].playerIds,
+      ...(standalone
+        ? ((slot === 0 ? friendlyA : friendlyB) ?? [])
+        : (tournament?.teams[match.teams[slot].teamIndex]?.playerIds ?? [])),
+    ]),
+  ];
+  const rostered = new Set([...teamRoster(0), ...teamRoster(1)]);
+  const inTournament = new Set(standalone ? [] : (tournament?.playerIds ?? []));
   // Same badge colours as the match hero, kept apart if both names clash.
   const teamColors = [avatarColorFor(match.teams[0].name), avatarColorFor(match.teams[1].name)];
   for (let salt = 1; teamColors[1] === teamColors[0] && salt < 12; salt++) {
@@ -117,7 +132,7 @@ function MatchSetup({ match, nameOf, onExit, onStarted }: MatchSetupProps) {
   // is too long to show. Anyone already picked by the other side is left out.
   function squadGroups(slot: 0 | 1) {
     const free = (ids: number[]) => ids.filter((id) => !xi[1 - slot].includes(id));
-    const roster = match.teams[slot].playerIds;
+    const roster = teamRoster(slot);
     const squad = [...inTournament].filter((id) => !rostered.has(id));
     const brought = xi[slot].filter((id) => !roster.includes(id) && !squad.includes(id));
     return [
