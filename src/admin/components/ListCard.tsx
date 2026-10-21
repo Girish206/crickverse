@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 
 export interface ListCardProps {
-  title: string;
+  // Left out (or "") when a tab already names the section; the header row
+  // then shows only the action, or nothing.
+  title?: string;
   action?: ReactNode;
   children: ReactNode;
   // Extra class on the outer .card — e.g. constraining it to viewport
@@ -18,10 +20,12 @@ export function ListCard({ title, action, children, className, bodyClassName }: 
   return (
     <div className={`card ${className ?? ""}`.trim()}>
       <div className={`admin-card-body ${bodyClassName ?? ""}`.trim()}>
-        <div className="admin-page-header">
-          <h1>{title}</h1>
-          {action}
-        </div>
+        {(title || action) && (
+          <div className={`admin-page-header ${title ? "" : "is-action-only"}`.trim()}>
+            {title && <h1>{title}</h1>}
+            {action}
+          </div>
+        )}
         {children}
       </div>
     </div>

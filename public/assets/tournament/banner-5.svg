@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" preserveAspectRatio="xMidYMid slice">
+  <!-- Pitch from above: crease lines -->
+  <rect width="1200" height="300" fill="#2b8a3e"/>
+  <rect x="0" y="95" width="1200" height="110" fill="#d9c08a"/>
+  <rect x="0" y="95" width="1200" height="110" fill="#a16207" opacity="0.12"/>
+  <g stroke="#fff" stroke-width="5" fill="none">
+    <line x1="230" y1="70" x2="230" y2="230"/>
+    <line x1="290" y1="95" x2="290" y2="205"/>
+    <line x1="970" y1="70" x2="970" y2="230"/>
+    <line x1="910" y1="95" x2="910" y2="205"/>
+  </g>
+  <g fill="#7a1a16"><rect x="222" y="132" width="16" height="36" rx="3"/><rect x="962" y="132" width="16" height="36" rx="3"/></g>
+  <rect width="1200" height="300" fill="url(#v)"/>
+  <defs>
+    <linearGradient id="v" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a0f12" stop-opacity="0.35"/>
+      <stop offset="0.5" stop-color="#2a0f12" stop-opacity="0"/>
+      <stop offset="1" stop-color="#2a0f12" stop-opacity="0.3"/>
+    </linearGradient>
+  </defs>
+</svg>

@@ -12,6 +12,7 @@ import { MatchCard } from "./matchUi";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
+import { Loader } from "../../components/Loader";
 
 type Filter = "all" | CricketMatchStatus;
 
@@ -74,7 +75,7 @@ export function MatchesBoard({
             <MatchCard
               key={match.id}
               match={match}
-              tournamentName={tournamentNames?.get(match.tournamentId)}
+              tournamentName={match.tournamentId === null ? undefined : tournamentNames?.get(match.tournamentId)}
               footnote={footnote?.(match)}
             />
           ))}
@@ -85,7 +86,8 @@ export function MatchesBoard({
 }
 
 export function CricketMatchesList() {
-  const [tournamentId, setTournamentId] = useState<number | null>(null);
+  // null = all matches, "none" = the standalone ones.
+  const [tournamentId, setTournamentId] = useState<number | "none" | null>(null);
   const { data: matches, isLoading } = useCricketMatches(tournamentId ?? undefined);
   const { data: tournaments } = useCricketTournaments();
   const [creating, setCreating] = useState(false);
@@ -96,7 +98,7 @@ export function CricketMatchesList() {
     <ListCard
       title="Matches"
       action={
-        <Button variant="primary" onClick={() => setCreating(true)} disabled={!tournaments?.length}>
+        <Button variant="primary" onClick={() => setCreating(true)}>
           + Schedule
         </Button>
       }
@@ -118,22 +120,32 @@ export function CricketMatchesList() {
         <SelectInput
           label="Tournament"
           size="sm"
-          options={(tournaments ?? []).map((t) => ({ value: t.id, label: t.name }))}
+          options={[
+            { value: "none", label: "No tournament" },
+            ...(tournaments ?? []).map((t) => ({ value: t.id, label: t.name })),
+          ]}
           value={tournamentId ?? ""}
           onChange={(value) => setTournamentId(value || null)}
         />
       </div>
       {isLoading ? (
-        <p>Loading...</p>
-      ) : !tournaments?.length ? (
-        <div className="admin-empty-state">Create a tournament and its teams first, then schedule matches.</div>
+        <Loader />
       ) : (
         <MatchesBoard matches={all} tournamentNames={tournamentNames} onNew={() => setCreating(true)} />
       )}
 
       {creating && (
-        <BottomSheet title="Schedule Match" onClose={() => setCreating(false)} wide>
-          <CricketMatchForm tournamentId={tournamentId ?? undefined} onSaved={() => setCreating(false)} />
+        <BottomSheet
+          title="Schedule Match"
+          icon="fa-solid fa-baseball-bat-ball"
+          onClose={() => setCreating(false)}
+          wide
+          fullScreen
+        >
+          <CricketMatchForm
+            tournamentId={typeof tournamentId === "number" ? tournamentId : undefined}
+            onSaved={() => setCreating(false)}
+          />
         </BottomSheet>
       )}
     </ListCard>

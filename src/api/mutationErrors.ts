@@ -1,4 +1,5 @@
 import { isAxiosError } from "axios";
+import { toast } from "sonner";
 
 // The API's error envelope is { error: { message, code } } (see the server's
 // errorHandler) — prefer its message, e.g. "This record is still in use by
@@ -14,18 +15,8 @@ export function messageFor(error: unknown): string {
 
 // Shown for every failed create/update/delete (wired up once in main.tsx via
 // the QueryClient's MutationCache), so no admin screen fails silently.
-// sweetalert2 is imported lazily since only admin pages run mutations.
-export async function showMutationError(error: unknown) {
+export function showMutationError(error: unknown) {
   // 401s already redirect to the login page (see api/client.ts).
   if (isAxiosError(error) && error.response?.status === 401) return;
-  const { default: Swal } = await import("sweetalert2");
-  void Swal.fire({
-    toast: true,
-    position: "top-end",
-    icon: "error",
-    title: messageFor(error),
-    showConfirmButton: false,
-    timer: 5000,
-    timerProgressBar: true,
-  });
+  toast.error(messageFor(error), { duration: 5000 });
 }

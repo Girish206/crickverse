@@ -29,12 +29,14 @@ export function BottomSheet({ title, icon, onClose, children, footer, fullScreen
     const self = {};
     openSheets.push(self);
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && openSheets.at(-1) === self && onClose();
-    const previous = document.body.style.overflow;
+    // The page stays locked while any sheet is open. Restoring a saved value
+    // instead would leave it stuck when sheets close out of order (e.g. a
+    // parent sheet unmounting before the one opened from it).
     document.body.style.overflow = "hidden";
     document.addEventListener("keydown", onKey);
     return () => {
       openSheets.splice(openSheets.indexOf(self), 1);
-      document.body.style.overflow = previous;
+      if (openSheets.length === 0) document.body.style.overflow = "";
       document.removeEventListener("keydown", onKey);
     };
   }, [onClose]);

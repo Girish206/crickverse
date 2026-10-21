@@ -29,6 +29,15 @@ export function useCricketPlayers() {
   });
 }
 
+// The player with this mobile (null = a new number), e.g. a one-off match's
+// captain.
+export async function lookupCricketPlayer(mobile: string) {
+  const { data } = await apiClient.get<ApiEnvelope<CricketPlayer | null>>("/admin/cricket/players/lookup", {
+    params: { mobile },
+  });
+  return data.data;
+}
+
 function invalidate(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: ["cricket-players"] });
   queryClient.invalidateQueries({ queryKey: ["cricket-me"] });

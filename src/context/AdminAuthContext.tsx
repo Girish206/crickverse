@@ -24,7 +24,7 @@ interface AdminAuthContextValue {
   admin: AdminIdentity | null;
   // `identifier` is a mobile number or an email address.
   login: (identifier: string, password: string) => Promise<void>;
-  register: (input: { name: string; mobile: string; password: string }) => Promise<void>;
+  register: (input: { name?: string; mobile: string; password: string }) => Promise<void>;
   // Signs in with a token the API just issued (e.g. after a profile edit,
   // which changes the name and mobile it carries).
   applyToken: (token: string) => void;
@@ -109,7 +109,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     signInWith(data.data.token, true);
   }
 
-  async function register(input: { name: string; mobile: string; password: string }) {
+  async function register(input: { name?: string; mobile: string; password: string }) {
     const { data } = await apiClient.post<ApiEnvelope<{ token: string }>>("/admin/cricket/register", input);
     signInWith(data.data.token, true);
   }

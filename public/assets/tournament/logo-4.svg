@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <!-- Trophy -->
+  <circle cx="60" cy="60" r="60" fill="#c0311b"/>
+  <g fill="#ffd83d">
+    <path d="M38 28 H82 V46 Q82 70 60 72 Q38 70 38 46Z"/>
+    <path d="M38 34 H28 Q26 52 42 56 L40 50 Q32 48 33 40 H38Z"/>
+    <path d="M82 34 H92 Q94 52 78 56 L80 50 Q88 48 87 40 H82Z"/>
+    <rect x="55" y="72" width="10" height="14"/>
+    <rect x="42" y="86" width="36" height="10" rx="3"/>
+  </g>
+  <path d="M60 36 L63 44 L71 44 L65 49 L67 57 L60 52 L53 57 L55 49 L49 44 L57 44Z" fill="#c0311b"/>
+</svg>

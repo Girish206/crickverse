@@ -5,30 +5,36 @@
 
 /* -------- 1. CORE SELECT BASE -------- */
 
+/* Underline fields, matching InputComp.css (same --field-* tokens): no box,
+   a thin bottom line that turns the brand colour on focus. */
 .select__control {
-  border-radius: 10px !important;
-  min-height: calc(3rem + 2px) !important;
+  border-radius: 0 !important;
+  min-height: 2.5rem !important;
   height: auto !important;
-  margin-right: 2px !important;
-  background-color: #fff !important;
-  border: 1px solid #c8c6c6 !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--field-line) !important;
+  box-shadow: none !important;
   box-sizing: border-box !important;
+  cursor: pointer !important;
   transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
 }
 
 .select__control:hover {
-  border-color: var(--primary) !important;
+  border-bottom-color: var(--field-line-hover) !important;
 }
 
-/* Base focus state */
-.select__control--is-focused {
-  border: 2px solid var(--primary) !important;
-  box-shadow: 0 0 0 0.2rem var(--primary-light-6) !important;
+/* Focus thickens the line with a shadow, so nothing shifts. */
+.select__control--is-focused,
+.select__control--menu-is-open {
+  border-bottom-color: var(--primary) !important;
+  box-shadow: 0 1px 0 0 var(--primary) !important;
 }
 
 /* Internal padding for the value container */
 .select__value-container {
-  padding: 2px 0.85rem !important;
+  padding: 2px 0.25rem !important;
+  font-size: var(--fs-base);
 }
 
 /* Ensure single value text is centered correctly */
@@ -46,43 +52,78 @@
 
 /* -------- 2. SIZING VARIANTS -------- */
 
-/* Small (SM) */
+/* Same heights as InputComp's fields (taller with a floating label). */
 .select-sm .select__control {
-  min-height: calc(2.65rem + 2px) !important;
-  height: auto !important;
+  min-height: 2.15rem !important;
 }
 
-/* Medium (MD) - Default */
 .select-md .select__control {
-  min-height: calc(3rem + 2px) !important;
-  height: auto !important;
+  min-height: 2.5rem !important;
 }
 
-/* Large (LG) */
 .select-lg .select__control {
-  min-height: calc(3.25rem + 2px) !important;
-  height: auto !important;
+  min-height: 2.85rem !important;
+}
+
+.form-floating.select-sm .select__control {
+  min-height: 2.3rem !important;
+}
+
+.form-floating.select-md .select__control {
+  min-height: 2.6rem !important;
+}
+
+.form-floating.select-lg .select__control {
+  min-height: 3rem !important;
 }
 
 
 /* -------- 3. DROPDOWN & OPTION STYLES -------- */
 
-/* Hovered/Focused option in dropdown */
+/* The open menu: a rounded card like the PillSelect filter dropdown. */
+.select__menu {
+  margin-top: 6px !important;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 14px !important;
+  background: var(--bs-body-bg) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14) !important;
+}
+
+.select__menu-list {
+  padding: 6px !important;
+}
+
+.select__option {
+  border-radius: 9px;
+  padding: 8px 10px !important;
+  background-color: transparent !important;
+  color: var(--theme-text-dark) !important;
+  font-size: var(--fs-sm);
+  cursor: pointer !important;
+}
+
+/* Hovered / keyboard-focused option */
 .select__option--is-focused {
-  background-color: var(--primary-light-6) !important;
-  color: #000 !important;
+  background-color: rgba(var(--primary-rgb), 0.08) !important;
 }
 
-/* Selected option in dropdown */
+/* Selected option: brand text with a tick, not a solid fill */
 .select__option--is-selected {
-  background-color: var(--primary) !important;
-  color: #fff !important;
+  color: var(--primary) !important;
+  font-weight: 700;
 }
 
-/* Combined focused and selected state */
-.select__option--is-selected.select__option--is-focused {
-  background-color: var(--primary) !important;
-  color: #fff !important;
+.select__option--is-selected::after {
+  content: "\f00c";
+  float: right;
+  font-family: "Font Awesome 7 Free", "Font Awesome 6 Free";
+  font-weight: 900;
+  font-size: 0.75rem;
+}
+
+.select__menu-notice {
+  font-size: var(--fs-sm);
 }
 
 
@@ -93,25 +134,22 @@
   position: relative;
 }
 
-.select-label {
-  font-size: var(--fs-md);
-}
-
-.select-sm .select-label {
-  font-size: var(--fs-base);
-}
-
+/* Matches InputComp's label above a normal (non-floating) field. */
+.select-label,
+.select-sm .select-label,
 .select-lg .select-label {
-  font-size: var(--fs-md);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--field-muted);
 }
 
 /* Label base styling */
 .select-floating-label {
   position: absolute;
-  left: 0.85rem;
+  left: 0.25rem;
   pointer-events: none;
   transition: all 0.2s ease;
-  color: #6c757d;
+  color: var(--field-muted);
   z-index: 5;
   transform-origin: 0 0;
   height: 100%;
@@ -128,57 +166,52 @@
 
 /* Size-specific label adjustments - Default Centered State */
 .select-sm .select-floating-label {
-  font-size: var(--fs-md);
-  /* padding-top: 1.4rem !important; */
+  font-size: var(--fs-sm);
 }
 
-.select-md .select-floating-label {
-  font-size: var(--fs-md);
-  /* padding-top: 1.3rem !important; */
-}
-
+.select-md .select-floating-label,
 .select-lg .select-floating-label {
-  font-size: var(--fs-md);
-  /* padding-top: 1.2rem !important; */
+  font-size: var(--fs-base);
 }
 
 /* Active Floating State (Triggered when value exists or focused) */
-.floating-label-active {
-  opacity: 1;
-  transform: scale(0.8) translateY(-0.75rem) translateX(0.15rem);
-  height: auto;
-  top: 0.35rem;
-  /* Precise offset for active state */
-}
-
-.select-sm .floating-label-active {
-  top: 0.25rem;
-}
-
+/* Raised to the field's top edge, just above the value (as InputComp). */
+.floating-label-active,
+.select-sm .floating-label-active,
 .select-lg .floating-label-active {
-  transform: scale(0.85) translateY(-0.8rem) translateX(0.15rem);
-  top: 0.45rem;
+  opacity: 1;
+  transform: scale(0.8) translateY(-0.1rem);
+  height: auto;
+  top: 0;
+}
+
+/* InputComp.css pins every .form-floating > label to height: 100%
+   !important; the raised label has to shrink to its text like InputComp's,
+   or it sits lower and crowds the value. */
+.form-floating > .floating-label-active {
+  height: auto !important;
+}
+
+.select-wrapper:focus-within .floating-label-active {
+  color: var(--primary);
 }
 
 
 .form-floating .select__value-container {
-  padding-top: 0.8rem !important;
-  padding-left: 0.6rem !important;
+  padding-top: 0.85rem !important;
+  padding-bottom: 0 !important;
+  padding-left: 0.25rem !important;
   display: grid !important;
   align-items: center !important;
 }
 
-/* Container padding for different sizes when floating */
 .form-floating.select-sm .select__value-container {
-  padding-top: 0.8rem !important;
-  padding-left: 0.66rem !important;
-  font-size: var(--fs-base) !important;
+  padding-top: 0.75rem !important;
+  font-size: var(--fs-sm) !important;
 }
 
 .form-floating.select-lg .select__value-container {
   padding-top: 1rem !important;
-  padding-left: 0.6rem !important;
-  font-size: var(--fs-md) !important;
 }
 
 
@@ -198,12 +231,28 @@
   align-self: center !important;
 }
 
+/* No divider between clear and arrow; a small brand-coloured chevron. */
 .select__indicator-separator {
-  align-self: center !important;
-  height: 60% !important;
-  /* Standard centered separator height */
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
+  display: none !important;
+}
+
+.select__indicator {
+  padding: 4px !important;
+  color: var(--field-muted) !important;
+}
+
+.select__dropdown-indicator {
+  color: var(--primary) !important;
+  transition: transform 0.2s ease !important;
+}
+
+.select__dropdown-indicator svg {
+  width: 16px;
+  height: 16px;
+}
+
+.select__control--menu-is-open .select__dropdown-indicator {
+  transform: rotate(180deg);
 }
 
 

@@ -432,8 +432,80 @@
   padding: 12px 0 !important;
 }
 
-/* Mobile Drawer Adjustments */
-@media (max-width: 767px) {
+/* Drawer header and its divider, shown on phones only */
+.sidebar-mobile-head,
+.sidebar-mobile-divider {
+  display: none;
+}
+
+/* Mobile Drawer Adjustments (same breakpoint as the drawer in Layout.css) */
+@media (max-width: 769px) {
+  .sidebar-mobile-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 18px 16px 14px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  .sidebar-mobile-who {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+    line-height: 1.3;
+  }
+
+  .sidebar-mobile-who .cv-wordmark {
+    font-size: var(--fs-md);
+    white-space: nowrap;
+  }
+
+  .sidebar-mobile-who .cv-wordmark-kn {
+    margin-top: 3px;
+  }
+
+  /* Dotted rule between the drawer header and the menu. */
+  .sidebar-mobile-divider {
+    display: block;
+    margin: 10px 16px 2px;
+    border-top: 2px dotted rgba(var(--primary-rgb), 0.35);
+  }
+
+  .sidebar-mobile-close {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--sidebar-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* The drawer closes from its header instead. */
+  .sidebar-toggle-btn {
+    display: none !important;
+  }
+
+  .sidebar .scrollable-content {
+    padding: 12px 12px 0;
+  }
+
+  .sidebar .menu-group-label {
+    padding: 14px 12px 6px;
+  }
+
+  .sidebar-footer {
+    padding: 12px !important;
+  }
+
+  .sidebar-footer .logout-btn {
+    margin-top: 0;
+  }
+
   .sidebar {
     top: 0 !important;
     left: -280px !important;
@@ -458,5 +530,376 @@
 
   .sidebar-footer {
     border-radius: 0 !important;
+  }
+}
+/* ---------- Expanded sidebar polish ----------
+   Icons sit in soft tiles; the active item fills its tile with the brand
+   colour, which replaces the edge bar (it floated away from the pill). */
+.sidebar-open .nav-link {
+  padding: 7px 12px 7px 8px !important;
+  gap: 12px;
+}
+
+.sidebar-open .nav-link i.icon {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  font-size: var(--fs-md);
+  background: rgba(var(--primary-rgb), 0.07);
+}
+
+.sidebar-open .nav-link:hover {
+  transform: translateX(3px);
+}
+
+.sidebar-open .nav-link:hover i.icon {
+  background: rgba(var(--primary-rgb), 0.14);
+  filter: none;
+}
+
+.sidebar-open .nav-item.active > .nav-link {
+  background: rgba(var(--primary-rgb), 0.09) !important;
+}
+
+.sidebar-open .nav-item.active > .nav-link i.icon {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark-1) 100%);
+  color: #ffffff !important;
+  box-shadow: 0 6px 14px -4px rgba(var(--primary-rgb), 0.55);
+}
+
+.sidebar-open .nav-item.active::before {
+  display: none;
+}
+
+/* Logout: `.sidebar .nav-link` was overriding its red, so it read as a
+   faded menu item. */
+.sidebar .sidebar-footer .logout-btn {
+  margin-top: 0;
+  color: #e11d48 !important;
+  font-weight: 700 !important;
+  background: transparent;
+  border: 1px solid rgba(244, 63, 94, 0.25);
+}
+
+.sidebar .sidebar-footer .logout-btn:hover {
+  background: #f43f5e !important;
+  border-color: #f43f5e;
+  color: #ffffff !important;
+}
+
+.sidebar-open .sidebar-footer {
+  padding: 14px 12px !important;
+}
+
+/* ---------- Tighter left gutter ---------- */
+.sidebar.sidebar-open .scrollable-content {
+  padding-left: 6px;
+}
+
+.sidebar.sidebar-open .nav-item {
+  padding: 0 8px 0 4px;
+}
+
+.sidebar.sidebar-open .nav-link {
+  padding-left: 6px !important;
+}
+
+@media (max-width: 769px) {
+  .sidebar .scrollable-content {
+    padding: 10px 8px 0 6px;
+  }
+
+  .sidebar .menu-group-label {
+    padding: 14px 10px 6px;
+  }
+}
+
+/* ---------- Active item: animated background ----------
+   A slow-drifting brand gradient plus a light sweep that passes across the
+   pill; the icon tile gets a soft breathing glow. */
+.sidebar.sidebar-open .nav-item.active > .nav-link {
+  overflow: hidden;
+  isolation: isolate;
+  background: linear-gradient(
+    110deg,
+    rgba(var(--primary-rgb), 0.06) 0%,
+    rgba(var(--primary-rgb), 0.2) 50%,
+    rgba(var(--primary-rgb), 0.06) 100%
+  ) !important;
+  background-size: 220% 100% !important;
+  animation:
+    cv-nav-in 0.45s var(--transition-cubic),
+    cv-nav-drift 6s ease-in-out infinite;
+}
+
+.sidebar.sidebar-open .nav-item.active > .nav-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.14) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  animation: cv-nav-sweep 3.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.sidebar.sidebar-open .nav-item.active > .nav-link i.icon {
+  animation: cv-nav-glow 2.6s ease-in-out infinite;
+}
+
+@keyframes cv-nav-in {
+  from {
+    opacity: 0.4;
+    transform: translateX(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes cv-nav-drift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes cv-nav-sweep {
+  0% { transform: translateX(-100%); }
+  60%, 100% { transform: translateX(100%); }
+}
+
+@keyframes cv-nav-glow {
+  0%, 100% { box-shadow: 0 6px 14px -4px rgba(var(--primary-rgb), 0.55); }
+  50% { box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.18), 0 6px 18px -2px rgba(var(--primary-rgb), 0.7); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar.sidebar-open .nav-item.active > .nav-link,
+  .sidebar.sidebar-open .nav-item.active > .nav-link::after,
+  .sidebar.sidebar-open .nav-item.active > .nav-link i.icon {
+    animation: none;
+  }
+}
+
+/* ---------- Cricket backdrop ----------
+   Line-art stumps, bat and crease lines sit above the footer, with a seamed
+   ball slowly spinning mid-way down. Both are masks filled with the brand
+   colour, so they follow the theme. */
+.sidebar.sidebar-open .scrollable-content,
+.sidebar.sidebar-open .sidebar-footer,
+.sidebar.sidebar-open .sidebar-mobile-head {
+  position: relative;
+  z-index: 1;
+}
+
+.sidebar.sidebar-open::before,
+.sidebar.sidebar-open::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+  background-color: rgba(var(--primary-rgb), 0.09);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+/* Stumps, bat, ball and crease */
+.sidebar.sidebar-open::before {
+  left: 0;
+  right: 0;
+  bottom: 74px;
+  height: 230px;
+  -webkit-mask-position: center bottom;
+  mask-position: center bottom;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 230' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M-10 212H250M-10 182H250' stroke-dasharray='2 9'/%3E%3Cpath d='M150 70v140M164 70v140M178 70v140' stroke-width='6'/%3E%3Cpath d='M147 63h16M165 63h16' stroke-width='4'/%3E%3Cg transform='rotate(-22 70 205)'%3E%3Crect x='56' y='86' width='28' height='118' rx='9'/%3E%3Cpath d='M70 86V40'  stroke-width='8'/%3E%3Cpath d='M64 48h12M64 58h12M64 68h12' stroke-width='2'/%3E%3Cpath d='M70 100v92' stroke-width='2'/%3E%3C/g%3E%3Ccircle cx='114' cy='200' r='11'/%3E%3Cpath d='M106 192c5 5 5 11 0 16M122 192c-5 5-5 11 0 16' stroke-width='2'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 230' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M-10 212H250M-10 182H250' stroke-dasharray='2 9'/%3E%3Cpath d='M150 70v140M164 70v140M178 70v140' stroke-width='6'/%3E%3Cpath d='M147 63h16M165 63h16' stroke-width='4'/%3E%3Cg transform='rotate(-22 70 205)'%3E%3Crect x='56' y='86' width='28' height='118' rx='9'/%3E%3Cpath d='M70 86V40'  stroke-width='8'/%3E%3Cpath d='M64 48h12M64 58h12M64 68h12' stroke-width='2'/%3E%3Cpath d='M70 100v92' stroke-width='2'/%3E%3C/g%3E%3Ccircle cx='114' cy='200' r='11'/%3E%3Cpath d='M106 192c5 5 5 11 0 16M122 192c-5 5-5 11 0 16' stroke-width='2'/%3E%3C/svg%3E");
+}
+
+/* Spinning seamed ball */
+.sidebar.sidebar-open::after {
+  top: 52%;
+  right: 14px;
+  width: 78px;
+  height: 78px;
+  background-color: rgba(var(--primary-rgb), 0.11);
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='black' stroke-linecap='round'%3E%3Ccircle cx='50' cy='50' r='46' stroke-width='4'/%3E%3Cpath d='M30 9c14 24 14 58 0 82M70 9c-14 24-14 58 0 82' stroke-width='3'/%3E%3Cpath d='M27 20l8-3M30 32l8-2M31 44l8-1M31 56l8 1M30 68l8 2M27 80l8 3M73 20l-8-3M70 32l-8-2M69 44l-8-1M69 56l-8 1M70 68l-8 2M73 80l-8 3' stroke-width='2.5'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='black' stroke-linecap='round'%3E%3Ccircle cx='50' cy='50' r='46' stroke-width='4'/%3E%3Cpath d='M30 9c14 24 14 58 0 82M70 9c-14 24-14 58 0 82' stroke-width='3'/%3E%3Cpath d='M27 20l8-3M30 32l8-2M31 44l8-1M31 56l8 1M30 68l8 2M27 80l8 3M73 20l-8-3M70 32l-8-2M69 44l-8-1M69 56l-8 1M70 68l-8 2M73 80l-8 3' stroke-width='2.5'/%3E%3C/svg%3E");
+  animation: cv-ball-spin 28s linear infinite, cv-ball-bob 7s ease-in-out infinite alternate;
+}
+
+@keyframes cv-ball-spin {
+  to { rotate: 360deg; }
+}
+
+@keyframes cv-ball-bob {
+  from { translate: 0 -10px; }
+  to { translate: -6px 14px; }
+}
+
+:root[data-bs-theme="dark"] .sidebar.sidebar-open::before {
+  background-color: rgba(var(--primary-rgb), 0.12);
+}
+
+:root[data-bs-theme="dark"] .sidebar.sidebar-open::after {
+  background-color: rgba(var(--primary-rgb), 0.14);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar.sidebar-open::after {
+    animation: none;
+  }
+}
+
+/* ---------- Drawer header: brand band ----------
+   A brand-gradient strip with a light sheen passing over it and a seamed
+   ball watermark tucked into the corner. */
+@media (max-width: 769px) {
+  .sidebar.sidebar-open .sidebar-mobile-head {
+    overflow: hidden;
+    margin: 10px 10px 4px;
+    padding: 14px 12px;
+    border: none;
+    border-radius: 18px;
+    background: linear-gradient(
+      125deg,
+      var(--primary) 0%,
+      var(--primary-dark-1) 55%,
+      var(--brand-crimson-deep, var(--primary-dark-2)) 100%
+    );
+    background-size: 160% 160%;
+    box-shadow: 0 10px 24px -10px rgba(var(--primary-rgb), 0.7);
+    animation: cv-head-drift 9s ease-in-out infinite alternate;
+  }
+
+  /* Sheen */
+  .sidebar.sidebar-open .sidebar-mobile-head::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      100deg,
+      transparent 35%,
+      rgba(255, 255, 255, 0.22) 50%,
+      transparent 65%
+    );
+    transform: translateX(-100%);
+    animation: cv-nav-sweep 4.5s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  /* Ball watermark */
+  .sidebar.sidebar-open .sidebar-mobile-head::after {
+    content: "";
+    position: absolute;
+    right: 34px;
+    bottom: -26px;
+    width: 76px;
+    height: 76px;
+    background-color: rgba(255, 255, 255, 0.16);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='black' stroke-linecap='round'%3E%3Ccircle cx='50' cy='50' r='46' stroke-width='4'/%3E%3Cpath d='M30 9c14 24 14 58 0 82M70 9c-14 24-14 58 0 82' stroke-width='3'/%3E%3Cpath d='M27 20l8-3M30 32l8-2M31 44l8-1M31 56l8 1M30 68l8 2M27 80l8 3M73 20l-8-3M70 32l-8-2M69 44l-8-1M69 56l-8 1M70 68l-8 2M73 80l-8 3' stroke-width='2.5'/%3E%3C/svg%3E") no-repeat center / contain;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='black' stroke-linecap='round'%3E%3Ccircle cx='50' cy='50' r='46' stroke-width='4'/%3E%3Cpath d='M30 9c14 24 14 58 0 82M70 9c-14 24-14 58 0 82' stroke-width='3'/%3E%3Cpath d='M27 20l8-3M30 32l8-2M31 44l8-1M31 56l8 1M30 68l8 2M27 80l8 3M73 20l-8-3M70 32l-8-2M69 44l-8-1M69 56l-8 1M70 68l-8 2M73 80l-8 3' stroke-width='2.5'/%3E%3C/svg%3E") no-repeat center / contain;
+    animation: cv-ball-spin 24s linear infinite;
+    pointer-events: none;
+  }
+
+  .sidebar.sidebar-open .sidebar-mobile-head > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .sidebar.sidebar-open .sidebar-mobile-head .navbar-logo-box {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    padding: 5px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  }
+
+  .sidebar.sidebar-open .sidebar-mobile-head .cv-wordmark,
+  .sidebar.sidebar-open .sidebar-mobile-head .cv-wordmark em {
+    color: #ffffff;
+  }
+
+  .sidebar.sidebar-open .sidebar-mobile-head .cv-wordmark em,
+  .sidebar.sidebar-open .sidebar-mobile-head .cv-wordmark-kn {
+    color: var(--brand-amber, #ffd166);
+  }
+
+  .sidebar.sidebar-open .sidebar-mobile-head .sidebar-mobile-close {
+    background: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+  }
+
+  .sidebar.sidebar-open .sidebar-mobile-head .sidebar-mobile-close:active {
+    background: rgba(255, 255, 255, 0.3);
+  }
+}
+
+@keyframes cv-head-drift {
+  from { background-position: 0% 50%; }
+  to { background-position: 100% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar.sidebar-open .sidebar-mobile-head,
+  .sidebar.sidebar-open .sidebar-mobile-head::before,
+  .sidebar.sidebar-open .sidebar-mobile-head::after {
+    animation: none;
+  }
+}
+
+/* Dark theme: --primary-dark-1 is a lighter tint here, so the light band
+   washes out to peach. Use a deep ember band on the navy instead. */
+@media (max-width: 769px) {
+  :root[data-bs-theme="dark"] .sidebar.sidebar-open .sidebar-mobile-head {
+    background:
+      radial-gradient(circle at 0% 0%, rgba(var(--primary-rgb), 0.45), transparent 60%),
+      linear-gradient(
+        125deg,
+        rgba(var(--primary-rgb), 0.3) 0%,
+        rgba(179, 20, 27, 0.28) 60%,
+        var(--adm-raised) 100%
+      ),
+      var(--adm-raised);
+    background-size: 160% 160%;
+    border: 1px solid rgba(var(--primary-rgb), 0.35);
+    box-shadow:
+      0 10px 26px -12px rgba(var(--primary-rgb), 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  :root[data-bs-theme="dark"] .sidebar.sidebar-open .sidebar-mobile-head::before {
+    background: linear-gradient(
+      100deg,
+      transparent 35%,
+      rgba(255, 255, 255, 0.1) 50%,
+      transparent 65%
+    );
+  }
+
+  :root[data-bs-theme="dark"] .sidebar.sidebar-open .sidebar-mobile-head::after {
+    background-color: rgba(var(--primary-rgb), 0.28);
+  }
+
+  :root[data-bs-theme="dark"] .sidebar.sidebar-open .sidebar-mobile-head .navbar-logo-box {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: none;
+  }
+
+  :root[data-bs-theme="dark"] .sidebar.sidebar-open .sidebar-mobile-head .cv-wordmark {
+    color: #f3f4f6;
+  }
+
+  :root[data-bs-theme="dark"] .sidebar.sidebar-open .sidebar-mobile-head .sidebar-mobile-close {
+    background: rgba(255, 255, 255, 0.08);
+    color: #f3f4f6;
   }
 }

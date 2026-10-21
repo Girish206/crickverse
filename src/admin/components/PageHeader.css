@@ -98,6 +98,10 @@
   color: #dc2626;
   border-color: #dc2626;
 }
+.cv-page-header-btn.is-active {
+  color: var(--primary);
+  border-color: var(--primary);
+}
 .cv-page-header-btn:disabled {
   opacity: 0.5;
   cursor: default;

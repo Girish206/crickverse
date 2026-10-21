@@ -12,6 +12,7 @@ import { Button } from "../../components/Button";
 import { confirmAction } from "../../components/confirmDelete";
 import { BottomSheet } from "../BottomSheet";
 import { PlayerPicker, type PickItem } from "./PlayerPicker";
+import { ShotGround, shotZoneAt } from "./ShotMap";
 import {
   ballLabel,
   battingCard,
@@ -69,6 +70,17 @@ const blankBall: CricketBallInput = {
   fielderId: null,
 };
 
+// Whether the scorer marks each scoring shot on the ground (remembered on
+// this device; off by default).
+const SHOT_MAP_KEY = "crickverse_shotMap";
+function readShotMap() {
+  try {
+    return localStorage.getItem(SHOT_MAP_KEY) === "on";
+  } catch {
+    return false;
+  }
+}
+
 function RunChoice({
   value,
   onChange,
@@ -117,6 +129,9 @@ export function LiveScorer({ match, nameOf }: { match: CricketMatch; nameOf: Nam
     nonStrikerId: null,
     bowlerId: null,
   });
+  const [shotMapOn, setShotMapOn] = useState(readShotMap);
+  // A scoring ball waiting for its spot on the shot map.
+  const [pendingShot, setPendingShot] = useState<Partial<CricketBallInput> | null>(null);
   const [extraModal, setExtraModal] = useState<CricketExtraType | null>(null);
   const [extraRuns, setExtraRuns] = useState(0);
   const [wicketModal, setWicketModal] = useState(false);
@@ -216,11 +231,30 @@ export function LiveScorer({ match, nameOf }: { match: CricketMatch; nameOf: Nam
   }
 
   const record = (ball: Partial<CricketBallInput>) => addBall.mutate({ id: match.id, ...blankBall, ...ball });
+  // With the shot map on, runs off the bat first ask where the shot went.
+  const recordShot = (ball: Partial<CricketBallInput>) =>
+    shotMapOn && (ball.runs ?? 0) > 0 ? setPendingShot(ball) : record(ball);
+
+  function toggleShotMap() {
+    const next = !shotMapOn;
+    setShotMapOn(next);
+    try {
+      localStorage.setItem(SHOT_MAP_KEY, next ? "on" : "off");
+    } catch {
+      // Not saved; it still applies until the page reloads.
+    }
+  }
+
+  function placeShot(x: number, y: number) {
+    if (!pendingShot) return;
+    record({ ...pendingShot, shotX: x, shotY: y, shotZone: shotZoneAt(x, y) });
+    setPendingShot(null);
+  }
 
   function submitExtra() {
     if (!extraModal) return;
     if (extraModal === "wide") record({ extraType: "wide", extras: 1 + extraRuns });
-    if (extraModal === "no-ball") record({ extraType: "no-ball", extras: 1, runs: extraRuns });
+    if (extraModal === "no-ball") recordShot({ extraType: "no-ball", extras: 1, runs: extraRuns });
     if (extraModal === "bye" || extraModal === "leg-bye") record({ extraType: extraModal, extras: Math.max(extraRuns, 1) });
     setExtraModal(null);
   }
@@ -395,7 +429,7 @@ export function LiveScorer({ match, nameOf }: { match: CricketMatch; nameOf: Nam
             type="button"
             className={`cricket-pad-btn ${runs === 4 || runs === 6 ? "is-boundary" : ""}`}
             disabled={padDisabled}
-            onClick={scoreOr(() => record({ runs }))}
+            onClick={scoreOr(() => recordShot({ runs }))}
           >
             {runs}
           </button>
@@ -431,6 +465,17 @@ export function LiveScorer({ match, nameOf }: { match: CricketMatch; nameOf: Nam
         <Button variant="danger-text" onClick={handleAbandon} disabled={busy}>
           <i className="fa-solid fa-cloud-rain" aria-hidden="true"></i> Abandon
         </Button>
+        <button
+          type="button"
+          className={`cricket-shot-toggle ${shotMapOn ? "is-on" : ""}`.trim()}
+          role="switch"
+          aria-checked={shotMapOn}
+          onClick={toggleShotMap}
+          title="Mark where each scoring shot went"
+        >
+          <i className="fa-solid fa-bullseye" aria-hidden="true"></i> Shot map
+          <span className="cricket-shot-toggle-knob" aria-hidden="true"></span>
+        </button>
       </div>
       </div>
 
@@ -494,6 +539,38 @@ export function LiveScorer({ match, nameOf }: { match: CricketMatch; nameOf: Nam
             ) : undefined
           }
         />
+      )}
+
+      {pendingShot && (
+        <BottomSheet
+          title={`Where did the ${pendingShot.runs === 4 ? "four" : pendingShot.runs === 6 ? "six" : "shot"} go?`}
+          icon="fa-solid fa-bullseye"
+          onClose={() => setPendingShot(null)}
+          footer={
+            <div className="cricket-sheet-actions">
+              <button type="button" className="cricket-sheet-undo" onClick={() => setPendingShot(null)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="cricket-sheet-submit"
+                disabled={busy}
+                onClick={() => {
+                  record(pendingShot);
+                  setPendingShot(null);
+                }}
+              >
+                Skip — record {pendingShot.extraType === "no-ball" ? `no ball + ${pendingShot.runs}` : pendingShot.runs}
+              </button>
+            </div>
+          }
+        >
+          <p className="cricket-sheet-context">
+            <i className="fa-solid fa-baseball-bat-ball" aria-hidden="true"></i> {nameOf(innings.strikerId)} · tap where
+            the ball went to record it
+          </p>
+          <ShotGround onPick={placeShot} label="Tap where the ball went" />
+        </BottomSheet>
       )}
 
       {extraModal && (

@@ -23,6 +23,7 @@ import { PLAYER_ROLES } from "../playerRoles";
 import { formatMobile, normalizeMobile } from "../mobile";
 import { PlayerAvatar } from "./PlayerAvatar";
 import { compressImage, MAX_UPLOAD_BYTES, PLAYER_PHOTO } from "../../../utils/compressImage";
+import { Loader } from "../../components/Loader";
 
 const schema = z.object({
   name: z.string().trim().min(1, "Required").max(100),
@@ -88,7 +89,7 @@ export function CricketPlayerForm({ id, onSaved }: CricketPlayerFormProps) {
     onSaved();
   }
 
-  if (id !== undefined && !existing) return <p>Loading...</p>;
+  if (id !== undefined && !existing) return <Loader />;
 
   return (
     <ModalForm onSubmit={handleSubmit(onSubmit)}>
@@ -204,8 +205,8 @@ export function CricketPlayersBulkForm({
       />
       <small className="admin-hint">
         {rows.length} player{rows.length === 1 ? "" : "s"} ready
-        {bad.length > 0 ? `, ${bad.length} line${bad.length === 1 ? "" : "s"} need fixing` : ""} — anyone whose name or
-        number is already listed is skipped.
+        {bad.length > 0 ? `, ${bad.length} line${bad.length === 1 ? "" : "s"} need fixing` : ""} — anyone whose number
+        is already listed is skipped.
       </small>
       <SubmitButton loading={bulkCreate.isPending}>Add Players</SubmitButton>
     </ModalForm>

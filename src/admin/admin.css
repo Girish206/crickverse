@@ -408,6 +408,11 @@ body.admin-page {
   margin-bottom: 20px;
 }
 
+.admin-page-header.is-action-only {
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
 .admin-page-header h1 {
   font-size: var(--fs-lg);
   font-weight: 600;
@@ -914,7 +919,7 @@ body.admin-page {
 }
 .admin-accounts-search i {
   position: absolute;
-  left: 12px;
+  left: 4px;
   top: 50%;
   transform: translateY(-50%);
   color: var(--muted-color);
@@ -923,8 +928,8 @@ body.admin-page {
 }
 .admin-accounts-search .form-control {
   height: 36px;
-  padding-left: 34px !important;
-  border-radius: 999px !important;
+  padding-left: 28px !important;
+  border-radius: 0 !important;
   font-size: var(--fs-sm);
 }
 /* Extra row-action colours: grant login = amber, deactivate = slate,

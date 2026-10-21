@@ -85,6 +85,7 @@ export function MatchAwards({ match, nameOf }: { match: CricketMatch; nameOf: Na
               key={card.title}
               title={card.title}
               icon={card.icon}
+              playerId={card.row!.playerId}
               name={nameOf(card.row!.playerId)}
               photoUrl={photoOf(card.row!.playerId)}
               team={match.teams[card.row!.team]?.name}

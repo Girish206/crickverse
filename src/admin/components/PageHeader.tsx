@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import "./PageHeader.css";
 
 export interface PageHeaderProps {
@@ -20,9 +20,16 @@ export interface PageHeaderProps {
 // and pads the page for it.
 export function PageHeader({ title, subtitle, back, backLabel = "Back", actions }: PageHeaderProps) {
   const navigate = useNavigate();
+  // A screen opened with `state: { from }` (e.g. from My Teams) goes back
+  // there rather than to its usual parent; in-page steps still win.
+  const from = (useLocation().state as { from?: string } | null)?.from;
 
   function goBack() {
     if (typeof back === "function") back();
+    else if (from) {
+      if ((window.history.state?.idx ?? 0) > 0) navigate(-1);
+      else navigate(from);
+    }
     else if (back) navigate(back);
     // history.state.idx is react-router's position in this tab's history.
     else if ((window.history.state?.idx ?? 0) > 0) navigate(-1);
@@ -49,20 +56,24 @@ export function PageHeaderAction({
   label,
   onClick,
   danger,
+  active,
   disabled,
 }: {
   icon: string;
   label: string;
   onClick: () => void;
   danger?: boolean;
+  // Highlighted, for a toggle that's on (following).
+  active?: boolean;
   disabled?: boolean;
 }) {
   return (
     <button
       type="button"
-      className={`cv-page-header-btn ${danger ? "is-danger" : ""}`.trim()}
+      className={`cv-page-header-btn ${danger ? "is-danger" : ""} ${active ? "is-active" : ""}`.trim()}
       onClick={onClick}
       disabled={disabled}
+      aria-pressed={active}
       aria-label={label}
       title={label}
     >

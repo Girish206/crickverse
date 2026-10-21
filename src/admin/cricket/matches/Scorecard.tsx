@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import type { CricketMatch } from "../../../api/types";
+import { PlayerLink } from "../players/PlayerProfileSheet";
 import {
   ballLabel,
   battingCard,
@@ -72,7 +73,7 @@ export function Scorecard({ match, nameOf }: { match: CricketMatch; nameOf: Name
                       <tr key={row.playerId}>
                         <td className="cricket-bat-cell">
                           <span className="cricket-bat-name">
-                            {nameOf(row.playerId)}
+                            <PlayerLink playerId={row.playerId}>{nameOf(row.playerId)}</PlayerLink>
                             {row.outBall === null ? "*" : ""}
                           </span>
                           <small className="cricket-dismissal">
@@ -112,7 +113,12 @@ export function Scorecard({ match, nameOf }: { match: CricketMatch; nameOf: Name
                 {didNotBat.length > 0 && (
                   <p className="cricket-innings-note">
                     <span>Yet to bat / did not bat</span>
-                    {didNotBat.map(nameOf).join(", ")}
+                    {didNotBat.map((id, i) => (
+                      <Fragment key={id}>
+                        {i > 0 && ", "}
+                        <PlayerLink playerId={id}>{nameOf(id)}</PlayerLink>
+                      </Fragment>
+                    ))}
                   </p>
                 )}
                 <table className="cricket-table">
@@ -133,7 +139,9 @@ export function Scorecard({ match, nameOf }: { match: CricketMatch; nameOf: Name
                     {bowlingCard(innings).map((row) => (
                       <tr key={row.playerId}>
                         <td className="cricket-bat-cell">
-                          <span className="cricket-bat-name">{nameOf(row.playerId)}</span>
+                          <span className="cricket-bat-name">
+                            <PlayerLink playerId={row.playerId}>{nameOf(row.playerId)}</PlayerLink>
+                          </span>
                         </td>
                         <td>{row.legalBalls % 6 === 0 ? row.legalBalls / 6 : oversText(row.legalBalls)}</td>
                         <td>{row.maidens}</td>
@@ -160,7 +168,7 @@ export function Scorecard({ match, nameOf }: { match: CricketMatch; nameOf: Name
                         <tr key={w.wicket}>
                           <td>
                             <span className="cricket-bat-name">
-                              {w.wicket}. {nameOf(w.playerId)}
+                              {w.wicket}. <PlayerLink playerId={w.playerId}>{nameOf(w.playerId)}</PlayerLink>
                             </span>
                           </td>
                           <td>
@@ -227,7 +235,13 @@ export function BallByBall({ match, nameOf }: { match: CricketMatch; nameOf: Nam
             </div>
             <div className="cricket-over-card-body">
               <span className="cricket-over-card-who">
-                {nameOf(over.bowlerId)} to {over.batters.map((id) => nameOf(id)).join(", ")}
+                <PlayerLink playerId={over.bowlerId}>{nameOf(over.bowlerId)}</PlayerLink> to{" "}
+                {over.batters.map((id, i) => (
+                  <Fragment key={id}>
+                    {i > 0 && ", "}
+                    <PlayerLink playerId={id}>{nameOf(id)}</PlayerLink>
+                  </Fragment>
+                ))}
               </span>
               <div className="cricket-this-over">
                 {over.balls.map((ball, i) => (

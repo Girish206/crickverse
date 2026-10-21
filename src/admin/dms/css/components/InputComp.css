@@ -4,31 +4,74 @@
    ========================================================================== */
 
 /* -------- 1. CORE INPUT BASE -------- */
+
+/* Underline fields: no box, just a thin bottom line that turns the brand
+   colour on focus. dark.css redefines these tokens for the dark theme. */
+:root {
+  --field-line: #d6d0d1;
+  --field-line-hover: #a9a0a2;
+  --field-error: var(--brand-crimson-deep);
+  --field-muted: #8a8285;
+}
+
 .form-control:not(textarea) {
-  height: calc(3rem + 2px) !important;
-  min-height: calc(3rem + 2px) !important;
+  height: 2.5rem !important;
+  min-height: 2.5rem !important;
 }
 
 .form-control {
-  border: 1px solid #c8c6c6 !important;
-  border-radius: 10px !important;
-  font-size: var(--fs-md) !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--field-line) !important;
+  border-radius: 0 !important;
+  /* !important to beat Bootstrap's .form-floating padding, so typed text
+     lines up with the label. Icon paddings below still win. */
+  padding-left: 0.25rem !important;
+  padding-right: 0.25rem !important;
+  font-size: var(--fs-base) !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.form-control:hover:not(:focus):not(:read-only) {
+  border-bottom-color: var(--field-line-hover) !important;
 }
 
 .form-control-label {
-  font-size: var(--fs-md);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--field-muted);
+  margin-bottom: 0;
 }
 
-/* Base focus state */
+/* Focus thickens the line to 2px with a shadow rather than a wider border,
+   so the text never shifts. */
 .form-control:focus {
-  border: 2px solid var(--primary) !important;
-  box-shadow: 0 0 0 3px var(--primary-light-6) !important;
+  border-bottom-color: var(--primary) !important;
+  box-shadow: 0 1px 0 0 var(--primary) !important;
   outline: none;
 }
 
-/* Read-only state background */
 .form-control:read-only {
-  background-color: #f7f5f5 !important;
+  border-bottom-style: dashed !important;
+  cursor: default;
+}
+.form-control:read-only:focus {
+  border-bottom-color: var(--field-line) !important;
+  box-shadow: none !important;
+}
+
+/* Error state (InputComp's `error` prop) */
+.input-group-custom.has-error .form-control {
+  border-bottom-color: var(--field-error) !important;
+}
+.input-group-custom.has-error .form-control:focus {
+  box-shadow: 0 1px 0 0 var(--field-error) !important;
+}
+.input-error {
+  display: block;
+  margin: 0.2rem 0 0 0.25rem;
+  font-size: var(--fs-sm);
+  color: var(--field-error);
 }
 
 /* Wrapper classes for grouped inputs */
@@ -43,7 +86,7 @@
 
 /* Shadow fix for custom focus class */
 .input-group-custom.focused .form-control {
-  box-shadow: 0 0 0 3px var(--primary-light-6) !important;
+  box-shadow: 0 1px 0 0 var(--primary) !important;
 }
 
 
@@ -51,18 +94,18 @@
 
 /* Small (SM) Variant */
 .form-control-sm:not(textarea) {
-  height: calc(2.65rem + 2px) !important;
-  min-height: calc(2.65rem + 2px) !important;
+  height: 2.15rem !important;
+  min-height: 2.15rem !important;
 }
 
 .form-control-sm {
-  font-size: var(--fs-base) !important;
+  font-size: var(--fs-sm) !important;
 }
 
 /* Large (LG) Variant */
 .form-control-lg:not(textarea) {
-  height: calc(3.25rem + 2px) !important;
-  min-height: calc(3.25rem + 2px) !important;
+  height: 2.85rem !important;
+  min-height: 2.85rem !important;
 }
 
 .form-control-lg {
@@ -85,20 +128,29 @@
   Without this guard, no-label floating inputs have their placeholder/text
   pushed down instead of being vertically centered.
 */
+.form-floating:not(.no-label) > .form-control:not(textarea) {
+  height: 2.6rem !important;
+  min-height: 2.6rem !important;
+}
+.form-floating:not(.no-label) > .form-control-sm:not(textarea) {
+  height: 2.3rem !important;
+  min-height: 2.3rem !important;
+}
 .form-floating:not(.no-label) > .form-control {
-  padding-top: 1.4rem !important;
+  padding-top: 1rem !important;
+  padding-bottom: 0.2rem !important;
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 /* Small floating WITH label */
 .form-floating:not(.no-label) > .form-control-sm:not(textarea) {
-  padding-top: 1.1rem !important;
+  padding-top: 0.9rem !important;
   padding-bottom: 0.2rem !important;
 }
 
 /* Large floating WITH label */
 .form-floating:not(.no-label) > .form-control-lg:not(textarea) {
-  padding-top: 1.6rem !important;
+  padding-top: 1.2rem !important;
 }
 
 /*
@@ -122,12 +174,12 @@
 
 /* Base label styling */
 .form-floating > label {
-  padding: 0.85rem !important;
+  padding: 0 0.25rem !important;
   display: flex !important;
   align-items: center !important;
   height: 100% !important;
   top: 0 !important;
-  color: #6c757d;
+  color: var(--field-muted);
   transition: all 0.2s ease !important;
   pointer-events: none;
 }
@@ -148,9 +200,20 @@
 /* Floating animation (when focused or filled) */
 .form-floating > .form-control:focus ~ label,
 .form-floating > .form-control:not(:placeholder-shown) ~ label {
-  transform: scale(0.8) translateY(-0.75rem) translateX(0.15rem) !important;
+  transform: scale(0.8) translateY(-0.1rem) !important;
+  transform-origin: 0 0;
   height: auto !important;
-  top: 0.1rem !important;
+  top: 0 !important;
+}
+.form-floating > .form-control:focus ~ label {
+  color: var(--primary);
+}
+/* Bootstrap paints a strip of the page colour behind a raised label (for
+   boxed fields); underline fields don't need it, and it shows as a white
+   patch on tinted panels. */
+.form-floating > .form-control:focus ~ label::after,
+.form-floating > .form-control:not(:placeholder-shown) ~ label::after {
+  background-color: transparent !important;
 }
 
 
@@ -161,93 +224,94 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  color: #888;
-  font-size: var(--fs-lg) !important;
+  color: var(--field-muted);
+  font-size: var(--fs-md) !important;
   z-index: 10 !important;
   padding: 5px;
   border-radius: 10px !important;
   transition: color 0.2s ease !important;
 }
 
-.input-icon:hover {
+.input-icon:hover,
+.input-group-custom:focus-within .input-icon {
   cursor: pointer;
   color: var(--primary);
 }
 
 /* Icon sizing for floating/sm variants */
 .form-floating .input-icon {
-  font-size: var(--fs-lg) !important;
+  font-size: var(--fs-md) !important;
 }
 
 .form-floating .form-control-sm ~ .input-icon {
-  font-size: var(--fs-md) !important;
+  font-size: var(--fs-base) !important;
 }
 
 /* Icon Position: Left */
 .input-icon-left {
-  left: 0.5rem !important;
+  left: 0 !important;
   right: auto !important;
 }
 
 /* Icon Position: Right */
 .input-icon-right {
-  right: 0.5rem !important;
+  right: 0 !important;
   left: auto !important;
 }
 
 /* Standard Padding Adjustments when icons are present */
 .pl-icon {
-  padding-left: 2.5rem !important;
+  padding-left: 1.75rem !important;
 }
 
 .pr-icon {
-  padding-right: 2.5rem !important;
+  padding-right: 2rem !important;
 }
 
 .input-group-custom .form-control.pl-icon {
-  padding-left: 2.8rem !important;
+  padding-left: 1.75rem !important;
 }
 
 .input-group-custom .form-control-sm.pl-icon {
-  padding-left: 2.8rem !important;
+  padding-left: 1.75rem !important;
 }
 
 .input-group-custom .form-control-lg.pl-icon {
-  padding-left: 2.8rem !important;
+  padding-left: 1.75rem !important;
 }
 
 /* Padding adjustments for Floating Labels with Left Icons */
 .form-floating.input-group-custom .pl-icon {
-  padding-left: 3rem !important;
+  padding-left: 1.75rem !important;
 }
 
 .form-floating.input-group-custom .form-control-sm.pl-icon {
-  padding-top: 1rem !important;
-  padding-left: 2.8rem !important;
+  padding-top: 0.9rem !important;
+  padding-left: 1.75rem !important;
 }
 
 .form-floating.input-group-custom .form-control-lg.pl-icon {
-  padding-top: 1.5rem !important;
+  padding-top: 1.2rem !important;
 }
 
 .form-floating.input-group-custom .pr-icon {
-  padding-right: 3rem !important;
+  padding-right: 2rem !important;
 }
 
 .form-floating.input-group-custom .form-control-sm.pr-icon {
-  padding-right: 2.8rem !important;
+  padding-right: 2rem !important;
 }
 
 .form-floating.input-group-custom .pl-icon + label {
-  left: 2.2rem !important;
+  left: 1.75rem !important;
 }
 
 .form-floating.input-group-custom .form-control-sm.pl-icon + label {
-  left: 2rem !important;
+  left: 1.75rem !important;
 }
 
 .form-floating.input-group-custom .form-control-lg.pl-icon + label {
-  left: 2.25rem !important;
+  left: 1.75rem !important;
 }
 
 
@@ -256,7 +320,7 @@
 /* Standard placeholders */
 .form-control::placeholder {
   color: #a2a4a6 !important;
-  font-size: var(--fs-base) !important;
+  font-size: var(--fs-sm) !important;
 }
 
 /* Hide placeholder in floating state until label moves up */
@@ -270,7 +334,7 @@
 .form-floating.no-label > .form-control::placeholder {
   color: #a2a4a6 !important;
   opacity: 1 !important;
-  font-size: var(--fs-base) !important;
+  font-size: var(--fs-sm) !important;
 }
 
 

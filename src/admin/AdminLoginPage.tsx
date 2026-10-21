@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { isAxiosError } from "axios";
 import { NoCricketAccessError, useAdminAuth } from "../context/AdminAuthContext";
 import InputComp from "./dms/components/InputComp";
 import CustomButton from "./dms/components/CustomButton";
@@ -25,6 +26,11 @@ export function AdminLoginPage() {
       await login(email, password);
       navigate("/", { replace: true });
     } catch (err) {
+      // Added to a team by an organiser, but no password yet: go set one.
+      if (isAxiosError(err) && err.response?.data?.error?.code === "NO_PASSWORD") {
+        navigate(`/register?mobile=${encodeURIComponent(email.trim())}&setPassword=1`);
+        return;
+      }
       setError(err instanceof NoCricketAccessError ? err.message : "Invalid mobile number/email or password.");
     } finally {
       setLoading(false);

@@ -21,11 +21,14 @@ const Sidebar = ({
 
     const sidebarRef = useRef<HTMLDivElement | null>(null);
 
-    // "Me" for everyone with cricket access; super admins also manage it.
+    // "My Cricket" for everyone with cricket access; super admins also manage it.
     const cricketMenuGroups = [
         {
-            label: "Me",
+            label: "My Cricket",
             items: [
+                ...(admin?.isSuperAdmin
+                    ? []
+                    : [{ id: "cricket-home", label: "Home", icon: "fa-solid fa-house", link: "/", submenu: [] }]),
                 { id: "cricket-me", label: "My Stats", icon: "fa-solid fa-id-card", link: "/me", submenu: [] },
                 {
                     id: "cricket-my-matches",
@@ -42,10 +45,17 @@ const Sidebar = ({
                     submenu: [],
                 },
                 {
-                    id: "cricket-profile",
-                    label: "My Profile",
-                    icon: "fa-solid fa-user-gear",
-                    link: "/profile",
+                    id: "cricket-my-teams",
+                    label: "My Teams",
+                    icon: "fa-solid fa-people-group",
+                    link: "/my-teams",
+                    submenu: [],
+                },
+                {
+                    id: "cricket-following",
+                    label: "Following",
+                    icon: "fa-solid fa-star",
+                    link: "/following",
                     submenu: [],
                 },
             ],
@@ -150,17 +160,44 @@ const Sidebar = ({
                 ></i>
             </button>
 
+            {/* Phones only: the drawer's own header, in place of the
+                floating collapse button. */}
+            <div className="sidebar-mobile-head">
+                <div className="navbar-logo-box">
+                    <img src="/favicon.svg" alt="" className="img-fluid" />
+                </div>
+                <div className="sidebar-mobile-who">
+                    <span className="cv-wordmark">
+                        Namma <em>Aaata</em>
+                    </span>
+                    <span className="cv-wordmark-kn" lang="kn">ನಮ್ಮ ಆಟ</span>
+                </div>
+                <button
+                    type="button"
+                    className="sidebar-mobile-close"
+                    onClick={() => setSidebarOpen(false)}
+                    aria-label="Close menu"
+                >
+                    <i className="fa-solid fa-xmark" aria-hidden="true"></i>
+                </button>
+            </div>
+            <div className="sidebar-mobile-divider" aria-hidden="true"></div>
+
             <div className="scrollable-content pt-2">
                 <ul className="nav nav-pills flex-column mb-auto">
                     {menuGroups.map((group, groupIndex) => {
                         return (
                             <div key={groupIndex} className="menu-group">
-                                <div className="menu-group-label">
-                                    <span>{group.label}</span>
-                                    {isSidebarOpen && (
-                                        <div className="menu-group-line"></div>
-                                    )}
-                                </div>
+                                {/* Labels only tell groups apart, so a lone
+                                    group (players) goes without one. */}
+                                {menuGroups.length > 1 && (
+                                    <div className="menu-group-label">
+                                        <span>{group.label}</span>
+                                        {isSidebarOpen && (
+                                            <div className="menu-group-line"></div>
+                                        )}
+                                    </div>
+                                )}
                                 {group.items.map((item, index) => (
                                     <MenuItem
                                         key={index}

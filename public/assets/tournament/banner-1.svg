@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" preserveAspectRatio="xMidYMid slice">
+  <!-- Floodlit stadium at dusk -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a0f12"/>
+      <stop offset="0.6" stop-color="#7a1a16"/>
+      <stop offset="1" stop-color="#c0311b"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0" r="0.6">
+      <stop offset="0" stop-color="#ffcd00" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ffcd00" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="300" fill="url(#sky)"/>
+  <ellipse cx="240" cy="20" rx="260" ry="170" fill="url(#glow)"/>
+  <ellipse cx="960" cy="20" rx="260" ry="170" fill="url(#glow)"/>
+  <g fill="#ffd83d">
+    <rect x="200" y="30" width="80" height="22" rx="4"/>
+    <rect x="920" y="30" width="80" height="22" rx="4"/>
+  </g>
+  <g stroke="#2a0f12" stroke-width="6">
+    <line x1="240" y1="52" x2="240" y2="200"/>
+    <line x1="960" y1="52" x2="960" y2="200"/>
+  </g>
+  <path d="M0 210 Q600 150 1200 210 V300 H0Z" fill="#1d6b2c"/>
+  <path d="M0 240 Q600 190 1200 240 V300 H0Z" fill="#23803a"/>
+  <rect x="540" y="200" width="120" height="100" fill="#d9c08a" opacity="0.85"/>
+</svg>

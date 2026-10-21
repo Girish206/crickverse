@@ -2,8 +2,10 @@ import { useState } from "react";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import BottomNav from "./BottomNav";
+import CricketBackdrop from "./CricketBackdrop";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { useAdminBodyClass } from "../../useAdminBodyClass";
+import { useAdminTheme } from "../../useAdminTheme";
 import "../global.css";
 import "../css/components/Layout.css";
 
@@ -19,6 +21,9 @@ const Layout = ({
     children: React.ReactNode;
 }) => {
     useAdminBodyClass();
+    // Here rather than in the Navbar, which sub-pages don't render, so the
+    // theme stays applied on every screen.
+    const { isDark, toggle: toggleTheme } = useAdminTheme();
     const [isSidebarOpen, setisSidebarOpen] = useState(false);
     const [closing, setClosing] = useState(false);
     const { mainBg } = useAdminAuth();
@@ -71,11 +76,14 @@ const Layout = ({
         >
             <div className="admin-bg-shape admin-bg-shape-1" aria-hidden="true" />
             <div className="admin-bg-shape admin-bg-shape-2" aria-hidden="true" />
+            <CricketBackdrop />
 
             {isMainScreen && (
                 <Navbar
                     toggleSidebar={toggleSidebar}
                     isSidebarOpen={isSidebarOpen}
+                    isDark={isDark}
+                    toggleTheme={toggleTheme}
                 />
             )}
 

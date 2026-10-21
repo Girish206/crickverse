@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300" preserveAspectRatio="xMidYMid slice">
+  <!-- Mown outfield stripes with a ball -->
+  <rect width="1200" height="300" fill="#1f7a35"/>
+  <g fill="#258c3e">
+    <rect x="0" width="120" height="300"/>
+    <rect x="240" width="120" height="300"/>
+    <rect x="480" width="120" height="300"/>
+    <rect x="720" width="120" height="300"/>
+    <rect x="960" width="120" height="300"/>
+  </g>
+  <rect width="1200" height="300" fill="#2a0f12" opacity="0.25"/>
+  <g transform="translate(900 150)">
+    <circle r="78" fill="#b3141b"/>
+    <circle r="78" fill="none" stroke="#7a0d12" stroke-width="6"/>
+    <path d="M-30 -72 Q-60 0 -30 72 M30 -72 Q60 0 30 72" fill="none" stroke="#fff" stroke-width="4" stroke-dasharray="8 7"/>
+    <ellipse cx="-24" cy="-30" rx="22" ry="12" fill="#fff" opacity="0.25"/>
+  </g>
+  <path d="M0 300 L380 0 H460 L80 300Z" fill="#ffcd00" opacity="0.18"/>
+</svg>

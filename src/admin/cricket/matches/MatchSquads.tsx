@@ -3,6 +3,7 @@ import type { CricketMatch, CricketPlayerRole, CricketTournament } from "../../.
 import { monogram } from "../../../utils/format";
 import { avatarColorFor } from "../avatarColor";
 import { PlayerAvatar } from "../players/PlayerAvatar";
+import { PlayerLink } from "../players/PlayerProfileSheet";
 import { roleOf } from "../playerRoles";
 import type { NameOf } from "../stats";
 
@@ -49,7 +50,9 @@ export function MatchSquads({
       <div className={`cricket-squad-cell is-${side} ${benched ? "is-bench" : ""}`}>
         <PlayerAvatar name={name} photoUrl={player?.photoUrl} className="cricket-squad-avatar" />
         <span className="cricket-squad-name">
-          <strong title={name}>{name}</strong>
+          <strong title={name}>
+            <PlayerLink playerId={playerId}>{name}</PlayerLink>
+          </strong>
           <small>{roleOf(player?.role ?? null)?.label ?? "Role not set"}</small>
         </span>
       </div>

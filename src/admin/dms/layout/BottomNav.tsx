@@ -22,16 +22,17 @@ const BottomNav = ({ onMore }: { onMore: () => void }) => {
               { to: "/players", label: "Players", icon: "fa-solid fa-users" },
           ]
         : [
-              { to: "/me", label: "My Stats", icon: "fa-solid fa-id-card" },
+              { to: "/", label: "Home", icon: "fa-solid fa-house" },
               { to: "/my-matches", label: "Matches", icon: "fa-solid fa-baseball-bat-ball" },
               { to: "/my-tournaments", label: "Tournaments", icon: "fa-solid fa-medal" },
-              { to: "/profile", label: "Profile", icon: "fa-solid fa-user" },
+              { to: "/my-teams", label: "My Teams", icon: "fa-solid fa-people-group" },
+              { to: "/me", label: "My Stats", icon: "fa-solid fa-chart-simple" },
           ];
 
     return (
         <nav className="cv-bottom-nav" aria-label="Main">
             {tabs.map((tab) => (
-                <NavLink key={tab.to} to={tab.to} className={({ isActive }) => `cv-bottom-tab ${isActive ? "is-active" : ""}`}>
+                <NavLink key={tab.to} to={tab.to} end={tab.to === "/"} className={({ isActive }) => `cv-bottom-tab ${isActive ? "is-active" : ""}`}>
                     <i className={tab.icon} aria-hidden="true"></i>
                     <span>{tab.label}</span>
                 </NavLink>

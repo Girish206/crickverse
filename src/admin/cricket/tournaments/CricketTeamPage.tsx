@@ -1,17 +1,21 @@
-import { useMemo, useState, type ReactNode } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
+import { useMemo, useState } from "react";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useCricketMe, useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
 import { useCricketMatches } from "../../../api/hooks/cricket/useCricketMatches";
 import {
   useCricketTournament,
   useMoveCricketPlayer,
   useRemoveCricketTeam,
+  useSetCricketTeamRoles,
   useSwapCricketPlayers,
 } from "../../../api/hooks/cricket/useCricketTournaments";
 import type { CricketPlayer } from "../../../api/types";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
+import { canManageTournament } from "../canManage";
+import { Button } from "../../components/Button";
 import { ListCard } from "../../components/ListCard";
 import { PageHeader, PageHeaderAction } from "../../components/PageHeader";
+import { FollowHeaderAction } from "../follow/FollowButton";
 import { confirmAction } from "../../components/confirmDelete";
 import { BottomSheet } from "../BottomSheet";
 import { avatarColorFor } from "../avatarColor";
@@ -19,12 +23,18 @@ import { MatchesBoard } from "../matches/CricketMatchesList";
 import { roleOf } from "../playerRoles";
 import { StatTiles, type StatGroup } from "../StatTiles";
 import { PlayerAvatar } from "../players/PlayerAvatar";
+import { PlayerLink } from "../players/PlayerProfileSheet";
 import { LeaderboardGrid } from "../leaderboard/CricketLeaderboard";
 import { oversText, pointsTable, rate, strikeRate, teamStats, type TeamStats } from "../stats";
+import { AddTeamPlayersSheet } from "./AddTeamPlayersSheet";
 import { TeamForm } from "./CricketTeamTools";
+import { bannerFor } from "./tournamentArt";
+import { TeamRecordCard } from "../teams/TeamRecordCard";
+import { roleTagInfo, roleTagsFor, rolesOf, TeamRoleChips } from "./TeamRoleChips";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
+import { Loader } from "../../components/Loader";
 
 type Tab = "info" | "players" | "matches" | "leaderboard" | "stats";
 
@@ -48,14 +58,18 @@ export function CricketTeamPage() {
   const { data: matches } = useCricketMatches(id);
   const { data: players } = useCricketPlayers();
   const removeTeam = useRemoveCricketTeam();
+  const setRoles = useSetCricketTeamRoles();
   const [editing, setEditing] = useState(false);
+  const [adding, setAdding] = useState(false);
   // Player whose "Move / swap" sheet is open.
   const [moving, setMoving] = useState<number | null>(null);
   const [params, setParams] = useSearchParams();
+  const location = useLocation();
   const requested = params.get("tab") as Tab | null;
   const tab: Tab = requested && TABS.some((t) => t.value === requested) ? requested : "info";
   const { admin } = useAdminAuth();
-  const canManage = Boolean(admin?.isSuperAdmin);
+  const canManage = canManageTournament(admin, tournament);
+  const { data: me } = useCricketMe();
   const playerById = useMemo(() => new Map((players ?? []).map((player) => [player.id, player])), [players]);
 
   const team = tournament?.teams[teamIndex];
@@ -64,13 +78,19 @@ export function CricketTeamPage() {
     return (
       <>
         <PageHeader title="Team" back={backTo} />
-        <ListCard title="Team">
-          <p>{isLoading ? "Loading..." : "Team not found."}</p>
-        </ListCard>
+        {isLoading ? (
+          <Loader page />
+        ) : (
+          <ListCard title="Team">
+            <p>Team not found.</p>
+          </ListCard>
+        )}
       </>
     );
   }
 
+  // The team's captain can add players too (but not move, swap or edit).
+  const canAddPlayers = canManage || (me?.player != null && team.captainId === me.player.id);
   const teamMatches = (matches ?? []).filter((match) => match.teams.some((t) => t.teamIndex === teamIndex));
   const standings = pointsTable(tournament, matches ?? []);
   const position = standings.findIndex((row) => row.teamIndex === teamIndex);
@@ -91,35 +111,36 @@ export function CricketTeamPage() {
     }
   }
 
+  const showAddBar = canAddPlayers && tab === "players";
   return (
-    <div className="cricket-page">
+    <div className={`cricket-page ${showAddBar ? "has-action-bar" : ""}`.trim()}>
       <PageHeader
         title={team.name}
         subtitle={tournament.name}
         back={backTo}
         backLabel="All teams"
         actions={
-          canManage && (
-            <>
-              <PageHeaderAction icon="fa-solid fa-pen" label="Edit team" onClick={() => setEditing(true)} />
-              <PageHeaderAction
-                icon="fa-solid fa-trash"
-                label="Remove team"
-                danger
-                disabled={removeTeam.isPending}
-                onClick={handleRemove}
-              />
-            </>
-          )
+          <>
+            <FollowHeaderAction target={{ kind: "team", targetId: id, teamIndex }} />
+            {canManage && (
+              <>
+                <PageHeaderAction icon="fa-solid fa-pen" label="Edit team" onClick={() => setEditing(true)} />
+                <PageHeaderAction
+                  icon="fa-solid fa-trash"
+                  label="Remove team"
+                  danger
+                  disabled={removeTeam.isPending}
+                  onClick={handleRemove}
+                />
+              </>
+            )}
+          </>
         }
       />
       <div className="cricket-th-sticky">
         <div className="card cricket-th-card">
           <div className="cricket-th">
-            <div
-              className={`cricket-th-cover ${tournament.bannerUrl ? "" : "is-empty"}`}
-              style={tournament.bannerUrl ? { backgroundImage: `url(${tournament.bannerUrl})` } : undefined}
-            />
+            <div className="cricket-th-cover" style={{ backgroundImage: `url(${bannerFor(tournament)})` }} />
             <div className="cricket-th-identity">
               <span className="cricket-tour-logo" style={{ background: avatarColorFor(team.name) }} aria-hidden="true">
                 {team.name.charAt(0).toUpperCase()}
@@ -152,7 +173,7 @@ export function CricketTeamPage() {
               role="tab"
               aria-selected={tab === t.value}
               className={tab === t.value ? "active" : ""}
-              onClick={() => setParams({ tab: t.value }, { replace: true })}
+              onClick={() => setParams({ tab: t.value }, { replace: true, state: location.state })}
             >
               {t.label}
             </button>
@@ -162,47 +183,47 @@ export function CricketTeamPage() {
 
       {tab === "info" && (
         <ListCard title="">
-          <div className="cricket-info">
-            <h2 className="cricket-info-title">Team details</h2>
-            <dl className="cricket-info-card">
-              {(
-                [
-                  [
-                    "Tournament",
-                    <Link key="tournament" to={`/tournaments/${id}`} className="cricket-info-link">
-                      {tournament.name} <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
-                    </Link>,
-                  ],
-                  ["Players", team.playerIds.length],
-                  ["Position", record && record.played > 0 ? `${position + 1} of ${standings.length}` : "—"],
-                  ["Played", record?.played ?? 0],
-                  ["Won", record?.won ?? 0],
-                  ["Lost", record?.lost ?? 0],
-                  ["Tied", record?.tied ?? 0],
-                  ["No result", record?.noResult ?? 0],
-                  ["Points", record?.points ?? 0],
-                  ["Net run rate", record ? (record.nrr >= 0 ? "+" : "") + record.nrr.toFixed(3) : "—"],
-                ] as [string, ReactNode][]
-              ).map(([label, value]) => (
-                <div key={label} className="cricket-info-row">
-                  <dt>{label}</dt>
-                  <dd>{value}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
+          <TeamRecordCard
+            captain={team.captainId != null ? playerById.get(team.captainId) : undefined}
+            played={record?.played ?? 0}
+            won={record?.won ?? 0}
+            lost={record?.lost ?? 0}
+            tied={(record?.tied ?? 0) + (record?.noResult ?? 0)}
+            tiedLabel="Tied / NR"
+            facts={[
+              [
+                "Tournament",
+                <Link key="tournament" to={`/tournaments/${id}`} className="cricket-info-link">
+                  {tournament.name} <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                </Link>,
+              ],
+              ["Position", record && record.played > 0 ? `${position + 1} of ${standings.length}` : "—"],
+              ["Points", record?.points ?? 0],
+              ["Net run rate", record ? (record.nrr >= 0 ? "+" : "") + record.nrr.toFixed(3) : "—"],
+              ["Players", team.playerIds.length],
+            ]}
+          />
         </ListCard>
       )}
 
       {tab === "players" && (
-        <ListCard title={`Players (${team.playerIds.length})`}>
+        <ListCard>
           {team.playerIds.length === 0 ? (
             <div className="admin-empty-state">No players in this team yet.</div>
           ) : (
             <ul className="cricket-roster">
               {team.playerIds.map((playerId) => (
                 <li key={playerId}>
-                  <RosterPlayer player={playerById.get(playerId)} />
+                  <RosterPlayer player={playerById.get(playerId)} tags={canManage ? [] : roleTagsFor(team, playerId)} />
+                  {canManage && (
+                    <TeamRoleChips
+                      roles={rolesOf(team)}
+                      playerId={playerId}
+                      playerName={playerById.get(playerId)?.name ?? "Player"}
+                      disabled={setRoles.isPending}
+                      onChange={(roles) => setRoles.mutate({ id, index: teamIndex, ...roles })}
+                    />
+                  )}
                   {canManage && tournament.teams.length > 1 && (
                     <button
                       type="button"
@@ -221,21 +242,30 @@ export function CricketTeamPage() {
       )}
 
       {tab === "matches" && (
-        <ListCard title="Matches">
+        <ListCard>
           <MatchesBoard matches={teamMatches} />
         </ListCard>
       )}
 
       {tab === "leaderboard" && (
-        <ListCard title="Leaderboard">
+        <ListCard>
           <LeaderboardGrid matches={teamMatches} playerIds={team.playerIds} scope="team" />
         </ListCard>
       )}
 
       {tab === "stats" && (
-        <ListCard title="Team Stats">
+        <ListCard>
           <TeamStatsView stats={teamStats(teamMatches, teamIndex)} />
         </ListCard>
+      )}
+
+      {/* Pinned to the bottom while the Players tab is open. */}
+      {showAddBar && (
+        <div className="cricket-action-bar">
+          <Button variant="primary" onClick={() => setAdding(true)}>
+            <i className="fa-solid fa-user-plus" aria-hidden="true"></i> Add players
+          </Button>
+        </div>
       )}
 
       {editing && (
@@ -243,6 +273,8 @@ export function CricketTeamPage() {
           <TeamForm tournament={tournament} index={teamIndex} onSaved={() => setEditing(false)} />
         </BottomSheet>
       )}
+
+      {adding && <AddTeamPlayersSheet tournament={tournament} teamIndex={teamIndex} onClose={() => setAdding(false)} />}
 
       {moving !== null && (
         <MoveSheet
@@ -259,7 +291,7 @@ export function CricketTeamPage() {
 }
 
 // Team totals as tiles, grouped into batting, bowling and fielding.
-function TeamStatsView({ stats: t }: { stats: TeamStats }) {
+export function TeamStatsView({ stats: t }: { stats: TeamStats }) {
   if (t.matches === 0) return <div className="admin-empty-state">Stats appear once the team's matches are scored.</div>;
   const groups: StatGroup[] = [
     {
@@ -321,17 +353,50 @@ function TeamStatsView({ stats: t }: { stats: TeamStats }) {
   return <StatTiles groups={groups} />;
 }
 
-function RosterPlayer({ player }: { player: CricketPlayer | undefined }) {
+// `linked` = the name opens the player's profile (off inside buttons).
+export function RosterPlayer({
+  player,
+  tags = [],
+  linked = true,
+}: {
+  player: CricketPlayer | undefined;
+  tags?: string[];
+  linked?: boolean;
+}) {
   const name = player?.name ?? "Removed player";
   const role = roleOf(player?.role ?? null);
+  // The captain (or vice-captain) is marked on the avatar too.
+  const lead = tags.find((tag) => tag === "C" || tag === "VC");
   return (
     <>
-      <PlayerAvatar name={name} photoUrl={player?.photoUrl} className="cricket-roster-avatar" />
+      <span className={`cricket-roster-avatar-wrap${lead ? ` is-lead-${lead.toLowerCase()}` : ""}`}>
+        <PlayerAvatar name={name} photoUrl={player?.photoUrl} className="cricket-roster-avatar" />
+        {lead && (
+          <span className="cricket-roster-lead" aria-hidden="true">
+            {lead}
+          </span>
+        )}
+      </span>
       <span className="cricket-roster-who">
-        <strong>{name}</strong>
-        {role && (
-          <small>
-            <i className={`fa-solid ${role.icon}`} aria-hidden="true"></i> {role.label}
+        <strong>
+          <PlayerLink playerId={linked ? player?.id : null}>{name}</PlayerLink>
+        </strong>
+        {(role || tags.length > 0) && (
+          <small className="cricket-roster-meta">
+            {role && (
+              <span>
+                <i className={`fa-solid ${role.icon}`} aria-hidden="true"></i> {role.label}
+              </span>
+            )}
+            {tags.map((tag) => {
+              const info = roleTagInfo(tag);
+              return (
+                <span key={tag} className={`cricket-roster-badge is-${tag.toLowerCase()}`}>
+                  {info && <i className={`fa-solid ${info.icon}`} aria-hidden="true"></i>}
+                  {info?.label ?? tag}
+                </span>
+              );
+            })}
           </small>
         )}
       </span>
@@ -391,7 +456,7 @@ function MoveSheet({
                       swapPlayers.mutate({ id: tournamentId, playerA: playerId, playerB: otherId }, { onSuccess: onClose })
                     }
                   >
-                    <RosterPlayer player={playerById.get(otherId)} />
+                    <RosterPlayer player={playerById.get(otherId)} linked={false} />
                     <i className="fa-solid fa-right-left cricket-roster-swap" aria-hidden="true"></i>
                   </button>
                 </li>

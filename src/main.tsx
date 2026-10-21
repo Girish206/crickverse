@@ -7,6 +7,7 @@ import { RouterProvider } from "react-router-dom";
 import { router } from "./routes/router";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
 import { showMutationError } from "./api/mutationErrors";
+import { AppToaster } from "./admin/components/AppToaster";
 
 const queryClient = new QueryClient({
   mutationCache: new MutationCache({
@@ -29,6 +30,7 @@ createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={queryClient}>
       <AdminAuthProvider>
         <RouterProvider router={router} />
+        <AppToaster />
       </AdminAuthProvider>
     </QueryClientProvider>
   </StrictMode>,

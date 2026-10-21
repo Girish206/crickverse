@@ -8,8 +8,9 @@ const page = <T,>(load: () => Promise<T>, pick: (module: T) => ComponentType) =>
   Component: pick(await load()),
 });
 
-// Players see their own stats, matches and tournaments; organisers (super
-// admins) also manage players, tournaments, matches and scoring.
+// Players see their own stats, matches and tournaments, and manage (and
+// score) the ones they create; super admins also manage the player list and
+// everything else.
 export const router = createBrowserRouter([
   {
     element: <PublicOnlyRoute />,
@@ -32,9 +33,11 @@ export const router = createBrowserRouter([
             path: "my-tournaments",
             lazy: page(() => import("../admin/cricket/me/CricketMePages"), (m) => m.MyCricketTournaments),
           },
+          { path: "my-teams", lazy: page(() => import("../admin/cricket/me/CricketMePages"), (m) => m.MyCricketTeams) },
+          { path: "following", lazy: page(() => import("../admin/cricket/follow/FollowingPage"), (m) => m.FollowingPage) },
           { path: "profile", lazy: page(() => import("../admin/cricket/me/MyProfilePage"), (m) => m.MyProfilePage) },
-          // Players can open their own tournaments and matches (the pages go
-          // read-only for them).
+          // Players can open the tournaments and matches they play in or
+          // follow (the pages go read-only for them).
           {
             path: "tournaments/:id",
             lazy: page(() => import("../admin/cricket/tournaments/CricketTournamentPage"), (m) => m.CricketTournamentPage),
@@ -44,8 +47,17 @@ export const router = createBrowserRouter([
             lazy: page(() => import("../admin/cricket/tournaments/CricketTeamPage"), (m) => m.CricketTeamPage),
           },
           {
+            path: "teams/friendly/:name",
+            lazy: page(() => import("../admin/cricket/teams/FriendlyTeamPage"), (m) => m.FriendlyTeamPage),
+          },
+          {
             path: "matches/:id",
             lazy: page(() => import("../admin/cricket/matches/CricketMatchPage"), (m) => m.CricketMatchPage),
+          },
+          // Whoever organises the match sets it up (the API checks who).
+          {
+            path: "matches/:id/setup",
+            lazy: page(() => import("../admin/cricket/matches/MatchSetup"), (m) => m.CricketMatchSetupPage),
           },
           {
             element: <RequireSuperAdmin />,
@@ -65,10 +77,6 @@ export const router = createBrowserRouter([
               {
                 path: "matches",
                 lazy: page(() => import("../admin/cricket/matches/CricketMatchesList"), (m) => m.CricketMatchesList),
-              },
-              {
-                path: "matches/:id/setup",
-                lazy: page(() => import("../admin/cricket/matches/MatchSetup"), (m) => m.CricketMatchSetupPage),
               },
               {
                 path: "leaderboard",

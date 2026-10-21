@@ -58,9 +58,11 @@
 }
 .cv-bottom-tab span {
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  /* Five tabs on a narrow phone: "My Tournaments" wraps to two lines
+     rather than being cut off. */
+  line-height: 1.15;
+  text-align: center;
+  overflow-wrap: break-word;
 }
 .cv-bottom-tab:active i {
   transform: scale(0.9);

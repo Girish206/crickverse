@@ -1,0 +1,235 @@
+/* ===========================
+   CRICKET BACKDROP (layout/CricketBackdrop.tsx)
+   =========================== */
+
+/* Fixed to the viewport and painted before .scrollable-main, so it sits
+   behind the content like .admin-bg-shape. */
+.cv-backdrop {
+   --cv-bd-ground: 5vh;
+   --cv-bd-stumps-right: 6vw;
+   --cv-bd-stumps-w: 48px;
+   --cv-bd-stumps-h: 80px;
+   --cv-bd-ball: 22px;
+   --cv-bd-cycle: 10s;
+   position: fixed;
+   inset: 0;
+   overflow: hidden;
+   pointer-events: none;
+   z-index: 0;
+   color: rgb(var(--brand-navy-rgb));
+}
+
+/* ---------- Ground line art ---------- */
+.cv-bd-field {
+   position: absolute;
+   top: 8vh;
+   right: -14vmax;
+   width: 72vmax;
+   height: 72vmax;
+   opacity: 0.07;
+   animation: cvBdSpin 180s linear infinite;
+}
+
+/* ---------- Drifting bat and ball ---------- */
+.cv-bd-float {
+   position: absolute;
+   opacity: 0.08;
+}
+
+.cv-bd-bat {
+   left: 4vw;
+   bottom: 10vh;
+   width: 44px;
+   height: 176px;
+   animation: cvBdBatFloat 9s ease-in-out infinite;
+}
+
+.cv-bd-float-ball {
+   top: 18vh;
+   left: 42vw;
+   width: 34px;
+   height: 34px;
+   animation: cvBdBallFloat 7s ease-in-out infinite;
+}
+
+@keyframes cvBdBatFloat {
+   0%, 100% { transform: rotate(-28deg) translateY(0); }
+   50% { transform: rotate(-20deg) translateY(-18px); }
+}
+
+@keyframes cvBdBallFloat {
+   0%, 100% { transform: translate(0, 0) rotate(0deg); }
+   50% { transform: translate(14px, -22px) rotate(180deg); }
+}
+
+/* ---------- The delivery ---------- */
+.cv-bd-delivery-x {
+   position: absolute;
+   top: 0;
+   left: 0;
+   animation: cvBdDeliveryX var(--cv-bd-cycle) linear infinite;
+}
+
+.cv-bd-delivery-y {
+   animation: cvBdDeliveryY var(--cv-bd-cycle) infinite;
+}
+
+.cv-bd-ball {
+   display: block;
+   width: var(--cv-bd-ball);
+   height: var(--cv-bd-ball);
+   filter: drop-shadow(0 4px 6px rgba(var(--brand-crimson-rgb), 0.35));
+   animation: cvBdSpin 0.45s linear infinite;
+}
+
+@keyframes cvBdDeliveryX {
+   0% {
+      opacity: 0;
+      transform: translateX(-40px);
+   }
+   2% { opacity: 0.9; }
+   16% {
+      opacity: 0.9;
+      transform: translateX(calc(100vw - var(--cv-bd-stumps-right) - var(--cv-bd-stumps-w) / 2 - var(--cv-bd-ball) / 2));
+   }
+   18%, 100% {
+      opacity: 0;
+      transform: translateX(calc(100vw - var(--cv-bd-stumps-right) - var(--cv-bd-stumps-w) / 2 - var(--cv-bd-ball) / 2));
+   }
+}
+
+/* Falls from the bowler's hand, pitches short of the stumps, then rises
+   into the middle stump. */
+@keyframes cvBdDeliveryY {
+   0% {
+      transform: translateY(32vh);
+      animation-timing-function: ease-in;
+   }
+   11% {
+      transform: translateY(calc(100vh - var(--cv-bd-ground) - var(--cv-bd-ball)));
+      animation-timing-function: ease-out;
+   }
+   16%, 100% {
+      transform: translateY(calc(100vh - var(--cv-bd-ground) - var(--cv-bd-stumps-h) / 2 - var(--cv-bd-ball) / 2));
+   }
+}
+
+/* ---------- Stumps ---------- */
+.cv-bd-stumps {
+   position: absolute;
+   right: var(--cv-bd-stumps-right);
+   bottom: var(--cv-bd-ground);
+   width: var(--cv-bd-stumps-w);
+   height: var(--cv-bd-stumps-h);
+   opacity: 0.28;
+   overflow: visible;
+}
+
+.cv-bd-stump,
+.cv-bd-bail {
+   transform-box: fill-box;
+}
+
+.cv-bd-stump-mid {
+   transform-origin: 50% 100%;
+   animation: cvBdStumpShake var(--cv-bd-cycle) ease-out infinite;
+}
+
+.cv-bd-bail {
+   transform-origin: 50% 50%;
+}
+
+.cv-bd-bail-l {
+   animation: cvBdBailLeft var(--cv-bd-cycle) ease-out infinite;
+}
+
+.cv-bd-bail-r {
+   animation: cvBdBailRight var(--cv-bd-cycle) ease-out infinite;
+}
+
+@keyframes cvBdStumpShake {
+   0%, 16% { transform: rotate(0deg); }
+   18% { transform: rotate(9deg); }
+   21% { transform: rotate(-4deg); }
+   24%, 100% { transform: rotate(0deg); }
+}
+
+@keyframes cvBdBailLeft {
+   0%, 16% { transform: none; opacity: 1; }
+   28% { transform: translate(-34px, -64px) rotate(-260deg); opacity: 1; }
+   40% { transform: translate(-52px, -20px) rotate(-400deg); opacity: 0; }
+   88% { transform: none; opacity: 0; }
+   96%, 100% { transform: none; opacity: 1; }
+}
+
+@keyframes cvBdBailRight {
+   0%, 16% { transform: none; opacity: 1; }
+   28% { transform: translate(30px, -80px) rotate(300deg); opacity: 1; }
+   40% { transform: translate(48px, -36px) rotate(440deg); opacity: 0; }
+   88% { transform: none; opacity: 0; }
+   96%, 100% { transform: none; opacity: 1; }
+}
+
+/* Ring that bursts out of the stumps on impact */
+.cv-bd-impact {
+   position: absolute;
+   right: calc(var(--cv-bd-stumps-right) + var(--cv-bd-stumps-w) / 2 - 30px);
+   bottom: calc(var(--cv-bd-ground) + var(--cv-bd-stumps-h) / 2 - 30px);
+   width: 60px;
+   height: 60px;
+   border-radius: 50%;
+   border: 2px solid rgba(var(--brand-amber-rgb), 0.9);
+   opacity: 0;
+   animation: cvBdImpact var(--cv-bd-cycle) ease-out infinite;
+}
+
+@keyframes cvBdImpact {
+   0%, 15.5% { transform: scale(0.2); opacity: 0; }
+   16.5% { opacity: 0.8; }
+   26%, 100% { transform: scale(2.2); opacity: 0; }
+}
+
+@keyframes cvBdSpin {
+   to { transform: rotate(360deg); }
+}
+
+/* Phones: keep the stumps above the bottom nav. */
+@media (max-width: 767px) {
+   .cv-backdrop {
+      --cv-bd-ground: calc(88px + env(safe-area-inset-bottom));
+      --cv-bd-stumps-w: 36px;
+      --cv-bd-stumps-h: 60px;
+      --cv-bd-ball: 18px;
+   }
+
+   .cv-bd-field {
+      top: 20vh;
+      right: -40vw;
+      width: 110vw;
+      height: 110vw;
+   }
+
+   .cv-bd-float-ball {
+      left: 70vw;
+   }
+}
+
+:root[data-bs-theme="dark"] .cv-backdrop {
+   color: #ffffff;
+}
+
+:root[data-bs-theme="dark"] .cv-bd-stumps {
+   opacity: 0.22;
+}
+
+@media (prefers-reduced-motion: reduce) {
+   .cv-backdrop *,
+   .cv-bd-field {
+      animation: none !important;
+   }
+
+   .cv-bd-delivery-x,
+   .cv-bd-impact {
+      display: none;
+   }
+}

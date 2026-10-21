@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { PlayerAvatar } from "../players/PlayerAvatar";
+import { PlayerLink } from "../players/PlayerProfileSheet";
 
 // One "hero" award (player of the match, best batter…): the winner's photo
 // with the award as a ribbon, then their name, team, figures and points.
@@ -7,6 +8,7 @@ import { PlayerAvatar } from "../players/PlayerAvatar";
 export function AwardCard({
   title,
   icon,
+  playerId,
   name,
   photoUrl,
   team,
@@ -18,6 +20,8 @@ export function AwardCard({
 }: {
   title: string;
   icon: string;
+  // Tapping the name opens this player's profile.
+  playerId: number;
   name: string;
   photoUrl?: string | null;
   team?: string;
@@ -36,7 +40,9 @@ export function AwardCard({
         </span>
       </div>
       <div className="cricket-award-body">
-        <strong className="cricket-award-name">{name}</strong>
+        <strong className="cricket-award-name">
+          <PlayerLink playerId={playerId}>{name}</PlayerLink>
+        </strong>
         <div className="cricket-award-meta">
           <span className="cricket-award-team">{team ?? note ?? ""}</span>
           <span className="cricket-award-label">{pointsLabel}</span>

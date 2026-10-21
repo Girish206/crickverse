@@ -27,7 +27,8 @@ const InputComp: React.FC<TextInputProps> = ({
     error = "",
     className = "",
     placeholder = "",
-    floating = false,
+    // Floating labels are the app-wide default (compact underline fields).
+    floating = true,
     required = false,
     readOnly = false,
     inputSize,
@@ -83,7 +84,7 @@ const InputComp: React.FC<TextInputProps> = ({
             className={`input-icon ${iconPosition === "left" ? "input-icon-left" : "input-icon-right"
                 }`}
         >
-            <i className={icon} style={{ color: "#f97316" }}></i>
+            <i className={icon}></i>
         </span>
     );
 
@@ -93,7 +94,7 @@ const InputComp: React.FC<TextInputProps> = ({
             <div className="m-1">
                 <div
                     className={`input-group-custom form-floating ${!label ? "no-label" : ""
-                        } input-with-icon position-relative w-100`}
+                        } ${error ? "has-error" : ""} input-with-icon position-relative w-100`}
                 >
                     <input
                         type={type}
@@ -127,9 +128,7 @@ const InputComp: React.FC<TextInputProps> = ({
                     )}
                     {iconEl}
                 </div>
-                {error && (
-                    <small className="text-theme-primary ms-1">{error}</small>
-                )}
+                {error && <small className="input-error">{error}</small>}
             </div>
         );
     }
@@ -148,7 +147,7 @@ const InputComp: React.FC<TextInputProps> = ({
                     )}
                 </label>
             )}
-            <div className="input-group-custom input-with-icon position-relative w-100">
+            <div className={`input-group-custom input-with-icon position-relative w-100 ${error ? "has-error" : ""}`}>
                 <input
                     type={type}
                     className={`form-control custom-input ${sizeClass} ${className} ${icon
@@ -173,7 +172,7 @@ const InputComp: React.FC<TextInputProps> = ({
                 />
                 {iconEl}
             </div>
-            {error && <small className="text-theme-primary">{error}</small>}
+            {error && <small className="input-error">{error}</small>}
         </div>
     );
 };

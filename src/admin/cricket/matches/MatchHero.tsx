@@ -1,8 +1,8 @@
 import type { CricketMatch } from "../../../api/types";
 import { monogram } from "../../../utils/format";
 import { avatarColorFor } from "../avatarColor";
+import { PlayerLink } from "../players/PlayerProfileSheet";
 import { chaseInfo, impactLine, inningsSummary, matchAwards, rate, type NameOf } from "../stats";
-import { MatchStatusBadge } from "./matchUi";
 import { formatMatchDate, battingOrder, stageLabel, teamScore } from "./matchUtils";
 
 interface MatchHeroProps {
@@ -42,10 +42,6 @@ export function MatchHero({ match, nameOf }: MatchHeroProps) {
 
   return (
     <div className={`card cricket-hero is-${match.status}`}>
-      <div className="cricket-hero-top">
-        <MatchStatusBadge status={match.status} />
-      </div>
-
       <div className="cricket-hero-board">
         {battingOrder(match).map((slot) => {
           const team = match.teams[slot];
@@ -84,7 +80,10 @@ export function MatchHero({ match, nameOf }: MatchHeroProps) {
 
       {potm && (
         <div className="cricket-hero-potm">
-          <i className="fa-solid fa-medal" aria-hidden="true"></i> Player of the match <strong>{nameOf(potm.playerId)}</strong>
+          <i className="fa-solid fa-medal" aria-hidden="true"></i> Player of the match{" "}
+          <strong>
+            <PlayerLink playerId={potm.playerId}>{nameOf(potm.playerId)}</PlayerLink>
+          </strong>
           <small>{impactLine(potm)}</small>
         </div>
       )}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Swal from "sweetalert2";
+import { toast } from "sonner";
 import { useCricketPlayers, useDeleteCricketPlayer } from "../../../api/hooks/cricket/useCricketPlayers";
 import { ListCard } from "../../components/ListCard";
 import { Button } from "../../components/Button";
@@ -10,12 +10,14 @@ import { CricketPlayerForm, CricketPlayerLoginForm, CricketPlayersBulkForm } fro
 import { formatMobile } from "../mobile";
 import { roleOf } from "../playerRoles";
 import { PlayerAvatar } from "./PlayerAvatar";
+import { PlayerLink } from "./PlayerProfileSheet";
 import { useCricketTournaments } from "../../../api/hooks/cricket/useCricketTournaments";
 import { CricketKpis } from "../CricketKpis";
 import { CricketPlayerProfileLoader } from "./CricketPlayerProfile";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
+import { Loader } from "../../components/Loader";
 
 type ModalState =
   | { mode: "new" }
@@ -63,7 +65,7 @@ export function CricketPlayersList() {
       }
     >
       {isLoading ? (
-        <p>Loading...</p>
+        <Loader />
       ) : !players?.length ? (
         <div className="admin-empty-state">No players yet — add them one by one or paste a whole list.</div>
       ) : (
@@ -104,7 +106,7 @@ export function CricketPlayersList() {
                   <PlayerAvatar name={player.name} photoUrl={player.photoUrl} className="cricket-player-avatar" />
                   <div className="cricket-player-info">
                     <strong>
-                      {player.name}
+                      <PlayerLink playerId={player.id}>{player.name}</PlayerLink>
                       {player.hasLogin && (
                         <i className="fa-solid fa-key cricket-login-icon" title="Can sign in" aria-label="Can sign in"></i>
                       )}
@@ -169,14 +171,7 @@ export function CricketPlayersList() {
             <CricketPlayersBulkForm
               onSaved={({ added, skipped, skippedNames }) => {
                 setModal(null);
-                void Swal.fire({
-                  toast: true,
-                  position: "top-end",
-                  icon: "success",
-                  showConfirmButton: false,
-                  timer: 4000,
-                  title: `Added ${added} player${added === 1 ? "" : "s"}${skipped ? `, skipped ${skipped} already listed (${skippedNames.slice(0, 3).join(", ")}${skipped > 3 ? "…" : ""})` : ""}.`,
-                });
+                toast.success(`Added ${added} player${added === 1 ? "" : "s"}${skipped ? `, skipped ${skipped} already listed (${skippedNames.slice(0, 3).join(", ")}${skipped > 3 ? "…" : ""})` : ""}.`);
               }}
             />
           ) : (

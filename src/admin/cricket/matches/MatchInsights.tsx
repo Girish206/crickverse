@@ -1,6 +1,7 @@
 import type { CricketInnings, CricketMatch } from "../../../api/types";
 import { inningsSummary, isLegal, isWicket, oversOf, type NameOf } from "../stats";
 import { MatchAwards } from "./MatchAwards";
+import { MatchShotMap } from "./ShotMap";
 
 // How an innings' runs came: dots, singles… boundaries, extras.
 function scoringBreakdown(innings: CricketInnings) {
@@ -22,7 +23,7 @@ function scoringBreakdown(innings: CricketInnings) {
 }
 
 // The "Insights" tab: awards and impact points, runs per over side by side,
-// and how each side scored.
+// how each side scored and (when shots were marked) the shot map.
 export function MatchInsights({ match, nameOf }: { match: CricketMatch; nameOf: NameOf }) {
   if (!match.innings.some((innings) => innings.balls.length > 0)) {
     return <div className="admin-empty-state">Insights appear once the first ball is bowled.</div>;
@@ -119,6 +120,8 @@ export function MatchInsights({ match, nameOf }: { match: CricketMatch; nameOf: 
           </table>
         </div>
       </section>
+
+      <MatchShotMap match={match} nameOf={nameOf} />
     </div>
   );
 }

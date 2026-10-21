@@ -11,9 +11,11 @@ import { CricketTournamentForm } from "./CricketTournamentForm";
 import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
 import { CricketKpis } from "../CricketKpis";
 import { formatFullDate } from "../../../utils/format";
+import { TournamentLogo } from "./TournamentLogo";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
+import { Loader } from "../../components/Loader";
 
 type ModalState = { mode: "new" } | { mode: "edit"; id: number } | null;
 
@@ -62,7 +64,7 @@ export function CricketTournamentsList() {
         />
       )}
       {isLoading ? (
-        <p>Loading...</p>
+        <Loader />
       ) : !tournaments?.length ? (
         <div className="admin-empty-state">No tournaments yet.</div>
       ) : (
@@ -78,7 +80,10 @@ export function CricketTournamentsList() {
                 onKeyDown={(e) => e.key === "Enter" && navigate(`/tournaments/${tournament.id}`)}
               >
                 <div className="admin-item-card-header">
-                  <h3 className="admin-item-card-title">{tournament.name}</h3>
+                  <div className="cricket-tour-card-title">
+                    <TournamentLogo tournament={tournament} />
+                    <h3 className="admin-item-card-title">{tournament.name}</h3>
+                  </div>
                   <div className="admin-item-card-actions">
                     <RowActions
                       onEdit={() => setModal({ mode: "edit", id: tournament.id })}

@@ -8,11 +8,14 @@ import type {
   CricketMatchStage,
   CricketMatchType,
   CricketPitchType,
+  CricketTeamRoles,
 } from "../../types";
 
 export interface CricketMatchInput {
-  teamAIndex: number;
-  teamBIndex: number;
+  // Two of the tournament's teams, or a standalone match's own team names.
+  teamAIndex?: number;
+  teamBIndex?: number;
+  teamNames?: [string, string];
   overs: number;
   scheduledAt: string | null;
   venue: string | null;
@@ -26,9 +29,12 @@ export interface CricketMatchInput {
 export type CricketBallInput = Omit<CricketBall, "batterId" | "nonStrikerId" | "bowlerId">;
 
 // All matches, or one tournament's.
-export function useCricketMatches(tournamentId?: number) {
+// "none" lists the standalone matches. Only super admins may list without a
+// tournament, so pass `enabled: false` for players.
+export function useCricketMatches(tournamentId?: number | "none", { enabled = true } = {}) {
   return useQuery({
     queryKey: ["cricket-matches", "list", tournamentId ?? "all"],
+    enabled,
     queryFn: async () => {
       const { data } = await apiClient.get<ApiEnvelope<CricketMatch[]>>("/admin/cricket/matches", {
         params: tournamentId ? { tournamentId } : undefined,
@@ -67,7 +73,13 @@ function useMatchMutation<TVars>(request: (vars: TVars) => Promise<{ data: ApiEn
 const url = (id: number, path = "") => `/admin/cricket/matches/${id}${path}`;
 
 export function useCreateCricketMatch() {
-  return useMatchMutation((input: CricketMatchInput & { tournamentId: number }) =>
+  return useMatchMutation((
+    input: CricketMatchInput & {
+      tournamentId: number | null;
+      // A standalone match's captains (who join their side's squad).
+      captainIds?: [number | null, number | null];
+    },
+  ) =>
     apiClient.post("/admin/cricket/matches", input),
   );
 }
@@ -78,8 +90,17 @@ export function useUpdateCricketMatch() {
 
 export function useStartCricketMatch() {
   return useMatchMutation(
-    ({ id, ...input }: { id: number; tossWinner: number; tossDecision: "bat" | "bowl"; playerIds: [number[], number[]] }) =>
-      apiClient.post(url(id, "/start"), input),
+    ({
+      id,
+      ...input
+    }: {
+      id: number;
+      tossWinner: number;
+      tossDecision: "bat" | "bowl";
+      playerIds: [number[], number[]];
+      // Each side's captain / vice-captain / keeper for this match.
+      roles?: [CricketTeamRoles, CricketTeamRoles];
+    }) => apiClient.post(url(id, "/start"), input),
   );
 }
 
@@ -119,5 +140,25 @@ export function useDeleteCricketMatch() {
       await apiClient.delete(url(id));
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cricket-matches", "list"] }),
+  });
+}
+
+// A friendly team's captain adds players (by mobile; new numbers with a
+// name) to the team's side in all its upcoming matches.
+export function useAddFriendlyTeamPlayers() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { teamName: string; players: { mobile: string; name?: string }[] }) => {
+      const { data } = await apiClient.post<ApiEnvelope<{ matches: number; playerIds: number[] }>>(
+        "/admin/cricket/friendly-teams/players",
+        input,
+      );
+      return data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cricket-matches"] });
+      queryClient.invalidateQueries({ queryKey: ["cricket-me"] });
+      queryClient.invalidateQueries({ queryKey: ["cricket-players"] });
+    },
   });
 }

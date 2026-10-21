@@ -7,6 +7,8 @@ import SelectInput from "../../dms/components/SelectInput";
 import { usePlayerNames, usePlayerPhotos } from "../matches/matchUtils";
 import { AwardCard } from "../matches/AwardCard";
 import { PlayerAvatar } from "../players/PlayerAvatar";
+import { PlayerLink } from "../players/PlayerProfileSheet";
+import { PillSelect } from "../PillSelect";
 import {
   battingAverage,
   bestBowling,
@@ -21,6 +23,7 @@ import {
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
+import { Loader } from "../../components/Loader";
 
 type Category = "overall" | "batting" | "bowling" | "fielding";
 
@@ -211,6 +214,7 @@ export function LeaderboardGrid({
                 key={award.title}
                 title={award.title}
                 icon={award.board.icon}
+                playerId={award.top.playerId}
                 name={nameOf(award.top.playerId)}
                 photoUrl={photoOf(award.top.playerId)}
                 line={award.board.detail(award.top)}
@@ -257,18 +261,12 @@ function StatsBoards({ rows }: { rows: PlayerStats[] }) {
         <h2 className="cricket-section-title mb-0">
           <i className={`fa-solid ${board.icon}`} aria-hidden="true"></i> {board.title}
         </h2>
-        <select
-          className="cricket-pill-select"
-          aria-label="Leaderboard"
+        <PillSelect
+          label="Leaderboard"
           value={board.title}
-          onChange={(event) => setTitle(event.target.value)}
-        >
-          {boards.map((b) => (
-            <option key={b.title} value={b.title}>
-              {b.title}
-            </option>
-          ))}
-        </select>
+          options={boards.map((b) => ({ value: b.title, label: b.title }))}
+          onChange={setTitle}
+        />
       </div>
       <BoardList board={board} rows={rows} limit={10} />
     </section>
@@ -289,7 +287,9 @@ function BoardList({ board, rows, limit }: { board: Board; rows: PlayerStats[]; 
             <span className="cricket-board-rank">{index + 1}</span>
             <PlayerAvatar name={name} photoUrl={photoOf(s.playerId)} className="cricket-board-avatar" />
             <span className="cricket-board-name">
-              <strong>{name}</strong>
+              <strong>
+                <PlayerLink playerId={s.playerId}>{name}</PlayerLink>
+              </strong>
               <small>{board.detail(s)}</small>
             </span>
             <span className="cricket-board-value">{board.value(s)}</span>
@@ -303,37 +303,43 @@ function BoardList({ board, rows, limit }: { board: Board; rows: PlayerStats[]; 
 export function PointsTable({ tournament, matches }: { tournament: CricketTournament; matches: CricketMatch[] }) {
   const rows = pointsTable(tournament, matches);
   return (
-    <div className="admin-table-wrap">
-      <table className="admin-table cricket-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Team</th>
-            <th>P</th>
-            <th>W</th>
-            <th>L</th>
-            <th>T</th>
-            <th>NR</th>
-            <th>Pts</th>
-            <th>NRR</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, index) => (
-            <tr key={row.teamIndex}>
-              <td>{index + 1}</td>
-              <td className="fw-semibold">{row.name}</td>
-              <td>{row.played}</td>
-              <td>{row.won}</td>
-              <td>{row.lost}</td>
-              <td>{row.tied}</td>
-              <td>{row.noResult}</td>
-              <td className="fw-bold">{row.points}</td>
-              <td>{(row.nrr >= 0 ? "+" : "") + row.nrr.toFixed(3)}</td>
+    <div className="cricket-standings">
+      <div className="cricket-standings-scroll">
+        <table className="cricket-standings-table">
+          <thead>
+            <tr>
+              <th className="is-rank">#</th>
+              <th className="is-team">Team</th>
+              <th>P</th>
+              <th>W</th>
+              <th>L</th>
+              <th>T</th>
+              <th>NR</th>
+              <th>Pts</th>
+              <th>NRR</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((row, index) => (
+              <tr key={row.teamIndex}>
+                <td className="is-rank">{index + 1}</td>
+                <td className="is-team fw-semibold">
+                  <span className="cricket-standings-name" title={row.name}>
+                    {row.name}
+                  </span>
+                </td>
+                <td>{row.played}</td>
+                <td>{row.won}</td>
+                <td>{row.lost}</td>
+                <td>{row.tied}</td>
+                <td>{row.noResult}</td>
+                <td className="fw-bold">{row.points}</td>
+                <td>{(row.nrr >= 0 ? "+" : "") + row.nrr.toFixed(3)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <p className="admin-hint mt-2 mb-0">Win 2 points, tie or no result 1. NRR counts an all-out side as facing its full overs.</p>
     </div>
   );
@@ -354,7 +360,7 @@ export function CricketLeaderboardPage() {
           onChange={(value) => setTournamentId(value || null)}
         />
       </div>
-      {isLoading ? <p>Loading...</p> : <LeaderboardGrid matches={matches ?? []} />}
+      {isLoading ? <Loader /> : <LeaderboardGrid matches={matches ?? []} />}
     </ListCard>
   );
 }

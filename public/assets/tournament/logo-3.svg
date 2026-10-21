@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <!-- Stumps and bails -->
+  <circle cx="60" cy="60" r="60" fill="#ffcd00"/>
+  <circle cx="60" cy="60" r="52" fill="#c0311b"/>
+  <g fill="#fff8e6">
+    <rect x="38" y="36" width="9" height="56" rx="3"/>
+    <rect x="55.5" y="36" width="9" height="56" rx="3"/>
+    <rect x="73" y="36" width="9" height="56" rx="3"/>
+    <rect x="36" y="29" width="23" height="5" rx="2.5"/>
+    <rect x="61" y="29" width="23" height="5" rx="2.5"/>
+  </g>
+</svg>

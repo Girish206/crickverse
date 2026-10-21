@@ -1,4 +1,5 @@
 import type { CricketTournament } from "../../../api/types";
+import { bannerFor, logoFor } from "./tournamentArt";
 
 const shortDate = (value: string) =>
   new Date(value).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
@@ -17,8 +18,8 @@ function phaseOf(t: CricketTournament): { label: string; tone: string } | null {
 // The top of a tournament's page (under its PageHeader): cover image, a
 // floating card with the logo, name, status, dates and
 // place straddling its bottom edge. The rest of the details are on the
-// Info tab (TournamentInfo). Older tournaments without a banner get a
-// gradient cover.
+// Info tab (TournamentInfo). Tournaments without a banner or logo get stock
+// art (tournamentArt.ts).
 export function TournamentBanner({ tournament: t }: { tournament: CricketTournament }) {
   const place = [t.ground, t.city].filter(Boolean).join(", ");
   const dates = t.startDate
@@ -28,20 +29,11 @@ export function TournamentBanner({ tournament: t }: { tournament: CricketTournam
 
   return (
     <div className="cricket-th">
-      <div
-        className={`cricket-th-cover ${t.bannerUrl ? "" : "is-empty"}`}
-        style={t.bannerUrl ? { backgroundImage: `url(${t.bannerUrl})` } : undefined}
-      />
+      <div className="cricket-th-cover" style={{ backgroundImage: `url(${bannerFor(t)})` }} />
 
       {/* Floating card straddling the cover's bottom edge. */}
       <div className="cricket-th-identity">
-        <span
-          className="cricket-tour-logo"
-          style={t.logoUrl ? { backgroundImage: `url(${t.logoUrl})` } : undefined}
-          aria-hidden="true"
-        >
-          {!t.logoUrl && t.name.charAt(0).toUpperCase()}
-        </span>
+        <span className="cricket-tour-logo" style={{ backgroundImage: `url(${logoFor(t)})` }} aria-hidden="true" />
         <div className="cricket-th-title">
           <h1>{t.name}</h1>
           {(phase || dates || place) && (

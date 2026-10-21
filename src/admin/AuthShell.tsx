@@ -4,8 +4,9 @@ import { useAdminTheme } from "./useAdminTheme";
 import "./dms/global.css";
 import "./dms/css/Login.css";
 
-// The sign-in and sign-up screens' frame: glowing backdrop, a card with the
-// logo, badge, heading and subtitle, then the form and a footer line.
+// The sign-in and sign-up screens' frame: a dark glowing backdrop with the
+// logo, badge, heading and subtitle on it, a white card holding only the
+// form, then the footer lines below the card.
 export function AuthShell({
   heading,
   subtitle,
@@ -25,18 +26,20 @@ export function AuthShell({
       <div className="admin-login-ash admin-login-ash-1" aria-hidden="true" />
       <div className="admin-login-ash admin-login-ash-2" aria-hidden="true" />
 
-      <div className="admin-login-card animated fadeInUp">
-        <div className="admin-login-logo-ring">
-          <img src="/favicon.svg" alt="Namma Aaata" className="admin-login-logo" />
+      <div className="admin-login-stack animated fadeInUp">
+        <div className="admin-login-intro">
+          <div className="admin-login-logo-ring">
+            <img src="/favicon.svg" alt="Namma Aaata" className="admin-login-logo" />
+          </div>
+
+          <span className="admin-login-badge">
+            Namma Aaata <span className="cv-kannada" lang="kn">· ನಮ್ಮ ಆಟ</span>
+          </span>
+          <h1 className="admin-login-heading">{heading}</h1>
+          <p className="admin-login-subtitle">{subtitle}</p>
         </div>
 
-        <span className="admin-login-badge">
-          Namma Aaata <span className="cv-kannada" lang="kn">· ನಮ್ಮ ಆಟ</span>
-        </span>
-        <h1 className="admin-login-heading">{heading}</h1>
-        <p className="admin-login-subtitle">{subtitle}</p>
-
-        {children}
+        <div className="admin-login-card">{children}</div>
 
         {footer && <p className="admin-login-switch">{footer}</p>}
 

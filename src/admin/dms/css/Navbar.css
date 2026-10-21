@@ -508,15 +508,28 @@
   box-shadow: 0 0 0 1px #fff;
 }
 
-/* Admin identity + direct sign-out shown in the navbar (profile sidebar
-   is temporarily commented out — see Navbar.tsx). */
+/* Account menu: the avatar chip opens a dropdown with My Profile and
+   Sign Out (Navbar.tsx). */
+.navbar-user-menu {
+  position: relative;
+}
+
 .navbar-user-chip {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 8px 6px 6px;
+  padding: 6px 12px 6px 6px;
+  border: none;
   border-radius: 999px;
   background: rgba(var(--primary-rgb), 0.06);
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.navbar-user-chip:hover,
+.navbar-user-chip[aria-expanded="true"] {
+  background: rgba(var(--primary-rgb), 0.12);
 }
 
 .navbar-user-email {
@@ -529,23 +542,146 @@
   white-space: nowrap;
 }
 
-.navbar-signout-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 7px 12px;
-  border: none;
-  border-radius: 999px;
-  background: var(--primary);
-  color: #ffffff;
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s ease;
+.navbar-user-caret {
+  font-size: 0.7rem;
+  color: var(--muted-color);
 }
 
-.navbar-signout-btn:hover {
-  background: var(--primary-dark-1);
+.navbar-user-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 1050;
+  width: 250px;
+  max-width: calc(100vw - 20px);
+  padding: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.16);
+  animation: navbar-user-dropdown-in 0.14s ease-out;
+  transform-origin: top right;
+}
+
+@keyframes navbar-user-dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+
+.navbar-user-dropdown-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  margin-bottom: 6px;
+  border-radius: 12px;
+  background: rgba(var(--primary-rgb), 0.07);
+}
+
+.navbar-user-dropdown-avatar {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: var(--fs-sm);
+}
+
+.navbar-user-dropdown-who {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.navbar-user-dropdown-who strong,
+.navbar-user-dropdown-who small {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.navbar-user-dropdown-who strong {
+  font-size: var(--fs-sm);
+  color: var(--theme-text-dark);
+}
+
+.navbar-user-dropdown-who small {
+  font-size: var(--fs-xs);
+  color: var(--muted-color);
+}
+
+.navbar-user-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 8px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--theme-text-dark);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.navbar-user-dropdown-icon {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(var(--primary-rgb), 0.08);
+  color: var(--primary);
+  font-size: 0.8rem;
+}
+
+.navbar-user-dropdown-label {
+  flex: 1;
+}
+
+.navbar-user-dropdown-chevron {
+  font-size: 0.65rem;
+  color: var(--muted-color);
+}
+
+.navbar-user-dropdown-item:hover {
+  background: rgba(var(--primary-rgb), 0.06);
+}
+
+.navbar-user-dropdown-divider {
+  height: 1px;
+  margin: 6px 4px;
+  background: rgba(0, 0, 0, 0.07);
+}
+
+.navbar-user-dropdown-item.is-danger {
+  color: #dc3545;
+}
+
+.navbar-user-dropdown-item.is-danger .navbar-user-dropdown-icon {
+  background: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+}
+
+.navbar-user-dropdown-item.is-danger:hover {
+  background: rgba(220, 53, 69, 0.07);
 }
 
 /* Portfolio / Expense Tracker segmented switcher — only rendered for
@@ -637,21 +773,4 @@
     width: 30px !important;
     height: 30px !important;
   }
-
-  .navbar-signout-btn {
-    padding: 6px 10px;
-  }
-}
-
-/* Avatar + name open My Profile. */
-.navbar-user-link {
-  display: flex;
-  align-items: center;
-  gap: inherit;
-  min-width: 0;
-  color: inherit;
-  text-decoration: none;
-}
-.navbar-user-link:hover .navbar-user-email {
-  color: var(--primary);
 }

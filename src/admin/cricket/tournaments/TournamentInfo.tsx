@@ -9,8 +9,7 @@ const dateText = (value: string) =>
     .toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" })
     .replace(/ /g, "-");
 
-// The "Info" tab of a tournament, laid out like a match's Info tab
-// (MatchInfo): the details card, then who organised it.
+// The "Info" tab of a tournament: the details card, then who organised it.
 export function TournamentInfo({ tournament: t, matches }: { tournament: CricketTournament; matches: CricketMatch[] }) {
   const completed = matches.filter((m) => m.status === "completed").length;
   const venue = [t.ground, t.city].filter(Boolean).join(", ");
@@ -21,22 +20,7 @@ export function TournamentInfo({ tournament: t, matches }: { tournament: Cricket
         ? `${dateText(t.startDate)}${t.endDate && t.endDate !== t.startDate ? ` to ${dateText(t.endDate)}` : ""}`
         : "Not set",
     ],
-    [
-      "Venue",
-      venue ? (
-        <a
-          key="venue"
-          className="cricket-info-link"
-          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venue)}`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          {venue} <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
-        </a>
-      ) : (
-        "Not set"
-      ),
-    ],
+    ["Venue", venue || "Not set"],
     ["Category", labelOf(CATEGORIES, t.category) ?? "Not set"],
     ["Match type", labelOf(MATCH_TYPES, t.matchType) ?? "Not set"],
     ["Overs", t.overs ?? "Not set"],
@@ -49,7 +33,6 @@ export function TournamentInfo({ tournament: t, matches }: { tournament: Cricket
   ];
   return (
     <div className="cricket-info">
-      <h2 className="cricket-info-title">Tournament details</h2>
       <dl className="cricket-info-card">
         {rows.map(([label, value]) => (
           <div key={label} className="cricket-info-row">

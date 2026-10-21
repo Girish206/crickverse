@@ -138,6 +138,35 @@
 :root[data-bs-theme="dark"] .navbar-user-chip {
   background: rgba(255, 255, 255, 0.06);
 }
+:root[data-bs-theme="dark"] .navbar-user-chip:hover,
+:root[data-bs-theme="dark"] .navbar-user-chip[aria-expanded="true"] {
+  background: rgba(255, 255, 255, 0.1);
+}
+:root[data-bs-theme="dark"] .navbar-user-dropdown {
+  background: var(--adm-raised);
+  border-color: var(--adm-line);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+}
+:root[data-bs-theme="dark"] .navbar-user-dropdown-head {
+  background: rgba(255, 255, 255, 0.04);
+}
+:root[data-bs-theme="dark"] .navbar-user-dropdown-who strong,
+:root[data-bs-theme="dark"] .navbar-user-dropdown-item:not(.is-danger) {
+  color: var(--adm-text);
+}
+:root[data-bs-theme="dark"] .navbar-user-dropdown-item:hover {
+  background: var(--adm-hover);
+}
+:root[data-bs-theme="dark"] .navbar-user-dropdown-item.is-danger {
+  color: #f0606f;
+}
+:root[data-bs-theme="dark"] .navbar-user-dropdown-item.is-danger .navbar-user-dropdown-icon {
+  background: rgba(240, 96, 111, 0.14);
+  color: #f0606f;
+}
+:root[data-bs-theme="dark"] .navbar-user-dropdown-divider {
+  background: var(--adm-line);
+}
 :root[data-bs-theme="dark"] .navbar-notif-dropdown,
 :root[data-bs-theme="dark"] .profile-sidebar {
   background: var(--adm-surface);
@@ -215,6 +244,13 @@
   :root[data-bs-theme="dark"] .sidebar {
     background: var(--adm-surface) !important;
   }
+  :root[data-bs-theme="dark"] .sidebar-mobile-head {
+    border-bottom-color: var(--adm-line);
+  }
+  :root[data-bs-theme="dark"] .sidebar-mobile-close {
+    background: var(--adm-raised);
+    color: var(--adm-text);
+  }
 }
 
 /* ---------- Cards ---------- */
@@ -287,34 +323,33 @@
 
 /* ---------- Forms ---------- */
 
-:root[data-bs-theme="dark"] .form-control,
+/* InputComp.css field tokens */
+:root[data-bs-theme="dark"] {
+  --field-line: var(--adm-line-strong);
+  --field-line-hover: rgba(255, 255, 255, 0.32);
+  --field-error: var(--brand-crimson-bright);
+  --field-muted: #a3a2bf;
+}
+:root[data-bs-theme="dark"] .form-control {
+  color: var(--adm-text);
+}
 :root[data-bs-theme="dark"] .form-select {
   background-color: rgba(255, 255, 255, 0.04);
   border-color: var(--adm-line-strong) !important;
   color: var(--adm-text);
 }
-:root[data-bs-theme="dark"] .form-control:read-only {
-  background-color: rgba(255, 255, 255, 0.02) !important;
-}
 :root[data-bs-theme="dark"] .form-control::placeholder {
   color: #77769a !important;
 }
-:root[data-bs-theme="dark"] .form-floating > label,
-:root[data-bs-theme="dark"] .select-floating-label,
-:root[data-bs-theme="dark"] .input-icon {
-  color: #a3a2bf;
+:root[data-bs-theme="dark"] .select-floating-label {
+  color: var(--field-muted);
 }
-/* Floating labels sit on a strip of the field's own background. */
-:root[data-bs-theme="dark"] .form-floating > .form-control:focus ~ label::after,
-:root[data-bs-theme="dark"] .form-floating > .form-control:not(:placeholder-shown) ~ label::after {
-  background-color: transparent;
-}
-:root[data-bs-theme="dark"] .select__control {
-  background-color: rgba(255, 255, 255, 0.04) !important;
-  border-color: var(--adm-line-strong) !important;
-}
+/* Underline selects use the --field-* tokens above; only the menu needs a
+   dark surface. */
 :root[data-bs-theme="dark"] .select__menu {
+  border-color: var(--adm-line-strong);
   background-color: var(--adm-raised) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45) !important;
 }
 :root[data-bs-theme="dark"] .select__single-value,
 :root[data-bs-theme="dark"] .select__input-container,
@@ -489,4 +524,12 @@
 }
 :root[data-bs-theme="dark"] .swal2-html-container {
   color: var(--adm-text-2);
+}
+
+:root[data-bs-theme="dark"] .sidebar .sidebar-footer .logout-btn {
+  color: #ff6b85 !important;
+  border-color: rgba(255, 107, 133, 0.3);
+}
+:root[data-bs-theme="dark"] .sidebar .sidebar-footer .logout-btn:hover {
+  color: #ffffff !important;
 }

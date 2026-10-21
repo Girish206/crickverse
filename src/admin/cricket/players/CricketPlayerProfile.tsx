@@ -4,13 +4,15 @@ import type { CricketMatch, CricketPlayer, CricketTournament } from "../../../ap
 import { CricketKpis } from "../CricketKpis";
 import { roleOf } from "../playerRoles";
 import { PlayerAvatar } from "./PlayerAvatar";
+import { FollowButton, FollowCounts } from "../follow/FollowButton";
 import { battingAverage, bestBowling, impactPerMatch, playerStats, points, rate, strikeRate } from "../stats";
+import { Loader } from "../../components/Loader";
 
 // A super admin viewing any player's profile (all matches are loaded).
 export function CricketPlayerProfileLoader({ player }: { player: CricketPlayer }) {
   const { data: matches, isLoading } = useCricketMatches();
   const { data: tournaments } = useCricketTournaments();
-  if (isLoading) return <p>Loading...</p>;
+  if (isLoading) return <Loader />;
   return <CricketPlayerProfile player={player} matches={matches ?? []} tournaments={tournaments ?? []} />;
 }
 
@@ -43,13 +45,15 @@ export function CricketPlayerProfile({
     <div className="cricket-profile">
       <div className="cricket-profile-head">
         <PlayerAvatar name={player.name} photoUrl={player.photoUrl} className="cricket-player-avatar is-large" />
-        <div>
+        <div className="cricket-profile-name">
           <h3>{player.name}</h3>
           <span className="text-muted">
             {role ? role.label : "Role not set"}
             {inTournaments.length > 0 && ` · ${inTournaments.map((t) => t.name).join(", ")}`}
           </span>
+          <FollowCounts playerId={player.id} />
         </div>
+        <FollowButton target={{ kind: "player", targetId: player.id, teamIndex: null }} />
       </div>
 
       {!s || s.matches === 0 ? (

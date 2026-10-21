@@ -22,9 +22,13 @@ export function MatchInfo({
   const rows: [string, ReactNode][] = [
     [
       "Tournament",
-      <Link key="tournament" to={`/tournaments/${match.tournamentId}`} className="cricket-info-link">
-        {tournament?.name ?? "Tournament"} <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
-      </Link>,
+      match.tournamentId === null ? (
+        "None (one-off match)"
+      ) : (
+        <Link key="tournament" to={`/tournaments/${match.tournamentId}`} className="cricket-info-link">
+          {tournament?.name ?? "Tournament"} <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
+        </Link>
+      ),
     ],
     ["Round", `${stageLabel(match.stage)} Matches`],
     ["Match type", labelOf(MATCH_TYPES, match.matchType) ?? "Limited Overs"],

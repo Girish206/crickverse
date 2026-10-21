@@ -1,0 +1,7 @@
+/* Sonner pins the close button to the top-left corner, over the icon —
+   move it to the top-right instead. */
+[data-sonner-toaster] [data-sonner-toast] [data-close-button] {
+  left: auto;
+  right: 0;
+  transform: translate(35%, -35%);
+}

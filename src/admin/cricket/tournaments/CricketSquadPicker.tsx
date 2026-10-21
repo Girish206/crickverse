@@ -1,33 +1,31 @@
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useCreateCricketPlayer, useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
+import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
 import { useSetCricketSquad } from "../../../api/hooks/cricket/useCricketTournaments";
 import type { CricketTournament } from "../../../api/types";
 import { confirmAction } from "../../components/confirmDelete";
-import { roleOf } from "../playerRoles";
-import { normalizeMobile } from "../mobile";
+import { AddPlayerByMobile } from "../players/AddPlayerByMobile";
+import { PlayerCard } from "../players/PlayerCard";
 
-// Same normalisation the server applies, so a quick-added name that's
-// already in the shared list picks that player instead of failing.
-const nameKey = (name: string) => name.trim().replace(/\s+/g, " ").toLowerCase();
-
-// Picks the tournament's squad from the shared player list. Each tick saves
-// straight away; a brand-new name typed here joins the shared list too.
+// The tournament's squad. Players join by mobile number (the whole player
+// list is too long to show); a new number joins the shared list too. Each
+// tick saves straight away.
 export function CricketSquadPicker({ tournament, busy }: { tournament: CricketTournament; busy: boolean }) {
   const { data: players } = useCricketPlayers();
   const setSquad = useSetCricketSquad();
-  const createPlayer = useCreateCricketPlayer();
   const [search, setSearch] = useState("");
-  const [newName, setNewName] = useState("");
-  const [newMobile, setNewMobile] = useState("");
-  const [addError, setAddError] = useState<string | null>(null);
+  // Taken out this visit: still listed (unticked) so they can be ticked back.
+  const [dropped, setDropped] = useState<number[]>([]);
 
   const squad = new Set(tournament.playerIds);
   const matched = new Set(tournament.matchSets.flatMap((set) => set.playerIds));
-  const all = players ?? [];
-  const visible = all.filter((player) => player.name.toLowerCase().includes(search.trim().toLowerCase()));
-  const allVisibleIn = visible.length > 0 && visible.every((player) => squad.has(player.id));
-  const saving = busy || setSquad.isPending || createPlayer.isPending;
+  const playerById = new Map((players ?? []).map((player) => [player.id, player]));
+  const listed = [...tournament.playerIds, ...dropped.filter((id) => !squad.has(id))].flatMap((id) => {
+    const player = playerById.get(id);
+    return player ? [player] : [];
+  });
+  const visible = listed.filter((player) => player.name.toLowerCase().includes(search.trim().toLowerCase()));
+  const saving = busy || setSquad.isPending;
 
   function save(playerIds: number[]) {
     setSquad.mutate({ id: tournament.id, playerIds });
@@ -48,6 +46,7 @@ export function CricketSquadPicker({ tournament, busy }: { tournament: CricketTo
     }
     const drop = new Set(ids);
     save(tournament.playerIds.filter((id) => !drop.has(id)));
+    setDropped((current) => [...current, ...ids]);
   }
 
   function toggle(playerId: number) {
@@ -58,84 +57,22 @@ export function CricketSquadPicker({ tournament, busy }: { tournament: CricketTo
     }
   }
 
-  // "Select all" works on what the search shows, so a filtered list can be
-  // added (or removed) in one go.
-  function toggleAllVisible() {
-    if (allVisibleIn) {
-      void remove(visible.map((player) => player.id));
-    } else {
-      save([...new Set([...tournament.playerIds, ...visible.map((player) => player.id)])]);
-    }
-  }
-
-  // An existing player (same name or number) is just picked; anyone new
-  // needs a mobile number to join the shared list.
-  async function quickAdd(e: FormEvent) {
-    e.preventDefault();
-    const key = nameKey(newName);
-    if (!key) return;
-    const mobile = normalizeMobile(newMobile);
-    const existing = all.find((player) => nameKey(player.name) === key || (mobile && player.mobile === mobile));
-    if (!existing && !mobile) {
-      setAddError("Add their 10-digit mobile number too.");
-      return;
-    }
-    const id = existing?.id ?? (await createPlayer.mutateAsync({ name: newName, role: null, mobile: mobile! })).id;
-    if (!squad.has(id)) save([...tournament.playerIds, id]);
-    setNewName("");
-    setNewMobile("");
-    setAddError(null);
-  }
-
   return (
     <>
       <p className="admin-hint">
-        Tick the players taking part. They come from the shared{" "}
+        Add the players taking part by mobile number. Someone not in the shared{" "}
         <Link to="/players" className="admin-link">
           player list
-        </Link>
-        ; a new name added here joins that list too.
+        </Link>{" "}
+        yet joins it too. Untick to take a player out.
       </p>
 
-      <form className="cricket-quick-add" onSubmit={quickAdd}>
-        <input
-          className="form-control shadow-none"
-          placeholder="New player's name"
-          value={newName}
-          maxLength={100}
-          onChange={(e) => {
-            setNewName(e.target.value);
-            setAddError(null);
-          }}
-        />
-        <input
-          className="form-control shadow-none"
-          type="tel"
-          inputMode="tel"
-          placeholder="Mobile number"
-          value={newMobile}
-          maxLength={20}
-          onChange={(e) => {
-            setNewMobile(e.target.value);
-            setAddError(null);
-          }}
-        />
-        <button type="submit" className="btn btn-outline-primary" disabled={saving || !newName.trim()}>
-          <i className="fa-solid fa-user-plus" aria-hidden="true"></i> Add
-        </button>
-      </form>
-      {addError && <p className="text-danger small mt-n2">{addError}</p>}
+      <AddPlayerByMobile
+        blockedReason={(id) => (squad.has(id) ? "Already in the squad" : null)}
+        onAdded={(player) => save([...tournament.playerIds, player.id])}
+      />
 
       <div className="cricket-squad-toolbar">
-        <label className="cricket-check">
-          <input
-            type="checkbox"
-            checked={allVisibleIn}
-            disabled={saving || visible.length === 0}
-            onChange={toggleAllVisible}
-          />
-          <span>{search.trim() ? "Select all shown" : "Select all"}</span>
-        </label>
         <input
           type="search"
           className="form-control shadow-none"
@@ -144,32 +81,26 @@ export function CricketSquadPicker({ tournament, busy }: { tournament: CricketTo
           onChange={(e) => setSearch(e.target.value)}
         />
         <span className="admin-filter-count">
-          {tournament.playerIds.length} of {all.length} in squad
+          {tournament.playerIds.length} in squad
         </span>
       </div>
 
-      {all.length === 0 ? (
-        <div className="admin-empty-state">No players in the list yet — add one above.</div>
+      {listed.length === 0 ? (
+        <div className="admin-empty-state">No players in the squad yet — add them by mobile number above.</div>
       ) : visible.length === 0 ? (
         <div className="admin-empty-state">No players match "{search}".</div>
       ) : (
-        <div className="cricket-squad-grid">
-          {visible.map((player) => {
-            const role = roleOf(player.role);
-            return (
-              <label key={player.id} className={`cricket-check cricket-squad-item ${squad.has(player.id) ? "is-in" : ""}`}>
-                <input
-                  type="checkbox"
-                  checked={squad.has(player.id)}
-                  disabled={saving}
-                  onChange={() => toggle(player.id)}
-                />
-                <span className="cricket-player-name">{player.name}</span>
-                {role && <i className={`fa-solid ${role.icon} cricket-role-icon`} title={role.label}></i>}
-                {matched.has(player.id) && <small className="cricket-set-tag">matched</small>}
-              </label>
-            );
-          })}
+        <div className="cricket-player-card-list is-grid">
+          {visible.map((player) => (
+            <PlayerCard
+              key={player.id}
+              player={player}
+              selected={squad.has(player.id)}
+              disabled={saving}
+              tag={matched.has(player.id) ? "Matched" : undefined}
+              onClick={() => toggle(player.id)}
+            />
+          ))}
         </div>
       )}
     </>

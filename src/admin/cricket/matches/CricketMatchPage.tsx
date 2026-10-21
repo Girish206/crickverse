@@ -1,14 +1,16 @@
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useCricketMatch, useDeleteCricketMatch } from "../../../api/hooks/cricket/useCricketMatches";
 import { useCricketTournament } from "../../../api/hooks/cricket/useCricketTournaments";
 import { ListCard } from "../../components/ListCard";
 import { PageHeader, PageHeaderAction } from "../../components/PageHeader";
 import { Button } from "../../components/Button";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
+import { canManageMatch } from "../canManage";
 import { confirmDelete } from "../../components/confirmDelete";
 import { LiveScorer } from "./LiveScorer";
 import { BallByBall, Scorecard } from "./Scorecard";
 import { MatchHero } from "./MatchHero";
+import { MatchStatusBadge } from "./matchUi";
 import { MatchAwards } from "./MatchAwards";
 import { PotmPicker } from "./PotmPicker";
 import { MatchInfo } from "./MatchInfo";
@@ -20,6 +22,7 @@ import { usePlayerNames } from "./matchUtils";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
+import { Loader } from "../../components/Loader";
 
 type Tab = "info" | "live" | "scorecard" | "insights" | "overs" | "squads" | "mvp";
 
@@ -27,21 +30,29 @@ export function CricketMatchPage() {
   const id = Number(useParams().id);
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
+  const location = useLocation();
   const { data: match, isLoading } = useCricketMatch(id);
-  const { data: tournament } = useCricketTournament(match?.tournamentId ?? 0, Boolean(match));
+  const { data: tournament } = useCricketTournament(match?.tournamentId ?? 0, Boolean(match?.tournamentId));
   const deleteMatch = useDeleteCricketMatch();
   const nameOf = usePlayerNames();
-  // Players follow along read-only (scorecard + ball by ball).
+  // Others follow along read-only (scorecard + ball by ball); its
+  // organisers score it.
   const { admin } = useAdminAuth();
-  const canManage = Boolean(admin?.isSuperAdmin);
+  const canManage = canManageMatch(admin, match, tournament);
+  // /matches is super admin only; players have their own list.
+  const matchesList = admin?.isSuperAdmin ? "/matches" : "/my-matches";
 
   if (isLoading || !match) {
     return (
       <>
-        <PageHeader title="Match" back={canManage ? "/matches" : "/my-matches"} />
-        <ListCard title="Match">
-          <p>{isLoading ? "Loading..." : "Match not found."}</p>
-        </ListCard>
+        <PageHeader title="Match" back={matchesList} />
+        {isLoading ? (
+          <Loader page />
+        ) : (
+          <ListCard title="Match">
+            <p>Match not found.</p>
+          </ListCard>
+        )}
       </>
     );
   }
@@ -73,7 +84,7 @@ export function CricketMatchPage() {
   async function handleDelete() {
     if (await confirmDelete("match", `${match!.teams[0].name} vs ${match!.teams[1].name}`)) {
       await deleteMatch.mutateAsync(match!.id);
-      navigate("/matches");
+      navigate(matchesList);
     }
   }
 
@@ -82,18 +93,21 @@ export function CricketMatchPage() {
       <PageHeader
         title={`${match.teams[0].name} vs ${match.teams[1].name}`}
         subtitle={tournament?.name ?? "Match"}
-        back={`/tournaments/${match.tournamentId}?tab=matches`}
-        backLabel="Back to tournament"
+        back={match.tournamentId === null ? matchesList : `/tournaments/${match.tournamentId}?tab=matches`}
+        backLabel={match.tournamentId === null ? "Back to matches" : "Back to tournament"}
         actions={
-          canManage && (
-            <PageHeaderAction
-              icon="fa-solid fa-trash"
-              label="Delete match"
-              danger
-              disabled={deleteMatch.isPending}
-              onClick={handleDelete}
-            />
-          )
+          <>
+            {canManage && (
+              <PageHeaderAction
+                icon="fa-solid fa-trash"
+                label="Delete match"
+                danger
+                disabled={deleteMatch.isPending}
+                onClick={handleDelete}
+              />
+            )}
+            <MatchStatusBadge status={match.status} />
+          </>
         }
       />
       <MatchHero match={match} nameOf={nameOf} />
@@ -106,7 +120,7 @@ export function CricketMatchPage() {
             role="tab"
             aria-selected={tab === t.value}
             className={tab === t.value ? "active" : ""}
-            onClick={() => setParams({ tab: t.value }, { replace: true })}
+            onClick={() => setParams({ tab: t.value }, { replace: true, state: location.state })}
           >
             {t.label}
           </button>

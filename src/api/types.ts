@@ -23,11 +23,60 @@ export interface CricketMe {
   accountMobile: string | null;
   tournaments: CricketTournament[];
   matches: CricketMatch[];
+  // Tournaments they follow (or follow a team in), those tournaments'
+  // matches (a followed team's only) and the matches of players they
+  // follow, leaving out ones they play in.
+  followedTournaments: CricketTournament[];
+  followedMatches: CricketMatch[];
+  followedPlayerMatches: CricketMatch[];
+  // The ones they created (and so organise).
+  createdTournaments: CricketTournament[];
+  createdMatches: CricketMatch[];
+}
+
+export type CricketFollowKind = "player" | "team" | "tournament";
+
+// What's followed: a player or tournament by id, or a team by its
+// tournament's id plus its index (teamIndex is null for the other kinds).
+export interface CricketFollowTarget {
+  kind: CricketFollowKind;
+  targetId: number;
+  teamIndex: number | null;
+}
+
+export interface CricketFollow extends CricketFollowTarget {
+  id: number;
+  followerId: number;
+  createdAt: string;
+}
+
+// The signed-in player's follows; playerId is null when the account has no
+// player (and so can't follow anything).
+export interface CricketMyFollows {
+  playerId: number | null;
+  follows: CricketFollow[];
+}
+
+export interface CricketFollowCounts {
+  followers: number;
+  // Players only: how many they follow.
+  following: number | null;
+}
+
+// A side's captain, vice-captain and wicket-keeper (null = not picked).
+export interface CricketTeamRoles {
+  captainId: number | null;
+  viceCaptainId: number | null;
+  keeperId: number | null;
 }
 
 export interface CricketTeam {
   name: string;
   playerIds: number[];
+  // Leadership, each one of playerIds; null / missing = not picked.
+  captainId?: number | null;
+  viceCaptainId?: number | null;
+  keeperId?: number | null;
 }
 
 // Players judged equal in strength — generating teams sends each one to a
@@ -62,6 +111,8 @@ export interface CricketTournament {
   matchType: CricketMatchType | null;
   // Default overs per innings for its matches.
   overs: number | null;
+  // The account that created it (null on older ones); see canManage.ts.
+  createdById: number | null;
   createdAt: string;
 }
 
@@ -96,6 +147,12 @@ export interface CricketBall {
   wicketType: CricketWicketType | null;
   dismissedId: number | null;
   fielderId: number | null;
+  // Where the shot went (the scorer's shot map; see ShotMap.tsx): -1..1
+  // with the pitch at the centre, bowler's end up, off side right. Null or
+  // missing = not marked.
+  shotX?: number | null;
+  shotY?: number | null;
+  shotZone?: string | null;
 }
 
 export interface CricketInnings {
@@ -114,6 +171,10 @@ export interface CricketMatchTeam {
   name: string;
   // Playing XI (the team's roster until the match starts).
   playerIds: number[];
+  // This match's leaders (copied from the tournament team; set at the start).
+  captainId?: number | null;
+  viceCaptainId?: number | null;
+  keeperId?: number | null;
 }
 
 export type CricketMatchStatus = "scheduled" | "live" | "completed" | "abandoned";
@@ -134,7 +195,8 @@ export type CricketMatchStage =
 
 export interface CricketMatch {
   id: number;
-  tournamentId: number;
+  // Null for a standalone match.
+  tournamentId: number | null;
   teams: CricketMatchTeam[];
   overs: number;
   scheduledAt: string | null;
@@ -152,6 +214,8 @@ export interface CricketMatch {
   winner: number | null;
   resultText: string | null;
   playerOfMatchId: number | null;
+  // The account that created it (null on older ones); see canManage.ts.
+  createdById: number | null;
   createdAt: string;
 }
 

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
 import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
 import {
   useCricketTournament,
@@ -19,6 +19,7 @@ import { CricketSquadPicker } from "./CricketSquadPicker";
 import { AutoTeamCount, ExistingTeamPicker, TeamForm } from "./CricketTeamTools";
 import { roleOf } from "../playerRoles";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
+import { canManageTournament } from "../canManage";
 import { useCricketMatches } from "../../../api/hooks/cricket/useCricketMatches";
 import { MatchesBoard } from "../matches/CricketMatchesList";
 import { CricketMatchForm } from "../matches/CricketMatchForm";
@@ -26,9 +27,11 @@ import { LeaderboardGrid, PointsTable } from "../leaderboard/CricketLeaderboard"
 import { TournamentBanner } from "./TournamentBanner";
 import { TournamentInfo } from "./TournamentInfo";
 import { TournamentStats } from "./TournamentStats";
+import { FollowHeaderAction } from "../follow/FollowButton";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
+import { Loader } from "../../components/Loader";
 
 type Tab = "info" | "teams" | "matches" | "points" | "stats" | "totals";
 
@@ -106,23 +109,29 @@ export function CricketTournamentPage() {
   const [editing, setEditing] = useState(false);
   const [schedulingMatch, setSchedulingMatch] = useState(false);
   const [params, setParams] = useSearchParams();
+  const location = useLocation();
   const requested = params.get("tab") as Tab | null;
   const tab: Tab = requested && TABS.some((t) => t.value === requested) ? requested : "info";
   const { data: matches } = useCricketMatches(id);
-  // Players see their tournament read-only; super admins manage it.
+  // Players see their tournament read-only; its creator and super admins
+  // manage it.
   const { admin } = useAdminAuth();
-  const canManage = Boolean(admin?.isSuperAdmin);
+  const canManage = canManageTournament(admin, tournament);
 
   const playerById = useMemo(() => new Map((players ?? []).map((player) => [player.id, player])), [players]);
-  const backTo = canManage ? "/tournaments" : "/my-tournaments";
+  const backTo = admin?.isSuperAdmin ? "/tournaments" : "/my-tournaments";
 
   if (isLoading || !tournament) {
     return (
       <>
         <PageHeader title="Tournament" back={backTo} />
-        <ListCard title="Tournament">
-          <p>{isLoading ? "Loading..." : "Tournament not found."}</p>
-        </ListCard>
+        {isLoading ? (
+          <Loader page />
+        ) : (
+          <ListCard title="Tournament">
+            <p>Tournament not found.</p>
+          </ListCard>
+        )}
       </>
     );
   }
@@ -183,9 +192,14 @@ export function CricketTournamentPage() {
         title={tournament.name}
         subtitle="Tournament"
         back={backTo}
-        backLabel={canManage ? "All tournaments" : "My tournaments"}
+        backLabel={admin?.isSuperAdmin ? "All tournaments" : "My tournaments"}
         actions={
-          canManage && <PageHeaderAction icon="fa-solid fa-pen" label="Edit tournament" onClick={() => setEditing(true)} />
+          <>
+            <FollowHeaderAction target={{ kind: "tournament", targetId: tournament.id, teamIndex: null }} />
+            {canManage && (
+              <PageHeaderAction icon="fa-solid fa-pen" label="Edit tournament" onClick={() => setEditing(true)} />
+            )}
+          </>
         }
       />
       {/* Banner + tabs: one header that stays pinned on phones. */}
@@ -202,7 +216,7 @@ export function CricketTournamentPage() {
               role="tab"
               aria-selected={tab === t.value}
               className={tab === t.value ? "active" : ""}
-              onClick={() => setParams({ tab: t.value }, { replace: true })}
+              onClick={() => setParams({ tab: t.value }, { replace: true, state: location.state })}
             >
               {t.label}
             </button>
@@ -211,13 +225,13 @@ export function CricketTournamentPage() {
       </div>
 
       {tab === "info" && (
-        <ListCard title="">
+        <ListCard>
           <TournamentInfo tournament={tournament} matches={matches ?? []} />
         </ListCard>
       )}
 
       {tab === "teams" && !canManage && (
-        <ListCard title="Teams">
+        <ListCard>
           {teamCount === 0 ? (
             <div className="admin-empty-state">The teams haven't been picked yet.</div>
           ) : (
@@ -228,7 +242,7 @@ export function CricketTournamentPage() {
 
       {tab === "teams" && canManage && (
         <>
-        <ListCard title={`Teams (${teamCount})`}>
+        <ListCard>
           {teamCount === 0 ? (
             <div className="admin-empty-state">No teams yet — create them automatically or add them by hand below.</div>
           ) : (
@@ -436,7 +450,6 @@ export function CricketTournamentPage() {
 
       {tab === "matches" && (
         <ListCard
-          title="Matches"
           action={
             canManage ? (
               <Button variant="primary" onClick={() => setSchedulingMatch(true)}>
@@ -450,25 +463,31 @@ export function CricketTournamentPage() {
       )}
 
       {tab === "points" && (
-        <ListCard title="Points Table">
+        <ListCard>
           <PointsTable tournament={tournament} matches={matches ?? []} />
         </ListCard>
       )}
 
       {tab === "stats" && (
-        <ListCard title="Leaderboard">
+        <ListCard>
           <LeaderboardGrid matches={matches ?? []} />
         </ListCard>
       )}
 
       {tab === "totals" && (
-        <ListCard title="Tournament Stats">
+        <ListCard>
           <TournamentStats matches={matches ?? []} />
         </ListCard>
       )}
 
       {schedulingMatch && (
-        <BottomSheet title="Schedule Match" onClose={() => setSchedulingMatch(false)} wide>
+        <BottomSheet
+          title="Schedule Match"
+          icon="fa-solid fa-baseball-bat-ball"
+          onClose={() => setSchedulingMatch(false)}
+          wide
+          fullScreen
+        >
           <CricketMatchForm tournamentId={tournament.id} onSaved={() => setSchedulingMatch(false)} />
         </BottomSheet>
       )}

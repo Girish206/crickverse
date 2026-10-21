@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { CricketMatch } from "../../../api/types";
 import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
 import { PlayerAvatar } from "../players/PlayerAvatar";
+import { PlayerLink } from "../players/PlayerProfileSheet";
 import { impactLine, matchAwards, points, type NameOf } from "../stats";
 
 // The "MVP" tab: everyone who took part, ranked by impact points, with
@@ -50,7 +51,7 @@ export function MatchMvp({ match, nameOf }: { match: CricketMatch; nameOf: NameO
               <PlayerAvatar name={name} photoUrl={photoOf(row.playerId)} className="cricket-mvp-avatar" />
               <span className="cricket-mvp-body">
                 <strong>
-                  {name}
+                  <PlayerLink playerId={row.playerId}>{name}</PlayerLink>
                   {row.playerId === potmId && (
                     <i className="fa-solid fa-medal" title="Player of the match" aria-label="Player of the match"></i>
                   )}

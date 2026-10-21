@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <!-- Shield with star -->
+  <circle cx="60" cy="60" r="60" fill="#2a0f12"/>
+  <path d="M60 18 L94 30 V58 Q94 86 60 102 Q26 86 26 58 V30Z" fill="#e8501f"/>
+  <path d="M60 18 L94 30 V58 Q94 86 60 102Z" fill="#b3141b"/>
+  <path d="M60 38 L66 52 L81 53 L69 63 L73 78 L60 70 L47 78 L51 63 L39 53 L54 52Z" fill="#ffcd00"/>
+</svg>

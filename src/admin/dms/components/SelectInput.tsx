@@ -42,7 +42,8 @@ const SelectInput: React.FC<SelectProps> = ({
     placeholder = "",
     onChange,
     className = "",
-    floating = false,
+    // Floating labels are the app-wide default (compact underline fields).
+    floating = true,
     size = "md",
     creatable = false,
     isLoading = false,

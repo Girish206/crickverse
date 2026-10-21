@@ -10,7 +10,9 @@ import { Button } from "../../components/Button";
 import { ModalForm } from "../../components/ModalForm";
 import { SubmitButton } from "../../components/SubmitButton";
 import InputComp from "../../dms/components/InputComp";
-import { roleOf } from "../playerRoles";
+import { AddPlayerByMobile } from "../players/AddPlayerByMobile";
+import { PlayerCard } from "../players/PlayerCard";
+import { NO_ROLES, rolesOf, rolesWithout, TeamRoleChips, type TeamRoles } from "./TeamRoleChips";
 
 const MAX_TEAMS = 8;
 
@@ -95,17 +97,26 @@ export function TeamForm({
   const existing = index === undefined ? undefined : tournament.teams[index];
   const [name, setName] = useState(existing?.name ?? defaultTeamNames(tournament, 1)[0]);
   const [picked, setPicked] = useState<number[]>(existing?.playerIds ?? []);
+  const [roles, setRoles] = useState<TeamRoles>(existing ? rolesOf(existing) : NO_ROLES);
   const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const onTeam = teamOfPlayer(tournament);
-  const visible = (players ?? []).filter((player) => player.name.toLowerCase().includes(search.trim().toLowerCase()));
+  // The tournament's squad plus anyone picked (e.g. added by mobile number);
+  // the whole player list is too long to show. Saving puts picks in the squad.
+  const listedIds = [...new Set([...tournament.playerIds, ...picked])];
+  const visible = (players ?? []).filter(
+    (player) => listedIds.includes(player.id) && player.name.toLowerCase().includes(search.trim().toLowerCase()),
+  );
   const saving = addTeams.isPending || updateTeam.isPending;
 
   function toggle(playerId: number) {
-    setPicked((current) =>
-      current.includes(playerId) ? current.filter((id) => id !== playerId) : [...current, playerId],
-    );
+    if (picked.includes(playerId)) {
+      setPicked(picked.filter((id) => id !== playerId));
+      setRoles(rolesWithout(roles, playerId));
+    } else {
+      setPicked([...picked, playerId]);
+    }
   }
 
   async function onSubmit(e: FormEvent) {
@@ -115,7 +126,7 @@ export function TeamForm({
     if (tournament.teams.some((team, i) => i !== index && nameKey(team.name) === nameKey(trimmed))) {
       return setError(`There's already a team called "${trimmed}".`);
     }
-    const team = { name: trimmed, playerIds: picked };
+    const team = { name: trimmed, playerIds: picked, ...roles };
     if (index === undefined) await addTeams.mutateAsync({ id: tournament.id, teams: [team] });
     else await updateTeam.mutateAsync({ id: tournament.id, index, ...team });
     onSaved();
@@ -135,44 +146,60 @@ export function TeamForm({
         }}
       />
       <div className="d-flex justify-content-between align-items-center mb-2">
-        <label className="form-label m-0">Players ({picked.length})</label>
+        <label className="form-label m-0">
+          Players ({picked.length})
+          {picked.length > 0 && <small className="text-muted fw-normal"> · tap C, VC or WK to pick leaders</small>}
+        </label>
         {picked.length > 0 && (
-          <button type="button" className="admin-link-btn" onClick={() => setPicked([])}>
+          <button
+            type="button"
+            className="admin-link-btn"
+            onClick={() => {
+              setPicked([]);
+              setRoles(NO_ROLES);
+            }}
+          >
             Clear
           </button>
         )}
       </div>
+      <AddPlayerByMobile
+        blockedReason={(playerId) => {
+          if (picked.includes(playerId)) return "Already in this team";
+          const otherTeam = onTeam.get(playerId);
+          return otherTeam !== undefined && otherTeam !== index ? `Already on ${tournament.teams[otherTeam].name}` : null;
+        }}
+        onAdded={(player) => setPicked((current) => [...current, player.id])}
+      />
       <input
         type="search"
-        className="form-control shadow-none mb-2"
+        className="form-control shadow-none my-2"
         placeholder="Search players"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
-      <div className="cricket-pick-list cricket-team-pick-list">
+      <div className="cricket-player-card-list cricket-team-pick-list">
         {visible.length === 0 ? (
-          <div className="admin-empty-state">{players?.length ? "No players match." : "No players yet."}</div>
+          <div className="admin-empty-state">
+            {listedIds.length ? "No players match." : "No players yet — add them by mobile number above."}
+          </div>
         ) : (
           visible.map((player) => {
             const isPicked = picked.includes(player.id);
             const otherTeam = onTeam.get(player.id);
             const taken = otherTeam !== undefined && otherTeam !== index;
-            const role = roleOf(player.role);
             return (
-              <button
-                type="button"
+              <PlayerCard
                 key={player.id}
-                className={`cricket-pick ${isPicked ? "is-picked" : ""}`}
-                aria-pressed={isPicked}
+                player={player}
+                selected={isPicked}
                 disabled={taken}
+                tag={taken ? tournament.teams[otherTeam].name : undefined}
                 title={taken ? `Already on ${tournament.teams[otherTeam].name}` : undefined}
                 onClick={() => toggle(player.id)}
               >
-                <i className={`fa-${isPicked ? "solid fa-circle-check" : "regular fa-circle"}`} aria-hidden="true"></i>
-                <span className="cricket-player-name">{player.name}</span>
-                {role && <i className={`fa-solid ${role.icon} cricket-role-icon`} title={role.label}></i>}
-                {taken && <small className="text-muted ms-auto">{tournament.teams[otherTeam].name}</small>}
-              </button>
+                <TeamRoleChips roles={roles} playerId={player.id} playerName={player.name} onChange={setRoles} />
+              </PlayerCard>
             );
           })
         )}
@@ -228,7 +255,7 @@ export function ExistingTeamPicker({ tournament, onSaved }: { tournament: Cricke
         onChange={(e) => setSearch(e.target.value)}
       />
       {full && <div className="admin-banner admin-banner-error mb-2">This tournament already has {MAX_TEAMS} teams.</div>}
-      <div className="cricket-pick-list cricket-team-pick-list">
+      <div className="cricket-player-card-list cricket-team-pick-list">
         {visible.length === 0 ? (
           <div className="admin-empty-state">
             {options.length ? "No teams match." : "Teams from your other tournaments show up here."}

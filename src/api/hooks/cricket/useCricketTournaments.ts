@@ -6,6 +6,8 @@ import type {
   CricketCategory,
   CricketMatchType,
   CricketPitchType,
+  CricketPlayer,
+  CricketTeamRoles,
   CricketTournament,
 } from "../../types";
 
@@ -121,6 +123,10 @@ export function useMoveCricketPlayer() {
 export interface CricketTeamInput {
   name: string;
   playerIds: number[];
+  // Left out = keep the team's current ones.
+  captainId?: number | null;
+  viceCaptainId?: number | null;
+  keeperId?: number | null;
 }
 
 // Appends teams: blank ones to generate into, a hand-built one, or a copy of
@@ -134,6 +140,36 @@ export function useAddCricketTeams() {
 export function useUpdateCricketTeam() {
   return useTournamentMutation(({ id, index, ...team }: CricketTeamInput & { id: number; index: number }) =>
     apiClient.put(`/admin/cricket/tournaments/${id}/teams/${index}`, team),
+  );
+}
+
+// The player with this mobile (null = a new number), for the team's captain
+// or a super admin adding players to it.
+export async function lookupCricketTeamPlayer(id: number, index: number, mobile: string) {
+  const { data } = await apiClient.get<ApiEnvelope<CricketPlayer | null>>(
+    `/admin/cricket/tournaments/${id}/teams/${index}/lookup`,
+    { params: { mobile } },
+  );
+  return data.data;
+}
+
+// Adds players to a team by mobile; new numbers (with a name) become new
+// players. Open to the team's captain as well as super admins.
+export function useAddCricketTeamPlayers() {
+  const queryClient = useQueryClient();
+  return useTournamentMutation(
+    async ({ id, index, players }: { id: number; index: number; players: { mobile: string; name?: string }[] }) => {
+      const response = await apiClient.post(`/admin/cricket/tournaments/${id}/teams/${index}/players`, { players });
+      queryClient.invalidateQueries({ queryKey: ["cricket-players"] });
+      return response;
+    },
+  );
+}
+
+// A team's captain, vice-captain and wicket-keeper (null = none).
+export function useSetCricketTeamRoles() {
+  return useTournamentMutation(({ id, index, ...roles }: CricketTeamRoles & { id: number; index: number }) =>
+    apiClient.put(`/admin/cricket/tournaments/${id}/teams/${index}/roles`, roles),
   );
 }
 

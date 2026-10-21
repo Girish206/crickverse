@@ -10,6 +10,7 @@ import { MatchCard } from "../matches/matchUi";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
+import { Loader } from "../../components/Loader";
 
 const byDate = (a: string | null, b: string | null) =>
   (a ? new Date(a).getTime() : Infinity) - (b ? new Date(b).getTime() : Infinity);
@@ -61,7 +62,7 @@ export function CricketDashboard() {
           ]}
         />
         {isLoading ? (
-          <p>Loading...</p>
+          <Loader />
         ) : all.length === 0 ? (
           <div className="admin-empty-state">
             No matches yet. Add <Link to="/players">players</Link>, set up a{" "}
@@ -77,7 +78,7 @@ export function CricketDashboard() {
               ) : (
                 <div className="cricket-match-grid">
                   {[...live, ...upcoming].slice(0, 4).map((m) => (
-                    <MatchCard key={m.id} match={m} tournamentName={tournamentNames.get(m.tournamentId)} />
+                    <MatchCard key={m.id} match={m} tournamentName={tournamentNames.get(m.tournamentId ?? 0)} />
                   ))}
                 </div>
               ),
@@ -90,7 +91,7 @@ export function CricketDashboard() {
               ) : (
                 <div className="cricket-match-grid">
                   {results.map((m) => (
-                    <MatchCard key={m.id} match={m} tournamentName={tournamentNames.get(m.tournamentId)} />
+                    <MatchCard key={m.id} match={m} tournamentName={tournamentNames.get(m.tournamentId ?? 0)} />
                   ))}
                 </div>
               ),

@@ -13,6 +13,7 @@ export function MatchStatusBadge({ status }: { status: CricketMatchStatus }) {
   return (
     <span className={`cricket-match-status is-${status}`}>
       {status === "live" && <span className="cricket-live-dot" aria-hidden="true"></span>}
+      {status === "completed" && <i className="fa-solid fa-circle-check" aria-hidden="true"></i>}
       {STATUS_LABELS[status]}
     </span>
   );
@@ -61,10 +62,13 @@ export function MatchCard({
         );
       })}
       <div className="cricket-match-card-foot">
-        {match.resultText ??
-          (match.status === "live"
-            ? "In progress"
-            : `${formatMatchDate(match.scheduledAt)}${match.venue ? ` · ${match.venue}` : ""}`)}
+        {(match.resultText || match.status === "live") && (
+          <div className="cricket-match-card-result">{match.resultText ?? "In progress"}</div>
+        )}
+        <div className="cricket-match-card-when">
+          {formatMatchDate(match.scheduledAt)}
+          {match.venue ? ` · ${match.venue}` : ""}
+        </div>
       </div>
       {footnote && <div className="cricket-match-card-note">{footnote}</div>}
     </div>

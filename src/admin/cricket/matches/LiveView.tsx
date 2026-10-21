@@ -1,4 +1,5 @@
 import type { CricketMatch } from "../../../api/types";
+import { PlayerLink } from "../players/PlayerProfileSheet";
 import {
   ballLabel,
   battingCard,
@@ -86,7 +87,7 @@ export function LiveView({ match, nameOf }: { match: CricketMatch; nameOf: NameO
               return (
                 <tr key={playerId}>
                   <td className="fw-semibold">
-                    {nameOf(playerId)}
+                    <PlayerLink playerId={playerId}>{nameOf(playerId)}</PlayerLink>
                     {i === 0 && " *"}
                   </td>
                   <td className="fw-bold">{row?.runs ?? 0}</td>
@@ -111,7 +112,9 @@ export function LiveView({ match, nameOf }: { match: CricketMatch; nameOf: NameO
           <tbody>
             {innings.bowlerId !== null && (
               <tr>
-                <td className="fw-semibold">{nameOf(innings.bowlerId)}</td>
+                <td className="fw-semibold">
+                  <PlayerLink playerId={innings.bowlerId}>{nameOf(innings.bowlerId)}</PlayerLink>
+                </td>
                 <td>{oversText(bowlerRow?.legalBalls ?? 0)}</td>
                 <td>{bowlerRow?.maidens ?? 0}</td>
                 <td>{bowlerRow?.runs ?? 0}</td>
@@ -129,7 +132,7 @@ export function LiveView({ match, nameOf }: { match: CricketMatch; nameOf: NameO
           {recent.map((over) => (
             <div key={over.number} className="cricket-this-over">
               <span>
-                Ov {over.number + 1} · {nameOf(over.bowlerId)}
+                Ov {over.number + 1} · <PlayerLink playerId={over.bowlerId}>{nameOf(over.bowlerId)}</PlayerLink>
               </span>
               {over.balls.map((ball, i) => (
                 <span key={i} className={`cricket-ball-chip is-${ballLabel(ball)}`}>

@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import Swal from "sweetalert2";
+import { toast } from "sonner";
 import { useCricketMe, useSetMyPhoto, useUpdateMyProfile } from "../../../api/hooks/cricket/useCricketPlayers";
 import type { CricketMe, CricketPlayerRole } from "../../../api/types";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
@@ -16,6 +16,7 @@ import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
 import "./MyProfilePage.css";
+import { Loader } from "../../components/Loader";
 
 // /profile — the signed-in user's own details: photo, name, mobile number
 // (also their sign-in), playing role and password, plus signing out.
@@ -29,7 +30,7 @@ export function MyProfilePage() {
         <ProfileForm me={me} />
       ) : (
         <div className="card cv-profile-card">
-          <p className="mb-0">Loading...</p>
+          <Loader />
         </div>
       )}
     </div>
@@ -98,14 +99,7 @@ function ProfileForm({ me }: { me: CricketMe }) {
     setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword("");
-    void Swal.fire({
-      toast: true,
-      position: "top-end",
-      icon: "success",
-      title: newPassword ? "Profile and password updated" : "Profile updated",
-      showConfirmButton: false,
-      timer: 2500,
-    });
+    toast.success(newPassword ? "Profile and password updated" : "Profile updated");
   }
 
   function handleLogout() {

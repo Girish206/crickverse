@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAdminAuth } from "../context/AdminAuthContext";
 import { messageFor } from "../api/mutationErrors";
 import { normalizeMobile } from "./cricket/mobile";
@@ -13,9 +13,13 @@ import { AuthShell } from "./AuthShell";
 export function RegisterPage() {
   const { register } = useAdminAuth();
   const navigate = useNavigate();
+  // The sign-in page sends a team-added player here with their number to
+  // set a password; their name is already on the player, so it isn't asked.
+  const [searchParams] = useSearchParams();
+  const settingPassword = searchParams.get("setPassword") === "1";
 
   const [name, setName] = useState("");
-  const [mobile, setMobile] = useState("");
+  const [mobile, setMobile] = useState(() => searchParams.get("mobile") ?? "");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -25,8 +29,10 @@ export function RegisterPage() {
 
   function validate() {
     const next: Record<string, string> = {};
-    if (name.trim().length < 2) next.name = "Enter your name";
-    if (!normalizeMobile(mobile)) next.mobile = "Enter a valid 10-digit mobile number";
+    if (!settingPassword && name.trim().length < 2)
+      next.name = "Enter your name";
+    if (!normalizeMobile(mobile))
+      next.mobile = "Enter a valid 10-digit mobile number";
     if (password.length < 8) next.password = "Use at least 8 characters";
     if (confirm !== password) next.confirm = "The passwords don't match";
     setErrors(next);
@@ -39,7 +45,11 @@ export function RegisterPage() {
     if (!validate()) return;
     setLoading(true);
     try {
-      await register({ name: name.trim(), mobile: normalizeMobile(mobile)!, password });
+      await register({
+        name: settingPassword ? undefined : name.trim(),
+        mobile: normalizeMobile(mobile)!,
+        password,
+      });
       navigate("/", { replace: true });
     } catch (err) {
       setError(messageFor(err));
@@ -50,8 +60,12 @@ export function RegisterPage() {
 
   return (
     <AuthShell
-      heading="Create Account"
-      subtitle="Join in — track your runs, wickets and every match you play."
+      heading={settingPassword ? "Set Password" : "Create Account"}
+      subtitle={
+        settingPassword
+          ? "You've been added to a team. Set a password to sign in."
+          : "Join in — track your runs, wickets and every match you play."
+      }
       footer={
         <>
           Already have an account? <Link to="/login">Sign in</Link>
@@ -59,21 +73,25 @@ export function RegisterPage() {
       }
     >
       <form onSubmit={handleSubmit} noValidate className="admin-login-form">
-        {error && <div className="alert alert-danger py-2 text-center">{error}</div>}
+        {error && (
+          <div className="alert alert-danger py-2 text-center">{error}</div>
+        )}
 
-        <InputComp
-          type="text"
-          name="name"
-          autoComplete="name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          floating={true}
-          required
-          icon="fa-solid fa-user"
-          iconPosition="right"
-          label="Full name"
-          error={errors.name}
-        />
+        {!settingPassword && (
+          <InputComp
+            type="text"
+            name="name"
+            autoComplete="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            floating={true}
+            required
+            icon="fa-solid fa-user"
+            iconPosition="right"
+            label="Full name"
+            error={errors.name}
+          />
+        )}
 
         <InputComp
           type="tel"
@@ -125,9 +143,10 @@ export function RegisterPage() {
           className="w-100 mt-3"
           disabled={loading}
           loading={loading}
-          loadingLabel="Creating account..."
+          loadingLabel={settingPassword ? "Saving..." : "Creating account..."}
         >
-          Create Account <i className="fa-solid fa-arrow-right ms-2"></i>
+          {settingPassword ? "Set Password" : "Create Account"}{" "}
+          <i className="fa-solid fa-arrow-right ms-2"></i>
         </CustomButton>
       </form>
     </AuthShell>
