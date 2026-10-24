@@ -515,6 +515,7 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
           <ol className="cricket-fixture-preview">
             {fixtures.map((fixture, i) => (
               <li key={i}>
+                <span className="cricket-fixture-no">Match {i + 1}</span>
                 <span className="cricket-fixture-when">{fixtureDate(fixture.scheduledAt)}</span>
                 <span className="cricket-fixture-teams">
                   {teamName(fixture.teamAIndex)} <small>v</small> {teamName(fixture.teamBIndex)}
