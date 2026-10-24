@@ -498,16 +498,20 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
         <section className="cricket-format-phase">
           <header className="cricket-format-phase-head">
             <h3>Opening fixtures</h3>
-            <span className="cricket-phase-state">{fixtures.length} matches</span>
+            <span className="cricket-fixture-head-end">
+              {roundRobinFirst && fixtures.length > 1 && (
+                <button
+                  type="button"
+                  className="cricket-fixture-regenerate"
+                  title="New pairings and match order, same settings. Nothing is saved until you save."
+                  onClick={regenerate}
+                >
+                  <i className="fa-solid fa-rotate" aria-hidden="true"></i> Regenerate
+                </button>
+              )}
+              <span className="cricket-phase-state">{fixtures.length} matches</span>
+            </span>
           </header>
-          {roundRobinFirst && fixtures.length > 1 && (
-            <div className="cricket-fixture-regenerate">
-              <Button variant="outline" onClick={regenerate}>
-                <i className="fa-solid fa-rotate" aria-hidden="true"></i> Regenerate fixtures
-              </Button>
-              <small className="admin-hint">New pairings and match order, same settings. Nothing is saved until you save.</small>
-            </div>
-          )}
           <ol className="cricket-fixture-preview">
             {fixtures.map((fixture, i) => (
               <li key={i}>
