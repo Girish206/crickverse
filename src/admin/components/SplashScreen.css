@@ -1,0 +1,244 @@
+/* Launch screen (SplashScreen.tsx). Timeline: the ball reaches the stumps
+   at 0.85s, the stumps give way to the logo from 1.25s, the name follows,
+   and the whole screen fades out from 2.6s. */
+.cv-splash {
+  --cv-sp-ball: 22px;
+  --cv-sp-stumps-w: 60px;
+  --cv-sp-stumps-h: 100px;
+  /* Vertical centre of the stumps, and of the logo that replaces them */
+  --cv-sp-mid: 40vh;
+  --cv-sp-hit: 0.85s;
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 40%, rgba(var(--brand-crimson-rgb), 0.22), transparent 55%),
+    var(--brand-navy-night);
+  cursor: pointer;
+  animation: cvSplashOut 0.4s ease-in 2.6s forwards;
+}
+
+@keyframes cvSplashOut {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* ---------- The delivery ---------- */
+.cv-splash-ball-x {
+  position: absolute;
+  top: 0;
+  left: 0;
+  animation: cvSplashBallX var(--cv-sp-hit) linear forwards;
+}
+
+.cv-splash-ball-y {
+  animation: cvSplashBallY var(--cv-sp-hit) forwards;
+}
+
+.cv-splash-ball {
+  display: block;
+  width: var(--cv-sp-ball);
+  height: var(--cv-sp-ball);
+  filter: drop-shadow(0 4px 8px rgba(var(--brand-crimson-rgb), 0.55));
+  animation:
+    cvSplashSpin 0.4s linear infinite,
+    cvSplashHide 0.1s linear var(--cv-sp-hit) forwards;
+}
+
+@keyframes cvSplashBallX {
+  from {
+    transform: translateX(calc(-1 * var(--cv-sp-ball)));
+  }
+  to {
+    transform: translateX(calc(50vw - var(--cv-sp-ball) / 2));
+  }
+}
+
+/* Leaves the bowler's hand, pitches short of the stumps, then rises into
+   the middle stump. */
+@keyframes cvSplashBallY {
+  0% {
+    transform: translateY(calc(var(--cv-sp-mid) - var(--cv-sp-stumps-h)));
+    animation-timing-function: ease-in;
+  }
+  68% {
+    transform: translateY(calc(var(--cv-sp-mid) + var(--cv-sp-stumps-h) / 2 - var(--cv-sp-ball)));
+    animation-timing-function: ease-out;
+  }
+  100% {
+    transform: translateY(calc(var(--cv-sp-mid) - var(--cv-sp-ball) / 2));
+  }
+}
+
+/* ---------- Stumps ---------- */
+.cv-splash-stumps {
+  position: absolute;
+  left: calc(50% - var(--cv-sp-stumps-w) / 2);
+  top: calc(var(--cv-sp-mid) - var(--cv-sp-stumps-h) / 2);
+  width: var(--cv-sp-stumps-w);
+  height: var(--cv-sp-stumps-h);
+  overflow: visible;
+  animation: cvSplashStumpsOut 0.35s ease-in 1.25s forwards;
+}
+
+.cv-splash-stump,
+.cv-splash-bail {
+  transform-box: fill-box;
+}
+
+.cv-splash-stump-mid {
+  transform-origin: 50% 100%;
+  animation: cvSplashStumpShake 0.4s ease-out var(--cv-sp-hit) both;
+}
+
+.cv-splash-bail {
+  transform-origin: 50% 50%;
+}
+
+.cv-splash-bail-l {
+  animation: cvSplashBailLeft 0.6s ease-out var(--cv-sp-hit) both;
+}
+
+.cv-splash-bail-r {
+  animation: cvSplashBailRight 0.6s ease-out var(--cv-sp-hit) both;
+}
+
+@keyframes cvSplashStumpShake {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(12deg); }
+  55% { transform: rotate(-5deg); }
+  100% { transform: rotate(4deg); }
+}
+
+@keyframes cvSplashBailLeft {
+  0% { transform: none; opacity: 1; }
+  50% { transform: translate(-40px, -70px) rotate(-260deg); opacity: 1; }
+  100% { transform: translate(-62px, -24px) rotate(-400deg); opacity: 0; }
+}
+
+@keyframes cvSplashBailRight {
+  0% { transform: none; opacity: 1; }
+  50% { transform: translate(36px, -88px) rotate(300deg); opacity: 1; }
+  100% { transform: translate(58px, -40px) rotate(440deg); opacity: 0; }
+}
+
+@keyframes cvSplashStumpsOut {
+  to {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+/* Ring that bursts out of the stumps on impact */
+.cv-splash-impact {
+  position: absolute;
+  left: calc(50% - 40px);
+  top: calc(var(--cv-sp-mid) - 40px);
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 3px solid rgba(var(--brand-amber-rgb), 0.9);
+  opacity: 0;
+  animation: cvSplashImpact 0.7s ease-out var(--cv-sp-hit) forwards;
+}
+
+@keyframes cvSplashImpact {
+  0% { transform: scale(0.2); opacity: 0.9; }
+  100% { transform: scale(3); opacity: 0; }
+}
+
+/* ---------- The reveal ---------- */
+.cv-splash-brand {
+  position: absolute;
+  inset: calc(var(--cv-sp-mid) - 48px) 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.cv-splash-logo {
+  width: 96px;
+  height: 96px;
+  margin-bottom: 10px;
+  filter: drop-shadow(0 8px 24px rgba(var(--brand-orange-rgb), 0.45));
+  opacity: 0;
+  animation: cvSplashLogoIn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 1.3s forwards;
+}
+
+@keyframes cvSplashLogoIn {
+  from {
+    opacity: 0;
+    transform: scale(0.4) rotate(-12deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.cv-splash-name,
+.cv-splash-kn {
+  opacity: 0;
+  animation: cvSplashRise 0.45s ease-out forwards;
+}
+
+.cv-splash .cv-splash-name {
+  font-size: 2rem;
+  color: #f3f4f6;
+  animation-delay: 1.6s;
+}
+
+.cv-splash .cv-splash-name em {
+  color: var(--brand-amber);
+}
+
+.cv-splash .cv-splash-kn {
+  font-size: var(--fs-lg);
+  color: var(--brand-crimson-bright);
+  animation-delay: 1.75s;
+}
+
+@keyframes cvSplashRise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes cvSplashSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes cvSplashHide {
+  to { opacity: 0; }
+}
+
+/* Reduced motion: no delivery, just the logo and name. */
+@media (prefers-reduced-motion: reduce) {
+  .cv-splash,
+  .cv-splash * {
+    animation: none !important;
+  }
+
+  .cv-splash-ball-x,
+  .cv-splash-stumps,
+  .cv-splash-impact {
+    display: none;
+  }
+
+  .cv-splash-logo,
+  .cv-splash-name,
+  .cv-splash-kn {
+    opacity: 1;
+  }
+}
