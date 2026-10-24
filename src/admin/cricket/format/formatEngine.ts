@@ -291,16 +291,145 @@ export function groupFixtures(format: CricketFormat, phase: CricketPhase, groups
       ? partialRounds(group.teamIndexes, phase.matchesPerTeam)
       : roundRobinRounds(group.teamIndexes, phase.legs),
   );
-  const fixtures: Fixture[] = [];
-  const roundCount = Math.max(0, ...perGroup.map((rounds) => rounds.length));
+  const rounds: Fixture[][] = [];
+  const roundCount = Math.max(0, ...perGroup.map((groupRounds) => groupRounds.length));
   for (let round = 0; round < roundCount; round += 1) {
-    perGroup.forEach((rounds, g) => {
-      for (const [a, b] of rounds[round] ?? []) {
-        fixtures.push({ phaseId: phase.id, teamAIndex: a, teamBIndex: b, stage, group: groups[g].name, slot: null });
-      }
-    });
+    rounds.push(
+      perGroup.flatMap((groupRounds, g) =>
+        (groupRounds[round] ?? []).map(([a, b]) => ({
+          phaseId: phase.id,
+          teamAIndex: a,
+          teamBIndex: b,
+          stage,
+          group: groups[g].name,
+          slot: null,
+        })),
+      ),
+    );
   }
-  return fixtures;
+  return evenGaps(rounds);
+}
+
+// ===== Even gaps =====
+// A round-robin's matches in the order that keeps each team's wait between
+// its matches as even as can be: no avoidable back-to-backs, then the
+// shortest wait as long as possible, then the longest as short. Tries the
+// rounds in order (each round's most-rested teams first) and a few dozen
+// most-rested-first orders over all the matches, and keeps the best.
+
+type Order = number[];
+
+// [back-to-backs, −shortest wait, longest wait, spread]; lower is better.
+function gapScore(fixtures: Fixture[], order: Order) {
+  const total = new Map<number, number>();
+  for (const f of fixtures) {
+    total.set(f.teamAIndex, (total.get(f.teamAIndex) ?? 0) + 1);
+    total.set(f.teamBIndex, (total.get(f.teamBIndex) ?? 0) + 1);
+  }
+  const last = new Map<number, number>();
+  let backToBack = 0;
+  let shortest = Infinity;
+  let longest = 0;
+  let spread = 0;
+  order.forEach((index, at) => {
+    for (const team of [fixtures[index].teamAIndex, fixtures[index].teamBIndex]) {
+      if (last.has(team)) {
+        const wait = at - last.get(team)!;
+        if (wait === 1) backToBack += 1;
+        shortest = Math.min(shortest, wait);
+        longest = Math.max(longest, wait);
+        spread += (wait - order.length / total.get(team)!) ** 2;
+      }
+      last.set(team, at);
+    }
+  });
+  return [backToBack, -shortest, longest, spread];
+}
+
+const lower = (a: number[], b: number[]) => {
+  const at = a.findIndex((value, i) => value !== b[i]);
+  return at >= 0 && a[at] < b[at];
+};
+
+// Repeatedly the match from `pool` whose less-rested team has waited
+// longest (then: teams with more matches left, both teams' wait, `tieBreak`).
+function mostRestedFirst(fixtures: Fixture[], pools: Order[], tieBreak: () => number): Order {
+  const last = new Map<number, number>();
+  const left = new Map<number, number>();
+  for (const f of fixtures) {
+    left.set(f.teamAIndex, (left.get(f.teamAIndex) ?? 0) + 1);
+    left.set(f.teamBIndex, (left.get(f.teamBIndex) ?? 0) + 1);
+  }
+  const order: Order = [];
+  for (const pool of pools) {
+    const pending = [...pool];
+    while (pending.length > 0) {
+      const rest = (team: number) => (last.has(team) ? order.length - last.get(team)! : 1e6);
+      let best = 0;
+      let bestKey: number[] = [];
+      pending.forEach((index, k) => {
+        const { teamAIndex: a, teamBIndex: b } = fixtures[index];
+        const key = [-Math.min(rest(a), rest(b)), -(left.get(a)! + left.get(b)!), -(rest(a) + rest(b)), tieBreak()];
+        if (k === 0 || lower(key, bestKey)) {
+          best = k;
+          bestKey = key;
+        }
+      });
+      const [index] = pending.splice(best, 1);
+      const { teamAIndex: a, teamBIndex: b } = fixtures[index];
+      order.push(index);
+      last.set(a, order.length - 1);
+      last.set(b, order.length - 1);
+      left.set(a, left.get(a)! - 1);
+      left.set(b, left.get(b)! - 1);
+    }
+  }
+  return order;
+}
+
+// A small seeded random (mulberry32), so the same fixtures always come out
+// in the same order and the preview doesn't jump about.
+function seeded(seed: number) {
+  return () => {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// The format page rebuilds its preview on every change, so orders are kept.
+const evenGapsCache = new Map<string, Order>();
+
+function evenGaps(rounds: Fixture[][]): Fixture[] {
+  const fixtures = rounds.flat();
+  if (fixtures.length < 3) return fixtures;
+  const key = rounds.map((round) => round.map((f) => `${f.teamAIndex}-${f.teamBIndex}`).join(",")).join("|");
+  let order = evenGapsCache.get(key);
+  if (!order) {
+    // Each round's matches, as indexes into `fixtures`.
+    const roundPools: Order[] = [];
+    let start = 0;
+    for (const round of rounds) {
+      roundPools.push(round.map((_, i) => start + i));
+      start += round.length;
+    }
+    const random = seeded(Array.from(key).reduce((hash, ch) => (Math.imul(hash, 31) + ch.charCodeAt(0)) | 0, 7));
+    order = mostRestedFirst(fixtures, roundPools, () => 0);
+    let score = gapScore(fixtures, order);
+    const all = [fixtures.map((_, i) => i)];
+    for (let attempt = 0; attempt < 60; attempt += 1) {
+      const candidate = mostRestedFirst(fixtures, all, random);
+      const candidateScore = gapScore(fixtures, candidate);
+      if (lower(candidateScore, score)) {
+        order = candidate;
+        score = candidateScore;
+      }
+    }
+    if (evenGapsCache.size > 50) evenGapsCache.clear();
+    evenGapsCache.set(key, order);
+  }
+  return order.map((index) => fixtures[index]);
 }
 
 // A bracket slot's match, once both its teams are known.
