@@ -5252,3 +5252,17 @@ span.cricket-pick-tile-photo {
 .cricket-add-player + .admin-empty-state {
   margin-top: 14px;
 }
+
+/* Add Teams: auto create, new team and existing team in one row (they
+   wrap only on the narrowest screens). Each label stays on one line. */
+.cricket-add-team-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cricket-add-team-actions .btn {
+  flex: 1 1 auto;
+  padding-inline: 10px;
+  margin: 0 !important;
+  white-space: nowrap;
+}

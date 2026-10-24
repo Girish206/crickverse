@@ -31,7 +31,6 @@ type Tab = "info" | "teams" | "matches" | "points" | "stats" | "totals";
 
 // How the teams are filled: generated from matched sets, or built by hand
 // (new teams or copies of other tournaments' teams).
-type BuildMode = "auto" | "manual";
 
 type TeamModal = { kind: "new" } | { kind: "existing" };
 
@@ -97,7 +96,6 @@ export function CricketTournamentPage() {
   const { data: tournament, isLoading } = useCricketTournament(id);
   const setScorers = useSetCricketTournamentScorers();
   const addTeams = useAddCricketTeams();
-  const [mode, setMode] = useState<BuildMode | null>(null);
   const [teamModal, setTeamModal] = useState<TeamModal | null>(null);
 
   const [editing, setEditing] = useState(false);
@@ -137,17 +135,11 @@ export function CricketTournamentPage() {
   // not on a hand-built team.
   const matchedIds = tournament.matchSets.flatMap((set) => set.playerIds).filter((id) => !onManualTeam.has(id));
   const generatedPlayerIds = generatedTeams.flatMap((team) => team.playerIds);
-  const hasRosters = tournament.teams.some((team) => team.playerIds.length > 0);
   // Generating reshuffles the generated teams, so it's only offered until the first
   // match is scheduled (with no teams yet there are no matches either).
   const canAutoBuild = (matches ?? []).length === 0;
   const teamsOutdated =
     canAutoBuild && tournament.generatedAt !== null && !sameMembers(generatedPlayerIds, matchedIds);
-  // Until one is picked: generating if they've started matching, by hand if
-  // the teams were filled some other way.
-  const buildMode: BuildMode = !canAutoBuild
-    ? "manual"
-    : (mode ?? (matchedIds.length > 0 || tournament.generatedAt || !hasRosters ? "auto" : "manual"));
 
   // Generating needs at least two generated teams (hand-built ones don't
   // count), so the builder starts with them (more can be added there) and
@@ -240,53 +232,27 @@ export function CricketTournamentPage() {
         </ListCard>
 
         <ListCard title="Add Teams">
-          {canAutoBuild && (
-          <div className="admin-segmented mb-3" role="radiogroup" aria-label="How to make the teams">
-            {(
-              [
-                { value: "auto", label: "Create automatically", icon: "fa-shuffle" },
-                { value: "manual", label: "Create manually", icon: "fa-hand-pointer" },
-              ] as const
-            ).map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                role="radio"
-                aria-checked={buildMode === option.value}
-                className={buildMode === option.value ? "active" : ""}
-                onClick={() => setMode(option.value)}
-              >
-                <i className={`fa-solid ${option.icon}`} aria-hidden="true"></i> {option.label}
-              </button>
-            ))}
-          </div>
-          )}
-          {buildMode === "auto" ? (
-            <>
-              <p className="admin-hint">
-                Pick how many teams, choose the squad and match players of equal strength — generating deals each
-                matched set out so every team gets one of each.
-              </p>
+          <p className="admin-hint">
+            {canAutoBuild ? "Build balanced teams from matched players, make" : "Make"} a new team and pick its players, or
+            bring in a team from another tournament.
+          </p>
+          <div className="cricket-add-team-actions">
+            {canAutoBuild && (
               <Button variant="primary" disabled={addTeams.isPending} onClick={openTeamBuilder}>
-                <i className="fa-solid fa-shuffle" aria-hidden="true"></i>{" "}
-                {tournament.generatedAt ? "Open team builder" : "Create teams automatically"}
+                <i className="fa-solid fa-shuffle" aria-hidden="true"></i> {tournament.generatedAt ? "Team builder" : "Auto create"}
               </Button>
-            </>
-          ) : (
-            <>
-              <p className="admin-hint">
-                Make a new team and pick its players, or bring in a team from any other tournament with its players.
-              </p>
-              <div className="d-flex gap-2 flex-wrap">
-                <Button variant="primary" disabled={teamCount >= MAX_TEAMS} onClick={() => setTeamModal({ kind: "new" })}>
-                  <i className="fa-solid fa-plus" aria-hidden="true"></i> New team
-                </Button>
-                <Button variant="outline" disabled={teamCount >= MAX_TEAMS} onClick={() => setTeamModal({ kind: "existing" })}>
-                  <i className="fa-solid fa-people-group" aria-hidden="true"></i> Choose from existing teams
-                </Button>
-              </div>
-            </>
-          )}
+            )}
+            <Button
+              variant={canAutoBuild ? "outline" : "primary"}
+              disabled={teamCount >= MAX_TEAMS}
+              onClick={() => setTeamModal({ kind: "new" })}
+            >
+              <i className="fa-solid fa-plus" aria-hidden="true"></i> New team
+            </Button>
+            <Button variant="outline" disabled={teamCount >= MAX_TEAMS} onClick={() => setTeamModal({ kind: "existing" })}>
+              <i className="fa-solid fa-people-group" aria-hidden="true"></i> Existing team
+            </Button>
+          </div>
         </ListCard>
 
         </>
