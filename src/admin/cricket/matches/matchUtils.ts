@@ -24,8 +24,13 @@ export const stageLabel = (stage: CricketMatchStage | null) => STAGES.find((s) =
 
 // A match's stage. Outside a tournament there's no league, so a standalone
 // match with no stage (or the old "league" default) is just a "Match".
+// A format's group match names its group ("Group A"), and a series match
+// its number ("Match 2").
 export function matchStageLabel(match: CricketMatch) {
   if (match.tournamentId === null && (match.stage === null || match.stage === "league")) return "Match";
+  const series = match.slot?.match(/^M(\d+)$/);
+  if (series) return `Match ${series[1]}`;
+  if (match.stage === "group" && match.group) return `Group ${match.group}`;
   return stageLabel(match.stage ?? "league");
 }
 

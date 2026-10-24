@@ -1,30 +1,22 @@
-import { useMemo, useState } from "react";
-import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
-import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
-import {
-  useCricketTournament,
-  useGenerateCricketTeams,
-  useSetCricketMatchSets,
-  useSetCricketTournamentScorers,
-} from "../../../api/hooks/cricket/useCricketTournaments";
-import type { CricketMatch, CricketPlayer, CricketTournament } from "../../../api/types";
+import { useState } from "react";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useAddCricketTeams, useCricketTournament, useSetCricketTournamentScorers } from "../../../api/hooks/cricket/useCricketTournaments";
+import { isGeneratedTeam, type CricketMatch, type CricketTournament } from "../../../api/types";
 import { avatarColorFor } from "../avatarColor";
 import { pointsTable } from "../stats";
 import { ListCard } from "../../components/ListCard";
 import { PageHeader, PageHeaderAction } from "../../components/PageHeader";
 import { Button } from "../../components/Button";
-import { confirmAction } from "../../components/confirmDelete";
 import { BottomSheet } from "../BottomSheet";
 import { CricketTournamentForm } from "./CricketTournamentForm";
-import { CricketSquadPicker } from "./CricketSquadPicker";
-import { AutoTeamCount, ExistingTeamPicker, TeamForm } from "./CricketTeamTools";
-import { roleOf } from "../playerRoles";
+import { defaultTeamNames, ExistingTeamPicker, MAX_TEAMS, TeamForm } from "./CricketTeamTools";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { canManageTournament } from "../canManage";
 import { useCricketMatches } from "../../../api/hooks/cricket/useCricketMatches";
 import { MatchesBoard } from "../matches/CricketMatchesList";
 import { CricketMatchForm } from "../matches/CricketMatchForm";
-import { LeaderboardGrid, PointsTable } from "../leaderboard/CricketLeaderboard";
+import { LeaderboardGrid } from "../leaderboard/CricketLeaderboard";
+import { FormatView } from "../format/FormatView";
 import { TournamentBanner } from "./TournamentBanner";
 import { TournamentInfo } from "./TournamentInfo";
 import { TournamentStats } from "./TournamentStats";
@@ -48,7 +40,7 @@ const TABS: { value: Tab; label: string }[] = [
   { value: "info", label: "Info" },
   { value: "matches", label: "Matches" },
   { value: "teams", label: "Teams" },
-  { value: "points", label: "Points Table" },
+  { value: "points", label: "Standings" },
   { value: "stats", label: "Leaderboard" },
   { value: "totals", label: "Stats" },
 ];
@@ -59,19 +51,18 @@ function sameMembers(a: number[], b: number[]) {
   return b.every((id) => set.has(id));
 }
 
-function PlayerLabel({ player }: { player: CricketPlayer | undefined }) {
-  const role = roleOf(player?.role ?? null);
-  return (
-    <>
-      <span className="cricket-player-name">{player?.name ?? "Removed player"}</span>
-      {role && <i className={`fa-solid ${role.icon} cricket-role-icon`} title={role.label} aria-label={role.label}></i>}
-    </>
-  );
-}
-
 // The Teams tab: one card per team — initial, name, player count and
 // record — opening the team's own page (CricketTeamPage).
-function TeamCards({ tournament, matches }: { tournament: CricketTournament; matches: CricketMatch[] }) {
+// Organisers also see whether each team was generated or built by hand.
+function TeamCards({
+  tournament,
+  matches,
+  showKind = false,
+}: {
+  tournament: CricketTournament;
+  matches: CricketMatch[];
+  showKind?: boolean;
+}) {
   const record = new Map(pointsTable(tournament, matches).map((row) => [row.teamIndex, row]));
   return (
     <div className="cricket-team-cards">
@@ -83,7 +74,10 @@ function TeamCards({ tournament, matches }: { tournament: CricketTournament; mat
               {team.name.charAt(0).toUpperCase()}
             </span>
             <span className="cricket-team-card-text">
-              <strong>{team.name}</strong>
+              <strong>
+                {team.name}
+                {showKind && <span className="cricket-role-tag">{isGeneratedTeam(team) ? "Auto" : "Manual"}</span>}
+              </strong>
               <small>
                 {team.playerIds.length} player{team.playerIds.length === 1 ? "" : "s"}
                 {row && row.played > 0 && ` · W${row.won} L${row.lost} · ${row.points} pts`}
@@ -99,16 +93,13 @@ function TeamCards({ tournament, matches }: { tournament: CricketTournament; mat
 
 export function CricketTournamentPage() {
   const id = Number(useParams().id);
+  const navigate = useNavigate();
   const { data: tournament, isLoading } = useCricketTournament(id);
-  const { data: players } = useCricketPlayers();
-  const setMatchSets = useSetCricketMatchSets();
-  const generateTeams = useGenerateCricketTeams();
   const setScorers = useSetCricketTournamentScorers();
+  const addTeams = useAddCricketTeams();
   const [mode, setMode] = useState<BuildMode | null>(null);
   const [teamModal, setTeamModal] = useState<TeamModal | null>(null);
 
-  const [picked, setPicked] = useState<number[]>([]);
-  const [search, setSearch] = useState("");
   const [editing, setEditing] = useState(false);
   const [pickingScorers, setPickingScorers] = useState(false);
   const [schedulingMatch, setSchedulingMatch] = useState(false);
@@ -122,7 +113,6 @@ export function CricketTournamentPage() {
   const { admin } = useAdminAuth();
   const canManage = canManageTournament(admin, tournament);
 
-  const playerById = useMemo(() => new Map((players ?? []).map((player) => [player.id, player])), [players]);
   const backTo = admin?.isSuperAdmin ? "/tournaments" : "/my-tournaments";
 
   if (isLoading || !tournament) {
@@ -141,53 +131,38 @@ export function CricketTournamentPage() {
   }
 
   const teamCount = tournament.teams.length;
-  const sets = tournament.matchSets.map((set) => set.playerIds);
-  const matchedIds = sets.flat();
-  const matched = new Set(matchedIds);
-  // Only the squad can be matched.
-  const squad = (players ?? []).filter((player) => tournament.playerIds.includes(player.id));
-  const unmatched = squad.filter((player) => !matched.has(player.id));
-  const available = unmatched.filter((player) => player.name.toLowerCase().includes(search.trim().toLowerCase()));
-  const teamPlayerIds = tournament.teams.flatMap((team) => team.playerIds);
-  const hasRosters = teamPlayerIds.length > 0;
-  const teamsOutdated = tournament.generatedAt !== null && !sameMembers(teamPlayerIds, matchedIds);
-  const busy =
-    setMatchSets.isPending || generateTeams.isPending;
+  const generatedTeams = tournament.teams.filter(isGeneratedTeam);
+  const onManualTeam = new Set(tournament.teams.filter((team) => !isGeneratedTeam(team)).flatMap((team) => team.playerIds));
+  // Generating fills only the generated teams, from the matched players
+  // not on a hand-built team.
+  const matchedIds = tournament.matchSets.flatMap((set) => set.playerIds).filter((id) => !onManualTeam.has(id));
+  const generatedPlayerIds = generatedTeams.flatMap((team) => team.playerIds);
+  const hasRosters = tournament.teams.some((team) => team.playerIds.length > 0);
+  // Generating reshuffles the generated teams, so it's only offered until the first
+  // match is scheduled (with no teams yet there are no matches either).
+  const canAutoBuild = (matches ?? []).length === 0;
+  const teamsOutdated =
+    canAutoBuild && tournament.generatedAt !== null && !sameMembers(generatedPlayerIds, matchedIds);
   // Until one is picked: generating if they've started matching, by hand if
   // the teams were filled some other way.
-  const buildMode: BuildMode = mode ?? (sets.length > 0 || tournament.generatedAt || !hasRosters ? "auto" : "manual");
+  const buildMode: BuildMode = !canAutoBuild
+    ? "manual"
+    : (mode ?? (matchedIds.length > 0 || tournament.generatedAt || !hasRosters ? "auto" : "manual"));
 
-  function saveSets(next: number[][]) {
-    setMatchSets.mutate({ id: tournament!.id, sets: next });
-  }
-
-  // Picking the last player a set needs files it straight away.
-  function togglePick(playerId: number) {
-    if (picked.includes(playerId)) {
-      setPicked(picked.filter((other) => other !== playerId));
-      return;
+  // Generating needs at least two generated teams (hand-built ones don't
+  // count), so the builder starts with them (more can be added there) and
+  // opens straight on the steps.
+  async function openTeamBuilder() {
+    const missing = 2 - generatedTeams.length;
+    if (missing > 0) {
+      const names = defaultTeamNames(tournament!, missing);
+      try {
+        await addTeams.mutateAsync({ id: tournament!.id, teams: names.map((name) => ({ name, playerIds: [] })) });
+      } catch {
+        return; // Shown as a toast.
+      }
     }
-    const next = [...picked, playerId];
-    if (next.length === teamCount) {
-      saveSets([...sets, next]);
-      setPicked([]);
-    } else {
-      setPicked(next);
-    }
-  }
-
-  async function handleGenerate() {
-    if (
-      hasRosters &&
-      !(await confirmAction(
-        tournament!.generatedAt ? "Generate teams again?" : "Replace the current players?",
-        "Every matched set is dealt out at random, replacing the players now on the teams and any swaps you made.",
-        tournament!.generatedAt ? "Yes, regenerate" : "Yes, generate",
-      ))
-    ) {
-      return;
-    }
-    generateTeams.mutate(tournament!.id);
+    navigate(`/tournaments/${tournament!.id}/create-teams`);
   }
 
   return (
@@ -256,15 +231,16 @@ export function CricketTournamentPage() {
             <>
               {teamsOutdated && (
                 <div className="admin-banner admin-banner-error mb-3">
-                  The matched sets have changed since the teams were generated. Regenerate to include the changes.
+                  The matched sets have changed since the teams were generated. Open the team builder and regenerate to include the changes.
                 </div>
               )}
-              <TeamCards tournament={tournament} matches={matches ?? []} />
+              <TeamCards tournament={tournament} matches={matches ?? []} showKind />
             </>
           )}
         </ListCard>
 
         <ListCard title="Add Teams">
+          {canAutoBuild && (
           <div className="admin-segmented mb-3" role="radiogroup" aria-label="How to make the teams">
             {(
               [
@@ -284,18 +260,28 @@ export function CricketTournamentPage() {
               </button>
             ))}
           </div>
+          )}
           {buildMode === "auto" ? (
-            <AutoTeamCount tournament={tournament} />
+            <>
+              <p className="admin-hint">
+                Pick how many teams, choose the squad and match players of equal strength — generating deals each
+                matched set out so every team gets one of each.
+              </p>
+              <Button variant="primary" disabled={addTeams.isPending} onClick={openTeamBuilder}>
+                <i className="fa-solid fa-shuffle" aria-hidden="true"></i>{" "}
+                {tournament.generatedAt ? "Open team builder" : "Create teams automatically"}
+              </Button>
+            </>
           ) : (
             <>
               <p className="admin-hint">
                 Make a new team and pick its players, or bring in a team from any other tournament with its players.
               </p>
               <div className="d-flex gap-2 flex-wrap">
-                <Button variant="primary" disabled={teamCount >= 8} onClick={() => setTeamModal({ kind: "new" })}>
+                <Button variant="primary" disabled={teamCount >= MAX_TEAMS} onClick={() => setTeamModal({ kind: "new" })}>
                   <i className="fa-solid fa-plus" aria-hidden="true"></i> New team
                 </Button>
-                <Button variant="outline" disabled={teamCount >= 8} onClick={() => setTeamModal({ kind: "existing" })}>
+                <Button variant="outline" disabled={teamCount >= MAX_TEAMS} onClick={() => setTeamModal({ kind: "existing" })}>
                   <i className="fa-solid fa-people-group" aria-hidden="true"></i> Choose from existing teams
                 </Button>
               </div>
@@ -303,155 +289,6 @@ export function CricketTournamentPage() {
           )}
         </ListCard>
 
-        {buildMode === "auto" && teamCount >= 2 && (
-          <>
-        {/* Step 1: pick who's playing from the shared player list. */}
-        <ListCard title={`1. Squad (${tournament.playerIds.length})`}>
-          <CricketSquadPicker tournament={tournament} busy={busy} />
-        </ListCard>
-
-        {/* Step 2: match players of equal strength into sets of teamCount. */}
-        <ListCard title="2. Match Players">
-          <p className="admin-hint">
-            Pick {teamCount} players you think are an even match — the set is saved as soon as you pick the{" "}
-            {teamCount === 2 ? "second" : `${teamCount}th`}. When teams are generated each player in a set goes to a
-            different team.
-          </p>
-          <div className="cricket-match-layout">
-            <section className="cricket-panel">
-              <div className="cricket-panel-head">
-                <h2>Unmatched ({unmatched.length})</h2>
-              </div>
-              <input
-                type="search"
-                className="form-control shadow-none mb-2"
-                placeholder="Search players"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              {picked.length > 0 && (
-                <div className="cricket-picked-bar">
-                  <span>
-                    Picked {picked.length}/{teamCount}:{" "}
-                    <strong>{picked.map((playerId) => playerById.get(playerId)?.name).join(", ")}</strong>
-                  </span>
-                  <div className="d-flex gap-2">
-                    <button
-                      type="button"
-                      className="admin-link-btn"
-                      disabled={busy}
-                      title="For leftover players when the count doesn't divide evenly"
-                      onClick={() => {
-                        saveSets([...sets, picked]);
-                        setPicked([]);
-                      }}
-                    >
-                      Save as short set
-                    </button>
-                    <button type="button" className="admin-link-btn" onClick={() => setPicked([])}>
-                      Clear
-                    </button>
-                  </div>
-                </div>
-              )}
-              <div className="cricket-pick-list">
-                {available.length === 0 ? (
-                  <div className="admin-empty-state">
-                    {squad.length ? "Everyone in the squad is matched." : "Pick the squad above first."}
-                  </div>
-                ) : (
-                  available.map((player) => (
-                    <button
-                      type="button"
-                      key={player.id}
-                      className={`cricket-pick ${picked.includes(player.id) ? "is-picked" : ""}`}
-                      aria-pressed={picked.includes(player.id)}
-                      disabled={busy}
-                      onClick={() => togglePick(player.id)}
-                    >
-                      <i
-                        className={`fa-${picked.includes(player.id) ? "solid fa-circle-check" : "regular fa-circle"}`}
-                        aria-hidden="true"
-                      ></i>
-                      <PlayerLabel player={player} />
-                    </button>
-                  ))
-                )}
-              </div>
-            </section>
-
-            <section className="cricket-panel">
-              <div className="cricket-panel-head">
-                <h2>Matched Sets ({sets.length})</h2>
-                {sets.length > 0 && (
-                  <button
-                    type="button"
-                    className="admin-link-btn text-danger"
-                    disabled={busy}
-                    onClick={async () => {
-                      if (await confirmAction("Clear all matched sets?", "Every player goes back to Available.", "Clear all")) {
-                        saveSets([]);
-                      }
-                    }}
-                  >
-                    Clear all
-                  </button>
-                )}
-              </div>
-              {sets.length === 0 ? (
-                <div className="admin-empty-state">No sets yet.</div>
-              ) : (
-                <ol className="cricket-set-list">
-                  {sets.map((set, index) => (
-                    <li key={set.join("-")} className={set.length < teamCount ? "is-short" : ""}>
-                      <span className="cricket-set-number">{index + 1}</span>
-                      <div className="cricket-set-players">
-                        {set.map((playerId, i) => (
-                          <span key={playerId} className="cricket-set-player">
-                            {i > 0 && <span className="cricket-vs">vs</span>}
-                            <PlayerLabel player={playerById.get(playerId)} />
-                          </span>
-                        ))}
-                        {set.length < teamCount && <small className="text-muted">short set</small>}
-                      </div>
-                      <button
-                        type="button"
-                        className="cricket-icon-btn"
-                        title="Unmatch this set"
-                        aria-label="Unmatch this set"
-                        disabled={busy}
-                        onClick={() => saveSets(sets.filter((_, i) => i !== index))}
-                      >
-                        <i className="fa-solid fa-xmark" aria-hidden="true"></i>
-                      </button>
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </section>
-          </div>
-        </ListCard>
-
-        {/* Step 3: deal the matched sets out; the result shows under Teams above. */}
-        <ListCard
-          title="3. Generate Teams"
-          action={
-            <Button variant="primary" disabled={busy || sets.length === 0} onClick={handleGenerate}>
-              <i className="fa-solid fa-shuffle" aria-hidden="true"></i>{" "}
-              {tournament.generatedAt ? "Regenerate Teams" : "Generate Teams"}
-            </Button>
-          }
-        >
-          <div className="admin-empty-state">
-            {sets.length === 0
-              ? "Match some players first, then generate the teams."
-              : tournament.generatedAt
-                ? "Teams generated — open a team above to move or swap its players."
-                : `${sets.length} set${sets.length === 1 ? "" : "s"} ready — generate to deal them out across the teams.`}
-          </div>
-        </ListCard>
-          </>
-        )}
         </>
       )}
 
@@ -471,7 +308,7 @@ export function CricketTournamentPage() {
 
       {tab === "points" && (
         <ListCard>
-          <PointsTable tournament={tournament} matches={matches ?? []} />
+          <FormatView tournament={tournament} matches={matches ?? []} canManage={canManage} />
         </ListCard>
       )}
 

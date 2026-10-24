@@ -1,9 +1,69 @@
+import { useEffect, useState } from "react";
 import type { CricketMatch } from "../../../api/types";
 import { monogram } from "../../../utils/format";
 import { avatarColorFor } from "../avatarColor";
 import { PlayerLink } from "../players/PlayerProfileSheet";
 import { chaseInfo, impactLine, inningsSummary, matchAwards, rate, type NameOf } from "../stats";
 import { formatMatchDate, battingOrder, matchStageLabel, teamScore } from "./matchUtils";
+
+// "in 2 days", "in 3h 20m", "in 45m", or "Starting soon" once it's due.
+function startsIn(at: Date, now: number) {
+  const minutes = Math.round((at.getTime() - now) / 60000);
+  if (minutes <= 0) return "Starting soon";
+  if (minutes < 60) return `in ${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `in ${hours}h${minutes % 60 ? ` ${minutes % 60}m` : ""}`;
+  const days = Math.round(hours / 24);
+  return `in ${days} day${days === 1 ? "" : "s"}`;
+}
+
+// The current time, refreshed every minute.
+function useNow() {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 60000);
+    return () => window.clearInterval(timer);
+  }, []);
+  return now;
+}
+
+// An upcoming match: both sides facing each other, the start time between them.
+function FaceOff({ match, colors }: { match: CricketMatch; colors: string[] }) {
+  const now = useNow();
+  const at = match.scheduledAt ? new Date(match.scheduledAt) : null;
+  const side = (slot: number) => (
+    <div className="cricket-faceoff-team">
+      <span className="cricket-faceoff-badge" style={{ background: colors[slot] }}>
+        {monogram(match.teams[slot].name)}
+      </span>
+      <span className="cricket-faceoff-name">{match.teams[slot].name}</span>
+    </div>
+  );
+  return (
+    <div className="cricket-faceoff">
+      {side(0)}
+      <div className="cricket-faceoff-mid">
+        {at ? (
+          <>
+            <span className="cricket-faceoff-time">
+              {at.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+            </span>
+            <span className="cricket-faceoff-date">
+              {at.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}
+            </span>
+            <span className="cricket-faceoff-countdown">{startsIn(at, now)}</span>
+          </>
+        ) : (
+          <>
+            <span className="cricket-faceoff-vs">VS</span>
+            <span className="cricket-faceoff-date">Time not set</span>
+          </>
+        )}
+      </div>
+      {side(1)}
+    </div>
+  );
+}
 
 interface MatchHeroProps {
   match: CricketMatch;
@@ -36,46 +96,48 @@ export function MatchHero({ match, nameOf }: MatchHeroProps) {
       const now = inningsSummary(current);
       headline = `${batting} batting · CRR ${rate(now.runs, now.legalBalls)}`;
     }
-  } else if (match.status === "scheduled") {
-    headline = match.scheduledAt ? `Starts ${formatMatchDate(match.scheduledAt)}` : "Not started yet";
   }
 
   return (
     <div className={`card cricket-hero is-${match.status}`}>
-      <div className="cricket-hero-board">
-        {battingOrder(match).map((slot) => {
-          const team = match.teams[slot];
-          const score = teamScore(match, slot);
-          const won = match.winner === slot;
-          const lost = match.status === "completed" && match.winner !== null && !won;
-          return (
-            <div key={slot} className={`cricket-hero-row ${battingNow === slot ? "is-batting" : ""} ${lost ? "is-lost" : ""}`}>
-              <span className="cricket-hero-badge" style={{ background: colors[slot] }}>
-                {monogram(team.name)}
-              </span>
-              <span className="cricket-hero-name">
-                <span>{team.name}</span>
-                {battingNow === slot && <i className="fa-solid fa-baseball-bat-ball" title="Batting" aria-label="Batting"></i>}
-                {won && <i className="fa-solid fa-trophy" title="Winner" aria-label="Winner"></i>}
-              </span>
-              {score ? (
-                <span className="cricket-hero-score">
-                  {score.runs} <small>({score.overs})</small>
+      {match.status === "scheduled" ? (
+        <FaceOff match={match} colors={colors} />
+      ) : (
+        <div className="cricket-hero-board">
+          {battingOrder(match).map((slot) => {
+            const team = match.teams[slot];
+            const score = teamScore(match, slot);
+            const won = match.winner === slot;
+            const lost = match.status === "completed" && match.winner !== null && !won;
+            return (
+              <div key={slot} className={`cricket-hero-row ${battingNow === slot ? "is-batting" : ""} ${lost ? "is-lost" : ""}`}>
+                <span className="cricket-hero-badge" style={{ background: colors[slot] }}>
+                  {monogram(team.name)}
                 </span>
-              ) : (
-                match.status !== "scheduled" && <span className="cricket-hero-overs">Yet to bat</span>
-              )}
-            </div>
-          );
-        })}
-      </div>
+                <span className="cricket-hero-name">
+                  <span>{team.name}</span>
+                  {battingNow === slot && <i className="fa-solid fa-baseball-bat-ball" title="Batting" aria-label="Batting"></i>}
+                  {won && <i className="fa-solid fa-trophy" title="Winner" aria-label="Winner"></i>}
+                </span>
+                {score ? (
+                  <span className="cricket-hero-score">
+                    {score.runs} <small>({score.overs})</small>
+                  </span>
+                ) : (
+                  match.status !== "scheduled" && <span className="cricket-hero-overs">Yet to bat</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {match.resultText ? (
         <div className="cricket-hero-headline is-result">
           <i className="fa-solid fa-trophy" aria-hidden="true"></i> {match.resultText}
         </div>
       ) : (
-        headline && <div className="cricket-hero-headline">{headline}</div>
+        headline && match.status !== "scheduled" && <div className="cricket-hero-headline">{headline}</div>
       )}
 
       {potm && (

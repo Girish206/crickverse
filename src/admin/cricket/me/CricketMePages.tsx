@@ -9,7 +9,7 @@ import { ListCard } from "../../components/ListCard";
 import { CricketKpis } from "../CricketKpis";
 import { PillSelect } from "../PillSelect";
 import { MatchesBoard } from "../matches/CricketMatchesList";
-import { usePlayerNames } from "../matches/matchUtils";
+import { teamKeyOf, usePlayerNames } from "../matches/matchUtils";
 import { CricketPlayerProfile } from "../players/CricketPlayerProfile";
 import { battingCard, bowlingCard, oversText, playerOfMatch } from "../stats";
 import { TeamFootnote, TournamentCard, TournamentsBoard } from "../tournaments/TournamentCard";
@@ -299,7 +299,7 @@ interface MyTeam {
   key: string;
   name: string;
   // The tournament it plays in; null for friendly (one-off) match sides.
-  tournament: CricketTournament | null;
+  tournamentName: string | null;
   role: string;
   playerCount: number;
   matches: CricketMatch[];
@@ -314,47 +314,62 @@ function roleIn(team: { captainId?: number | null; viceCaptainId?: number | null
   return "Player";
 }
 
-// Every team I'm on: tournament teams, then friendly sides (grouped by name).
-function myTeams(me: CricketMe, playerId: number): MyTeam[] {
-  const tournamentTeams = me.tournaments.flatMap((tournament) =>
-    tournament.teams.flatMap((team, index) =>
-      team.playerIds.includes(playerId)
-        ? [
-            {
-              key: `t${tournament.id}-${index}`,
-              name: team.name,
-              tournament,
-              role: roleIn(team, playerId),
-              playerCount: team.playerIds.length,
-              matches: me.matches.filter((m) => m.tournamentId === tournament.id),
-              link: `/tournaments/${tournament.id}/teams/${index}`,
-            },
-          ]
-        : [],
-    ),
-  );
-  const friendlies = new Map<string, MyTeam>();
+// Every team I've played for or am on, once each by teamKeyOf: tournament
+// teams (their rosters, plus sides I played tournament matches for), then
+// friendly sides. A one-off side picked from a tournament team counts as
+// that team.
+function myTeams(me: CricketMe, playerId: number, tournamentsById: Map<number, CricketTournament>): MyTeam[] {
+  const teams = new Map<string, MyTeam>();
+  // Off the roster (e.g. a substitute), the newest match's side gives the
+  // name, role and squad size.
+  const tournamentTeam = (tournamentId: number, index: number, side?: CricketMatch["teams"][number]): MyTeam => {
+    const tournament = tournamentsById.get(tournamentId);
+    const team = tournament?.teams[index];
+    const source = team?.playerIds.includes(playerId) || !side ? team : side;
+    return {
+      key: `t:${tournamentId}:${index}`,
+      name: team?.name ?? side?.name ?? "Team",
+      tournamentName: tournament?.name ?? "Tournament",
+      role: source ? roleIn(source, playerId) : "Player",
+      playerCount: source?.playerIds.length ?? 0,
+      matches: [],
+      link: `/tournaments/${tournamentId}/teams/${index}`,
+    };
+  };
+  for (const tournament of me.tournaments) {
+    tournament.teams.forEach((team, index) => {
+      if (team.playerIds.includes(playerId)) {
+        teams.set(`t:${tournament.id}:${index}`, tournamentTeam(tournament.id, index));
+      }
+    });
+  }
   const when = (m: CricketMatch) => m.scheduledAt ?? m.createdAt;
   for (const match of [...me.matches].sort((a, b) => when(b).localeCompare(when(a)))) {
-    if (match.tournamentId !== null) continue;
-    const side = match.teams.find((team) => team.playerIds.includes(playerId));
-    if (!side) continue;
-    const key = side.name.trim().toLowerCase();
-    const known = friendlies.get(key);
-    if (known) known.matches.push(match);
-    // The newest match comes first, so it sets the role and squad size.
-    else
-      friendlies.set(key, {
-        key: `f-${key}`,
-        name: side.name,
-        tournament: null,
-        role: roleIn(side, playerId),
-        playerCount: side.playerIds.length,
-        matches: [match],
-        link: `/teams/friendly/${encodeURIComponent(side.name.trim())}`,
-      });
+    const slot = match.teams.findIndex((team) => team.playerIds.includes(playerId));
+    if (slot === -1) continue;
+    const side = match.teams[slot];
+    const key = teamKeyOf(match, slot);
+    let team = teams.get(key);
+    if (!team) {
+      const fromTournament = /^t:(\d+):(\d+)$/.exec(key);
+      team = fromTournament
+        ? tournamentTeam(Number(fromTournament[1]), Number(fromTournament[2]), side)
+        : {
+            key,
+            name: side.name,
+            tournamentName: null,
+            // The newest match comes first, so it sets the role and squad size.
+            role: roleIn(side, playerId),
+            playerCount: side.playerIds.length,
+            matches: [],
+            link: `/teams/friendly/${encodeURIComponent(side.name.trim())}`,
+          };
+      teams.set(key, team);
+    }
+    team.matches.push(match);
   }
-  return [...tournamentTeams, ...friendlies.values()];
+  const all = [...teams.values()];
+  return [...all.filter((t) => t.tournamentName !== null), ...all.filter((t) => t.tournamentName === null)];
 }
 
 function TeamCard({ team, playerId }: { team: MyTeam; playerId: number }) {
@@ -377,7 +392,7 @@ function TeamCard({ team, playerId }: { team: MyTeam; playerId: number }) {
         </span>
         <span className="cricket-my-team-name">
           <h3 className="admin-item-card-title">{team.name}</h3>
-          <small className="text-muted">{team.tournament ? team.tournament.name : "Matches"}</small>
+          <small className="text-muted">{team.tournamentName ?? "Friendly matches"}</small>
         </span>
       </div>
       <div className="cricket-chip-row">
@@ -409,10 +424,15 @@ const TEAM_FILTERS: { value: TeamFilter; label: string }[] = [
 export function MyCricketTeams() {
   const [filter, setFilter] = useState<TeamFilter>("all");
   const { me, fallback } = useMyCricket(TITLES.teams);
+  const { data: tournaments } = useCricketTournaments();
   if (!me) return fallback;
   const playerId = me.player!.id;
-  const teams = myTeams(me, playerId);
-  const visible = teams.filter((team) => filter === "all" || (filter === "tournament") === Boolean(team.tournament));
+  // Tournaments I played a match in without being on its roster may only be in the full list.
+  const tournamentsById = new Map(
+    [...(tournaments ?? []), ...me.followedTournaments, ...organisingTournaments(me), ...me.tournaments].map((t) => [t.id, t]),
+  );
+  const teams = myTeams(me, playerId, tournamentsById);
+  const visible = teams.filter((team) => filter === "all" || (filter === "tournament") === (team.tournamentName !== null));
   return (
     <ListCard {...TITLES.teams} plain>
       <div className="cricket-squad-toolbar">

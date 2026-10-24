@@ -9,9 +9,9 @@ function phaseOf(t: CricketTournament): { label: string; tone: string } | null {
   if (!t.startDate) return null;
   const today = new Date().toISOString().slice(0, 10);
   const start = t.startDate.slice(0, 10);
-  const end = (t.endDate ?? t.startDate).slice(0, 10);
   if (today < start) return { label: "Upcoming", tone: "is-upcoming" };
-  if (today > end) return { label: "Completed", tone: "is-done" };
+  // An open-ended one (no end date yet) stays live.
+  if (t.endDate && today > t.endDate.slice(0, 10)) return { label: "Completed", tone: "is-done" };
   return { label: "Live", tone: "is-live" };
 }
 

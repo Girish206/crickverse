@@ -30,7 +30,7 @@ export function MatchInfo({
         </Link>
       ),
     ],
-    ["Round", match.tournamentId === null ? matchStageLabel(match) : `${matchStageLabel(match)} Matches`],
+    ["Round", match.tournamentId === null || match.slot || match.group ? matchStageLabel(match) : `${matchStageLabel(match)} Matches`],
     ["Match type", labelOf(MATCH_TYPES, match.matchType) ?? "Limited Overs"],
     ["Overs", match.overs],
     [

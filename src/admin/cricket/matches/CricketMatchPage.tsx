@@ -29,7 +29,8 @@ import { MatchInsights } from "./MatchInsights";
 import { LiveView } from "./LiveView";
 import { MatchMvp } from "./MatchMvp";
 import { MatchSquads } from "./MatchSquads";
-import { usePlayerNames } from "./matchUtils";
+import { RescheduleSheet } from "./RescheduleSheet";
+import { formatMatchDate, usePlayerNames } from "./matchUtils";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
@@ -50,6 +51,7 @@ export function CricketMatchPage() {
   // The top bar's settings: changing players, details, scorers, ending...
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [editingDetails, setEditingDetails] = useState(false);
+  const [rescheduling, setRescheduling] = useState(false);
   const detailsForm = useRef<HTMLFormElement>(null);
   const updateMatch = useUpdateCricketMatch();
   const nameOf = usePlayerNames();
@@ -166,6 +168,16 @@ export function CricketMatchPage() {
               </span>
             </button>
           </>
+        )}
+        {upcoming && (
+          <button type="button" className="cricket-settings-item" onClick={settingsThen(() => setRescheduling(true))}>
+            <i className="fa-regular fa-calendar" aria-hidden="true"></i>
+            <span>
+              Reschedule match
+              <small>{match.scheduledAt ? `Now ${formatMatchDate(match.scheduledAt)}` : "Set a date and time"}</small>
+            </span>
+            <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
+          </button>
         )}
         {(upcoming || match.status === "live") && (
           <button
@@ -411,6 +423,8 @@ export function CricketMatchPage() {
           <CricketMatchForm existing={match} formRef={detailsForm} onSaved={() => setEditingDetails(false)} />
         </BottomSheet>
       )}
+
+      {rescheduling && <RescheduleSheet match={match} onClose={() => setRescheduling(false)} />}
 
       {pickingScorers && (
         <ScorersSheet

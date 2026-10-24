@@ -1,4 +1,4 @@
-import type { CricketBall, CricketInnings, CricketMatch, CricketTournament } from "../../api/types";
+import type { CricketBall, CricketInnings, CricketMatch, CricketMatchStage, CricketTournament } from "../../api/types";
 
 // Everything shown on scorecards, points tables and leaderboards is derived
 // here from the stored balls — the same rules the server scores with
@@ -364,62 +364,82 @@ export interface PointsRow {
   nrr: number;
 }
 
+const KNOCKOUT_STAGES = new Set<CricketMatchStage>([
+  "round-of-16",
+  "quarter-final",
+  "eliminator",
+  "qualifier-1",
+  "qualifier-2",
+  "semi-final",
+  "third-place",
+  "final",
+]);
+
+export const isKnockoutStage = (stage: CricketMatchStage | null) => stage !== null && KNOCKOUT_STAGES.has(stage);
+
+// Knockouts and friendlies don't count towards a points table.
+export const countsForTable = (match: CricketMatch) => !isKnockoutStage(match.stage) && match.stage !== "friendly";
+
 // Win 2, tie / no result 1. Net run rate counts an all-out side as having
-// faced its full quota of overs, as the standard rule does.
-export function pointsTable(tournament: CricketTournament, matches: CricketMatch[]): PointsRow[] {
-  const rows: PointsRow[] = tournament.teams.map((team, teamIndex) => ({
-    teamIndex,
-    name: team.name,
-    played: 0,
-    won: 0,
-    lost: 0,
-    tied: 0,
-    noResult: 0,
-    points: 0,
-    nrr: 0,
-  }));
-  const runFor = rows.map(() => ({ runs: 0, balls: 0, against: 0, ballsAgainst: 0 }));
+// faced its full quota of overs, as the standard rule does. Only matches
+// between two of the given teams count.
+export function standings(teams: { teamIndex: number; name: string }[], matches: CricketMatch[]): PointsRow[] {
+  const rows = new Map<number, PointsRow>(
+    teams.map(({ teamIndex, name }) => [
+      teamIndex,
+      { teamIndex, name, played: 0, won: 0, lost: 0, tied: 0, noResult: 0, points: 0, nrr: 0 },
+    ]),
+  );
+  const runFor = new Map(teams.map(({ teamIndex }) => [teamIndex, { runs: 0, balls: 0, against: 0, ballsAgainst: 0 }]));
   for (const match of matches) {
     if (match.status !== "completed" && match.status !== "abandoned") continue;
-    const [a, b] = match.teams.map((team) => team.teamIndex);
-    for (const index of [a, b]) {
-      if (!rows[index]) continue;
-      rows[index].played += 1;
-    }
-    if (!rows[a] || !rows[b]) continue;
+    const a = rows.get(match.teams[0].teamIndex);
+    const b = rows.get(match.teams[1].teamIndex);
+    if (!a || !b) continue;
+    a.played += 1;
+    b.played += 1;
     if (match.status === "abandoned") {
-      rows[a].noResult += 1;
-      rows[b].noResult += 1;
+      a.noResult += 1;
+      b.noResult += 1;
       continue;
     }
     if (match.winner === null) {
-      rows[a].tied += 1;
-      rows[b].tied += 1;
+      a.tied += 1;
+      b.tied += 1;
     } else {
-      rows[match.teams[match.winner].teamIndex].won += 1;
-      rows[match.teams[1 - match.winner].teamIndex].lost += 1;
+      rows.get(match.teams[match.winner].teamIndex)!.won += 1;
+      rows.get(match.teams[1 - match.winner].teamIndex)!.lost += 1;
     }
     for (const innings of match.innings) {
       const summary = inningsSummary(innings);
       const batting = match.teams[innings.battingTeam];
       const allOut = summary.wickets >= batting.playerIds.length - 1;
       const balls = allOut ? match.overs * 6 : summary.legalBalls;
-      const bat = runFor[batting.teamIndex];
-      const bowl = runFor[match.teams[1 - innings.battingTeam].teamIndex];
+      const bat = runFor.get(batting.teamIndex)!;
+      const bowl = runFor.get(match.teams[1 - innings.battingTeam].teamIndex)!;
       bat.runs += summary.runs;
       bat.balls += balls;
       bowl.against += summary.runs;
       bowl.ballsAgainst += balls;
     }
   }
-  rows.forEach((row, index) => {
+  const result = [...rows.values()];
+  result.forEach((row) => {
     row.points = row.won * 2 + row.tied + row.noResult;
-    const r = runFor[index];
+    const r = runFor.get(row.teamIndex)!;
     const forRate = r.balls ? (r.runs * 6) / r.balls : 0;
     const againstRate = r.ballsAgainst ? (r.against * 6) / r.ballsAgainst : 0;
     row.nrr = forRate - againstRate;
   });
-  return rows.sort((x, y) => y.points - x.points || y.nrr - x.nrr || y.won - x.won);
+  return result.sort((x, y) => y.points - x.points || y.nrr - x.nrr || y.won - x.won);
+}
+
+// Every team over the tournament's league / group matches.
+export function pointsTable(tournament: CricketTournament, matches: CricketMatch[]): PointsRow[] {
+  return standings(
+    tournament.teams.map((team, teamIndex) => ({ teamIndex, name: team.name })),
+    matches.filter(countsForTable),
+  );
 }
 
 // ===== Team stats =====

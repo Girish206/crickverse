@@ -19,6 +19,7 @@ import {
   rate,
   strikeRate,
   type PlayerStats,
+  type PointsRow,
 } from "../stats";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
@@ -301,46 +302,54 @@ function BoardList({ board, rows, limit }: { board: Board; rows: PlayerStats[]; 
 }
 
 export function PointsTable({ tournament, matches }: { tournament: CricketTournament; matches: CricketMatch[] }) {
-  const rows = pointsTable(tournament, matches);
   return (
     <div className="cricket-standings">
-      <div className="cricket-standings-scroll">
-        <table className="cricket-standings-table">
-          <thead>
-            <tr>
-              <th className="is-rank">#</th>
-              <th className="is-team">Team</th>
-              <th>P</th>
-              <th>W</th>
-              <th>L</th>
-              <th>T</th>
-              <th>NR</th>
-              <th>Pts</th>
-              <th>NRR</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, index) => (
-              <tr key={row.teamIndex}>
-                <td className="is-rank">{index + 1}</td>
-                <td className="is-team fw-semibold">
-                  <span className="cricket-standings-name" title={row.name}>
-                    {row.name}
-                  </span>
-                </td>
-                <td>{row.played}</td>
-                <td>{row.won}</td>
-                <td>{row.lost}</td>
-                <td>{row.tied}</td>
-                <td>{row.noResult}</td>
-                <td className="fw-bold">{row.points}</td>
-                <td>{(row.nrr >= 0 ? "+" : "") + row.nrr.toFixed(3)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <StandingsTable rows={pointsTable(tournament, matches)} />
       <p className="admin-hint mt-2 mb-0">Win 2 points, tie or no result 1. NRR counts an all-out side as facing its full overs.</p>
+    </div>
+  );
+}
+
+// One table of standings. With `qualify`, a line marks the cut and the
+// teams above it get a Q once `settled` (every match played).
+export function StandingsTable({ rows, qualify = 0, settled = false }: { rows: PointsRow[]; qualify?: number; settled?: boolean }) {
+  return (
+    <div className="cricket-standings-scroll">
+      <table className="cricket-standings-table">
+        <thead>
+          <tr>
+            <th className="is-rank">#</th>
+            <th className="is-team">Team</th>
+            <th>P</th>
+            <th>W</th>
+            <th>L</th>
+            <th>T</th>
+            <th>NR</th>
+            <th>Pts</th>
+            <th>NRR</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, index) => (
+            <tr key={row.teamIndex} className={qualify > 0 && index === qualify - 1 && index < rows.length - 1 ? "is-cut" : undefined}>
+              <td className="is-rank">{index + 1}</td>
+              <td className="is-team fw-semibold">
+                <span className="cricket-standings-name" title={row.name}>
+                  {row.name}
+                  {settled && index < qualify && <span className="cricket-q-tag" title="Qualified">Q</span>}
+                </span>
+              </td>
+              <td>{row.played}</td>
+              <td>{row.won}</td>
+              <td>{row.lost}</td>
+              <td>{row.tied}</td>
+              <td>{row.noResult}</td>
+              <td className="fw-bold">{row.points}</td>
+              <td>{(row.nrr >= 0 ? "+" : "") + row.nrr.toFixed(3)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

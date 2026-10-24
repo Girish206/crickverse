@@ -4,8 +4,11 @@ import type {
   ApiEnvelope,
   CricketBallType,
   CricketCategory,
+  CricketFormat,
+  CricketMatchStage,
   CricketMatchType,
   CricketPitchType,
+  CricketPhaseGroup,
   CricketPlayer,
   CricketTeamRoles,
   CricketTournament,
@@ -134,6 +137,8 @@ export interface CricketTeamInput {
   captainId?: number | null;
   viceCaptainId?: number | null;
   keeperId?: number | null;
+  // Built by hand (left out = generated, or unchanged when editing).
+  manual?: boolean;
 }
 
 // Appends teams: blank ones to generate into, a hand-built one, or a copy of
@@ -188,6 +193,49 @@ export function useRemoveCricketTeam() {
     queryClient.invalidateQueries({ queryKey: ["cricket-matches"] });
     return response;
   });
+}
+
+// One match a format schedules: two teams of a group, or a bracket slot.
+export interface CricketFixtureInput {
+  phaseId: string;
+  teamAIndex: number;
+  teamBIndex: number;
+  scheduledAt: string | null;
+  venue: string | null;
+  stage: CricketMatchStage;
+  group: string | null;
+  slot: string | null;
+}
+
+// Format changes also create (or clear) matches.
+function useFormatMutation<TVars>(request: (vars: TVars) => Promise<{ data: ApiEnvelope<CricketTournament> }>) {
+  const queryClient = useQueryClient();
+  return useTournamentMutation(async (vars: TVars) => {
+    const response = await request(vars);
+    queryClient.invalidateQueries({ queryKey: ["cricket-matches"] });
+    return response;
+  });
+}
+
+// Sets the format with its first fixtures, replacing the old format's
+// unplayed ones.
+export function useSetCricketFormat() {
+  return useFormatMutation(({ id, format, fixtures }: { id: number; format: CricketFormat; fixtures: CricketFixtureInput[] }) =>
+    apiClient.put(`/admin/cricket/tournaments/${id}/format`, { format, fixtures }),
+  );
+}
+
+// Starts a later phase (its groups, once the qualifiers are known) or
+// schedules the next bracket match.
+export function useAddCricketFixtures() {
+  return useFormatMutation(
+    ({ id, ...input }: { id: number; phaseId: string; groups?: CricketPhaseGroup[]; fixtures: CricketFixtureInput[] }) =>
+      apiClient.post(`/admin/cricket/tournaments/${id}/fixtures`, input),
+  );
+}
+
+export function useClearCricketFormat() {
+  return useFormatMutation((id: number) => apiClient.delete(`/admin/cricket/tournaments/${id}/format`));
 }
 
 export function useDeleteCricketTournament() {

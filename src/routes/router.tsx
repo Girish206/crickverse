@@ -42,6 +42,16 @@ export const router = createBrowserRouter([
             path: "tournaments/:id",
             lazy: page(() => import("../admin/cricket/tournaments/CricketTournamentPage"), (m) => m.CricketTournamentPage),
           },
+          // The organiser builds balanced teams from matched sets here.
+          {
+            path: "tournaments/:id/create-teams",
+            lazy: page(() => import("../admin/cricket/tournaments/CricketAutoTeamsPage"), (m) => m.CricketAutoTeamsPage),
+          },
+          // The organiser picks the format (league, groups, playoffs, series).
+          {
+            path: "tournaments/:id/format",
+            lazy: page(() => import("../admin/cricket/format/CricketFormatPage"), (m) => m.CricketFormatPage),
+          },
           {
             path: "tournaments/:id/teams/:team",
             lazy: page(() => import("../admin/cricket/tournaments/CricketTeamPage"), (m) => m.CricketTeamPage),

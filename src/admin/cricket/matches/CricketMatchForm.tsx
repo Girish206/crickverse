@@ -35,7 +35,7 @@ import { PlayerAvatar } from "../players/PlayerAvatar";
 import { PlayerPicker } from "./PlayerPicker";
 
 // <input type="datetime-local"> wants local "YYYY-MM-DDTHH:mm".
-function toLocalInput(value: string | null) {
+export function toLocalInput(value: string | null) {
   if (!value) return "";
   const date = new Date(value);
   return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
@@ -75,7 +75,7 @@ type CaptainLookup =
   { status: "idle" | "looking" } | { status: "found"; player: CricketPlayer } | { status: "new"; mobile: string };
 
 // A saved match in the shape the form submits, to spot unchanged details.
-function existingInput(match: CricketMatch) {
+export function existingInput(match: CricketMatch) {
   return {
     teamAIndex: match.teams[0].teamIndex,
     teamBIndex: match.teams[1].teamIndex,

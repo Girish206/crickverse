@@ -5,7 +5,7 @@ import {
   useCricketTournaments,
   useUpdateCricketTeam,
 } from "../../../api/hooks/cricket/useCricketTournaments";
-import type { CricketTournament } from "../../../api/types";
+import { isGeneratedTeam, type CricketTournament } from "../../../api/types";
 import { Button } from "../../components/Button";
 import { ModalForm } from "../../components/ModalForm";
 import { SubmitButton } from "../../components/SubmitButton";
@@ -14,12 +14,12 @@ import { AddPlayerByMobile } from "../players/AddPlayerByMobile";
 import { PlayerCard } from "../players/PlayerCard";
 import { NO_ROLES, rolesOf, rolesWithout, TeamRoleChips, type TeamRoles } from "./TeamRoleChips";
 
-const MAX_TEAMS = 8;
+export const MAX_TEAMS = 16;
 
 const nameKey = (name: string) => name.trim().toLowerCase();
 
 // "Team A", "Team B", ... skipping names the tournament already has.
-function defaultTeamNames(tournament: CricketTournament, count: number) {
+export function defaultTeamNames(tournament: CricketTournament, count: number) {
   const taken = new Set(tournament.teams.map((team) => nameKey(team.name)));
   const names: string[] = [];
   for (let i = 0; names.length < count; i++) {
@@ -33,18 +33,20 @@ function defaultTeamNames(tournament: CricketTournament, count: number) {
 const teamOfPlayer = (tournament: CricketTournament) =>
   new Map(tournament.teams.flatMap((team, index) => team.playerIds.map((id) => [id, index] as const)));
 
-// "Automatically": pick how many teams, then the squad / matched sets /
-// generate steps fill them.
+// "Automatically": pick how many generated teams, then the squad / matched
+// sets / generate steps fill them. Hand-built teams count towards the limit
+// but aren't touched.
 export function AutoTeamCount({ tournament }: { tournament: CricketTournament }) {
   const addTeams = useAddCricketTeams();
-  const have = tournament.teams.length;
+  const have = tournament.teams.filter(isGeneratedTeam).length;
+  const room = MAX_TEAMS - (tournament.teams.length - have);
   const [count, setCount] = useState(Math.max(2, have));
-  const counts = Array.from({ length: MAX_TEAMS - 1 }, (_, i) => i + 2).filter((n) => n >= Math.max(2, have));
+  const counts = Array.from({ length: Math.max(0, room - 1) }, (_, i) => i + 2).filter((n) => n >= Math.max(2, have));
 
   return (
     <div className="mb-2">
       <p className="admin-hint">
-        How many teams? Then pick the squad, match players of equal strength, and generate — each matched set is
+        How many generated teams? Then pick the squad, match players of equal strength, and generate — each matched set is
         dealt out so every team gets one of each.
       </p>
       <div className="d-flex gap-2 flex-wrap align-items-center">
@@ -127,7 +129,7 @@ export function TeamForm({
       return setError(`There's already a team called "${trimmed}".`);
     }
     const team = { name: trimmed, playerIds: picked, ...roles };
-    if (index === undefined) await addTeams.mutateAsync({ id: tournament.id, teams: [team] });
+    if (index === undefined) await addTeams.mutateAsync({ id: tournament.id, teams: [{ ...team, manual: true }] });
     else await updateTeam.mutateAsync({ id: tournament.id, index, ...team });
     onSaved();
   }
@@ -241,7 +243,7 @@ export function ExistingTeamPicker({ tournament, onSaved }: { tournament: Cricke
 
   async function add(team: (typeof options)[number]) {
     const playerIds = team.playerIds.filter((id) => !onTeam.has(id));
-    await addTeams.mutateAsync({ id: tournament.id, teams: [{ name: team.name, playerIds }] });
+    await addTeams.mutateAsync({ id: tournament.id, teams: [{ name: team.name, playerIds, manual: true }] });
     onSaved();
   }
 

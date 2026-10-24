@@ -136,8 +136,8 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
     else if (digits.length < 10 || digits.length > 15) found.organiserMobile = "Enter a valid mobile number";
     if (organiserEmail.trim() && !/^\S+@\S+\.\S+$/.test(organiserEmail.trim())) found.organiserEmail = "Enter a valid email";
     if (!startDate) found.startDate = required;
-    if (!endDate) found.endDate = required;
-    else if (startDate && endDate < startDate) found.endDate = "Can't be before the start date";
+    // The end date can be left open when it isn't fixed yet.
+    if (endDate && startDate && endDate < startDate) found.endDate = "Can't be before the start date";
     if (!category) found.category = "Choose a category";
     if (!ballType) found.ballType = "Choose a ball type";
     if (!matchType) found.matchType = "Choose a match type";
@@ -159,7 +159,7 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
       organiserMobile: organiserMobile.replace(/[^\d+]/g, ""),
       organiserEmail: organiserEmail.trim() || null,
       startDate,
-      endDate,
+      endDate: endDate || null,
       category,
       ballType,
       pitchType,
@@ -297,13 +297,15 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
         <InputComp
           label="End date"
           type="date"
-          required
           min={startDate || undefined}
           value={endDate}
           error={errors.endDate}
           onChange={text(setEndDate, "endDate")}
         />
       </div>
+      <small className="admin-hint d-block mb-2">
+        Leave the end date empty if it isn't fixed yet. The same start and end date makes it a one-day tournament.
+      </small>
 
       <ChipChoice
         label="Tournament category"

@@ -81,7 +81,13 @@ export interface CricketTeam {
   captainId?: number | null;
   viceCaptainId?: number | null;
   keeperId?: number | null;
+  // Built by hand or copied from another tournament; missing = generated
+  // from matched sets. Generating only refills the generated teams.
+  manual?: boolean;
 }
+
+// Teams generated from matched sets (the ones generating refills).
+export const isGeneratedTeam = (team: CricketTeam) => !team.manual;
 
 // Players judged equal in strength — generating teams sends each one to a
 // different team. Holds at most one player per team.
@@ -115,11 +121,81 @@ export interface CricketTournament {
   matchType: CricketMatchType | null;
   // Default overs per innings for its matches.
   overs: number | null;
+  // How it's played (league, groups, playoffs, series...); null = not set
+  // up, and every match counts towards one points table. See format/.
+  format?: CricketFormat | null;
   // Players who may score (and edit) its matches / it; see canManage.ts.
   scorerIds: number[];
   // The account that created it (null on older ones); see canManage.ts.
   createdById: number | null;
   createdAt: string;
+}
+
+// ===== Tournament format =====
+// The phases a tournament is played in, in order: a league or groups
+// (round-robin), a knockout bracket, or a series between two teams.
+
+export type CricketPhaseKind = "round-robin" | "knockout" | "series";
+
+// Where a bracket (or super-league) team comes from: a team picked
+// outright, a finishing place in an earlier phase (group null = its only
+// group), or the winner / loser of a knockout match.
+export type CricketTeamSource =
+  | { from: "team"; teamIndex: number }
+  | { from: "rank"; phaseId: string; group: string | null; rank: number }
+  | { from: "winner" | "loser"; slot: string };
+
+export interface CricketPhaseGroup {
+  name: string;
+  // Filled in when the phase starts (straight away for the first one).
+  teamIndexes: number[];
+  // A later phase's teams: where they come from.
+  seeds: CricketTeamSource[];
+}
+
+// One knockout match: "Q1", "SF2", "F".
+export interface CricketBracketSlot {
+  code: string;
+  label: string;
+  stage: CricketMatchStage;
+  home: CricketTeamSource;
+  away: CricketTeamSource;
+}
+
+export interface CricketPhase {
+  id: string;
+  name: string;
+  kind: CricketPhaseKind;
+  groups: CricketPhaseGroup[];
+  // Round-robin: times each pair meets; series: its matches.
+  legs: number;
+  // Round-robin: how many from each group go through.
+  qualify: number;
+  // Super league: results between its teams in the earlier phase count.
+  carryPoints: boolean;
+  slots: CricketBracketSlot[];
+}
+
+export interface CricketFormat {
+  // Which preset it was built from (formatPresets.ts).
+  preset: string;
+  phases: CricketPhase[];
+  // How its matches are scheduled, so later rounds follow suit.
+  schedule?: CricketSchedulePrefs;
+}
+
+export interface CricketSchedulePrefs {
+  // Every match on one day, back to back.
+  oneDay: boolean;
+  // Weekdays played on (0 = Sunday ... 6 = Saturday).
+  days: number[];
+  // Matches a day when the end date isn't fixed.
+  perDay: number;
+  // "HH:MM", the day's first match.
+  time: string;
+  minutesBetween: number;
+  // Matches at the same time, on different pitches.
+  pitches: number;
 }
 
 export type CricketCategory =
@@ -218,6 +294,11 @@ export interface CricketMatch {
   scheduledAt: string | null;
   venue: string | null;
   stage: CricketMatchStage | null;
+  // Its place in the tournament's format: phase id, group ("A") and
+  // knockout / series slot ("Q1", "M2"). Missing on matches made by hand.
+  phaseId?: string | null;
+  group?: string | null;
+  slot?: string | null;
   city: string | null;
   matchType: CricketMatchType | null;
   ballType: CricketBallType | null;

@@ -1,16 +1,50 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
 import { useSetCricketSquad } from "../../../api/hooks/cricket/useCricketTournaments";
 import type { CricketTournament } from "../../../api/types";
+import { Button } from "../../components/Button";
 import { confirmAction } from "../../components/confirmDelete";
+import { BottomSheet } from "../BottomSheet";
 import { AddPlayerByMobile } from "../players/AddPlayerByMobile";
 import { PlayerCard } from "../players/PlayerCard";
 
-// The tournament's squad. Players join by mobile number (the whole player
-// list is too long to show); a new number joins the shared list too. Each
-// tick saves straight away.
+// The tournament's squad. There can be many players, so they aren't listed
+// here: players join by mobile number right in this card (a new number joins
+// the shared player list too) and show up under Match Players; the squad
+// opens in its own sheet to search or take players out.
 export function CricketSquadPicker({ tournament, busy }: { tournament: CricketTournament; busy: boolean }) {
+  const setSquad = useSetCricketSquad();
+  const [viewing, setViewing] = useState(false);
+  const count = tournament.playerIds.length;
+
+  return (
+    <>
+      <p className="admin-hint">
+        Add the players taking part by mobile number — they show up under Match Players to be matched.
+      </p>
+      <AddPlayerByMobile
+        blockedReason={(id) => (tournament.playerIds.includes(id) ? "Already in the squad" : null)}
+        onAdded={(player) => setSquad.mutate({ id: tournament.id, playerIds: [...tournament.playerIds, player.id] })}
+      />
+      <Button variant="outline" className="mt-2" disabled={count === 0} onClick={() => setViewing(true)}>
+        <i className="fa-solid fa-users" aria-hidden="true"></i> View squad ({count})
+      </Button>
+      {viewing && <SquadSheet tournament={tournament} busy={busy} onClose={() => setViewing(false)} />}
+    </>
+  );
+}
+
+// The squad, searchable; tapping a player takes them out (and back in, for
+// anyone taken out while the sheet is open). Each tap saves straight away.
+function SquadSheet({
+  tournament,
+  busy,
+  onClose,
+}: {
+  tournament: CricketTournament;
+  busy: boolean;
+  onClose: () => void;
+}) {
   const { data: players } = useCricketPlayers();
   const setSquad = useSetCricketSquad();
   const [search, setSearch] = useState("");
@@ -31,63 +65,34 @@ export function CricketSquadPicker({ tournament, busy }: { tournament: CricketTo
     setSquad.mutate({ id: tournament.id, playerIds });
   }
 
-  // Dropping matched players also takes them out of their sets — check first.
-  async function remove(ids: number[]) {
-    const matchedCount = ids.filter((id) => matched.has(id)).length;
+  // Dropping a matched player also takes them out of their set — check first.
+  async function toggle(playerId: number) {
+    if (!squad.has(playerId)) return save([...tournament.playerIds, playerId]);
     if (
-      matchedCount > 0 &&
+      matched.has(playerId) &&
       !(await confirmAction(
         "Remove from the squad?",
-        `${matchedCount === 1 ? "This player is" : `${matchedCount} of these players are`} in a matched set and will be taken out of it.`,
+        "This player is in a matched set and will be taken out of it.",
         "Yes, remove",
       ))
     ) {
       return;
     }
-    const drop = new Set(ids);
-    save(tournament.playerIds.filter((id) => !drop.has(id)));
-    setDropped((current) => [...current, ...ids]);
-  }
-
-  function toggle(playerId: number) {
-    if (squad.has(playerId)) {
-      void remove([playerId]);
-    } else {
-      save([...tournament.playerIds, playerId]);
-    }
+    save(tournament.playerIds.filter((id) => id !== playerId));
+    setDropped((current) => [...current, playerId]);
   }
 
   return (
-    <>
-      <p className="admin-hint">
-        Add the players taking part by mobile number. Someone not in the shared{" "}
-        <Link to="/players" className="admin-link">
-          player list
-        </Link>{" "}
-        yet joins it too. Untick to take a player out.
-      </p>
-
-      <AddPlayerByMobile
-        blockedReason={(id) => (squad.has(id) ? "Already in the squad" : null)}
-        onAdded={(player) => save([...tournament.playerIds, player.id])}
+    <BottomSheet title={`Squad (${tournament.playerIds.length})`} icon="fa-solid fa-users" onClose={onClose} fullScreen>
+      <p className="admin-hint">Untick a player to take them out of the squad.</p>
+      <input
+        type="search"
+        className="form-control shadow-none mb-3"
+        placeholder="Search players"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
       />
-
-      <div className="cricket-squad-toolbar">
-        <input
-          type="search"
-          className="form-control shadow-none"
-          placeholder="Search players"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <span className="admin-filter-count">
-          {tournament.playerIds.length} in squad
-        </span>
-      </div>
-
-      {listed.length === 0 ? (
-        <div className="admin-empty-state">No players in the squad yet — add them by mobile number above.</div>
-      ) : visible.length === 0 ? (
+      {visible.length === 0 ? (
         <div className="admin-empty-state">No players match "{search}".</div>
       ) : (
         <div className="cricket-player-card-list is-grid">
@@ -98,11 +103,11 @@ export function CricketSquadPicker({ tournament, busy }: { tournament: CricketTo
               selected={squad.has(player.id)}
               disabled={saving}
               tag={matched.has(player.id) ? "Matched" : undefined}
-              onClick={() => toggle(player.id)}
+              onClick={() => void toggle(player.id)}
             />
           ))}
         </div>
       )}
-    </>
+    </BottomSheet>
   );
 }
