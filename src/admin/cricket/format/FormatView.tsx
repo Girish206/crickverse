@@ -12,6 +12,7 @@ import {
   groupFixtures,
   groupMatches,
   groupTable,
+  groupTableMatches,
   isGroupDone,
   makeResolver,
   phaseState,
@@ -204,6 +205,7 @@ function GroupTables({
               rows={groupTable(tournament, format, phase, group, matches)}
               qualify={phase.qualify}
               settled={isGroupDone(phase, group, matches)}
+              matches={groupTableMatches(format, phase, group, matches)}
             />
             <small className="admin-hint d-block mt-1">
               {played} of {expectedMatches(phase, group)} matches played

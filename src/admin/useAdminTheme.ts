@@ -14,7 +14,8 @@ export function useIsAdminDark() {
 }
 
 // The admin shares the public site's light/dark choice (same saved setting,
-// dark by default). On top of `body.dark-theme`, it sets Bootstrap's
+// following the device's until one is picked). On top of `body.dark-theme`,
+// it sets the phone's status bar colour (theme-color) and Bootstrap's
 // `data-bs-theme` on <html> so Bootstrap's own components (cards, modals,
 // form controls, dropdowns) switch too; admin/dms/css/dark.css keys the
 // admin's custom styles off the same attribute. Removed on unmount so the
@@ -25,6 +26,7 @@ export function useAdminTheme() {
   useLayoutEffect(() => {
     const root = document.documentElement;
     root.setAttribute("data-bs-theme", theme.isDark ? "dark" : "light");
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme.isDark ? "#0f1012" : "#f6f3ef");
     return () => root.removeAttribute("data-bs-theme");
   }, [theme.isDark]);
 

@@ -2,6 +2,7 @@ import { Fragment, useState } from "react";
 import type { CricketMatch } from "../../../api/types";
 import { PlayerLink } from "../players/PlayerProfileSheet";
 import {
+  ballChipClass,
   ballLabel,
   battingCard,
   bowlingCard,
@@ -247,7 +248,7 @@ export function BallByBall({ match, nameOf }: { match: CricketMatch; nameOf: Nam
                 {over.balls.map((ball, i) => (
                   <span
                     key={i}
-                    className={`cricket-ball-chip is-${ballLabel(ball)}`}
+                    className={ballChipClass(ball)}
                     title={`${nameOf(ball.bowlerId)} to ${nameOf(ball.batterId)}${
                       ball.wicketType ? ` — ${nameOf(ball.dismissedId)} ${dismissalText(ball, nameOf)}` : ""
                     }`}

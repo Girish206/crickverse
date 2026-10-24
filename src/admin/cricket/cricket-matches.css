@@ -808,6 +808,73 @@
   background: rgba(var(--secondary-rgb), 0.12);
   color: var(--theme-text-dark);
 }
+/* The innings break: the first innings' total, the target to chase, then
+   the pickers for the openers and opening bowler. */
+.cricket-break {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 20px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(var(--primary-rgb), 0.25);
+  background: linear-gradient(160deg, rgba(var(--primary-rgb), 0.12), rgba(var(--secondary-rgb), 0.12));
+  text-align: center;
+  color: var(--theme-text-dark);
+}
+.cricket-break-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.15);
+  color: var(--primary);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.cricket-break-first {
+  margin: 4px 0 0;
+  font-size: var(--fs-md);
+  font-weight: 600;
+}
+.cricket-break-first small {
+  color: var(--muted-color);
+  font-weight: 500;
+}
+.cricket-break-target {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+  margin: 6px 0;
+}
+.cricket-break-target small {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-color);
+}
+.cricket-break-target strong {
+  font-size: calc(var(--fs-2xl) * 2);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--primary);
+}
+.cricket-break-need {
+  margin: 0;
+}
+.cricket-break-rate {
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--muted-color);
+}
 /* Someone else is scoring: who, and the button to take over. */
 .cricket-seat-banner {
   display: flex;
@@ -997,10 +1064,34 @@
   border-color: transparent;
   color: #fff;
 }
+/* Wides and no balls, whatever was run off them (ballChipClass): the
+   scoring pad's soft tints — its extras buttons for a wide, its boundary
+   buttons for a no ball — with ordinary text. */
+.cricket-ball-chip.is-wide {
+  background: rgba(var(--secondary-rgb), 0.14);
+  border-color: rgba(var(--secondary-rgb), 0.3);
+  color: var(--theme-text-dark);
+}
+.cricket-ball-chip.is-no-ball {
+  background: rgba(var(--primary-rgb), 0.12);
+  border-color: rgba(var(--primary-rgb), 0.3);
+  color: var(--theme-text-dark);
+}
 .cricket-pad {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(84px, 100%), 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
+}
+/* The umpire-signal drawings (OutArt) on the extras and Out: thicker
+   lines, as they're drawn small. */
+.cricket-pad-btn .cricket-pad-art {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  stroke-width: 3;
+}
+.cricket-pad-btn .cricket-pad-art .cricket-out-art-bat {
+  stroke-width: 4.5;
 }
 .cricket-pad-btn {
   min-height: 56px;
@@ -1024,8 +1115,20 @@
   cursor: not-allowed;
 }
 .cricket-pad-btn.is-boundary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.1;
   background: rgba(var(--primary-rgb), 0.1);
   color: var(--primary);
+}
+.cricket-pad-word {
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.85;
 }
 .cricket-pad-btn.is-extra {
   font-size: var(--fs-base);
@@ -1308,6 +1411,7 @@
   --shot-run: #64748b;
   --shot-four: #2563eb;
   --shot-six: #7c3aed;
+  --shot-wicket: #dc2626;
   display: block;
   width: 100%;
   max-width: 340px;
@@ -1323,6 +1427,7 @@
   --shot-run: #a3adbd;
   --shot-four: #60a5fa;
   --shot-six: #a78bfa;
+  --shot-wicket: #f87171;
 }
 .cricket-shot-ground.is-pickable {
   cursor: crosshair;
@@ -1343,6 +1448,13 @@
   stroke-width: 0.6;
   stroke-dasharray: 2 4;
 }
+/* The lines between the fielding zones. */
+.cricket-shot-division {
+  stroke: var(--shot-line);
+  stroke-width: 0.7;
+  stroke-linecap: round;
+  opacity: 0.8;
+}
 .cricket-shot-pitch {
   fill: var(--shot-pitch);
 }
@@ -1354,6 +1466,11 @@
   dominant-baseline: middle;
   pointer-events: none;
   user-select: none;
+  /* A halo of grass, so the zone lines pass behind the names. */
+  stroke: var(--shot-field);
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
+  paint-order: stroke;
 }
 .cricket-shot-side {
   font-size: 7.5px;
@@ -1372,6 +1489,8 @@
 .cricket-shot.is-four circle { fill: var(--shot-four); }
 .cricket-shot.is-six line { stroke: var(--shot-six); }
 .cricket-shot.is-six circle { fill: var(--shot-six); }
+.cricket-shot.is-wicket line { stroke: var(--shot-wicket); stroke-dasharray: 3 2; }
+.cricket-shot.is-wicket circle { fill: var(--shot-wicket); }
 .cricket-shot.is-marker line { stroke: var(--primary); stroke-width: 2; }
 .cricket-shot.is-marker circle { fill: var(--primary); }
 
@@ -1405,6 +1524,7 @@
 .cricket-shot-legend .is-run::before { background: #64748b; }
 .cricket-shot-legend .is-four::before { background: #2563eb; }
 .cricket-shot-legend .is-six::before { background: #7c3aed; }
+.cricket-shot-legend .is-wicket::before { background: #dc2626; }
 .cricket-shot-zones {
   width: 100%;
   max-width: 340px;
@@ -1466,4 +1586,722 @@
 }
 .cricket-shot-toggle.is-on .cricket-shot-toggle-knob::after {
   transform: translateX(13px);
+}
+
+/* ===== Live commentary (Commentary.tsx) ===== */
+.cricket-commentary {
+  margin: 14px 0;
+}
+.cricket-commentary .cricket-section-title small {
+  color: var(--muted-color);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.cricket-commentary-over + .cricket-commentary-over {
+  margin-top: 14px;
+}
+/* Between the chase and the first innings below it: how the first ended. */
+.cricket-commentary-break {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
+  margin: 18px 0 14px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(var(--secondary-rgb), 0.12);
+  color: var(--theme-text-dark);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.cricket-commentary-break strong {
+  font-variant-numeric: tabular-nums;
+}
+.cricket-commentary-break small {
+  color: var(--muted-color);
+  font-weight: 500;
+}
+/* The over's card, compact: its number, runs and the score on one line,
+   its balls, and (once finished) the batters and the bowler. */
+.cricket-commentary-head {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  /* Neutral, so it stands apart from the tinted four/six/wicket rows. */
+  background: rgba(15, 23, 42, 0.04);
+}
+:root[data-bs-theme="dark"] .cricket-commentary-head {
+  background: rgba(255, 255, 255, 0.06);
+}
+.cricket-commentary-head-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted-color);
+  font-size: var(--fs-xs);
+}
+.cricket-commentary-head-top > strong {
+  color: var(--theme-text-dark);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.cricket-commentary-head-score {
+  margin-left: auto;
+  white-space: nowrap;
+}
+.cricket-commentary-head-score b {
+  margin-left: 4px;
+  color: var(--theme-text-dark);
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+}
+.cricket-commentary-head .cricket-commentary-live {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #fff;
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.cricket-commentary-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+/* Batters and bowler side by side, a divider between each. */
+.cricket-commentary-stats {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  margin: 0;
+  padding-top: 7px;
+  border-top: 1px dashed var(--border-color);
+}
+.cricket-commentary-stats > div {
+  min-width: 0;
+  padding: 0 8px;
+}
+.cricket-commentary-stats > div:first-child {
+  padding-left: 0;
+}
+.cricket-commentary-stats > div + div {
+  border-left: 1px solid var(--border-color);
+}
+.cricket-commentary-stats dt {
+  overflow: hidden;
+  color: var(--muted-color);
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.cricket-commentary-stats dd {
+  margin: 0;
+  color: var(--theme-text-dark);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.cricket-commentary-stats dd small {
+  color: var(--muted-color);
+  font-weight: 600;
+}
+.cricket-commentary .cricket-ball-chip {
+  flex: none;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  font-size: var(--fs-2xs);
+}
+.cricket-commentary-head .cricket-ball-chip {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 4px;
+  border-radius: 11px;
+}
+/* Solid here, so boundaries read at a glance in either theme. */
+.cricket-commentary .cricket-ball-chip.is-4 {
+  background: #2563eb;
+  color: #fff;
+}
+.cricket-commentary .cricket-ball-chip.is-6 {
+  background: #7c3aed;
+  color: #fff;
+}
+
+/* The balls, newest first; boundaries and wickets tinted. */
+.cricket-commentary-balls {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+/* Each ball a bordered row of two cells: the ball (its number and
+   result) and the commentary. */
+.cricket-commentary-balls li {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.cricket-commentary-balls li.is-four,
+.cricket-commentary-balls li.is-six,
+.cricket-commentary-balls li.is-wicket {
+  border-left-width: 3px;
+}
+.cricket-commentary-ball {
+  flex: none;
+  width: 58px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border-right: 1px solid var(--border-color);
+}
+.cricket-commentary-balls li.is-four {
+  border-left-color: #2563eb;
+  background: rgba(37, 99, 235, 0.08);
+}
+.cricket-commentary-balls li.is-six {
+  border-left-color: #7c3aed;
+  background: rgba(124, 58, 237, 0.1);
+}
+.cricket-commentary-balls li.is-wicket {
+  border-left-color: #dc2626;
+  background: rgba(220, 38, 38, 0.09);
+}
+/* A four, six or wicket playing over the screen (BallBurst): no backdrop,
+   a small animated scene, the word and who; taps go through. Lines are
+   in the burst colour with a white halo so they read on any page. */
+.cricket-burst {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  --burst: var(--brand-orange, #e8501f);
+  animation: cricket-burst-out var(--burst-dur, 2300ms) ease forwards;
+}
+.cricket-burst.is-six {
+  --burst: var(--brand-amber, #ffcd00);
+}
+.cricket-burst.is-out {
+  --burst: var(--brand-crimson, #d7261e);
+  --burst-deep: #7f1d1d;
+}
+/* Out: how, on the ribbon after the stamp, then the scorecard line. */
+.cricket-burst.is-out .cricket-burst-ribbon {
+  margin-top: 6px;
+  font-size: var(--fs-lg);
+  animation-delay: 0.75s;
+}
+.cricket-burst-how {
+  color: #fff;
+  font-size: var(--fs-base);
+  font-weight: 700;
+  font-style: italic;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.7),
+    0 0 10px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  animation: cricket-burst-rise 0.35s ease 0.9s forwards;
+}
+.cricket-burst.is-out .cricket-burst-who {
+  animation-delay: 1.05s;
+}
+.cricket-burst-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.cricket-burst.is-out .cricket-burst-inner {
+  animation: cricket-burst-shake 0.35s ease 0.55s;
+}
+.cricket-burst-scene {
+  width: min(88vw, 400px);
+  height: auto;
+  overflow: visible;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35));
+}
+/* Four / six: the number, huge. Its raised edge is a copy behind it
+   (::before), stacked shadows in the moment's dark shade; the face is a
+   gradient with a white band that sweeps across once. */
+/* The brand's flag colours: a four orange, a six gold. */
+.cricket-burst.is-four {
+  --burst-deep: var(--brand-crimson-deep, #b3141b);
+  --burst-light: var(--brand-amber-bright, #ffd83d);
+}
+.cricket-burst.is-six {
+  --burst-deep: var(--brand-orange-deep, #c0311b);
+  --burst-light: #fff3b0;
+}
+/* Gold is too light under white text: the name goes dark on it. */
+.cricket-burst.is-six .cricket-burst-who {
+  color: var(--brand-navy, #2a0f12);
+}
+.cricket-burst-ribbon {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.cricket-burst-number {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(80vw, 320px);
+  height: min(80vw, 300px);
+}
+.cricket-burst-digit {
+  position: relative;
+  font-size: clamp(180px, 52vw, 280px);
+  font-weight: 900;
+  font-style: italic;
+  line-height: 1;
+  color: transparent;
+  background: linear-gradient(
+    115deg,
+    var(--burst-light) 0%,
+    #fff 18%,
+    var(--burst) 38%,
+    var(--burst) 44%,
+    #fff 50%,
+    var(--burst) 56%,
+    var(--burst-deep) 100%
+  );
+  background-size: 260% 100%;
+  background-position: 100% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-stroke: 3px #fff;
+  animation:
+    cricket-burst-slam 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.35) both,
+    cricket-burst-shine 0.9s ease-in-out 0.5s both;
+}
+.cricket-burst-digit::before {
+  content: attr(data-n);
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  color: var(--burst-deep);
+  -webkit-text-stroke: 0;
+  text-shadow:
+    2px 2px 0 var(--burst-deep),
+    4px 4px 0 var(--burst-deep),
+    6px 6px 0 var(--burst-deep),
+    8px 8px 0 var(--burst-deep),
+    10px 10px 0 var(--burst-deep),
+    14px 18px 26px rgba(0, 0, 0, 0.45);
+}
+/* Rays turning slowly behind, fading out at their ends. */
+.cricket-burst-rays {
+  position: absolute;
+  inset: -12%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(var(--burst) 0deg 9deg, transparent 9deg 22.5deg);
+  -webkit-mask: radial-gradient(circle, #000 18%, transparent 68%);
+  mask: radial-gradient(circle, #000 18%, transparent 68%);
+  opacity: 0;
+  animation:
+    cricket-burst-rays-in 0.5s ease 0.1s forwards,
+    cricket-burst-spin 6s linear infinite;
+}
+/* A ring going out from the number as it lands. */
+.cricket-burst-ring {
+  position: absolute;
+  width: 60%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 8px solid var(--burst-light);
+  opacity: 0;
+  animation: cricket-burst-ring 0.8s ease-out 0.25s;
+}
+.cricket-burst-confetti {
+  position: absolute;
+  width: 10px;
+  height: 16px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: cricket-burst-confetti 1.3s cubic-bezier(0.15, 0.7, 0.3, 1) 0.3s forwards;
+}
+/* "FOUR!" / "SIX!" on a ribbon under the number. */
+.cricket-burst-ribbon {
+  margin-top: -18px;
+  padding: 4px 26px;
+  background: linear-gradient(180deg, var(--burst), var(--burst-deep));
+  color: #fff;
+  font-size: var(--fs-xl);
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.12em;
+  clip-path: polygon(0 0, 100% 0, 94% 50%, 100% 100%, 0 100%, 6% 50%);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  animation: cricket-burst-rise 0.35s ease 0.45s forwards;
+}
+@keyframes cricket-burst-slam {
+  0% {
+    transform: scale(3) rotate(-12deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(0.92) rotate(2deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0);
+    opacity: 1;
+  }
+}
+@keyframes cricket-burst-shine {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+@keyframes cricket-burst-rays-in {
+  to {
+    opacity: 0.35;
+  }
+}
+@keyframes cricket-burst-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+@keyframes cricket-burst-ring {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+@keyframes cricket-burst-confetti {
+  0% {
+    transform: translate(0, 0) rotate(0) scale(0.4);
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--x), calc(var(--y) + 60px)) rotate(calc(var(--r) + 540deg)) scale(1);
+    opacity: 0;
+  }
+}
+.cricket-burst-word {
+  margin-top: -6px;
+  color: var(--burst);
+  font-size: clamp(56px, 16vw, 120px);
+  font-weight: 900;
+  font-style: italic;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  -webkit-text-stroke: 2px #fff;
+  paint-order: stroke fill;
+  text-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  animation: cricket-burst-pop 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.3) 0.45s forwards;
+}
+/* Out: stamped down, big to its size. */
+.cricket-burst.is-out .cricket-burst-word {
+  animation-name: cricket-burst-stamp;
+  animation-delay: 0.5s;
+  animation-duration: 0.3s;
+}
+.cricket-burst-who {
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: var(--burst);
+  color: #fff;
+  font-size: var(--fs-base);
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  animation: cricket-burst-rise 0.35s ease 0.75s forwards;
+}
+
+/* The duck cricketer: walking in from the side (legs stepping, body
+   bobbing, bat dragging), then wiping its eyes. Origins are in the
+   drawing's own units. */
+.cricket-burst-duck {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 4px;
+  opacity: 0;
+  animation: cricket-burst-waddle-in 1.1s ease-out 1s forwards;
+}
+.cricket-burst-duck svg {
+  width: 120px;
+  height: auto;
+  overflow: visible;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+.cricket-burst-duck svg * {
+  transform-box: view-box;
+}
+.cricket-burst-duck-body {
+  animation: cricket-burst-bob 0.275s ease-in-out 1s 4 alternate;
+}
+.cricket-burst-duck-leg {
+  transform-origin: 46px 86px;
+  animation: cricket-burst-step 0.275s ease-in-out 1s 4 alternate;
+}
+.cricket-burst-duck-leg:not(.is-back) {
+  transform-origin: 56px 86px;
+  animation-direction: alternate-reverse;
+}
+.cricket-burst-duck-bat {
+  transform-origin: 68px 88px;
+  animation: cricket-burst-drag 0.275s ease-in-out 1s 4 alternate;
+}
+.cricket-burst-duck-wipe {
+  transform-origin: 46px 58px;
+  animation: cricket-burst-wipe 0.4s ease-in-out 2.1s infinite alternate;
+}
+.cricket-burst-duck-tear {
+  fill: #38bdf8;
+  animation: cricket-burst-tear 0.9s ease-in 1.4s infinite;
+}
+.cricket-burst-duck-tear.is-late {
+  animation-delay: 1.85s;
+}
+.cricket-burst-duck .cb-duck-jersey {
+  fill: var(--brand-orange, #e8501f);
+  stroke: var(--brand-orange-deep, #c0311b);
+  stroke-width: 1.1;
+}
+.cricket-burst-duck .cb-duck-number {
+  fill: #fff;
+  font-size: 13px;
+  font-weight: 900;
+  font-style: italic;
+}
+.cricket-burst-duck .cb-duck-helmet {
+  fill: var(--brand-navy, #2a0f12);
+  stroke: #000;
+  stroke-width: 0.8;
+}
+@keyframes cricket-burst-bob {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-3px);
+  }
+}
+@keyframes cricket-burst-step {
+  from {
+    transform: rotate(-14deg);
+  }
+  to {
+    transform: rotate(14deg);
+  }
+}
+@keyframes cricket-burst-drag {
+  from {
+    transform: rotate(-4deg);
+  }
+  to {
+    transform: rotate(4deg);
+  }
+}
+@keyframes cricket-burst-wipe {
+  from {
+    transform: rotate(0);
+  }
+  to {
+    transform: rotate(-12deg);
+  }
+}
+.cricket-burst-duck > span {
+  margin-top: 2px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: #facc15;
+  color: #422006;
+  font-size: var(--fs-sm);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+.cricket-burst-duck.is-golden > span {
+  background: linear-gradient(135deg, #fde68a, #f59e0b 55%, #fde68a);
+}
+
+@keyframes cricket-burst-out {
+  0%,
+  86% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes cricket-burst-pop {
+  0% {
+    transform: scale(0.3) rotate(-8deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.12) rotate(2deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes cricket-burst-stamp {
+  0% {
+    transform: scale(2.6) rotate(-10deg);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) rotate(-4deg);
+    opacity: 1;
+  }
+}
+@keyframes cricket-burst-shake {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(-6px, 3px);
+  }
+  50% {
+    transform: translate(5px, -3px);
+  }
+  75% {
+    transform: translate(-3px, 2px);
+  }
+}
+@keyframes cricket-burst-rise {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes cricket-burst-waddle-in {
+  from {
+    transform: translateX(45vw);
+    opacity: 1;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes cricket-burst-tear {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(14px);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cricket-burst-scene,
+  .cricket-burst-rays,
+  .cricket-burst-ring,
+  .cricket-burst-confetti {
+    display: none;
+  }
+  .cricket-burst-word,
+  .cricket-burst-digit,
+  .cricket-burst-ribbon,
+  .cricket-burst-how,
+  .cricket-burst-who,
+  .cricket-burst-duck,
+  .cricket-burst-inner,
+  .cricket-burst-duck-body,
+  .cricket-burst-duck-leg,
+  .cricket-burst-duck-bat,
+  .cricket-burst-duck-wipe,
+  .cricket-burst-duck-tear {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* A new batter or bowler: plain text between the balls, names picked out. */
+.cricket-commentary-balls li.is-note {
+  border: 0;
+  background: transparent;
+}
+.cricket-commentary-balls li.is-note .cricket-commentary-text {
+  padding: 4px 2px;
+  color: var(--muted-color);
+}
+.cricket-commentary-balls li.is-note .cricket-commentary-text > strong {
+  color: var(--theme-text-dark);
+}
+.cricket-commentary-pending {
+  margin: 0 0 10px;
+}
+.cricket-commentary-no {
+  color: var(--muted-color);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.cricket-commentary-text {
+  flex: 1;
+  min-width: 0;
+  align-self: center;
+  margin: 0;
+  padding: 8px 12px;
+  color: var(--theme-text-dark);
+  font-size: var(--fs-sm);
+}
+.cricket-commentary-text > strong {
+  font-weight: 700;
+}
+.cricket-commentary-balls li.is-dot .cricket-commentary-text > strong {
+  color: var(--muted-color);
+  font-weight: 600;
+}
+.cricket-commentary-balls li.is-four .cricket-commentary-text > strong {
+  color: #2563eb;
+}
+.cricket-commentary-balls li.is-six .cricket-commentary-text > strong {
+  color: #7c3aed;
+}
+.cricket-commentary-balls li.is-wicket .cricket-commentary-text > strong {
+  color: #dc2626;
+}
+
+:root[data-bs-theme="dark"] .cricket-commentary-balls li.is-four .cricket-commentary-text > strong {
+  color: #60a5fa;
+}
+:root[data-bs-theme="dark"] .cricket-commentary-balls li.is-six .cricket-commentary-text > strong {
+  color: #a78bfa;
+}
+:root[data-bs-theme="dark"] .cricket-commentary-balls li.is-wicket .cricket-commentary-text > strong {
+  color: #f87171;
 }

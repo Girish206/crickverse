@@ -119,7 +119,8 @@ export function CricketMatchPage() {
         { value: "squads", label: "Squads" },
         { value: "mvp", label: "MVP" },
       ];
-  const fallback: Tab = match.status === "live" ? "live" : "info";
+  // Opens on Live / Summary; an upcoming match has only Info and Squads.
+  const fallback: Tab = upcoming ? "info" : "live";
   const requested = params.get("tab") as Tab | null;
   const tab: Tab = requested && tabs.some((t) => t.value === requested) ? requested : fallback;
 
@@ -194,7 +195,8 @@ export function CricketMatchPage() {
             <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
           </button>
         )}
-        {(access === "organise" || access === "captain") && (
+        {/* Scorers can only be changed while the match is being played. */}
+        {(access === "organise" || access === "captain") && match.status === "live" && (
           <button type="button" className="cricket-settings-item" onClick={settingsThen(() => setPickingScorers(true))}>
             <i className="fa-solid fa-user-pen" aria-hidden="true"></i>
             <span>
@@ -285,7 +287,7 @@ export function CricketMatchPage() {
         }
       />
       {/* While it's live the Live tab shows the score, so the card is left out. */}
-      {match.status !== "live" && <MatchHero match={match} nameOf={nameOf} />}
+      {match.status !== "live" && <MatchHero match={match} />}
 
       <div className="cricket-match-tabs" role="tablist" aria-label="Match sections">
         {tabs.map((t) => (

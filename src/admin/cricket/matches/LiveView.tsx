@@ -1,6 +1,7 @@
 import type { CricketMatch } from "../../../api/types";
 import { PlayerLink } from "../players/PlayerProfileSheet";
 import {
+  ballChipClass,
   ballLabel,
   battingCard,
   bowlingCard,
@@ -12,10 +13,12 @@ import {
   strikeRate,
   type NameOf,
 } from "../stats";
+import { BallBurst } from "./BallBurst";
+import { Commentary } from "./Commentary";
 import { MatchAwards } from "./MatchAwards";
 
-// The read-only "Live" tab for players: the score, who's in, this over and
-// the last few. Once it's over, the result and the awards.
+// The read-only "Live" tab for players: the score, commentary on the last
+// two overs, who's in, this over and the last few. Once it's over, the result and the awards.
 export function LiveView({ match, nameOf }: { match: CricketMatch; nameOf: NameOf }) {
   const innings = match.innings[match.innings.length - 1];
   if (match.status === "scheduled" || !innings) {
@@ -39,6 +42,7 @@ export function LiveView({ match, nameOf }: { match: CricketMatch; nameOf: NameO
 
   return (
     <div className="cricket-scorer">
+      <BallBurst match={match} nameOf={nameOf} />
       <div className="cricket-scorer-head">
         <div>
           <span className="cricket-scorer-team">{match.teams[innings.battingTeam].name} batting</span>
@@ -67,6 +71,8 @@ export function LiveView({ match, nameOf }: { match: CricketMatch; nameOf: NameO
           Innings break — {match.teams[innings.battingTeam].name} need {chase.target} to win.
         </div>
       )}
+
+      <Commentary match={match} nameOf={nameOf} />
 
       <div className="admin-table-wrap">
         <table className="cricket-table">
@@ -135,7 +141,7 @@ export function LiveView({ match, nameOf }: { match: CricketMatch; nameOf: NameO
                 Ov {over.number + 1} · <PlayerLink playerId={over.bowlerId}>{nameOf(over.bowlerId)}</PlayerLink>
               </span>
               {over.balls.map((ball, i) => (
-                <span key={i} className={`cricket-ball-chip is-${ballLabel(ball)}`}>
+                <span key={i} className={ballChipClass(ball)}>
                   {ballLabel(ball)}
                 </span>
               ))}

@@ -216,8 +216,23 @@ export type CricketMatchType = "limited-overs" | "box" | "pair" | "test" | "hund
 
 export type CricketExtraType = "wide" | "no-ball" | "bye" | "leg-bye";
 
-// "retired-hurt" isn't a wicket — the batter can come back.
-export type CricketWicketType = "bowled" | "caught" | "lbw" | "run-out" | "stumped" | "hit-wicket" | "retired-hurt";
+// How a batter left. "retired-hurt" and "retired" aren't wickets (the
+// batter can come back); "absent-hurt" isn't either, but they can't bat.
+export type CricketWicketType =
+  | "bowled"
+  | "caught"
+  | "caught-behind"
+  | "lbw"
+  | "run-out"
+  | "stumped"
+  | "hit-wicket"
+  | "hit-ball-twice"
+  | "obstructing-field"
+  | "retired-out"
+  | "timed-out"
+  | "retired-hurt"
+  | "retired"
+  | "absent-hurt";
 
 export interface CricketBall {
   // Who was in place when it was bowled.
@@ -232,12 +247,20 @@ export interface CricketBall {
   wicketType: CricketWicketType | null;
   dismissedId: number | null;
   fielderId: number | null;
+  // A run-out's second fielder (the one who broke the stumps), when two
+  // were involved. Missing on older balls.
+  secondFielderId?: number | null;
+  // An event between deliveries (a retirement, a Mankad, a timed out): no
+  // ball bowled, so it counts for no batter, bowler or over.
+  noDelivery?: boolean | null;
   // Where the shot went (the scorer's shot map; see ShotMap.tsx): -1..1
   // with the pitch at the centre, bowler's end up, off side right. Null or
   // missing = not marked.
   shotX?: number | null;
   shotY?: number | null;
   shotZone?: string | null;
+  // When it was recorded. Missing on older balls.
+  at?: string | null;
 }
 
 export interface CricketInnings {
@@ -247,6 +270,9 @@ export interface CricketInnings {
   nonStrikerId: number | null;
   bowlerId: number | null;
   closed: boolean;
+  // When it was closed; it started with its first ball's `at`. Missing
+  // on older innings.
+  closedAt?: string | null;
   balls: CricketBall[];
 }
 

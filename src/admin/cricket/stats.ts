@@ -4,10 +4,17 @@ import type { CricketBall, CricketInnings, CricketMatch, CricketMatchStage, Cric
 // here from the stored balls — the same rules the server scores with
 // (portfolio-server src/modules/cricket/cricket.scoring.ts).
 
-export const isLegal = (ball: CricketBall) => ball.extraType !== "wide" && ball.extraType !== "no-ball";
-export const isWicket = (ball: CricketBall) => ball.wicketType !== null && ball.wicketType !== "retired-hurt";
+export const isLegal = (ball: CricketBall) => !ball.noDelivery && ball.extraType !== "wide" && ball.extraType !== "no-ball";
+// Leaving without being out: retired hurt and retired may bat again,
+// absent hurt can't bat at all.
+const NOT_OUT_EXITS = ["retired-hurt", "retired", "absent-hurt"];
+export const isWicket = (ball: CricketBall) => ball.wicketType !== null && !NOT_OUT_EXITS.includes(ball.wicketType);
+// Out, or absent hurt: either way they can't bat (again) this innings.
+export const cantBat = (ball: CricketBall) => isWicket(ball) || ball.wicketType === "absent-hurt";
+// A catch, whoever took it (a caught behind is the keeper's).
+export const isCatch = (ball: CricketBall) => ball.wicketType === "caught" || ball.wicketType === "caught-behind";
 export const ballTotal = (ball: CricketBall) => ball.runs + ball.extras;
-const BOWLER_WICKETS = ["bowled", "caught", "lbw", "stumped", "hit-wicket"];
+const BOWLER_WICKETS = ["bowled", "caught", "caught-behind", "lbw", "stumped", "hit-wicket"];
 const creditsBowler = (ball: CricketBall) => ball.wicketType !== null && BOWLER_WICKETS.includes(ball.wicketType);
 // Byes and leg-byes aren't charged to the bowler.
 const conceded = (ball: CricketBall) =>
@@ -69,11 +76,20 @@ export function oversOf(innings: CricketInnings) {
 export function ballLabel(ball: CricketBall) {
   if (isWicket(ball)) return "W";
   if (ball.wicketType === "retired-hurt") return "RH";
+  if (ball.wicketType === "retired") return "RT";
+  if (ball.wicketType === "absent-hurt") return "AH";
   if (ball.extraType === "wide") return ball.extras > 1 ? `${ball.extras - 1}wd` : "wd";
   if (ball.extraType === "no-ball") return ball.runs + ball.extras > 1 ? `${ball.runs + ball.extras - 1}nb` : "nb";
   if (ball.extraType === "bye") return `${ball.extras}b`;
   if (ball.extraType === "leg-bye") return `${ball.extras}lb`;
   return String(ball.runs);
+}
+
+// A ball chip's classes: its label ("is-4", "is-W") and, for a wide or a
+// no ball (not out), its kind, which colours it whatever was run off it.
+export function ballChipClass(ball: CricketBall) {
+  const kind = isWicket(ball) ? "" : ball.extraType === "wide" ? " is-wide" : ball.extraType === "no-ball" ? " is-no-ball" : "";
+  return `cricket-ball-chip is-${ballLabel(ball)}${kind}`;
 }
 
 export type NameOf = (playerId: number | null) => string;
@@ -86,16 +102,34 @@ export function dismissalText(ball: CricketBall, nameOf: NameOf) {
       return `b ${bowler}`;
     case "caught":
       return ball.fielderId === ball.bowlerId ? `c & b ${bowler}` : `c ${fielder} b ${bowler}`;
+    case "caught-behind":
+      return `c †${fielder} b ${bowler}`;
     case "lbw":
       return `lbw b ${bowler}`;
     case "run-out":
-      return ball.fielderId ? `run out (${fielder})` : "run out";
+      // Run out at the bowler's end before the ball (a "Mankad").
+      if (ball.noDelivery) return `run out (${bowler}) at the non-striker's end`;
+      return ball.fielderId
+        ? `run out (${fielder}${ball.secondFielderId ? `/${nameOf(ball.secondFielderId)}` : ""})`
+        : "run out";
     case "stumped":
       return `st ${fielder} b ${bowler}`;
     case "hit-wicket":
       return `hit wicket b ${bowler}`;
+    case "hit-ball-twice":
+      return "hit the ball twice";
+    case "obstructing-field":
+      return "obstructing the field";
+    case "retired-out":
+      return "retired out";
+    case "timed-out":
+      return "timed out";
     case "retired-hurt":
       return "retired hurt";
+    case "retired":
+      return "retired not out";
+    case "absent-hurt":
+      return "absent hurt";
     default:
       return "";
   }
@@ -132,7 +166,7 @@ export function battingCard(innings: CricketInnings): BattingRow[] {
     return {
       playerId,
       runs: faced.reduce((sum, ball) => sum + ball.runs, 0),
-      balls: faced.filter((ball) => ball.extraType !== "wide").length,
+      balls: faced.filter((ball) => ball.extraType !== "wide" && !ball.noDelivery).length,
       fours: faced.filter((ball) => ball.runs === 4).length,
       sixes: faced.filter((ball) => ball.runs === 6).length,
       outBall: backIn ? null : lastOut,
@@ -307,7 +341,7 @@ export function playerStats(matches: CricketMatch[]): Map<number, PlayerStats> {
         entry.ballsFaced += row.balls;
         entry.fours += row.fours;
         entry.sixes += row.sixes;
-        const notOut = row.outBall === null || row.outBall.wicketType === "retired-hurt";
+        const notOut = row.outBall === null || !isWicket(row.outBall);
         if (notOut) entry.notOuts += 1;
         if (row.runs >= 100) entry.hundreds += 1;
         else if (row.runs >= 50) entry.fifties += 1;
@@ -334,9 +368,12 @@ export function playerStats(matches: CricketMatch[]): Map<number, PlayerStats> {
       }
       for (const ball of innings.balls) {
         if (ball.fielderId === null) continue;
-        if (ball.wicketType === "caught") of(ball.fielderId).catches += 1;
+        if (isCatch(ball)) of(ball.fielderId).catches += 1;
         if (ball.wicketType === "stumped") of(ball.fielderId).stumpings += 1;
-        if (ball.wicketType === "run-out") of(ball.fielderId).runOuts += 1;
+        if (ball.wicketType === "run-out") {
+          of(ball.fielderId).runOuts += 1;
+          if (ball.secondFielderId) of(ball.secondFielderId).runOuts += 1;
+        }
       }
     }
   }
@@ -522,7 +559,7 @@ export function teamStats(matches: CricketMatch[], teamIndex: number): TeamStats
           if (ball.runs === 4) t.foursConceded += 1;
           if (ball.runs === 6) t.sixesConceded += 1;
           if (dot(ball)) t.dotsBowled += 1;
-          if (ball.wicketType === "caught") t.catches += 1;
+          if (isCatch(ball)) t.catches += 1;
           if (ball.wicketType === "run-out") t.runOuts += 1;
           if (ball.wicketType === "stumped") t.stumpings += 1;
         }
@@ -605,7 +642,7 @@ export function tournamentStats(matches: CricketMatch[]): TournamentStats {
         if (ball.runs === 6) t.sixes += 1;
         if (isLegal(ball) && ballTotal(ball) === 0) t.dots += 1;
         if (ball.wicketType === "bowled") t.bowled += 1;
-        if (ball.wicketType === "caught") t.caught += 1;
+        if (isCatch(ball)) t.caught += 1;
         if (ball.wicketType === "lbw") t.lbw += 1;
         if (ball.wicketType === "run-out") t.runOuts += 1;
         if (ball.wicketType === "stumped") t.stumpings += 1;
@@ -613,7 +650,7 @@ export function tournamentStats(matches: CricketMatch[]): TournamentStats {
       for (const row of battingCard(innings)) {
         if (row.runs >= 100) t.hundreds += 1;
         else if (row.runs >= 50) t.fifties += 1;
-        if (row.runs === 0 && row.outBall !== null && row.outBall.wicketType !== "retired-hurt") t.ducks += 1;
+        if (row.runs === 0 && row.outBall !== null && isWicket(row.outBall)) t.ducks += 1;
       }
       for (const row of bowlingCard(innings)) t.maidens += row.maidens;
       if (!innings.closed) return;
@@ -717,7 +754,7 @@ export function matchImpact(match: CricketMatch): ImpactRow[] {
 
     for (const card of batting) {
       const row = of(card.playerId);
-      const out = card.outBall !== null && card.outBall.wicketType !== "retired-hurt";
+      const out = card.outBall !== null && isWicket(card.outBall);
       let points = card.runs + card.fours + card.sixes * 2;
       if (card.runs >= 25) points += 4;
       if (card.runs >= 50) points += 8;
@@ -761,15 +798,21 @@ export function matchImpact(match: CricketMatch): ImpactRow[] {
       }
       if (ball.fielderId === null) continue;
       const fielder = of(ball.fielderId);
-      if (ball.wicketType === "caught") {
+      if (isCatch(ball)) {
         fielder.catches += 1;
         fielder.fielding += 8;
       } else if (ball.wicketType === "stumped") {
         fielder.stumpings += 1;
         fielder.fielding += 10;
       } else if (ball.wicketType === "run-out") {
+        // Two fielders share it: 6 each, against 10 for one alone.
         fielder.runOuts += 1;
-        fielder.fielding += 10;
+        fielder.fielding += ball.secondFielderId ? 6 : 10;
+        if (ball.secondFielderId) {
+          const second = of(ball.secondFielderId);
+          second.runOuts += 1;
+          second.fielding += 6;
+        }
       }
     }
   }
@@ -846,6 +889,43 @@ export function playerOfMatch(match: CricketMatch): number | null {
   if (match.playerOfMatchId !== null) return match.playerOfMatchId;
   if (match.status !== "completed") return null;
   return matchImpact(match).find(tookPart)?.playerId ?? null;
+}
+
+// When a match is (or was) on, for ordering them.
+const matchTime = (match: CricketMatch) => new Date(match.scheduledAt ?? match.createdAt).getTime();
+
+// One player's part in each started match they took part in, in the order
+// they were played.
+export function playerMatchLines(matches: CricketMatch[], playerId: number) {
+  return matches
+    .filter((match) => match.status !== "scheduled")
+    .sort((a, b) => matchTime(a) - matchTime(b))
+    .flatMap((match) => {
+      const row = matchImpact(match).find((r) => r.playerId === playerId);
+      return row && tookPart(row) ? [{ match, row }] : [];
+    });
+}
+
+// One team's matches against the others in `matches`, in the order they
+// were played, with how each went for them.
+export function teamMatchLines(matches: CricketMatch[], teamIndex: number) {
+  return [...matches]
+    .sort((a, b) => matchTime(a) - matchTime(b))
+    .flatMap((match) => {
+      const slot = match.teams.findIndex((team) => team.teamIndex === teamIndex);
+      if (slot === -1) return [];
+      const outcome: "won" | "lost" | "tied" | "nr" | null =
+        match.status === "abandoned"
+          ? "nr"
+          : match.status !== "completed"
+            ? null
+            : match.winner === null
+              ? "tied"
+              : match.winner === slot
+                ? "won"
+                : "lost";
+      return [{ match, slot, opponent: match.teams[1 - slot], outcome }];
+    });
 }
 
 // "54 (32) · 3/18 (4.0) · 2 ct"

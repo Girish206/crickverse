@@ -1,16 +1,20 @@
 import { useState, type MouseEvent } from "react";
 import type { CricketMatch } from "../../../api/types";
 import { PillSelect } from "../PillSelect";
-import type { NameOf } from "../stats";
+import { isWicket, type NameOf } from "../stats";
 
-// The shot map: a ground seen from behind the striker, the bowler's end up
-// and (for a right-hander) the off side to the right. Shots are stored as
-// x / y from -1 to 1 with the pitch at the centre (see CricketBall).
+// The shot map. Shots are stored as x / y from -1 to 1 with the pitch at
+// the centre, the bowler's end up and (for a right-hander) the off side to
+// the right (see CricketBall). The ground is drawn the TV way round, from
+// behind the bowler: the keeper and fine leg at the top, long on / long off
+// at the bottom, the off side on the left — the stored spot turned half way.
 
 export interface Shot {
   x: number;
   y: number;
   runs: number;
+  // Caught there, or run out from there.
+  wicket?: boolean;
 }
 
 // The inner (30-yard) circle, as a share of the boundary's radius.
@@ -44,31 +48,51 @@ export function shotZoneAt(x: number, y: number) {
   return Math.hypot(x, y) < INNER ? zone.inner : zone.deep;
 }
 
-// Labels drawn on the ground: [name, angle, distance].
+// The lines between the zones: at each zone's edge (straight down and
+// straight behind are the axis), out to the rope — or only to the inner
+// circle where the deep fielder is the same either side (third man, fine leg).
+const DIVISIONS = [
+  ...[OFF_ZONES, LEG_ZONES].flatMap((zones, side) =>
+    zones.slice(0, -1).map((zone, i) => ({
+      angle: side === 0 ? zone.to : -zone.to,
+      to: zone.deep === zones[i + 1].deep ? INNER : 1,
+    })),
+  ),
+];
+// Where the lines start, clear of the pitch.
+const DIVISION_FROM = 0.16;
+
+// Labels drawn on the ground, in the middle of their zones: [name, angle, distance].
 const LABELS: [string, number, number][] = [
-  ["Long off", 12, 0.82],
-  ["Long on", -12, 0.82],
-  ["Deep cover", 62, 0.8],
+  ["Long off", 10, 0.82],
+  ["Deep ex. cov", 35, 0.82],
+  ["Deep cover", 65, 0.8],
   ["Deep point", 95, 0.8],
-  ["Third man", 150, 0.8],
-  ["Fine leg", -150, 0.8],
-  ["Deep sq. leg", -82, 0.8],
-  ["Deep mid wkt", -42, 0.8],
+  ["Third man", 145, 0.8],
+  ["Long on", -10, 0.82],
+  ["Deep mid wkt", -40, 0.82],
+  ["Deep sq. leg", -80, 0.8],
+  ["Fine leg", -140, 0.8],
+  ["Mid off", 10, 0.42],
+  ["Ex. cover", 35, 0.4],
   ["Cover", 65, 0.38],
-  ["Point", 95, 0.38],
-  ["Mid off", 15, 0.4],
-  ["Mid on", -15, 0.4],
-  ["Mid wkt", -42, 0.38],
-  ["Sq. leg", -82, 0.38],
+  ["Point", 95, 0.36],
+  ["Gully", 127, 0.38],
+  ["Mid on", -10, 0.42],
+  ["Mid wkt", -40, 0.4],
+  ["Sq. leg", -80, 0.36],
+  ["Short fine", -122, 0.38],
 ];
 
 const R = 100;
+// A stored spot (or one at an angle and distance, as stored) on the drawing.
+const onScreen = (x: number, y: number) => ({ x: -x * R, y: -y * R });
 const toSvg = (angle: number, distance: number) => {
   const rad = (angle * Math.PI) / 180;
-  return { x: Math.sin(rad) * distance * R, y: -Math.cos(rad) * distance * R };
+  return onScreen(Math.sin(rad) * distance, -Math.cos(rad) * distance);
 };
 
-const shotClass = (runs: number) => (runs >= 6 ? "is-six" : runs === 4 ? "is-four" : "is-run");
+const shotClass = (shot: Shot) => (shot.wicket ? "is-wicket" : shot.runs >= 6 ? "is-six" : shot.runs === 4 ? "is-four" : "is-run");
 
 interface ShotGroundProps {
   shots?: Shot[];
@@ -83,8 +107,9 @@ export function ShotGround({ shots = [], marker, onPick, label = "Cricket ground
   function handleClick(e: MouseEvent<SVGSVGElement>) {
     if (!onPick) return;
     const box = e.currentTarget.getBoundingClientRect();
-    let x = (((e.clientX - box.left) / box.width) * 220 - 110) / R;
-    let y = (((e.clientY - box.top) / box.height) * 220 - 110) / R;
+    // Turned back from the drawing to the stored way round.
+    let x = -(((e.clientX - box.left) / box.width) * 220 - 110) / R;
+    let y = -(((e.clientY - box.top) / box.height) * 220 - 110) / R;
     // A tap past the rope counts as on it.
     const distance = Math.hypot(x, y);
     if (distance > 1) [x, y] = [x / distance, y / distance];
@@ -101,13 +126,18 @@ export function ShotGround({ shots = [], marker, onPick, label = "Cricket ground
     >
       <circle className="cricket-shot-field" r={R} />
       <circle className="cricket-shot-inner" r={INNER * R} />
+      {DIVISIONS.map(({ angle, to }) => {
+        const from = toSvg(angle, DIVISION_FROM);
+        const end = toSvg(angle, to);
+        return <line key={angle} className="cricket-shot-division" x1={from.x} y1={from.y} x2={end.x} y2={end.y} />;
+      })}
       <line className="cricket-shot-axis" x1={0} y1={-R} x2={0} y2={R} />
       <rect className="cricket-shot-pitch" x={-4} y={-13} width={8} height={26} rx={1.5} />
       <text className="cricket-shot-side" x={-R + 4} y={-R + 10}>
-        Leg
+        Off
       </text>
       <text className="cricket-shot-side" x={R - 4} y={-R + 10} textAnchor="end">
-        Off
+        Leg
       </text>
       {LABELS.map(([name, angle, distance]) => {
         const at = toSvg(angle, distance);
@@ -117,16 +147,19 @@ export function ShotGround({ shots = [], marker, onPick, label = "Cricket ground
           </text>
         );
       })}
-      {shots.map((shot, i) => (
-        <g key={i} className={`cricket-shot ${shotClass(shot.runs)}`}>
-          <line x1={0} y1={0} x2={shot.x * R} y2={shot.y * R} />
-          <circle cx={shot.x * R} cy={shot.y * R} r={2.6} />
-        </g>
-      ))}
+      {shots.map((shot, i) => {
+        const at = onScreen(shot.x, shot.y);
+        return (
+          <g key={i} className={`cricket-shot ${shotClass(shot)}`}>
+            <line x1={0} y1={0} x2={at.x} y2={at.y} />
+            <circle cx={at.x} cy={at.y} r={2.6} />
+          </g>
+        );
+      })}
       {marker && (
         <g className="cricket-shot is-marker">
-          <line x1={0} y1={0} x2={marker.x * R} y2={marker.y * R} />
-          <circle cx={marker.x * R} cy={marker.y * R} r={4} />
+          <line x1={0} y1={0} x2={onScreen(marker.x, marker.y).x} y2={onScreen(marker.x, marker.y).y} />
+          <circle cx={onScreen(marker.x, marker.y).x} cy={onScreen(marker.x, marker.y).y} r={4} />
         </g>
       )}
     </svg>
@@ -139,6 +172,7 @@ export function ShotLegend() {
       <span className="is-run">1–3</span>
       <span className="is-four">Four</span>
       <span className="is-six">Six</span>
+      <span className="is-wicket">Wicket</span>
     </div>
   );
 }
@@ -149,7 +183,16 @@ export function MatchShotMap({ match, nameOf }: { match: CricketMatch; nameOf: N
   const marked = match.innings.map((innings) =>
     innings.balls.flatMap((ball) =>
       ball.shotX != null && ball.shotY != null
-        ? [{ x: ball.shotX, y: ball.shotY, runs: ball.runs, zone: ball.shotZone ?? "", batterId: ball.batterId }]
+        ? [
+            {
+              x: ball.shotX,
+              y: ball.shotY,
+              runs: ball.runs,
+              wicket: isWicket(ball),
+              zone: ball.shotZone ?? "",
+              batterId: ball.batterId,
+            },
+          ]
         : [],
     ),
   );

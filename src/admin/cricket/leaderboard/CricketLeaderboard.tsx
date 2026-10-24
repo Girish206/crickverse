@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, type KeyboardEvent } from "react";
+import { Link } from "react-router-dom";
 import { useCricketMatches } from "../../../api/hooks/cricket/useCricketMatches";
 import { useCricketTournaments } from "../../../api/hooks/cricket/useCricketTournaments";
 import type { CricketMatch, CricketTournament } from "../../../api/types";
@@ -9,15 +10,21 @@ import { AwardCard } from "../matches/AwardCard";
 import { PlayerAvatar } from "../players/PlayerAvatar";
 import { PlayerLink } from "../players/PlayerProfileSheet";
 import { PillSelect } from "../PillSelect";
+import { avatarColorFor } from "../avatarColor";
 import {
   battingAverage,
   bestBowling,
+  countsForTable,
   impactPerMatch,
+  oversText,
+  playerMatchLines,
   playerStats,
   points,
   pointsTable,
   rate,
   strikeRate,
+  teamMatchLines,
+  type ImpactRow,
   type PlayerStats,
   type PointsRow,
 } from "../stats";
@@ -227,14 +234,14 @@ export function LeaderboardGrid({
           </div>
         </section>
       )}
-      <StatsBoards rows={rows} />
+      <StatsBoards rows={rows} matches={matches} />
     </>
   );
 }
 
 // Category tabs, a dropdown of that category's boards, and the chosen
 // board's top ten.
-function StatsBoards({ rows }: { rows: PlayerStats[] }) {
+function StatsBoards({ rows, matches }: { rows: PlayerStats[]; matches: CricketMatch[] }) {
   const [category, setCategory] = useState<Category>("overall");
   const [title, setTitle] = useState(BOARDS[0].title);
   const boards = BOARDS.filter((board) => board.category === category);
@@ -269,22 +276,34 @@ function StatsBoards({ rows }: { rows: PlayerStats[] }) {
           onChange={setTitle}
         />
       </div>
-      <BoardList board={board} rows={rows} limit={10} />
+      <BoardList board={board} rows={rows} limit={10} matches={matches} />
     </section>
   );
 }
 
-function BoardList({ board, rows, limit }: { board: Board; rows: PlayerStats[]; limit: number }) {
+// Enter / Space on a row that acts as a button.
+const onActivate = (action: () => void) => (e: KeyboardEvent) => {
+  if (e.key === "Enter" || e.key === " ") {
+    e.preventDefault();
+    action();
+  }
+};
+
+// With `matches`, each player opens to their match-by-match figures.
+function BoardList({ board, rows, limit, matches }: { board: Board; rows: PlayerStats[]; limit: number; matches?: CricketMatch[] }) {
   const nameOf = usePlayerNames();
   const photoOf = usePlayerPhotos();
+  const [openId, setOpenId] = useState<number | null>(null);
   const ranked = board.rank(rows).slice(0, limit);
   if (ranked.length === 0) return <p className="admin-hint mb-0">No one yet.</p>;
   return (
     <ol className="cricket-board-list">
       {ranked.map((s, index) => {
         const name = nameOf(s.playerId);
-        return (
-          <li key={s.playerId} className={index < 3 ? `is-podium is-rank-${index + 1}` : ""}>
+        const open = openId === s.playerId;
+        const podium = index < 3 ? `is-podium is-rank-${index + 1}` : "";
+        const row = (
+          <>
             <span className="cricket-board-rank">{index + 1}</span>
             <PlayerAvatar name={name} photoUrl={photoOf(s.playerId)} className="cricket-board-avatar" />
             <span className="cricket-board-name">
@@ -294,6 +313,23 @@ function BoardList({ board, rows, limit }: { board: Board; rows: PlayerStats[]; 
               <small>{board.detail(s)}</small>
             </span>
             <span className="cricket-board-value">{board.value(s)}</span>
+          </>
+        );
+        if (!matches) {
+          return (
+            <li key={s.playerId} className={podium}>
+              {row}
+            </li>
+          );
+        }
+        const toggle = () => setOpenId(open ? null : s.playerId);
+        return (
+          <li key={s.playerId} className={`${podium} is-expandable ${open ? "is-open" : ""}`}>
+            <div className="cricket-board-row" role="button" tabIndex={0} aria-expanded={open} onClick={toggle} onKeyDown={onActivate(toggle)}>
+              {row}
+              <i className="fa-solid fa-chevron-down cricket-expand-icon" aria-hidden="true"></i>
+            </div>
+            {open && <PlayerMatches playerId={s.playerId} matches={matches} category={board.category} />}
           </li>
         );
       })}
@@ -301,18 +337,82 @@ function BoardList({ board, rows, limit }: { board: Board; rows: PlayerStats[]; 
   );
 }
 
+const dismissalsIn = (row: ImpactRow) => row.catches + row.stumpings + row.runOuts;
+
+const SHOWS: Record<Category, (row: ImpactRow) => boolean> = {
+  overall: () => true,
+  batting: (row) => row.bat !== null,
+  bowling: (row) => row.bowl !== null && row.bowl.legalBalls > 0,
+  fielding: (row) => dismissalsIn(row) > 0,
+};
+
+const fieldingText = (row: ImpactRow) =>
+  [
+    row.catches && `${row.catches} ct`,
+    row.stumpings && `${row.stumpings} st`,
+    row.runOuts && `${row.runOuts} ro`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+// A match's figures for the board's category: "54* (32)", "3/18 (4.0)",
+// "2 ct · 1 ro", or impact points overall.
+function figure(row: ImpactRow, category: Category) {
+  if (category === "batting" && row.bat) return `${row.bat.runs}${row.bat.out ? "" : "*"} (${row.bat.balls})`;
+  if (category === "bowling" && row.bowl) return `${row.bowl.wickets}/${row.bowl.runs} (${oversText(row.bowl.legalBalls)})`;
+  if (category === "fielding") return fieldingText(row);
+  return `${points(row.total)} pts`;
+}
+
+const shortDate = (value: string | null) =>
+  value ? new Date(value).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : null;
+
+// One player's figures in each match, for the board they were opened from.
+function PlayerMatches({ playerId, matches, category }: { playerId: number; matches: CricketMatch[]; category: Category }) {
+  const lines = playerMatchLines(matches, playerId).filter(({ row }) => SHOWS[category](row));
+  if (lines.length === 0) return <p className="cricket-perf-empty">Nothing to show yet.</p>;
+  return (
+    <ul className="cricket-perf-list">
+      {lines.map(({ match, row }) => (
+        <li key={match.id}>
+          <Link to={`/matches/${match.id}`} className="cricket-perf-item cricket-team-result">
+            <span className="cricket-team-result-date">{shortDate(match.scheduledAt) ?? "–"}</span>
+            <span className="cricket-team-result-team">
+vs {match.teams[1 - row.team].name}</span>
+            <span className="cricket-team-result-outcome cricket-perf-figure-text">{figure(row, category)}</span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function PointsTable({ tournament, matches }: { tournament: CricketTournament; matches: CricketMatch[] }) {
   return (
     <div className="cricket-standings">
-      <StandingsTable rows={pointsTable(tournament, matches)} />
+      <StandingsTable rows={pointsTable(tournament, matches)} matches={matches.filter(countsForTable)} />
       <p className="admin-hint mt-2 mb-0">Win 2 points, tie or no result 1. NRR counts an all-out side as facing its full overs.</p>
     </div>
   );
 }
 
 // One table of standings. With `qualify`, a line marks the cut and the
-// teams above it get a Q once `settled` (every match played).
-export function StandingsTable({ rows, qualify = 0, settled = false }: { rows: PointsRow[]; qualify?: number; settled?: boolean }) {
+// teams above it get a Q once `settled` (every match played). With
+// `matches` (the ones the table counts), each team opens to its results.
+export function StandingsTable({
+  rows,
+  qualify = 0,
+  settled = false,
+  matches,
+}: {
+  rows: PointsRow[];
+  qualify?: number;
+  settled?: boolean;
+  matches?: CricketMatch[];
+}) {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const inTable = new Set(rows.map((row) => row.teamIndex));
+  const own = (matches ?? []).filter((match) => match.teams.every((team) => inTable.has(team.teamIndex)));
   return (
     <div className="cricket-standings-scroll">
       <table className="cricket-standings-table">
@@ -325,32 +425,93 @@ export function StandingsTable({ rows, qualify = 0, settled = false }: { rows: P
             <th>L</th>
             <th>T</th>
             <th>NR</th>
-            <th>Pts</th>
+            <th className="is-points">Pts</th>
             <th>NRR</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, index) => (
-            <tr key={row.teamIndex} className={qualify > 0 && index === qualify - 1 && index < rows.length - 1 ? "is-cut" : undefined}>
-              <td className="is-rank">{index + 1}</td>
-              <td className="is-team fw-semibold">
-                <span className="cricket-standings-name" title={row.name}>
-                  {row.name}
-                  {settled && index < qualify && <span className="cricket-q-tag" title="Qualified">Q</span>}
-                </span>
-              </td>
-              <td>{row.played}</td>
-              <td>{row.won}</td>
-              <td>{row.lost}</td>
-              <td>{row.tied}</td>
-              <td>{row.noResult}</td>
-              <td className="fw-bold">{row.points}</td>
-              <td>{(row.nrr >= 0 ? "+" : "") + row.nrr.toFixed(3)}</td>
-            </tr>
-          ))}
+          {rows.flatMap((row, index) => {
+            const open = openIndex === row.teamIndex;
+            const toggle = () => setOpenIndex(open ? null : row.teamIndex);
+            const classes = [
+              qualify > 0 && index === qualify - 1 && index < rows.length - 1 ? "is-cut" : "",
+              matches ? "is-expandable" : "",
+              open ? "is-open" : "",
+            ].filter(Boolean);
+            const cells = (
+              <tr
+                key={row.teamIndex}
+                className={classes.join(" ") || undefined}
+                {...(matches && { role: "button", tabIndex: 0, "aria-expanded": open, onClick: toggle, onKeyDown: onActivate(toggle) })}
+              >
+                <td className="is-rank">
+                  <span className="cricket-standings-rank">{index + 1}</span>
+                </td>
+                <td className="is-team fw-semibold">
+                  <span className="cricket-standings-name" title={row.name}>
+                    <span className="cricket-standings-logo" style={{ background: avatarColorFor(row.name) }} aria-hidden="true">
+                      {row.name.charAt(0).toUpperCase()}
+                    </span>
+                    <span className="cricket-standings-label">{row.name}</span>
+                    {settled && index < qualify && <span className="cricket-q-tag" title="Qualified">Q</span>}
+                    {matches && <i className="fa-solid fa-chevron-down cricket-expand-icon" aria-hidden="true"></i>}
+                  </span>
+                </td>
+                <td>{row.played}</td>
+                <td>{row.won}</td>
+                <td>{row.lost}</td>
+                <td>{row.tied}</td>
+                <td>{row.noResult}</td>
+                <td className="is-points">{row.points}</td>
+                <td className={row.nrr > 0 ? "is-up" : row.nrr < 0 ? "is-down" : undefined}>
+                  {(row.nrr >= 0 ? "+" : "") + row.nrr.toFixed(3)}
+                </td>
+              </tr>
+            );
+            if (!open) return [cells];
+            return [
+              cells,
+              <tr key={`${row.teamIndex}-results`} className="cricket-standings-detail">
+                <td colSpan={9}>
+                  <TeamResults teamIndex={row.teamIndex} matches={own} />
+                </td>
+              </tr>,
+            ];
+          })}
         </tbody>
       </table>
     </div>
+  );
+}
+
+// How a match went for one side, from the result text ("Royal Warriors
+// won by 6 wickets" → "Won by 6 wickets" / "Lost by 6 wickets").
+function resultFor(match: CricketMatch, outcome: "won" | "lost" | "tied" | "nr" | null) {
+  if (outcome === null) return match.status === "live" ? "Live" : "Upcoming";
+  if (outcome === "nr") return "No result";
+  if (outcome === "tied") return "Tied";
+  const margin = match.resultText?.match(/ won (by .+)$/i)?.[1];
+  const verb = outcome === "won" ? "Won" : "Lost";
+  return margin ? `${verb} ${margin}` : verb;
+}
+
+// A team's matches in a table, one line each: when, against whom and how
+// it went; each opens the match.
+function TeamResults({ teamIndex, matches }: { teamIndex: number; matches: CricketMatch[] }) {
+  const lines = teamMatchLines(matches, teamIndex);
+  if (lines.length === 0) return <p className="cricket-perf-empty">No matches yet.</p>;
+  return (
+    <ul className="cricket-perf-list">
+      {lines.map(({ match, opponent, outcome }) => (
+        <li key={match.id}>
+          <Link to={`/matches/${match.id}`} className="cricket-perf-item cricket-team-result">
+            <span className="cricket-team-result-date">{shortDate(match.scheduledAt) ?? "–"}</span>
+            <span className="cricket-team-result-team">vs {opponent.name}</span>
+            <span className={`cricket-team-result-outcome is-${outcome ?? match.status}`}>{resultFor(match, outcome)}</span>
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }
 

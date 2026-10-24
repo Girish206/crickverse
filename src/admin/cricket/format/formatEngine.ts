@@ -75,15 +75,24 @@ export function groupTable(
     teamIndex,
     name: tournament.teams[teamIndex]?.name ?? "Removed team",
   }));
-  let counted = groupMatches(phase, group, matches);
-  if (phase.carryPoints) {
-    const earlier = format.phases
-      .slice(0, format.phases.indexOf(phase))
-      .filter((p) => p.kind === "round-robin")
-      .map((p) => p.id);
-    counted = [...counted, ...matches.filter((match) => match.phaseId && earlier.includes(match.phaseId))];
-  }
-  return standings(teams, counted);
+  return standings(teams, groupTableMatches(format, phase, group, matches));
+}
+
+// The matches a group's table counts: its own, plus (when points carry)
+// the earlier round-robin ones (standings keeps those between its teams).
+export function groupTableMatches(
+  format: CricketFormat,
+  phase: CricketPhase,
+  group: CricketPhaseGroup,
+  matches: CricketMatch[],
+): CricketMatch[] {
+  const counted = groupMatches(phase, group, matches);
+  if (!phase.carryPoints) return counted;
+  const earlier = format.phases
+    .slice(0, format.phases.indexOf(phase))
+    .filter((p) => p.kind === "round-robin")
+    .map((p) => p.id);
+  return [...counted, ...matches.filter((match) => match.phaseId && earlier.includes(match.phaseId))];
 }
 
 // Every match of the group played (or washed out), so its places are final.
