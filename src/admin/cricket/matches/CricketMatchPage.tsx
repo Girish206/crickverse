@@ -14,6 +14,7 @@ import { PageHeader, PageHeaderAction } from "../../components/PageHeader";
 import { Button } from "../../components/Button";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { matchAccess } from "../canManage";
+import { AutoNextRounds } from "../format/AutoNextRounds";
 import { ScorersSheet } from "../ScorersSheet";
 import { BottomSheet } from "../BottomSheet";
 import { CricketMatchForm } from "./CricketMatchForm";
@@ -270,6 +271,7 @@ export function CricketMatchPage() {
 
   return (
     <div className={`cricket-page ${canManage && upcoming ? "has-action-bar" : ""}`.trim()}>
+      {match.tournamentId !== null && <AutoNextRounds tournamentId={match.tournamentId} />}
       <PageHeader
         title={`${match.teams[0].name} vs ${match.teams[1].name}`}
         subtitle={tournament?.name ?? "Match"}

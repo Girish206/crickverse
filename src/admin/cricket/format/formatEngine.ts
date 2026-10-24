@@ -320,6 +320,35 @@ export function openingFixtures(format: CricketFormat, tournament: CricketTourna
   return first.slots.flatMap((slot) => slotFixture(first, slot, resolve) ?? []);
 }
 
+export interface NextRound {
+  phase: CricketPhase;
+  // A later round-robin phase's groups, filled in with its qualifiers.
+  groups?: CricketPhaseGroup[];
+  fixtures: Fixture[];
+}
+
+// What can be scheduled now the results are in and isn't yet: each bracket
+// match whose two teams are known, and a later league / group phase (a
+// super league) once all its qualifiers are. The opening phase's league or
+// groups come with the format, so they're never here.
+export function nextRounds(format: CricketFormat, matches: CricketMatch[], resolve: Resolver): NextRound[] {
+  const rounds: NextRound[] = [];
+  format.phases.forEach((phase, index) => {
+    if (phase.kind === "knockout") {
+      const fixtures = phase.slots.flatMap((slot) => (slotMatch(slot.code, matches) ? [] : (slotFixture(phase, slot, resolve) ?? [])));
+      if (fixtures.length > 0) rounds.push({ phase, fixtures });
+      return;
+    }
+    if (index === 0 || matches.some((match) => match.phaseId === phase.id)) return;
+    if (phase.groups.some((group) => group.teamIndexes.length > 0)) return;
+    const teams = phase.groups.map((group) => group.seeds.map((seed) => resolve(seed)));
+    if (teams.some((list) => list.length === 0 || list.some((teamIndex) => teamIndex === null))) return;
+    const groups = phase.groups.map((group, g) => ({ ...group, teamIndexes: teams[g] as number[] }));
+    rounds.push({ phase, groups, fixtures: groupFixtures(format, phase, groups) });
+  });
+  return rounds;
+}
+
 export interface ScheduleOptions {
   // "YYYY-MM-DD"; blank leaves the dates to set later.
   startDate: string;

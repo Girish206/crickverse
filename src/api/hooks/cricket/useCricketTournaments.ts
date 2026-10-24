@@ -60,9 +60,13 @@ export function useCricketTournament(id: number, enabled = true) {
 
 // Every tournament action returns the updated tournament: seed the detail
 // cache with it so the page updates at once, and refresh the list.
-function useTournamentMutation<TVars>(request: (vars: TVars) => Promise<{ data: ApiEnvelope<CricketTournament> }>) {
+function useTournamentMutation<TVars>(
+  request: (vars: TVars) => Promise<{ data: ApiEnvelope<CricketTournament> }>,
+  meta?: Record<string, unknown>,
+) {
   const queryClient = useQueryClient();
   return useMutation({
+    meta,
     mutationFn: async (vars: TVars) => (await request(vars)).data.data,
     onSuccess: (tournament) => {
       queryClient.setQueryData(["cricket-tournaments", tournament.id], tournament);
@@ -208,13 +212,16 @@ export interface CricketFixtureInput {
 }
 
 // Format changes also create (or clear) matches.
-function useFormatMutation<TVars>(request: (vars: TVars) => Promise<{ data: ApiEnvelope<CricketTournament> }>) {
+function useFormatMutation<TVars>(
+  request: (vars: TVars) => Promise<{ data: ApiEnvelope<CricketTournament> }>,
+  meta?: Record<string, unknown>,
+) {
   const queryClient = useQueryClient();
   return useTournamentMutation(async (vars: TVars) => {
     const response = await request(vars);
     queryClient.invalidateQueries({ queryKey: ["cricket-matches"] });
     return response;
-  });
+  }, meta);
 }
 
 // Sets the format with its first fixtures, replacing the old format's
@@ -226,11 +233,13 @@ export function useSetCricketFormat() {
 }
 
 // Starts a later phase (its groups, once the qualifiers are known) or
-// schedules the next bracket match.
-export function useAddCricketFixtures() {
+// schedules the next bracket match. `quiet`: done in the background, so a
+// failure (say another device scheduled it first) isn't toasted.
+export function useAddCricketFixtures({ quiet = false } = {}) {
   return useFormatMutation(
     ({ id, ...input }: { id: number; phaseId: string; groups?: CricketPhaseGroup[]; fixtures: CricketFixtureInput[] }) =>
       apiClient.post(`/admin/cricket/tournaments/${id}/fixtures`, input),
+    quiet ? { skipGlobalError: true } : undefined,
   );
 }
 

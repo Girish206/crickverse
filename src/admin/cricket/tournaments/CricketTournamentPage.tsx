@@ -4,6 +4,7 @@ import { useAddCricketTeams, useCricketTournament, useSetCricketTournamentScorer
 import { isGeneratedTeam, type CricketMatch, type CricketTournament } from "../../../api/types";
 import { avatarColorFor } from "../avatarColor";
 import { pointsTable } from "../stats";
+import { AutoNextRounds } from "../format/AutoNextRounds";
 import { ListCard } from "../../components/ListCard";
 import { PageHeader, PageHeaderAction } from "../../components/PageHeader";
 import { Button } from "../../components/Button";
@@ -159,6 +160,7 @@ export function CricketTournamentPage() {
 
   return (
     <div className="cricket-page">
+      <AutoNextRounds tournamentId={tournament.id} />
       <PageHeader
         title={tournament.name}
         subtitle="Tournament"
