@@ -561,3 +561,15 @@ button.cricket-bracket-card:hover {
     flex: 1;
   }
 }
+
+/* Regenerate fixtures, above the preview list (CricketFormatPage). */
+.cricket-fixture-regenerate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin-bottom: 10px;
+}
+.cricket-fixture-regenerate .btn {
+  margin: 0 !important;
+}

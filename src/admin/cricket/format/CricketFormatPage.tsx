@@ -162,6 +162,12 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
     if (key === "groupCount") setLineUp(lineUpFor(presetId, next, teamIndexes));
   }
 
+  // New fixtures from the same settings: who plays whom (and when) follows
+  // each group's team order, so reshuffle it; nobody changes group.
+  function regenerate() {
+    setLineUp((groups) => groups.map((group) => shuffled(group)));
+  }
+
   function moveTeam(teamIndex: number, toGroup: number) {
     setLineUp((groups) => groups.map((group, g) => (g === toGroup ? [...group.filter((t) => t !== teamIndex), teamIndex] : group.filter((t) => t !== teamIndex))));
   }
@@ -494,6 +500,14 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
             <h3>Opening fixtures</h3>
             <span className="cricket-phase-state">{fixtures.length} matches</span>
           </header>
+          {roundRobinFirst && fixtures.length > 1 && (
+            <div className="cricket-fixture-regenerate">
+              <Button variant="outline" onClick={regenerate}>
+                <i className="fa-solid fa-rotate" aria-hidden="true"></i> Regenerate fixtures
+              </Button>
+              <small className="admin-hint">New pairings and match order, same settings. Nothing is saved until you save.</small>
+            </div>
+          )}
           <ol className="cricket-fixture-preview">
             {fixtures.map((fixture, i) => (
               <li key={i}>
