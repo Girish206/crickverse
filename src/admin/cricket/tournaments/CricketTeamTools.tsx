@@ -104,9 +104,16 @@ export function TeamForm({
   const [error, setError] = useState<string | null>(null);
 
   const onTeam = teamOfPlayer(tournament);
+  // A player plays for one team in a tournament: anyone on another team is
+  // left out of the list.
+  const onOtherTeam = (playerId: number) => {
+    const otherTeam = onTeam.get(playerId);
+    return otherTeam !== undefined && otherTeam !== index;
+  };
   // The tournament's squad plus anyone picked (e.g. added by mobile number);
   // the whole player list is too long to show. Saving puts picks in the squad.
-  const listedIds = [...new Set([...tournament.playerIds, ...picked])];
+  const listedIds = [...new Set([...tournament.playerIds, ...picked])].filter((id) => !onOtherTeam(id));
+  const hiddenCount = new Set([...tournament.playerIds, ...picked]).size - listedIds.length;
   const visible = (players ?? []).filter(
     (player) => listedIds.includes(player.id) && player.name.toLowerCase().includes(search.trim().toLowerCase()),
   );
@@ -180,26 +187,25 @@ export function TeamForm({
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
+      {hiddenCount > 0 && (
+        <small className="admin-hint d-block mb-2">
+          {hiddenCount} player{hiddenCount === 1 ? " is" : "s are"} already on other teams, so not listed.
+        </small>
+      )}
       <div className="cricket-player-card-list cricket-team-pick-list">
         {visible.length === 0 ? (
           <div className="admin-empty-state">
-            {listedIds.length ? "No players match." : "No players yet — add them by mobile number above."}
+            {listedIds.length
+              ? "No players match."
+              : hiddenCount
+                ? "Everyone in the squad is already on a team — add more by mobile number above."
+                : "No players yet — add them by mobile number above."}
           </div>
         ) : (
           visible.map((player) => {
             const isPicked = picked.includes(player.id);
-            const otherTeam = onTeam.get(player.id);
-            const taken = otherTeam !== undefined && otherTeam !== index;
             return (
-              <PlayerCard
-                key={player.id}
-                player={player}
-                selected={isPicked}
-                disabled={taken}
-                tag={taken ? tournament.teams[otherTeam].name : undefined}
-                title={taken ? `Already on ${tournament.teams[otherTeam].name}` : undefined}
-                onClick={() => toggle(player.id)}
-              >
+              <PlayerCard key={player.id} player={player} selected={isPicked} onClick={() => toggle(player.id)}>
                 <TeamRoleChips roles={roles} playerId={player.id} playerName={player.name} onChange={setRoles} />
               </PlayerCard>
             );

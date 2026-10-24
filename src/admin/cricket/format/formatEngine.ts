@@ -26,10 +26,37 @@ const isFinished = (match: CricketMatch) => match.status === "completed" || matc
 export const groupMatches = (phase: CricketPhase, group: CricketPhaseGroup, matches: CricketMatch[]) =>
   matches.filter((match) => match.phaseId === phase.id && match.group === group.name);
 
-// Matches a group plays in full: every pair `legs` times (a series: its length).
+// Matches a group plays in full: every pair `legs` times, or each team its
+// set number (a series: its length). A group still waiting on its teams
+// counts the places it will fill.
 export function expectedMatches(phase: CricketPhase, group: CricketPhaseGroup) {
-  const n = group.teamIndexes.length;
-  return phase.kind === "series" ? phase.legs : ((n * (n - 1)) / 2) * phase.legs;
+  const n = Math.max(group.teamIndexes.length, group.seeds.length);
+  if (phase.kind === "series") return phase.legs;
+  if (phase.matchesPerTeam) return (n * phase.matchesPerTeam) / 2;
+  return ((n * (n - 1)) / 2) * phase.legs;
+}
+
+// Every match the format comes to: each group's, each series' (all its
+// matches, even if it's decided early) and every bracket slot.
+export function formatMatchCount(format: CricketFormat) {
+  return format.phases.reduce(
+    (total, phase) =>
+      total +
+      (phase.kind === "knockout"
+        ? phase.slots.length
+        : phase.groups.reduce((sum, group) => sum + expectedMatches(phase, group), 0)),
+    0,
+  );
+}
+
+// The match counts every team can be held to across these groups: fewer
+// than a full round (n − 1), and only even ones when a group has an odd
+// number of teams, as otherwise someone would have to play one fewer.
+export function matchesPerTeamChoices(groups: number[][]) {
+  const sizes = groups.map((group) => group.length);
+  const evenOnly = sizes.some((n) => n % 2 === 1);
+  const most = Math.min(...sizes) - 2;
+  return Array.from({ length: Math.max(0, most) }, (_, i) => i + 1).filter((count) => !evenOnly || count % 2 === 0);
 }
 
 // The format's matches in a phase's slot (knockout or series), if scheduled.
@@ -204,6 +231,38 @@ export function roundRobinRounds(teams: number[], legs: number): [number, number
   return all;
 }
 
+// Rounds in which each team plays `count` matches, never the same opponent
+// twice: the circle method's first rounds for an even number of teams. For
+// an odd number (count is then even), each team plays the count / 2 teams
+// either side of it in the list, dealt into rounds so nobody plays twice
+// in one.
+export function partialRounds(teams: number[], count: number): [number, number][][] {
+  if (teams.length % 2 === 0) return roundRobinRounds(teams, 1).slice(0, count);
+  const n = teams.length;
+  const pending: [number, number][] = [];
+  for (let gap = 1; gap <= count / 2; gap += 1) {
+    for (let i = 0; i < n; i += 1) pending.push([teams[i], teams[(i + gap) % n]]);
+  }
+  const rounds: [number, number][][] = [];
+  while (pending.length > 0) {
+    const busy = new Set<number>();
+    const pairs: [number, number][] = [];
+    for (let i = 0; i < pending.length; ) {
+      const [a, b] = pending[i];
+      if (busy.has(a) || busy.has(b)) {
+        i += 1;
+        continue;
+      }
+      busy.add(a);
+      busy.add(b);
+      pairs.push([a, b]);
+      pending.splice(i, 1);
+    }
+    rounds.push(pairs);
+  }
+  return rounds;
+}
+
 // The stage a round-robin phase's matches are labelled with.
 function roundRobinStage(format: CricketFormat, phase: CricketPhase): CricketMatchStage {
   if (format.phases.indexOf(phase) > 0) return "super-league";
@@ -227,7 +286,11 @@ export function groupFixtures(format: CricketFormat, phase: CricketPhase, groups
     }));
   }
   const stage = roundRobinStage(format, phase);
-  const perGroup = groups.map((group) => roundRobinRounds(group.teamIndexes, phase.legs));
+  const perGroup = groups.map((group) =>
+    phase.matchesPerTeam
+      ? partialRounds(group.teamIndexes, phase.matchesPerTeam)
+      : roundRobinRounds(group.teamIndexes, phase.legs),
+  );
   const fixtures: Fixture[] = [];
   const roundCount = Math.max(0, ...perGroup.map((rounds) => rounds.length));
   for (let round = 0; round < roundCount; round += 1) {

@@ -169,6 +169,9 @@ export interface CricketPhase {
   groups: CricketPhaseGroup[];
   // Round-robin: times each pair meets; series: its matches.
   legs: number;
+  // Round-robin: each team plays just this many (fewer than everyone once,
+  // legs 1), no opponent twice. Missing / null = everyone, `legs` times.
+  matchesPerTeam?: number | null;
   // Round-robin: how many from each group go through.
   qualify: number;
   // Super league: results between its teams in the earlier phase count.

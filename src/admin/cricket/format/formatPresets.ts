@@ -22,6 +22,8 @@ export type PresetId =
 export interface PresetOptions {
   // Times each pair meets in the league / groups.
   legs: number;
+  // Instead: each team plays just this many league / group matches.
+  matchesPerTeam: number | null;
   groupCount: number;
   // Per group, who goes through.
   qualify: number;
@@ -42,7 +44,7 @@ export interface Preset {
   defaults: (teamCount: number) => PresetOptions;
 }
 
-const base: PresetOptions = { legs: 1, groupCount: 1, qualify: 0, seriesLength: 3, thirdPlace: false };
+const base: PresetOptions = { legs: 1, matchesPerTeam: null, groupCount: 1, qualify: 0, seriesLength: 3, thirdPlace: false };
 
 const atLeast = (min: number) => (teamCount: number) => (teamCount < min ? `Needs at least ${min} teams` : null);
 
@@ -303,6 +305,10 @@ export function buildFormat(id: PresetId, options: PresetOptions, groups: number
     case "series":
       phases = [{ ...roundRobin("p1", `${options.seriesLength}-match series`, groups, options.seriesLength, 1), kind: "series" }];
       break;
+  }
+  // A set number of matches per team applies to the opening league / groups.
+  if (options.matchesPerTeam && phases[0].kind === "round-robin") {
+    phases[0] = { ...phases[0], legs: 1, matchesPerTeam: options.matchesPerTeam };
   }
   return { preset: id, phases };
 }

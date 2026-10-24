@@ -12,7 +12,16 @@ import { Button } from "../../components/Button";
 import { Loader } from "../../components/Loader";
 import { confirmAction } from "../../components/confirmDelete";
 import { BracketChart } from "./BracketChart";
-import { laterRoundDays, makeResolver, openingFixtures, planSchedule, type ScheduleOptions } from "./formatEngine";
+import {
+  expectedMatches,
+  formatMatchCount,
+  laterRoundDays,
+  makeResolver,
+  matchesPerTeamChoices,
+  openingFixtures,
+  planSchedule,
+  type ScheduleOptions,
+} from "./formatEngine";
 import { buildFormat, GROUP_NAMES, PRESETS, presetOf, snakeGroups, type PresetId, type PresetOptions } from "./formatPresets";
 import { defaultSchedule, prefsOf, ScheduleFields } from "./ScheduleFields";
 import "./format.css";
@@ -136,6 +145,8 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
   });
   const [when, setWhen] = useState<ScheduleOptions>(() => defaultSchedule(tournament));
   const [reserveEdited, setReserveEdited] = useState(false);
+  // Most matches the whole tournament may come to (null = no limit).
+  const [maxTotal, setMaxTotal] = useState<number | null>(null);
   const preset = presetOf(presetId)!;
 
   function pickPreset(next: PresetId) {
@@ -165,7 +176,47 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
         : null
     : null;
 
-  const format = useMemo(() => buildFormat(presetId, options, lineUp), [presetId, options, lineUp]);
+  // How the league / groups are played: everyone once or twice, or each team
+  // a set number of matches (the counts this line-up allows).
+  const roundRobinFirst = presetId !== "series" && presetId !== "knockout";
+  const perTeamChoices = roundRobinFirst ? matchesPerTeamChoices(lineUp) : [];
+  const oddGroup = lineUp.some((group) => group.length % 2 === 1);
+  const plays: Pick<PresetOptions, "legs" | "matchesPerTeam">[] = [
+    { legs: 2, matchesPerTeam: null },
+    { legs: 1, matchesPerTeam: null },
+    ...[...perTeamChoices].reverse().map((count) => ({ legs: 1, matchesPerTeam: count })),
+  ];
+  const formatWith = (play: Pick<PresetOptions, "legs" | "matchesPerTeam">) => buildFormat(presetId, { ...options, ...play }, lineUp);
+  // Under a limit, the most matches that fit; otherwise the organiser's
+  // choice, a set count that no longer fits the line-up dropping to the
+  // nearest one below.
+  const limited = roundRobinFirst && maxTotal !== null;
+  const underLimit = limited ? plays.find((play) => formatMatchCount(formatWith(play)) <= maxTotal) : undefined;
+  const play = limited
+    ? (underLimit ?? plays[plays.length - 1])
+    : {
+        legs: options.legs,
+        matchesPerTeam:
+          options.matchesPerTeam === null ? null : ([...perTeamChoices].reverse().find((count) => count <= options.matchesPerTeam!) ?? null),
+      };
+  const format = formatWith(play);
+  const totalMatches = formatMatchCount(format);
+  const openingMatches = format.phases[0].groups.reduce((sum, group) => sum + expectedMatches(format.phases[0], group), 0);
+  const limitError =
+    limited && !underLimit ? `Even the fewest matches this format allows come to ${totalMatches}, over the limit of ${maxTotal}.` : null;
+
+  function choosePlay(next: Pick<PresetOptions, "legs" | "matchesPerTeam">) {
+    setMaxTotal(null);
+    setOptions({ ...options, ...next });
+  }
+
+  // "7 matches each", or a full round's count (a range when groups differ).
+  const perTeamLabel = (() => {
+    if (format.phases[0].kind !== "round-robin") return null;
+    if (play.matchesPerTeam) return `${play.matchesPerTeam} matches each`;
+    const counts = [...new Set(lineUp.map((group) => (group.length - 1) * play.legs))].sort((a, b) => a - b);
+    return `${counts.join(" or ")} matches each`;
+  })();
   // Days kept free for the later rounds follow the format until the
   // organiser sets them.
   const laterDays = laterRoundDays(format, 0);
@@ -254,15 +305,34 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
           />
         ) : (
           presetId !== "knockout" && (
-            <OptionRow
-              label={preset.usesGroups ? "In the groups, teams play each other" : "Teams play each other"}
-              value={options.legs}
-              options={[
-                { value: 1, label: "Once" },
-                { value: 2, label: "Twice (home & away)" },
-              ]}
-              onChange={(n) => setOption("legs", n)}
-            />
+            <>
+              <OptionRow
+                label={preset.usesGroups ? "In the groups, teams play" : "In the league, teams play"}
+                value={play.matchesPerTeam ? 0 : play.legs}
+                options={[
+                  { value: 1, label: "Everyone once" },
+                  { value: 2, label: "Everyone twice" },
+                  ...(perTeamChoices.length ? [{ value: 0, label: "Set number of matches" }] : []),
+                ]}
+                onChange={(n) =>
+                  choosePlay(n ? { legs: n, matchesPerTeam: null } : { legs: 1, matchesPerTeam: perTeamChoices[perTeamChoices.length - 1] })
+                }
+              />
+              {play.matchesPerTeam && (
+                <>
+                  <OptionRow
+                    label="Matches per team"
+                    value={play.matchesPerTeam}
+                    options={perTeamChoices.map((count) => ({ value: count, label: String(count) }))}
+                    onChange={(count) => choosePlay({ legs: 1, matchesPerTeam: count })}
+                  />
+                  <small className="admin-hint d-block mx-1">
+                    No team meets the same opponent twice.
+                    {oddGroup && " With an odd number of teams, only even numbers let every team play the same."}
+                  </small>
+                </>
+              )}
+            </>
           )
         )}
         {preset.usesGroups && (
@@ -294,6 +364,30 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
             onChange={(v) => setOption("thirdPlace", v)}
           />
         )}
+        {roundRobinFirst && (
+          <div className="cricket-app-group mt-3">
+            <label className="cricket-app-row">
+              <span className="cricket-app-row-label">
+                <i className="fa-solid fa-gauge-high" aria-hidden="true"></i> Most matches in all
+              </span>
+              <input
+                type="number"
+                min={1}
+                max={300}
+                placeholder="No limit"
+                value={maxTotal ?? ""}
+                onChange={(e) => setMaxTotal(e.target.value ? Math.min(300, Math.max(1, Math.floor(Number(e.target.value)) || 1)) : null)}
+              />
+            </label>
+          </div>
+        )}
+        <p className="admin-hint mt-2 mb-0 mx-1">
+          {perTeamLabel && `${format.phases[0].name}: ${perTeamLabel}, ${openingMatches} matches. `}
+          <strong>{totalMatches} matches in all</strong>
+          {totalMatches > openingMatches && ` including ${totalMatches - openingMatches} in the later rounds`}
+          {limited && underLimit && ` — the most that fit under ${maxTotal}`}.
+        </p>
+        {limitError && <div className="admin-banner admin-banner-error mt-2">{limitError}</div>}
       </ListCard>
 
       {preset.usesGroups && (
@@ -420,7 +514,7 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
             Remove format
           </Button>
         )}
-        <Button variant="primary" disabled={Boolean(lineUpError || plan.problem) || setFormat.isPending} onClick={save}>
+        <Button variant="primary" disabled={Boolean(lineUpError || limitError || plan.problem) || setFormat.isPending} onClick={save}>
           <i className="fa-solid fa-check" aria-hidden="true"></i>{" "}
           {fixtures.length ? `Save & create ${fixtures.length} matches` : "Save format"}
         </Button>
