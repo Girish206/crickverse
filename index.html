@@ -29,25 +29,41 @@
     <!-- Launch splash. Inline, with the brand colours written out, so it
          paints on the first frame, before the app's code and styles load. -->
     <style>
-      /* Launch screen (markup and script below, in <body>). Timeline: the ball reaches the stumps
-         at 0.85s, the stumps give way to the logo from 1.25s, the name follows,
-         and the whole screen fades out from 2.6s. */
+      /* Launch screen (markup and script below, in <body>). It opens just
+         like the phone's own launch screen for the installed app (the logo
+         centred on the plain background), so that hands over seamlessly.
+         Timeline: the logo gives way to the stumps at 0.35s, the ball is
+         bowled from 0.5s and hits at 1.35s, the logo and name come back
+         from 1.8s, and the whole screen fades out from 3.1s. */
       .cv-splash {
         --cv-sp-ball: 22px;
         --cv-sp-stumps-w: 60px;
         --cv-sp-stumps-h: 100px;
-        /* Vertical centre of the stumps, and of the logo that replaces them */
-        --cv-sp-mid: 40vh;
-        --cv-sp-hit: 0.85s;
+        /* Vertical centre of the stumps and the logo: the screen's centre,
+           where the phone's launch screen shows its icon */
+        --cv-sp-mid: 50vh;
+        --cv-sp-start: 0.5s;
+        --cv-sp-hit: 1.35s;
         position: fixed;
         inset: 0;
         z-index: 3000;
         overflow: hidden;
-        background:
-          radial-gradient(circle at 50% 40%, rgba(215, 38, 30, 0.22), transparent 55%),
-          #0f1012;
+        background: #0f1012;
         cursor: pointer;
-        animation: cvSplashOut 0.4s ease-in 2.6s forwards;
+        animation: cvSplashOut 0.4s ease-in 3.1s forwards;
+      }
+
+      /* The glow fades in, so the first frame is the plain background */
+      .cv-splash::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 50% 50%, rgba(215, 38, 30, 0.22), transparent 55%);
+        animation: cvSplashGlow 0.6s ease-out 0.35s both;
+      }
+
+      @keyframes cvSplashGlow {
+        from { opacity: 0; }
       }
 
       @keyframes cvSplashOut {
@@ -62,11 +78,11 @@
         position: absolute;
         top: 0;
         left: 0;
-        animation: cvSplashBallX var(--cv-sp-hit) linear forwards;
+        animation: cvSplashBallX 0.85s linear var(--cv-sp-start) both;
       }
 
       .cv-splash-ball-y {
-        animation: cvSplashBallY var(--cv-sp-hit) forwards;
+        animation: cvSplashBallY 0.85s var(--cv-sp-start) both;
       }
 
       .cv-splash-ball {
@@ -81,7 +97,7 @@
 
       @keyframes cvSplashBallX {
         from {
-          transform: translateX(calc(-1 * var(--cv-sp-ball)));
+          transform: translateX(calc(-2 * var(--cv-sp-ball)));
         }
         to {
           transform: translateX(calc(50vw - var(--cv-sp-ball) / 2));
@@ -112,7 +128,9 @@
         width: var(--cv-sp-stumps-w);
         height: var(--cv-sp-stumps-h);
         overflow: visible;
-        animation: cvSplashStumpsOut 0.35s ease-in 1.25s forwards;
+        animation:
+          cvSplashStumpsIn 0.3s ease-out 0.35s both,
+          cvSplashStumpsOut 0.35s ease-in 1.75s forwards;
       }
 
       .cv-splash-stump,
@@ -156,6 +174,13 @@
         100% { transform: translate(58px, -40px) rotate(440deg); opacity: 0; }
       }
 
+      @keyframes cvSplashStumpsIn {
+        from {
+          opacity: 0;
+          transform: scale(0.85);
+        }
+      }
+
       @keyframes cvSplashStumpsOut {
         to {
           opacity: 0;
@@ -184,7 +209,7 @@
       /* ---------- The reveal ---------- */
       .cv-splash-brand {
         position: absolute;
-        inset: calc(var(--cv-sp-mid) - 48px) 0 auto;
+        inset: calc(var(--cv-sp-mid) - 64px) 0 auto;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -194,12 +219,20 @@
       }
 
       .cv-splash-logo {
-        width: 96px;
-        height: 96px;
-        margin-bottom: 10px;
-        filter: drop-shadow(0 8px 24px rgba(232, 80, 31, 0.45));
-        opacity: 0;
-        animation: cvSplashLogoIn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 1.3s forwards;
+        width: 128px;
+        height: 128px;
+        margin-bottom: 4px;
+        /* Showing from the first frame, then away while the ball is bowled */
+        animation:
+          cvSplashLogoAway 0.3s ease-in 0.35s forwards,
+          cvSplashLogoIn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 1.8s forwards;
+      }
+
+      @keyframes cvSplashLogoAway {
+        to {
+          opacity: 0;
+          transform: scale(0.7);
+        }
       }
 
       @keyframes cvSplashLogoIn {
@@ -228,7 +261,7 @@
         line-height: 1.2;
         font-size: 2rem;
         color: #f3f4f6;
-        animation-delay: 1.6s;
+        animation-delay: 2.1s;
       }
 
       .cv-splash .cv-splash-name em {
@@ -241,7 +274,7 @@
         line-height: 1;
         font-size: 1.25rem;
         color: #ff5a4e;
-        animation-delay: 1.75s;
+        animation-delay: 2.25s;
       }
 
       @keyframes cvSplashRise {
@@ -340,7 +373,7 @@
         }
         if (seen) return remove();
         var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        setTimeout(remove, reduced ? 1200 : 3000);
+        setTimeout(remove, reduced ? 1200 : 3500);
         splash.addEventListener("click", remove);
       })();
     </script>
