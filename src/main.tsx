@@ -8,7 +8,6 @@ import { router } from "./routes/router";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
 import { showMutationError } from "./api/mutationErrors";
 import { AppToaster } from "./admin/components/AppToaster";
-import SplashScreen from "./admin/components/SplashScreen";
 
 const queryClient = new QueryClient({
   mutationCache: new MutationCache({
@@ -32,7 +31,6 @@ createRoot(document.getElementById("root")!).render(
       <AdminAuthProvider>
         <RouterProvider router={router} />
         <AppToaster />
-        <SplashScreen />
       </AdminAuthProvider>
     </QueryClientProvider>
   </StrictMode>,

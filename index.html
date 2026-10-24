@@ -16,14 +16,334 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Loaded without holding up the first frame (the launch splash). -->
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Baloo+Tamma+2:wght@600;700;800&display=swap"
+      media="print"
+      onload="this.media='all'"
     />
 
     <link rel="stylesheet" href="/assets/css/bootstrap.min.css" />
+
+    <!-- Launch splash. Inline, with the brand colours written out, so it
+         paints on the first frame, before the app's code and styles load. -->
+    <style>
+      /* Launch screen (markup and script below, in <body>). Timeline: the ball reaches the stumps
+         at 0.85s, the stumps give way to the logo from 1.25s, the name follows,
+         and the whole screen fades out from 2.6s. */
+      .cv-splash {
+        --cv-sp-ball: 22px;
+        --cv-sp-stumps-w: 60px;
+        --cv-sp-stumps-h: 100px;
+        /* Vertical centre of the stumps, and of the logo that replaces them */
+        --cv-sp-mid: 40vh;
+        --cv-sp-hit: 0.85s;
+        position: fixed;
+        inset: 0;
+        z-index: 3000;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 50% 40%, rgba(215, 38, 30, 0.22), transparent 55%),
+          #0f1012;
+        cursor: pointer;
+        animation: cvSplashOut 0.4s ease-in 2.6s forwards;
+      }
+
+      @keyframes cvSplashOut {
+        to {
+          opacity: 0;
+          visibility: hidden;
+        }
+      }
+
+      /* ---------- The delivery ---------- */
+      .cv-splash-ball-x {
+        position: absolute;
+        top: 0;
+        left: 0;
+        animation: cvSplashBallX var(--cv-sp-hit) linear forwards;
+      }
+
+      .cv-splash-ball-y {
+        animation: cvSplashBallY var(--cv-sp-hit) forwards;
+      }
+
+      .cv-splash-ball {
+        display: block;
+        width: var(--cv-sp-ball);
+        height: var(--cv-sp-ball);
+        filter: drop-shadow(0 4px 8px rgba(215, 38, 30, 0.55));
+        animation:
+          cvSplashSpin 0.4s linear infinite,
+          cvSplashHide 0.1s linear var(--cv-sp-hit) forwards;
+      }
+
+      @keyframes cvSplashBallX {
+        from {
+          transform: translateX(calc(-1 * var(--cv-sp-ball)));
+        }
+        to {
+          transform: translateX(calc(50vw - var(--cv-sp-ball) / 2));
+        }
+      }
+
+      /* Leaves the bowler's hand, pitches short of the stumps, then rises into
+         the middle stump. */
+      @keyframes cvSplashBallY {
+        0% {
+          transform: translateY(calc(var(--cv-sp-mid) - var(--cv-sp-stumps-h)));
+          animation-timing-function: ease-in;
+        }
+        68% {
+          transform: translateY(calc(var(--cv-sp-mid) + var(--cv-sp-stumps-h) / 2 - var(--cv-sp-ball)));
+          animation-timing-function: ease-out;
+        }
+        100% {
+          transform: translateY(calc(var(--cv-sp-mid) - var(--cv-sp-ball) / 2));
+        }
+      }
+
+      /* ---------- Stumps ---------- */
+      .cv-splash-stumps {
+        position: absolute;
+        left: calc(50% - var(--cv-sp-stumps-w) / 2);
+        top: calc(var(--cv-sp-mid) - var(--cv-sp-stumps-h) / 2);
+        width: var(--cv-sp-stumps-w);
+        height: var(--cv-sp-stumps-h);
+        overflow: visible;
+        animation: cvSplashStumpsOut 0.35s ease-in 1.25s forwards;
+      }
+
+      .cv-splash-stump,
+      .cv-splash-bail {
+        transform-box: fill-box;
+      }
+
+      .cv-splash-stump-mid {
+        transform-origin: 50% 100%;
+        animation: cvSplashStumpShake 0.4s ease-out var(--cv-sp-hit) both;
+      }
+
+      .cv-splash-bail {
+        transform-origin: 50% 50%;
+      }
+
+      .cv-splash-bail-l {
+        animation: cvSplashBailLeft 0.6s ease-out var(--cv-sp-hit) both;
+      }
+
+      .cv-splash-bail-r {
+        animation: cvSplashBailRight 0.6s ease-out var(--cv-sp-hit) both;
+      }
+
+      @keyframes cvSplashStumpShake {
+        0% { transform: rotate(0deg); }
+        25% { transform: rotate(12deg); }
+        55% { transform: rotate(-5deg); }
+        100% { transform: rotate(4deg); }
+      }
+
+      @keyframes cvSplashBailLeft {
+        0% { transform: none; opacity: 1; }
+        50% { transform: translate(-40px, -70px) rotate(-260deg); opacity: 1; }
+        100% { transform: translate(-62px, -24px) rotate(-400deg); opacity: 0; }
+      }
+
+      @keyframes cvSplashBailRight {
+        0% { transform: none; opacity: 1; }
+        50% { transform: translate(36px, -88px) rotate(300deg); opacity: 1; }
+        100% { transform: translate(58px, -40px) rotate(440deg); opacity: 0; }
+      }
+
+      @keyframes cvSplashStumpsOut {
+        to {
+          opacity: 0;
+          transform: scale(0.6);
+        }
+      }
+
+      /* Ring that bursts out of the stumps on impact */
+      .cv-splash-impact {
+        position: absolute;
+        left: calc(50% - 40px);
+        top: calc(var(--cv-sp-mid) - 40px);
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        border: 3px solid rgba(255, 205, 0, 0.9);
+        opacity: 0;
+        animation: cvSplashImpact 0.7s ease-out var(--cv-sp-hit) forwards;
+      }
+
+      @keyframes cvSplashImpact {
+        0% { transform: scale(0.2); opacity: 0.9; }
+        100% { transform: scale(3); opacity: 0; }
+      }
+
+      /* ---------- The reveal ---------- */
+      .cv-splash-brand {
+        position: absolute;
+        inset: calc(var(--cv-sp-mid) - 48px) 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        text-align: center;
+        pointer-events: none;
+      }
+
+      .cv-splash-logo {
+        width: 96px;
+        height: 96px;
+        margin-bottom: 10px;
+        filter: drop-shadow(0 8px 24px rgba(232, 80, 31, 0.45));
+        opacity: 0;
+        animation: cvSplashLogoIn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 1.3s forwards;
+      }
+
+      @keyframes cvSplashLogoIn {
+        from {
+          opacity: 0;
+          transform: scale(0.4) rotate(-12deg);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      .cv-splash-name,
+      .cv-splash-kn {
+        opacity: 0;
+        animation: cvSplashRise 0.45s ease-out forwards;
+      }
+
+      .cv-splash .cv-splash-name {
+        font-family: "Outfit", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        font-weight: 800;
+        font-style: italic;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        line-height: 1.2;
+        font-size: 2rem;
+        color: #f3f4f6;
+        animation-delay: 1.6s;
+      }
+
+      .cv-splash .cv-splash-name em {
+        color: #ffcd00;
+      }
+
+      .cv-splash .cv-splash-kn {
+        font-family: "Baloo Tamma 2", "Noto Sans Kannada", "Nirmala UI", system-ui, sans-serif;
+        font-weight: 700;
+        line-height: 1;
+        font-size: 1.25rem;
+        color: #ff5a4e;
+        animation-delay: 1.75s;
+      }
+
+      @keyframes cvSplashRise {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      @keyframes cvSplashSpin {
+        to { transform: rotate(360deg); }
+      }
+
+      @keyframes cvSplashHide {
+        to { opacity: 0; }
+      }
+
+      /* Reduced motion: no delivery, just the logo and name. */
+      @media (prefers-reduced-motion: reduce) {
+        .cv-splash,
+        .cv-splash * {
+          animation: none !important;
+        }
+
+        .cv-splash-ball-x,
+        .cv-splash-stumps,
+        .cv-splash-impact {
+          display: none;
+        }
+
+        .cv-splash-logo,
+        .cv-splash-name,
+        .cv-splash-kn {
+          opacity: 1;
+        }
+      }
+    </style>
   </head>
   <body>
+    <div class="cv-splash" id="cv-splash" aria-hidden="true">
+      <!-- The outer box carries the ball across, the inner one drops it,
+           bounces it and lifts it into the stumps. -->
+      <div class="cv-splash-ball-x">
+        <div class="cv-splash-ball-y">
+          <svg class="cv-splash-ball" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="11" fill="#d7261e" />
+            <path d="M7 3.5q3 8.5 0 17M17 3.5q-3 8.5 0 17" stroke="#fff" stroke-width="1.2" fill="none" stroke-dasharray="1.6 1.4" />
+          </svg>
+        </div>
+      </div>
+
+      <svg class="cv-splash-stumps" viewBox="0 0 60 100">
+        <defs>
+          <linearGradient id="cv-splash-stump" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#ffd23f" />
+            <stop offset="0.45" stop-color="#ff7a1f" />
+            <stop offset="1" stop-color="#d7261e" />
+          </linearGradient>
+        </defs>
+        <g fill="url(#cv-splash-stump)">
+          <rect class="cv-splash-stump" x="10" y="14" width="6" height="86" rx="2" />
+          <rect class="cv-splash-stump cv-splash-stump-mid" x="27" y="14" width="6" height="86" rx="2" />
+          <rect class="cv-splash-stump" x="44" y="14" width="6" height="86" rx="2" />
+        </g>
+        <g fill="#ffc400">
+          <rect class="cv-splash-bail cv-splash-bail-l" x="9" y="8" width="23" height="4" rx="2" />
+          <rect class="cv-splash-bail cv-splash-bail-r" x="28" y="8" width="23" height="4" rx="2" />
+        </g>
+      </svg>
+      <span class="cv-splash-impact"></span>
+
+      <div class="cv-splash-brand">
+        <img src="/favicon.svg" alt="" class="cv-splash-logo" />
+        <span class="cv-splash-name">Namma <em>Aaata</em></span>
+        <span class="cv-splash-kn" lang="kn">ನಮ್ಮ ಆಟ</span>
+      </div>
+    </div>
+    <script>
+      // Once per browser session; a tap skips it. Runs before the first
+      // paint, so a repeat visit never flashes it.
+      (function () {
+        var splash = document.getElementById("cv-splash");
+        var remove = function () {
+          if (splash.parentNode) splash.parentNode.removeChild(splash);
+        };
+        var seen = false;
+        try {
+          seen = sessionStorage.getItem("cv-splash-seen") === "1";
+          sessionStorage.setItem("cv-splash-seen", "1");
+        } catch (e) {
+          // Private mode: it just shows again next time.
+        }
+        if (seen) return remove();
+        var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        setTimeout(remove, reduced ? 1200 : 3000);
+        splash.addEventListener("click", remove);
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
