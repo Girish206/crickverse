@@ -24,10 +24,12 @@
   --adm-text: #f3f4f6;
   --adm-text-2: #c9ccd2;
 
-  /* Brand: the vivid orange reads on the dark base (deep orange is too dark). */
-  --primary: var(--brand-orange);
-  --primary-rgb: var(--brand-orange-rgb);
-  --primary-gradient: var(--brand-gradient-night);
+  /* Brand: the lighter maroon — the plain one is too dark to read on the
+     charcoal. Buttons and highlights use the night-sky maroon gradient. */
+  --primary: var(--brand-maroon-bright);
+  --primary-rgb: var(--brand-maroon-bright-rgb);
+  --primary-gradient: var(--brand-gradient-sky-night);
+  --hero-gradient: var(--brand-gradient-sky-night);
   --secondary: var(--brand-amber-bright);
 
   /* "light" tints are used as soft backgrounds → mix into the surface;
@@ -64,6 +66,8 @@
   --logo-crimson-light: color-mix(in srgb, var(--brand-crimson) 10%, var(--adm-bg));
   --logo-orange-light: color-mix(in srgb, var(--brand-orange) 8%, var(--adm-bg));
   --logo-gold-light: color-mix(in srgb, var(--brand-amber) 6%, var(--adm-bg));
+  --layout-bg-top: #141518;
+  --layout-bg-bottom: var(--adm-bg);
 
   /* Legacy template variables still read by admin.css */
   --black: var(--adm-text);
@@ -86,7 +90,7 @@
   --bs-tertiary-bg: #12143a;
   --bs-border-color: var(--adm-line-strong);
   --bs-border-color-translucent: var(--adm-line);
-  --bs-link-color: var(--brand-orange-bright);
+  --bs-link-color: var(--brand-maroon-bright);
   --bs-link-hover-color: var(--brand-amber-bright);
 }
 
@@ -100,8 +104,13 @@
 :root[data-bs-theme="dark"] .layout-wrapper[class*="bg-"] {
   --bg-overlay: linear-gradient(rgba(15, 16, 18, 0.82), rgba(15, 16, 18, 0.82));
 }
+:root[data-bs-theme="dark"] .cricket-home-hero {
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: 3px solid rgba(var(--brand-amber-rgb), 0.6);
+  box-shadow: 0 14px 30px -18px rgba(var(--brand-crimson-rgb), 0.35);
+}
 :root[data-bs-theme="dark"] .admin-bg-shape {
-  opacity: 0.55;
+  opacity: 0.7;
 }
 :root[data-bs-theme="dark"] .text-dark {
   color: var(--adm-text) !important;
@@ -527,8 +536,21 @@
 }
 
 :root[data-bs-theme="dark"] .sidebar .sidebar-footer .logout-btn {
-  color: #ff6b85 !important;
-  border-color: rgba(255, 107, 133, 0.3);
+  color: var(--primary) !important;
+  border-color: rgba(var(--primary-rgb), 0.3);
+}
+:root[data-bs-theme="dark"] .sidebar .sidebar-footer .logout-btn:hover {
+  background: var(--primary-gradient) !important;
+  border-color: rgba(var(--primary-rgb), 0.45);
+}
+/* Active menu item: the light theme's primary → primary-dark-1 tile turns
+   salmon here (dark-1 mixes towards white), so use the maroon gradient. */
+:root[data-bs-theme="dark"] .sidebar-open .nav-item.active > .nav-link i.icon {
+  background: var(--primary-gradient);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+:root[data-bs-theme="dark"] .sidebar-open .nav-item.active > .nav-link {
+  color: var(--adm-text) !important;
 }
 :root[data-bs-theme="dark"] .sidebar .sidebar-footer .logout-btn:hover {
   color: #ffffff !important;

@@ -17,8 +17,8 @@ import { ModalForm } from "../../components/ModalForm";
 import { SubmitButton } from "../../components/SubmitButton";
 import { confirmAction } from "../../components/confirmDelete";
 import InputComp from "../../dms/components/InputComp";
-import SelectInput from "../../dms/components/SelectInput";
 import TextareaInput from "../../dms/components/TextareaInput";
+import { ChipChoice } from "../CricketChoices";
 import { PLAYER_ROLES } from "../playerRoles";
 import { formatMobile, normalizeMobile } from "../mobile";
 import { PlayerAvatar } from "./PlayerAvatar";
@@ -140,11 +140,11 @@ export function CricketPlayerForm({ id, onSaved }: CricketPlayerFormProps) {
         name="role"
         control={control}
         render={({ field }) => (
-          <SelectInput
-            label="Role"
+          <ChipChoice
+            label="Playing role"
             options={PLAYER_ROLES.map((role) => ({ value: role.value, label: role.label }))}
-            value={field.value ?? ""}
-            onChange={(value) => field.onChange(value || null)}
+            value={field.value as CricketPlayerRole | null}
+            onChange={field.onChange}
           />
         )}
       />

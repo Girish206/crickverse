@@ -73,7 +73,7 @@ export function CricketPlayerProfile({
     <div className={`cricket-profile ${cards ? "is-cards" : ""}`.trim()}>
       <div className={`cricket-profile-head ${cards ? "cricket-stat-card" : ""}`.trim()}>
         <div className="cricket-profile-top">
-          <PlayerAvatar name={player.name} photoUrl={player.photoUrl} className="cricket-player-avatar is-large" />
+          <PlayerAvatar name={player.name} photoUrl={player.photoUrl} className="cricket-player-avatar is-large" viewable />
           <div className="cricket-profile-name">
             <h3>{player.name}</h3>
             <span className="cricket-profile-role">{role ? role.label : "Role not set"}</span>

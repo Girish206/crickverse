@@ -1,16 +1,19 @@
 import { useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { isAxiosError } from "axios";
 import { NoCricketAccessError, useAdminAuth } from "../context/AdminAuthContext";
 import InputComp from "./dms/components/InputComp";
 import CustomButton from "./dms/components/CustomButton";
 import { AuthShell } from "./AuthShell";
 
-// Namma Aaata sign-in: players use their mobile number; organisers can also
+// CricDesk sign-in: players use their mobile number; organisers can also
 // use their email. Signing in once keeps them signed in on this device.
 export function AdminLoginPage() {
   const { login } = useAdminAuth();
   const navigate = useNavigate();
+  // The page they were sent here from (a shared link), only ever in-app.
+  const from = (useLocation().state as { from?: string } | null)?.from;
+  const backTo = from?.startsWith("/") && !from.startsWith("//") ? from : "/";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,7 +27,7 @@ export function AdminLoginPage() {
     setLoading(true);
     try {
       await login(email, password);
-      navigate("/", { replace: true });
+      navigate(backTo, { replace: true });
     } catch (err) {
       // Added to a team by an organiser, but no password yet: go set one.
       if (isAxiosError(err) && err.response?.data?.error?.code === "NO_PASSWORD") {

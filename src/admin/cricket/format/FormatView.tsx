@@ -199,7 +199,7 @@ function GroupTables({
         const own = groupMatches(phase, group, matches);
         const played = own.filter((match) => match.status === "completed" || match.status === "abandoned").length;
         return (
-          <div key={group.name} className="cricket-group">
+          <div key={group.name} className="cricket-group cricket-standings">
             {phase.groups.length > 1 && <h4>Group {group.name}</h4>}
             <StandingsTable
               rows={groupTable(tournament, format, phase, group, matches)}

@@ -1,0 +1,177 @@
+/* Tips (TipsTour.tsx): the screen dims except for a hole around the control
+   being explained, with a card next to it. */
+.cv-tips {
+  position: fixed;
+  inset: 0;
+  z-index: 1080;
+  animation: cricket-fade 0.18s ease;
+}
+.cv-tips-blocker {
+  position: absolute;
+  inset: 0;
+}
+.cv-tips-dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 16, 18, 0.62);
+}
+/* The hole: its huge shadow is the dimmed screen around it. */
+.cv-tips-spot {
+  position: fixed;
+  border-radius: 14px;
+  box-shadow:
+    0 0 0 3px var(--secondary),
+    0 0 0 9999px rgba(15, 16, 18, 0.62);
+  pointer-events: none;
+  transition:
+    top 0.25s ease,
+    left 0.25s ease,
+    width 0.25s ease,
+    height 0.25s ease;
+}
+.cv-tips-spot::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  border: 3px solid var(--secondary);
+  animation: cv-tips-pulse 1.6s ease-out infinite;
+}
+@keyframes cv-tips-pulse {
+  from {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.12);
+  }
+}
+
+.cv-tip-card {
+  position: fixed;
+  padding: 14px 16px 12px;
+  border-radius: 16px;
+  background: var(--adm-surface, #fff);
+  color: var(--theme-text-dark);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+  transition:
+    top 0.25s ease,
+    left 0.25s ease;
+}
+.cv-tip-arrow {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  background: inherit;
+  transform: rotate(45deg);
+}
+.cv-tip-card.is-below .cv-tip-arrow {
+  top: -7px;
+}
+.cv-tip-card.is-above .cv-tip-arrow {
+  bottom: -7px;
+}
+.cv-tip-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.cv-tip-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(var(--secondary-rgb), 0.2);
+  color: var(--secondary-dark-2);
+}
+.cv-tip-head strong {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-md);
+}
+.cv-tip-head small {
+  flex: none;
+  color: var(--muted-color);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+.cv-tip-card p {
+  margin: 0 0 12px;
+  color: var(--muted-color);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+.cv-tip-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cv-tip-dots {
+  flex: 1;
+  display: flex;
+  gap: 5px;
+}
+.cv-tip-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--border-color);
+  transition: width 0.2s ease;
+}
+.cv-tip-dots span.is-on {
+  width: 16px;
+  background: var(--primary);
+}
+.cv-tip-skip,
+.cv-tip-back,
+.cv-tip-next {
+  height: 34px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+.cv-tip-skip {
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: var(--muted-color);
+}
+.cv-tip-back {
+  width: 34px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--theme-text-dark);
+}
+.cv-tip-next {
+  padding: 0 18px;
+  border: 0;
+  background: var(--primary);
+  color: #fff;
+}
+.cv-tip-next:focus-visible,
+.cv-tip-back:focus-visible,
+.cv-tip-skip:focus-visible {
+  outline: 2px solid var(--secondary);
+  outline-offset: 2px;
+}
+
+:root[data-bs-theme="dark"] .cv-tip-icon {
+  color: var(--secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cv-tips-spot,
+  .cv-tip-card {
+    transition: none;
+  }
+  .cv-tips-spot::after {
+    animation: none;
+  }
+}

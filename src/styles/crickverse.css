@@ -1,4 +1,4 @@
-/* Namma Aaata typography and brand touches on top of the shared admin shell.
+/* CricDesk typography and brand touches on top of the shared admin shell.
    Colours live in brand.css; this file only sets fonts, the wordmark and
    the look of the big numbers. One family (Outfit) for everything. */
 
@@ -73,8 +73,8 @@ textarea {
   font-variant-numeric: tabular-nums;
 }
 
-/* Wordmark in the navbar: "Namma" in text colour, "Aaata" in the primary
-   colour (flag yellow on the dark theme), with the Kannada name beneath. */
+/* Wordmark in the navbar: "Cric" in text colour, "Desk" in the primary
+   colour (flag yellow on the dark theme). */
 .cv-wordmark {
   font-family: var(--cv-display);
   font-size: var(--fs-xl);

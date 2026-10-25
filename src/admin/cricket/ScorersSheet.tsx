@@ -39,15 +39,13 @@ export function ScorersSheet({
     .map((squad) => ({ ...squad, playerIds: squad.playerIds.filter((id) => !handOver?.excludeIds.includes(id)) }))
     .filter((squad) => squad.playerIds.length > 0);
   // Picked from the squads (already added ones show as Added), or found
-  // by mobile number — whose list shows the scorers outside the squads.
+  // by mobile number; everyone added is listed at the top.
   type Mode = "squad" | "mobile";
   const [mode, setMode] = useState<Mode>(pickable.length > 0 ? "squad" : "mobile");
   const modes: { value: Mode; label: string; icon: string }[] = [
     ...(pickable.length > 0 ? [{ value: "squad" as const, label: "From squads", icon: "fa-people-group" }] : []),
     { value: "mobile", label: "Mobile number", icon: "fa-mobile-screen" },
   ];
-  const inSquads = new Set(pickable.flatMap((squad) => squad.playerIds));
-  const otherIds = ids.filter((id) => !inSquads.has(id));
   const toggle = (playerId: number) =>
     handOver
       ? void handOver.onPick(playerId).catch(() => undefined) // a failure shows its own toast
@@ -102,7 +100,7 @@ export function ScorersSheet({
   return (
     <BottomSheet
       title={title}
-      icon={handOver ? "fa-solid fa-people-arrows" : "fa-solid fa-user-pen"}
+      icon={handOver ? "fa-solid fa-people-arrows" : "fa-solid fa-clipboard-user"}
       onClose={onClose}
       fullScreen
       footer={
@@ -114,6 +112,35 @@ export function ScorersSheet({
       }
     >
       <p className="admin-hint">{note}</p>
+      {!handOver && (
+        <section className="cricket-scorer-current">
+          <h3 className="cricket-add-player-title">Scorers ({ids.length})</h3>
+          {ids.length === 0 ? (
+            <p className="admin-hint">None yet. Add them from the squads or by mobile number below.</p>
+          ) : (
+            <div className="cricket-scorer-chips">
+              {ids.map((id) => {
+                const player = playerById.get(id);
+                const name = player?.name ?? "Player";
+                return (
+                  <span key={id} className="cricket-scorer-chip is-removable">
+                    <PlayerAvatar name={name} photoUrl={player?.photoUrl} className="cricket-scorer-chip-avatar" />
+                    <span className="cricket-scorer-chip-name">{name}</span>
+                    <button
+                      type="button"
+                      aria-label={`Remove ${name}`}
+                      title={`Remove ${name}`}
+                      onClick={() => setIds((current) => current.filter((other) => other !== id))}
+                    >
+                      <i className="fa-solid fa-xmark" aria-hidden="true"></i>
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
       {modes.length > 1 && (
         <div className="admin-segmented cricket-tabs cricket-scorer-mode" role="tablist" aria-label="Add a scorer by">
           {modes.map((m) => (
@@ -222,35 +249,6 @@ export function ScorersSheet({
             </div>
           )}
         </form>
-      )}
-      {!handOver && mode === "mobile" && otherIds.length > 0 && (
-        <>
-          <h3 className="cricket-add-player-title">Added by mobile number ({otherIds.length})</h3>
-          <ul className="cricket-roster cricket-add-player-queue">
-            {otherIds.map((id) => {
-              const player = playerById.get(id);
-              const name = player?.name ?? "Player";
-              const role = roleOf(player?.role ?? null);
-              return (
-                <li key={id}>
-                  <PlayerAvatar name={name} photoUrl={player?.photoUrl} className="cricket-roster-avatar" />
-                  <span className="cricket-roster-who">
-                    <strong>{name}</strong>
-                    {role && <small>{role.label}</small>}
-                  </span>
-                  <button
-                    type="button"
-                    className="cricket-sheet-close"
-                    aria-label={`Remove ${name}`}
-                    onClick={() => setIds((current) => current.filter((other) => other !== id))}
-                  >
-                    <i className="fa-solid fa-xmark" aria-hidden="true"></i>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </>
       )}
     </BottomSheet>
   );

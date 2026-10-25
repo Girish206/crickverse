@@ -112,7 +112,7 @@ const Layout = ({
             )}
 
             {isMainScreen && (
-                <div className="fixed-sidebar sidebar-desktop d-none d-md-block">
+                <div className="fixed-sidebar sidebar-desktop d-none d-md-block" data-tour="nav">
                     <Sidebar
                         activeItem={activeItem}
                         activeSubItem={activeSubItem}

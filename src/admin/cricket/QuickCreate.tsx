@@ -35,6 +35,7 @@ export function QuickCreate() {
         onClick={() => setStep("choose")}
         title="Add a match or tournament"
         aria-label="Add a match or tournament"
+        data-tour="create"
       >
         <i className="fa-solid fa-plus" aria-hidden="true"></i>
       </button>

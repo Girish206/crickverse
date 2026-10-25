@@ -92,7 +92,7 @@ function FollowCard({ to, logo, title, detail, follow }: {
 
 const FOLLOWING_TITLE = {
   title: "Following",
-  icon: "fa-solid fa-star",
+  icon: "fa-solid fa-heart",
   subtitle: "Keep up with the players, teams and tournaments you care about",
 };
 

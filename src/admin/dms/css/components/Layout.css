@@ -19,7 +19,7 @@
       --logo-*-light), instead of the reference DMS app's own stock photo
       (education-bg-1.jpg), which had nothing to do with this site. */
    background-image: var(--bg-overlay, linear-gradient(rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.88))),
-      linear-gradient(135deg, var(--logo-navy-light) 0%, var(--logo-crimson-light) 35%, var(--logo-orange-light) 65%, var(--logo-gold-light) 100%);
+      linear-gradient(170deg, var(--layout-bg-top) 0%, var(--layout-bg-bottom) 100%);
    background-size: cover;
    background-position: center;
    background-attachment: fixed;
@@ -50,10 +50,9 @@
   border-radius: 50%;
   background: radial-gradient(
     circle at 50% 50%,
-    rgba(var(--brand-orange-rgb), 0.32) 0%,
-    rgba(var(--brand-crimson-rgb), 0.18) 38%,
-    rgba(var(--brand-amber-rgb), 0.12) 58%,
-    transparent 72%
+    rgba(var(--brand-orange-rgb), 0.1) 0%,
+    rgba(var(--brand-amber-rgb), 0.06) 40%,
+    transparent 70%
   );
 }
 

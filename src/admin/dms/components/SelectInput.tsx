@@ -50,6 +50,17 @@ const SelectInput: React.FC<SelectProps> = ({
 }) => {
     const sizeClass = `select-${size}`;
     const [isFocused, setIsFocused] = React.useState(false);
+    const wrapperRef = React.useRef<HTMLDivElement>(null);
+    const [menuPlacement, setMenuPlacement] = React.useState<"top" | "bottom">("bottom");
+
+    // react-select's "auto" placement scrolls the page instead of flipping, which
+    // clips the menu inside modals — so pick the side with room on every open.
+    const placeMenu = () => {
+        const rect = wrapperRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        const below = window.innerHeight - rect.bottom;
+        setMenuPlacement(below < 250 && rect.top > below ? "top" : "bottom");
+    };
 
     const hasValue = isMulti
         ? Array.isArray(value) && value.length > 0
@@ -72,7 +83,11 @@ const SelectInput: React.FC<SelectProps> = ({
         isMulti,
         isLoading,
         menuPosition: "absolute" as const,
-        menuPlacement: "auto" as const,
+        menuPlacement,
+        onMenuOpen: placeMenu,
+        // The menu is portaled to <body>; scrolling it "into view" would scroll
+        // the page locked behind an open modal and jam the menu in place.
+        menuShouldScrollIntoView: false,
         onFocus: () => setIsFocused(true),
         onBlur: () => setIsFocused(false),
         styles: {
@@ -124,7 +139,7 @@ const SelectInput: React.FC<SelectProps> = ({
     };
 
     return (
-        <div className={`m-1 text-start ${className}`}>
+        <div ref={wrapperRef} className={`m-1 text-start ${className}`}>
             <div
                 className={`${sizeClass} ${floating ? "form-floating" : ""
                     } select-wrapper`}

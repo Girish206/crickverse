@@ -2234,7 +2234,7 @@
 }
 .cricket-th-cover.is-empty {
   height: 72px;
-  background: var(--primary-gradient);
+  background: var(--hero-gradient);
 }
 
 /* Pulled up so about half of it sits on the cover. Solid surface, so the
@@ -3203,7 +3203,17 @@
   }
 }
 
-/* Scorers sheet: how to add one (squads / mobile), then each squad. */
+/* Scorers sheet: who's a scorer now, how to add one (squads / mobile),
+   then each squad. */
+.cricket-scorer-current {
+  margin-bottom: 14px;
+}
+.cricket-scorer-current .admin-hint {
+  margin: 0;
+}
+.cricket-scorer-current .cricket-scorer-chips {
+  gap: 8px;
+}
 .cricket-scorer-mode {
   margin-bottom: 12px;
 }
@@ -3662,6 +3672,32 @@
   color: var(--primary);
   font-size: var(--fs-sm);
   font-weight: 600;
+}
+/* Share squad sheet (ShareSquadSheet.tsx): the card preview, then actions. */
+.cricket-squad-share img,
+.cricket-squad-share-loading {
+  display: block;
+  width: 100%;
+  max-width: 400px;
+  aspect-ratio: 1;
+  margin: 0 auto;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+/* Cards can be taller than square (a long fixture list). */
+.cricket-squad-share img {
+  aspect-ratio: auto;
+  height: auto;
+}
+.cricket-squad-share-loading {
+  background: linear-gradient(135deg, #3a1216, #140607);
+}
+.cricket-squad-share-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
 }
 .cricket-roster-pick {
   flex: 1;
@@ -4570,6 +4606,20 @@ span.cricket-pick-tile-photo {
   width: 100%;
   text-align: left;
 }
+/* The figures get even, roomy columns, so the team column (which takes the
+   rest) doesn't squeeze them together. */
+:root .cricket-standings table.cricket-standings-table :is(th, td):not(.is-rank, .is-team) {
+  width: 44px;
+  min-width: 44px;
+}
+:root .cricket-standings table.cricket-standings-table :is(th, td).is-points {
+  width: 52px;
+  min-width: 52px;
+}
+:root .cricket-standings table.cricket-standings-table :is(th, td):last-child {
+  width: 76px;
+  min-width: 76px;
+}
 .cricket-standings-name {
   display: block;
   max-width: clamp(100px, 36vw, 260px);
@@ -4594,14 +4644,99 @@ span.cricket-pick-tile-photo {
 @media (max-width: 560px) {
   :root .cricket-standings table.cricket-standings-table th,
   :root .cricket-standings table.cricket-standings-table td {
-    padding: 10px 4px !important;
+    padding: 9px 3px !important;
   }
   :root .cricket-standings table.cricket-standings-table .is-rank {
-    padding-left: 10px !important;
+    width: 28px;
+    padding-left: 8px !important;
+  }
+  :root .cricket-standings table.cricket-standings-table .is-optional {
+    display: none;
+  }
+  :root .cricket-standings table.cricket-standings-table :is(th, td):not(.is-rank, .is-team) {
+    width: 30px;
+    min-width: 30px;
+  }
+  :root .cricket-standings table.cricket-standings-table :is(th, td).is-points {
+    width: 38px;
+    min-width: 38px;
+  }
+  :root .cricket-standings table.cricket-standings-table :is(th, td):last-child {
+    width: 62px;
+    min-width: 62px;
+  }
+  /* The team column takes what the numbers leave; a long name wraps to a
+     second line rather than ending in "…". */
+  :root .cricket-standings table.cricket-standings-table td.is-team {
+    white-space: normal;
+  }
+  .cricket-standings .cricket-standings-name {
+    max-width: none;
+    gap: 5px;
+    white-space: normal;
+  }
+  /* Smaller rank, initial, Q and arrow, so the name gets the room. */
+  .cricket-standings .cricket-standings-rank {
+    width: 20px;
+    height: 20px;
+  }
+  .cricket-standings .cricket-standings-logo {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    font-size: 0.65rem;
+  }
+  .cricket-standings .cricket-q-tag {
+    width: 15px;
+    height: 15px;
+    margin-left: 0;
+    font-size: 0.55rem;
+  }
+  .cricket-standings .cricket-expand-icon {
+    font-size: 0.6rem;
+  }
+  .cricket-standings .cricket-standings-label {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.25;
+    overflow-wrap: break-word;
   }
   :root .cricket-standings table.cricket-standings-table th:last-child,
   :root .cricket-standings table.cricket-standings-table td:last-child {
     padding-right: 10px !important;
+  }
+}
+/* The smallest phones: the team initial goes, so the name has room. */
+@media (max-width: 400px) {
+  .cricket-standings .cricket-standings-logo {
+    display: none;
+  }
+  :root .cricket-standings table.cricket-standings-table :is(th, td):not(.is-rank, .is-team) {
+    width: 26px;
+    min-width: 26px;
+  }
+  :root .cricket-standings table.cricket-standings-table :is(th, td).is-points {
+    width: 34px;
+    min-width: 34px;
+  }
+  :root .cricket-standings table.cricket-standings-table :is(th, td):last-child {
+    width: 58px;
+    min-width: 58px;
+  }
+}
+@media (max-width: 360px) {
+  :root .cricket-standings table.cricket-standings-table :is(th, td):not(.is-rank, .is-team) {
+    width: 22px;
+    min-width: 22px;
+  }
+  :root .cricket-standings table.cricket-standings-table :is(th, td).is-points {
+    width: 30px;
+    min-width: 30px;
+  }
+  :root .cricket-standings table.cricket-standings-table :is(th, td):last-child {
+    width: 54px;
+    min-width: 54px;
   }
 }
 
@@ -5118,6 +5253,22 @@ span.cricket-pick-tile-photo {
 }
 .cricket-player-link:hover,
 .cricket-player-link:focus-visible {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+/* A whole roster row's player (photo and name) as the link: laid out like
+   the row, with only the name lighting up. */
+.cricket-player-link.cricket-roster-pick {
+  display: flex;
+}
+.cricket-player-link.cricket-roster-pick:hover,
+.cricket-player-link.cricket-roster-pick:focus-visible {
+  color: inherit;
+  text-decoration: none;
+}
+.cricket-player-link.cricket-roster-pick:hover strong,
+.cricket-player-link.cricket-roster-pick:focus-visible strong {
   color: var(--primary);
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -5670,6 +5821,39 @@ tr.is-open .cricket-expand-icon {
   font-weight: 700;
   object-fit: cover;
 }
+/* Scorers sheet: the same chips, with a remove button. */
+.cricket-scorer-chip.is-removable {
+  padding-right: 3px;
+  background: rgba(var(--primary-rgb), 0.06);
+  border-color: rgba(var(--primary-rgb), 0.25);
+}
+.cricket-scorer-chip-name {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cricket-scorer-chip.is-removable button {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted-color);
+  font-size: var(--fs-xs);
+  cursor: pointer;
+}
+.cricket-scorer-chip.is-removable button:hover,
+.cricket-scorer-chip.is-removable button:focus-visible {
+  background: rgba(220, 38, 38, 0.12);
+  color: var(--danger);
+}
 
 /* ===== Standings table: rank pills, team initials, the points column
    picked out, NRR in green / red; a brighter light theme. ===== */
@@ -5752,4 +5936,216 @@ tbody tr:first-child .cricket-standings-rank {
 .cricket-perf-figure-text {
   color: var(--theme-text-dark);
   font-variant-numeric: tabular-nums;
+}
+
+/* Photos, logos and banners that open full size (ImageViewer). */
+.is-viewable {
+  cursor: zoom-in;
+}
+.cricket-image-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.88);
+  cursor: zoom-out;
+  animation: cricket-image-viewer-in 0.15s ease-out;
+}
+.cricket-image-viewer img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+/* A photo or logo: a circle, about the size of a profile picture. */
+.cricket-image-viewer img.is-round {
+  width: min(72vw, 280px);
+  height: min(72vw, 280px);
+  max-width: none;
+  max-height: none;
+  object-fit: cover;
+  border: 3px solid rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  background: #fff;
+}
+.cricket-image-viewer-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-size: 18px;
+}
+@keyframes cricket-image-viewer-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* The Share sheet (ShareMenu): a preview of what's shared, the link tiles,
+   then the image cards as rows. */
+.cricket-share-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: rgba(var(--primary-rgb), 0.05);
+}
+.cricket-share-preview-pic {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: center / cover no-repeat;
+  color: #fff;
+  font-size: var(--fs-lg);
+  font-weight: 800;
+}
+.cricket-share-preview-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cricket-share-preview-text strong,
+.cricket-share-preview-text small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cricket-share-preview-text small {
+  color: var(--muted-color);
+}
+.cricket-share-preview-copy {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bs-body-bg, #fff);
+  color: var(--primary);
+}
+.cricket-share-preview-copy:hover {
+  border-color: var(--primary);
+}
+.cricket-share-label {
+  margin: 18px 0 10px;
+  color: var(--muted-color);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.cricket-share-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+.cricket-share-tiles button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 2px;
+  border: 0;
+  border-radius: 14px;
+  background: none;
+  color: inherit;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  line-height: 1.2;
+}
+.cricket-share-tiles button > span {
+  width: 54px;
+  height: 54px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 24px;
+  transition: transform 0.12s ease;
+}
+.cricket-share-tiles button:hover > span,
+.cricket-share-tiles button:focus-visible > span {
+  transform: scale(1.06);
+}
+.cricket-share-tiles .is-whatsapp {
+  background: #25d366;
+  font-size: 28px;
+}
+.cricket-share-tiles .is-telegram {
+  background: #229ed9;
+  font-size: 26px;
+}
+.cricket-share-tiles .is-copy {
+  background: var(--primary);
+  font-size: 20px;
+}
+.cricket-share-tiles .is-more {
+  background: rgba(var(--primary-rgb), 0.12);
+  color: var(--theme-text-dark);
+  font-size: 20px;
+}
+.cricket-share-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.cricket-share-rows button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: none;
+  color: inherit;
+  text-align: left;
+}
+.cricket-share-rows button:hover,
+.cricket-share-rows button:focus-visible {
+  border-color: var(--primary);
+  background: rgba(var(--primary-rgb), 0.05);
+}
+.cricket-share-row-icon {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--primary), #e8501f);
+  color: #fff;
+  font-size: 18px;
+}
+.cricket-share-row-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cricket-share-row-text small {
+  color: var(--muted-color);
+}
+.cricket-share-row-go {
+  flex: none;
+  color: var(--muted-color);
 }

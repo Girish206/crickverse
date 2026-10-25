@@ -154,6 +154,9 @@
 /* Group tables side by side when there's room. */
 .cricket-group-tables {
   display: grid;
+  /* minmax(0, …) so a wide table scrolls inside its box instead of
+     stretching the column past a phone's screen. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 }
 @media (min-width: 900px) {
@@ -174,6 +177,7 @@
   border-bottom: 2px dashed rgba(var(--primary-rgb), 0.55) !important;
 }
 .cricket-q-tag {
+  flex: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;

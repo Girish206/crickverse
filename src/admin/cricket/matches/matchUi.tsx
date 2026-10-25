@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import type { CricketMatch, CricketMatchStatus } from "../../../api/types";
 import { avatarColorFor } from "../avatarColor";
-import { formatMatchDate, battingOrder, matchStageLabel, teamScore } from "./matchUtils";
+import { formatMatchDate, battingOrder, matchStageLabel, teamInitials, teamScore } from "./matchUtils";
 
 const STATUS_LABELS: Record<CricketMatchStatus, string> = {
   scheduled: "Upcoming",
@@ -20,11 +20,14 @@ export function MatchStatusBadge({ status }: { status: CricketMatchStatus }) {
   );
 }
 
-// "Test Strikers" → "TS", for the team badge.
-function teamInitials(name: string) {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  const letters = words.length > 1 ? words[0][0] + words[1][0] : (words[0] ?? "?").slice(0, 2);
-  return letters.toUpperCase();
+// Why a card is shown to this viewer (home page): a ribbon across the top,
+// and "mine" cards are tinted so they stand out from followed ones.
+export interface MatchTag {
+  tone: "mine" | "organising" | "following";
+  icon: string;
+  label: string;
+  // Right end of the ribbon, e.g. when an upcoming match starts.
+  aside?: string;
 }
 
 // The fixture/result card used on every match list; opens the match centre.
@@ -32,23 +35,32 @@ export function MatchCard({
   match,
   tournamentName,
   footnote,
+  tag,
 }: {
   match: CricketMatch;
   tournamentName?: string;
   // An extra line at the bottom, e.g. the viewer's own figures.
   footnote?: string | null;
+  tag?: MatchTag;
 }) {
   const navigate = useNavigate();
   const open = () => navigate(`/matches/${match.id}`);
   const decided = match.status === "completed" && match.winner !== null;
   return (
     <div
-      className={`cricket-match-card is-${match.status}`}
+      className={`cricket-match-card is-${match.status}${tag ? ` has-tag is-${tag.tone}` : ""}`}
       role="button"
       tabIndex={0}
       onClick={open}
       onKeyDown={(e) => e.key === "Enter" && open()}
     >
+      {tag && (
+        <div className="cricket-match-card-tag">
+          <i className={tag.icon} aria-hidden="true"></i>
+          <span>{tag.label}</span>
+          {tag.aside && <span className="cricket-match-card-tag-aside">{tag.aside}</span>}
+        </div>
+      )}
       <div className="cricket-match-card-top">
         <span className="cricket-match-card-meta">
           <span className="cricket-match-card-stage">{matchStageLabel(match)}</span>

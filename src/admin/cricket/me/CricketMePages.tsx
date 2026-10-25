@@ -8,11 +8,15 @@ import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { ListCard } from "../../components/ListCard";
 import { CricketKpis } from "../CricketKpis";
 import { PillSelect } from "../PillSelect";
+import { useTips, type TipStep } from "../TipsTour";
 import { MatchesBoard } from "../matches/CricketMatchesList";
+import { MatchCard, type MatchTag } from "../matches/matchUi";
 import { teamKeyOf, usePlayerNames } from "../matches/matchUtils";
 import { CricketPlayerProfile } from "../players/CricketPlayerProfile";
-import { battingCard, bowlingCard, oversText, playerOfMatch } from "../stats";
-import { TeamFootnote, TournamentCard, TournamentsBoard } from "../tournaments/TournamentCard";
+import { battingCard, bowlingCard, oversText, playerOfMatch, playerStats } from "../stats";
+import { TeamFootnote, TournamentCard, TournamentsBoard, tournamentPhase } from "../tournaments/TournamentCard";
+import { PlayerAvatar } from "../players/PlayerAvatar";
+import { roleOf } from "../playerRoles";
 import { avatarColorFor } from "../avatarColor";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
@@ -22,7 +26,7 @@ import { Loader } from "../../components/Loader";
 // The main menu pages' titles: icon (as in the sidebar) and what each is for.
 type PageTitle = { title: string; icon: string; subtitle: string };
 const TITLES = {
-  home: { title: "Home", icon: "fa-solid fa-house", subtitle: "Matches of the players you follow" },
+  home: { title: "Home", icon: "fa-solid fa-house", subtitle: "Live games, what's next and the players you follow" },
   stats: { title: "My Stats", icon: "fa-solid fa-id-card", subtitle: "Your whole career: every tournament and friendly match" },
   matches: { title: "My Matches", icon: "fa-solid fa-baseball-bat-ball", subtitle: "Every game you've played, organised or followed" },
   tournaments: { title: "My Tournaments", icon: "fa-solid fa-medal", subtitle: "The tournaments you play in, run or follow" },
@@ -38,7 +42,7 @@ export function CricketHome() {
 function PlayerHome() {
   const { me, fallback } = useMyCricket(TITLES.home);
   if (!me) return fallback;
-  return <FollowedPlayerMatches me={me} />;
+  return <HomeFeed me={me} />;
 }
 
 // Loads the signed-in player, or explains why there isn't one.
@@ -98,25 +102,239 @@ function useFollowedPlayerLines() {
   return { followedIds, footnote };
 }
 
-// Home page: matches of the players I follow, each with their lines in it.
-function FollowedPlayerMatches({ me }: { me: CricketMe }) {
+const scheduledTime = (m: CricketMatch) => (m.scheduledAt ? new Date(m.scheduledAt).getTime() : Infinity);
+const playedAt = (m: CricketMatch) => new Date(m.scheduledAt ?? m.createdAt).getTime();
+const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+
+const greeting = () => {
+  const hour = new Date().getHours();
+  return hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+};
+
+// When an upcoming match starts: "Today, 5:30 pm", "Tomorrow, 9:00 am",
+// "In 3 days", else "Sat, 2 Nov".
+function startsText(m: CricketMatch) {
+  if (!m.scheduledAt) return "Date not set";
+  const at = new Date(m.scheduledAt);
+  const time = at.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  const days = Math.round((startOfDay(at) - startOfDay(new Date())) / 86400000);
+  if (days === 0) return `Today, ${time}`;
+  if (days === 1) return `Tomorrow, ${time}`;
+  if (days > 1 && days < 7) return `In ${days} days`;
+  return at.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+}
+
+// Top of the home page: who I am, and my career in four numbers.
+function HomeHero({ me }: { me: CricketMe }) {
+  const player = me.player!;
+  const stats = playerStats(me.matches).get(player.id);
+  const role = roleOf(player.role);
+  const numbers = [
+    { label: "Matches", value: stats?.matches ?? 0 },
+    { label: "Runs", value: stats?.runs ?? 0 },
+    { label: "Wickets", value: stats?.wickets ?? 0 },
+    { label: "Player of match", value: stats?.playerOfMatch ?? 0 },
+  ];
+  return (
+    <section className="cricket-home-hero" data-tour="hero">
+      <div className="cricket-home-hero-top">
+        <PlayerAvatar
+          name={player.name}
+          photoUrl={player.photoUrl}
+          className="cricket-player-avatar cricket-home-hero-avatar"
+        />
+        <div className="cricket-home-hero-name">
+          <small>{greeting()},</small>
+          <h1>{player.name}</h1>
+          {role && (
+            <span className="cricket-home-hero-role">
+              <i className={`fa-solid ${role.icon}`} aria-hidden="true"></i> {role.label}
+            </span>
+          )}
+        </div>
+        <Link to="/me" className="cricket-home-hero-link" aria-label="My stats">
+          <span>My stats</span> <i className="fa-solid fa-arrow-right" aria-hidden="true"></i>
+        </Link>
+      </div>
+      <div className="cricket-home-hero-stats">
+        {numbers.map((n) => (
+          <div key={n.label}>
+            <strong>{n.value}</strong>
+            <small>{n.label}</small>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function HomeSection({
+  title,
+  icon,
+  badge,
+  link,
+  tour,
+  children,
+}: {
+  title: string;
+  icon: string;
+  badge?: ReactNode;
+  link?: { to: string; label: string };
+  // What the tips point at (TipsTour).
+  tour?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="cricket-home-section" data-tour={tour}>
+      <div className="cricket-home-head">
+        <h2 className="cricket-section-title cricket-home-heading">
+          <i className={icon} aria-hidden="true"></i> {title}
+          {badge}
+        </h2>
+        {link && (
+          <Link to={link.to} className="admin-link">
+            {link.label}
+          </Link>
+        )}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+const HOME_TIPS: TipStep[] = [
+  {
+    target: "hero",
+    title: "Your cricket at a glance",
+    text: "Your matches, runs, wickets and Player of the Match awards. Tap My stats for the full numbers.",
+  },
+  {
+    target: "create",
+    title: "Start a match or tournament",
+    text: "Tap + to set up a quick match or a whole tournament. You organise it, and you (or the scorers you pick) score it live.",
+  },
+  {
+    target: "nav",
+    title: "Get around",
+    text: "Your matches, tournaments, teams and stats are all here — including the ones you follow or organise.",
+  },
+  {
+    target: "following",
+    title: "Follow players",
+    text: "Matches of the players you follow show up here. Tap Manage to find players — follow tournaments and teams from their ⚙ menu.",
+  },
+  {
+    target: "account",
+    title: "Your account",
+    text: "Edit your profile, photo and playing role, or sign out. The moon button switches dark mode.",
+  },
+];
+
+// Home page: me, what's live, what's next, my last result, my running
+// tournaments, then every match of the players I follow. My own games are
+// tagged and tinted so they stand apart from followed ones.
+function HomeFeed({ me }: { me: CricketMe }) {
+  const tips = useTips("home", HOME_TIPS);
   const { data: tournaments } = useCricketTournaments();
   const { followedIds, footnote } = useFollowedPlayerLines();
-  const tournamentNames = new Map((tournaments ?? []).map((t) => [t.id, t.name]));
+  const tournamentNames = new Map(
+    [...(tournaments ?? []), ...me.tournaments, ...me.followedTournaments].map((t) => [t.id, t.name]),
+  );
+  const playerId = me.player!.id;
+  const mine = [...new Map([...me.matches, ...organisingMatches(me)].map((m) => [m.id, m])).values()];
+  const mineIds = new Set(mine.map((m) => m.id));
+  const following = followingMatches(me).filter((m) => !mineIds.has(m.id));
+
+  // Why a match is on the page: the side I play for, what I do in it, or a follow.
+  const tagOf = (m: CricketMatch): MatchTag => {
+    if (!mineIds.has(m.id)) return { tone: "following", icon: "fa-solid fa-star", label: "Following" };
+    const team = m.teams.find((t) => t.playerIds.includes(playerId));
+    if (team) return { tone: "mine", icon: "fa-solid fa-user", label: `You're playing · ${team.name}` };
+    return me.createdMatches.some((c) => c.id === m.id)
+      ? { tone: "organising", icon: "fa-solid fa-clipboard-list", label: "You're organising" }
+      : { tone: "organising", icon: "fa-solid fa-pen", label: "You're scoring" };
+  };
+  const noteOf = (m: CricketMatch) => {
+    if (!mineIds.has(m.id)) return footnote(m);
+    const line = myLine(m, playerId);
+    return line ? `You: ${line}` : null;
+  };
+  const card = (m: CricketMatch, aside?: string) => (
+    <MatchCard
+      key={m.id}
+      match={m}
+      tournamentName={m.tournamentId === null ? undefined : tournamentNames.get(m.tournamentId)}
+      tag={{ ...tagOf(m), aside }}
+      footnote={noteOf(m)}
+    />
+  );
+
+  const firstUp = (matches: CricketMatch[]) =>
+    matches.filter((m) => m.status === "scheduled").sort((a, b) => scheduledTime(a) - scheduledTime(b))[0];
+  const live = [...mine, ...following].filter((m) => m.status === "live");
+  const next = [firstUp(mine), firstUp(following)].filter((m): m is CricketMatch => Boolean(m));
+  const lastResult = me.matches
+    .filter((m) => m.status === "completed" || m.status === "abandoned")
+    .sort((a, b) => playedAt(b) - playedAt(a))[0];
+  const runningTournaments = me.tournaments.filter((t) => ["ongoing", "upcoming"].includes(tournamentPhase(t)));
+
   return (
-    <ListCard {...TITLES.home} plain>
-      {followedIds.length === 0 ? (
-        <div className="admin-empty-state">
-          Follow players to see their matches here. <Link to="/following">Find players to follow</Link>.
-        </div>
-      ) : (
-        <MatchesBoard
-          matches={me.followedPlayerMatches}
-          tournamentNames={tournamentNames}
-          footnote={footnote}
-        />
+    <div className="cricket-home">
+      {tips.element}
+      <HomeHero me={me} />
+
+      {live.length > 0 && (
+        <HomeSection
+          title="Live now"
+          icon="fa-solid fa-tower-broadcast"
+          badge={
+            <span className="cricket-home-live">
+              <span className="cricket-live-dot" aria-hidden="true"></span>
+              {live.length}
+            </span>
+          }
+        >
+          <div className="cricket-match-grid">{live.map((m) => card(m))}</div>
+        </HomeSection>
       )}
-    </ListCard>
+
+      {next.length > 0 && (
+        <HomeSection title="Up next" icon="fa-solid fa-clock" link={{ to: "/my-matches", label: "All matches" }}>
+          <div className="cricket-match-grid">{next.map((m) => card(m, startsText(m)))}</div>
+        </HomeSection>
+      )}
+
+      {lastResult && (
+        <HomeSection title="Your last match" icon="fa-solid fa-flag-checkered" link={{ to: "/my-matches", label: "History" }}>
+          <div className="cricket-match-grid">{card(lastResult)}</div>
+        </HomeSection>
+      )}
+
+      {runningTournaments.length > 0 && (
+        <HomeSection title="Your tournaments" icon="fa-solid fa-medal" link={{ to: "/my-tournaments", label: "See all" }}>
+          <div className="admin-card-grid">
+            {runningTournaments.map((t) => (
+              <TournamentCard
+                key={t.id}
+                tournament={t}
+                matchCount={me.matches.filter((m) => m.tournamentId === t.id).length}
+                footnote={<TeamFootnote teamName={t.teams.find((team) => team.playerIds.includes(playerId))?.name ?? null} />}
+              />
+            ))}
+          </div>
+        </HomeSection>
+      )}
+
+      <HomeSection title="Players you follow" icon="fa-solid fa-users" link={{ to: "/following", label: "Manage" }} tour="following">
+        {followedIds.length === 0 ? (
+          <div className="admin-empty-state">
+            Follow players to see their matches here. <Link to="/following">Find players to follow</Link>.
+          </div>
+        ) : (
+          <MatchesBoard matches={me.followedPlayerMatches} tournamentNames={tournamentNames} footnote={footnote} />
+        )}
+      </HomeSection>
+    </div>
   );
 }
 

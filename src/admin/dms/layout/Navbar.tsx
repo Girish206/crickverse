@@ -70,15 +70,14 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar, isDark, toggleTheme }) =
 
                         <div className="navbar-brand-container d-flex align-items-center">
                             <div className="navbar-logo-box">
-                                <img src="/favicon.svg" alt="Namma Aaata" className="img-fluid" />
+                                <img src="/favicon.svg" alt="CricDesk" className="img-fluid" />
                             </div>
                             <div className="navbar-brand-info ms-2 d-none d-sm-flex" style={{ flexDirection: "column", lineHeight: 1.3 }}>
                                 <span style={{ fontSize: "var(--fs-md)", whiteSpace: "nowrap" }}>
                                     <span className="cv-wordmark">
-                                        Namma <em>Aaata</em>
+                                        Cric<em>Desk</em>
                                     </span>
                                 </span>
-                                <span className="cv-wordmark-kn" lang="kn">ನಮ್ಮ ಆಟ</span>
                             </div>
                         </div>
                     </div>
@@ -97,7 +96,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar, isDark, toggleTheme }) =
                     >
                         <i className={`fa-solid ${isDark ? "fa-sun" : "fa-moon"}`} aria-hidden="true"></i>
                     </button>
-                    <div className="navbar-user-menu" ref={menuRef}>
+                    <div className="navbar-user-menu" ref={menuRef} data-tour="account">
                         <button
                             type="button"
                             className="navbar-user-chip"

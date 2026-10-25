@@ -11,6 +11,9 @@ import { useCricketMe } from "../../../api/hooks/cricket/useCricketPlayers";
 import { useCricketTournament } from "../../../api/hooks/cricket/useCricketTournaments";
 import { ListCard } from "../../components/ListCard";
 import { PageHeader, PageHeaderAction } from "../../components/PageHeader";
+import { ShareMenu } from "../ShareMenu";
+import { useTips, type TipStep } from "../TipsTour";
+import { logoFor } from "../tournaments/tournamentArt";
 import { Button } from "../../components/Button";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { matchAccess } from "../canManage";
@@ -38,6 +41,24 @@ import "../cricket.css";
 import { Loader } from "../../components/Loader";
 
 type Tab = "info" | "live" | "scorecard" | "insights" | "overs" | "squads" | "mvp";
+
+const MATCH_TIPS: TipStep[] = [
+  {
+    target: "tabs",
+    title: "Follow the match",
+    text: "Live has the score ball by ball; Scorecard, Insights, Overs and MVP fill in as it's played. Swipe the tabs to see them all.",
+  },
+  {
+    target: "share",
+    title: "Share the match",
+    text: "Send the link so friends can follow the score live — on WhatsApp, Telegram or anywhere else.",
+  },
+  {
+    target: "match-settings",
+    title: "Match settings",
+    text: "You can manage this match: edit it, pick scorers, change the squads and more. Open the Live tab to start scoring.",
+  },
+];
 
 export function CricketMatchPage() {
   const id = Number(useParams().id);
@@ -69,6 +90,8 @@ export function CricketMatchPage() {
   const onLiveTab = (params.get("tab") ?? "live") === "live";
   const seat = useScoringSeat(match, canManage && onLiveTab, admin?.sub);
   const [handingOver, setHandingOver] = useState(false);
+  // Not while they're scoring — the tips would sit over the buttons.
+  const tips = useTips("match", MATCH_TIPS, Boolean(match) && !seat.mine);
   // The scorer can't just walk away: leaving the match asks them to hand
   // scoring over (or stop) first. Tab changes stay on the page, so they pass.
   const guarding = match?.status === "live" && seat.mine;
@@ -198,7 +221,7 @@ export function CricketMatchPage() {
         {/* Scorers can only be changed while the match is being played. */}
         {(access === "organise" || access === "captain") && match.status === "live" && (
           <button type="button" className="cricket-settings-item" onClick={settingsThen(() => setPickingScorers(true))}>
-            <i className="fa-solid fa-user-pen" aria-hidden="true"></i>
+            <i className="fa-solid fa-clipboard-user" aria-hidden="true"></i>
             <span>
               Change scorers
               <small>
@@ -273,6 +296,7 @@ export function CricketMatchPage() {
 
   return (
     <div className={`cricket-page ${canManage && upcoming ? "has-action-bar" : ""}`.trim()}>
+      {tips.element}
       {match.tournamentId !== null && <AutoNextRounds tournamentId={match.tournamentId} />}
       <PageHeader
         title={`${match.teams[0].name} vs ${match.teams[1].name}`}
@@ -281,7 +305,16 @@ export function CricketMatchPage() {
         backLabel={match.tournamentId === null ? "Back to matches" : "Back to tournament"}
         actions={
           <>
-            {canManage && <PageHeaderAction icon="fa-solid fa-sliders" label="Match settings" onClick={openSettings} />}
+            <ShareMenu
+              heading="Share match"
+              path={`/matches/${match.id}`}
+              title={`${match.teams[0].name} vs ${match.teams[1].name}`}
+              text={`${match.status === "live" ? "LIVE: " : ""}${match.teams[0].name} vs ${match.teams[1].name}${tournament ? ` · ${tournament.name}` : ""}`}
+              image={tournament ? logoFor(tournament) : undefined}
+            />
+            {canManage && (
+              <PageHeaderAction icon="fa-solid fa-sliders" label="Match settings" tour="match-settings" onClick={openSettings} />
+            )}
             <MatchStatusBadge status={match.status} />
           </>
         }
@@ -289,7 +322,7 @@ export function CricketMatchPage() {
       {/* While it's live the Live tab shows the score, so the card is left out. */}
       {match.status !== "live" && <MatchHero match={match} />}
 
-      <div className="cricket-match-tabs" role="tablist" aria-label="Match sections">
+      <div className="cricket-match-tabs" role="tablist" aria-label="Match sections" data-tour="tabs">
         {tabs.map((t) => (
           <button
             key={t.value}

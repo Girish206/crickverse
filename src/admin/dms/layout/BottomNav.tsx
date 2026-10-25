@@ -30,7 +30,7 @@ const BottomNav = ({ onMore }: { onMore: () => void }) => {
           ];
 
     return (
-        <nav className="cv-bottom-nav" aria-label="Main">
+        <nav className="cv-bottom-nav" aria-label="Main" data-tour="nav">
             {tabs.map((tab) => (
                 <NavLink key={tab.to} to={tab.to} end={tab.to === "/"} className={({ isActive }) => `cv-bottom-tab ${isActive ? "is-active" : ""}`}>
                     <i className={tab.icon} aria-hidden="true"></i>

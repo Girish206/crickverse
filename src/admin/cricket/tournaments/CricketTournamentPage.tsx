@@ -6,7 +6,7 @@ import { avatarColorFor } from "../avatarColor";
 import { pointsTable } from "../stats";
 import { AutoNextRounds } from "../format/AutoNextRounds";
 import { ListCard } from "../../components/ListCard";
-import { PageHeader, PageHeaderAction } from "../../components/PageHeader";
+import { PageHeader } from "../../components/PageHeader";
 import { Button } from "../../components/Button";
 import { BottomSheet } from "../BottomSheet";
 import { CricketTournamentForm } from "./CricketTournamentForm";
@@ -21,8 +21,13 @@ import { FormatView } from "../format/FormatView";
 import { TournamentBanner } from "./TournamentBanner";
 import { TournamentInfo } from "./TournamentInfo";
 import { TournamentStats } from "./TournamentStats";
-import { FollowHeaderAction } from "../follow/FollowButton";
+import { ShareFixturesSheet, upcomingFixtures } from "./ShareFixturesSheet";
+import { useFollowMenuItem } from "../follow/FollowButton";
+import { SettingsMenu } from "../SettingsMenu";
 import { ScorersSheet } from "../ScorersSheet";
+import { ShareMenu } from "../ShareMenu";
+import { useTips, type TipStep } from "../TipsTour";
+import { logoFor } from "./tournamentArt";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
@@ -91,6 +96,24 @@ function TeamCards({
   );
 }
 
+const TOURNAMENT_TIPS: TipStep[] = [
+  {
+    target: "tabs",
+    title: "Everything about the tournament",
+    text: "Switch between Info, Matches, Teams, Standings, the Leaderboard and Stats. Swipe the tabs sideways to see them all.",
+  },
+  {
+    target: "share",
+    title: "Share it",
+    text: "Send the link on WhatsApp or Telegram, or share the fixtures as a picture once they're made.",
+  },
+  {
+    target: "settings",
+    title: "Follow and settings",
+    text: "Follow the tournament to see its matches on your Home. Organisers pick scorers and edit it here too. Show tips again from here any time.",
+  },
+];
+
 export function CricketTournamentPage() {
   const id = Number(useParams().id);
   const navigate = useNavigate();
@@ -102,6 +125,7 @@ export function CricketTournamentPage() {
   const [editing, setEditing] = useState(false);
   const [pickingScorers, setPickingScorers] = useState(false);
   const [schedulingMatch, setSchedulingMatch] = useState(false);
+  const [sharingFixtures, setSharingFixtures] = useState(false);
   const [params, setParams] = useSearchParams();
   const location = useLocation();
   const requested = params.get("tab") as Tab | null;
@@ -110,7 +134,9 @@ export function CricketTournamentPage() {
   // Players see their tournament read-only; its creator and super admins
   // manage it.
   const { admin } = useAdminAuth();
+  const followItem = useFollowMenuItem({ kind: "tournament", targetId: id, teamIndex: null });
   const canManage = canManageTournament(admin, tournament);
+  const tips = useTips("tournament", TOURNAMENT_TIPS, Boolean(tournament));
 
   const backTo = admin?.isSuperAdmin ? "/tournaments" : "/my-tournaments";
 
@@ -139,6 +165,7 @@ export function CricketTournamentPage() {
   // Generating reshuffles the generated teams, so it's only offered until the first
   // match is scheduled (with no teams yet there are no matches either).
   const canAutoBuild = (matches ?? []).length === 0;
+  const hasFixtures = upcomingFixtures(tournament, matches ?? []).length > 0;
   const teamsOutdated =
     canAutoBuild && tournament.generatedAt !== null && !sameMembers(generatedPlayerIds, matchedIds);
 
@@ -160,6 +187,7 @@ export function CricketTournamentPage() {
 
   return (
     <div className="cricket-page">
+      {tips.element}
       <AutoNextRounds tournamentId={tournament.id} />
       <PageHeader
         title={tournament.name}
@@ -168,13 +196,41 @@ export function CricketTournamentPage() {
         backLabel={admin?.isSuperAdmin ? "All tournaments" : "My tournaments"}
         actions={
           <>
-            <FollowHeaderAction target={{ kind: "tournament", targetId: tournament.id, teamIndex: null }} />
-            {canManage && (
-              <>
-                <PageHeaderAction icon="fa-solid fa-user-pen" label="Scorers" onClick={() => setPickingScorers(true)} />
-                <PageHeaderAction icon="fa-solid fa-pen" label="Edit tournament" onClick={() => setEditing(true)} />
-              </>
-            )}
+            <ShareMenu
+              heading="Share tournament"
+              path={`/tournaments/${tournament.id}`}
+              title={tournament.name}
+              text={`${tournament.name} on CricDesk`}
+              image={logoFor(tournament)}
+              items={
+                hasFixtures
+                  ? [{
+                      icon: "fa-solid fa-calendar-days",
+                      label: "Fixtures card",
+                      description: "Upcoming matches and playoffs as a picture",
+                      onClick: () => setSharingFixtures(true),
+                    }]
+                  : []
+              }
+            />
+            <SettingsMenu
+              title="Tournament settings"
+              items={[
+                ...(followItem ? [followItem] : []),
+                { icon: "fa-solid fa-lightbulb", label: "Show tips", onClick: tips.start },
+                ...(canManage
+                  ? [
+                      {
+                        icon: "fa-solid fa-clipboard-user",
+                        label: "Scorers",
+                        description: "Who can score this tournament's matches",
+                        onClick: () => setPickingScorers(true),
+                      },
+                      { icon: "fa-solid fa-pen", label: "Edit tournament", onClick: () => setEditing(true) },
+                    ]
+                  : []),
+              ]}
+            />
           </>
         }
       />
@@ -184,7 +240,7 @@ export function CricketTournamentPage() {
           <TournamentBanner tournament={tournament} />
         </div>
   
-        <div className="cricket-match-tabs" role="tablist" aria-label="Tournament sections">
+        <div className="cricket-match-tabs" role="tablist" aria-label="Tournament sections" data-tour="tabs">
           {TABS.map((t) => (
             <button
               key={t.value}
@@ -302,6 +358,10 @@ export function CricketTournamentPage() {
         >
           <CricketMatchForm tournamentId={tournament.id} onSaved={() => setSchedulingMatch(false)} />
         </BottomSheet>
+      )}
+
+      {sharingFixtures && (
+        <ShareFixturesSheet tournament={tournament} matches={matches ?? []} onClose={() => setSharingFixtures(false)} />
       )}
 
       {teamModal && (

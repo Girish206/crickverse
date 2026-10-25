@@ -168,9 +168,8 @@ const Sidebar = ({
                 </div>
                 <div className="sidebar-mobile-who">
                     <span className="cv-wordmark">
-                        Namma <em>Aaata</em>
+                        Cric<em>Desk</em>
                     </span>
-                    <span className="cv-wordmark-kn" lang="kn">ನಮ್ಮ ಆಟ</span>
                 </div>
                 <button
                     type="button"

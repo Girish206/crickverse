@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "Namma Aaata — ನಮ್ಮ ಆಟ",
-  "short_name": "Namma Aaata",
+  "name": "CricDesk",
+  "short_name": "CricDesk",
   "description": "Cricket tournaments, live scoring and stats.",
   "start_url": "/",
   "scope": "/",

@@ -137,6 +137,7 @@
   gap: 10px;
   padding-bottom: 12px;
 }
+.cv-profile-tips,
 .cv-profile-signout {
   display: inline-flex;
   align-items: center;
@@ -150,6 +151,13 @@
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.15s ease;
+}
+.cv-profile-tips {
+  border-color: var(--border-color);
+  color: var(--theme-text-dark);
+}
+.cv-profile-tips:hover {
+  background: rgba(var(--primary-rgb), 0.05);
 }
 .cv-profile-signout:hover {
   background: rgba(220, 38, 38, 0.08);

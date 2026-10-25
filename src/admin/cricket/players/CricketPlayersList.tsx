@@ -115,16 +115,14 @@ export function CricketPlayersList() {
                     </strong>
                     <small>
                       {player.mobile ? (
-                        <>
-                          <i className="fa-solid fa-phone" aria-hidden="true"></i> {formatMobile(player.mobile)}
-                        </>
+                        formatMobile(player.mobile)
                       ) : (
                         <span className="text-danger">No mobile</span>
                       )}
                       {role && (
                         <>
                           {" · "}
-                          <i className={`fa-solid ${role.icon}`} aria-hidden="true"></i> {role.label}
+                          {role.label}
                         </>
                       )}
                     </small>

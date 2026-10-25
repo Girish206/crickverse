@@ -413,6 +413,9 @@ export function StandingsTable({
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const inTable = new Set(rows.map((row) => row.teamIndex));
   const own = (matches ?? []).filter((match) => match.teams.every((team) => inTable.has(team.teamIndex)));
+  // T / NR columns with nothing in them yet are left out on phones.
+  const tiedClass = rows.some((row) => row.tied > 0) ? undefined : "is-optional";
+  const noResultClass = rows.some((row) => row.noResult > 0) ? undefined : "is-optional";
   return (
     <div className="cricket-standings-scroll">
       <table className="cricket-standings-table">
@@ -423,8 +426,8 @@ export function StandingsTable({
             <th>P</th>
             <th>W</th>
             <th>L</th>
-            <th>T</th>
-            <th>NR</th>
+            <th className={tiedClass}>T</th>
+            <th className={noResultClass}>NR</th>
             <th className="is-points">Pts</th>
             <th>NRR</th>
           </tr>
@@ -460,8 +463,8 @@ export function StandingsTable({
                 <td>{row.played}</td>
                 <td>{row.won}</td>
                 <td>{row.lost}</td>
-                <td>{row.tied}</td>
-                <td>{row.noResult}</td>
+                <td className={tiedClass}>{row.tied}</td>
+                <td className={noResultClass}>{row.noResult}</td>
                 <td className="is-points">{row.points}</td>
                 <td className={row.nrr > 0 ? "is-up" : row.nrr < 0 ? "is-down" : undefined}>
                   {(row.nrr >= 0 ? "+" : "") + row.nrr.toFixed(3)}

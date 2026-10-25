@@ -14,8 +14,9 @@ import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { canManageTournament } from "../canManage";
 import { Button } from "../../components/Button";
 import { ListCard } from "../../components/ListCard";
-import { PageHeader, PageHeaderAction } from "../../components/PageHeader";
-import { FollowHeaderAction } from "../follow/FollowButton";
+import { PageHeader } from "../../components/PageHeader";
+import { useFollowMenuItem } from "../follow/FollowButton";
+import { SettingsMenu } from "../SettingsMenu";
 import { confirmAction } from "../../components/confirmDelete";
 import { BottomSheet } from "../BottomSheet";
 import { avatarColorFor } from "../avatarColor";
@@ -27,6 +28,9 @@ import { PlayerLink } from "../players/PlayerProfileSheet";
 import { LeaderboardGrid } from "../leaderboard/CricketLeaderboard";
 import { oversText, pointsTable, rate, strikeRate, teamStats, type TeamStats } from "../stats";
 import { AddTeamPlayersSheet } from "./AddTeamPlayersSheet";
+import { ShareSquadSheet } from "./ShareSquadSheet";
+import { ShareMenu } from "../ShareMenu";
+import { useTips, type TipStep } from "../TipsTour";
 import { TeamForm } from "./CricketTeamTools";
 import { bannerFor } from "./tournamentArt";
 import { TeamRecordCard } from "../teams/TeamRecordCard";
@@ -46,6 +50,24 @@ const TABS: { value: Tab; label: string }[] = [
   { value: "stats", label: "Stats" },
 ];
 
+const TEAM_TIPS: TipStep[] = [
+  {
+    target: "tabs",
+    title: "All about the team",
+    text: "See the team's record, its players, its matches and how its players rank on the Leaderboard and Stats tabs.",
+  },
+  {
+    target: "share",
+    title: "Share the squad",
+    text: "Send the team's link, or share the squad as a picture with every player's photo and role.",
+  },
+  {
+    target: "settings",
+    title: "Follow the team",
+    text: "Follow the team to get its matches on your Home. Show these tips again from here.",
+  },
+];
+
 // One team of a tournament, laid out like the tournament page: a banner
 // header, then Info (record and standing), Players, Matches, Leaderboard
 // (its players' boards) and Stats (team totals: runs, 4s, 6s, dots…) tabs.
@@ -61,6 +83,7 @@ export function CricketTeamPage() {
   const setRoles = useSetCricketTeamRoles();
   const [editing, setEditing] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [sharing, setSharing] = useState(false);
   // Player whose "Move / swap" sheet is open.
   const [moving, setMoving] = useState<number | null>(null);
   const [params, setParams] = useSearchParams();
@@ -70,6 +93,8 @@ export function CricketTeamPage() {
   const { admin } = useAdminAuth();
   const canManage = canManageTournament(admin, tournament);
   const { data: me } = useCricketMe();
+  const followItem = useFollowMenuItem({ kind: "team", targetId: id, teamIndex });
+  const tips = useTips("team", TEAM_TIPS, Boolean(tournament?.teams[teamIndex]));
   const playerById = useMemo(() => new Map((players ?? []).map((player) => [player.id, player])), [players]);
 
   const team = tournament?.teams[teamIndex];
@@ -114,6 +139,7 @@ export function CricketTeamPage() {
   const showAddBar = canAddPlayers && tab === "players";
   return (
     <div className={`cricket-page ${showAddBar ? "has-action-bar" : ""}`.trim()}>
+      {tips.element}
       <PageHeader
         title={team.name}
         subtitle={tournament.name}
@@ -121,19 +147,42 @@ export function CricketTeamPage() {
         backLabel="All teams"
         actions={
           <>
-            <FollowHeaderAction target={{ kind: "team", targetId: id, teamIndex }} />
-            {canManage && (
-              <>
-                <PageHeaderAction icon="fa-solid fa-pen" label="Edit team" onClick={() => setEditing(true)} />
-                <PageHeaderAction
-                  icon="fa-solid fa-trash"
-                  label="Remove team"
-                  danger
-                  disabled={removeTeam.isPending}
-                  onClick={handleRemove}
-                />
-              </>
-            )}
+            <ShareMenu
+              heading="Share team"
+              path={`/tournaments/${id}/teams/${teamIndex}`}
+              title={team.name}
+              text={`${team.name} · ${tournament.name} on CricDesk`}
+              items={
+                team.playerIds.length > 0
+                  ? [{
+                      icon: "fa-solid fa-users",
+                      label: "Squad card",
+                      description: "The players with their photos and roles as a picture",
+                      onClick: () => setSharing(true),
+                    }]
+                  : []
+              }
+            />
+            <SettingsMenu
+              title="Team settings"
+              items={[
+                ...(followItem ? [followItem] : []),
+                { icon: "fa-solid fa-lightbulb", label: "Show tips", onClick: tips.start },
+                ...(canManage
+                  ? [
+                      { icon: "fa-solid fa-pen", label: "Edit team", onClick: () => setEditing(true) },
+                      {
+                        icon: "fa-solid fa-trash",
+                        label: "Remove team",
+                        description: "Takes it out of the tournament",
+                        danger: true,
+                        disabled: removeTeam.isPending,
+                        onClick: handleRemove,
+                      },
+                    ]
+                  : []),
+              ]}
+            />
           </>
         }
       />
@@ -165,7 +214,7 @@ export function CricketTeamPage() {
           </div>
         </div>
 
-        <div className="cricket-match-tabs" role="tablist" aria-label="Team sections">
+        <div className="cricket-match-tabs" role="tablist" aria-label="Team sections" data-tour="tabs">
           {TABS.map((t) => (
             <button
               key={t.value}
@@ -274,6 +323,10 @@ export function CricketTeamPage() {
         </BottomSheet>
       )}
 
+      {sharing && (
+        <ShareSquadSheet tournament={tournament} team={team} playerById={playerById} onClose={() => setSharing(false)} />
+      )}
+
       {adding && <AddTeamPlayersSheet tournament={tournament} teamIndex={teamIndex} onClose={() => setAdding(false)} />}
 
       {moving !== null && (
@@ -353,7 +406,8 @@ export function TeamStatsView({ stats: t }: { stats: TeamStats }) {
   return <StatTiles groups={groups} />;
 }
 
-// `linked` = the name opens the player's profile (off inside buttons).
+// `linked` = tapping the player (photo or name) opens their profile (off
+// inside buttons).
 export function RosterPlayer({
   player,
   tags = [],
@@ -370,7 +424,7 @@ export function RosterPlayer({
   const lead = tags.find((tag) => tag === "C" || tag === "VC");
   const keeper = tags.includes("WK");
   const roleNames = tags.map((tag) => roleTagInfo(tag)?.label ?? tag).join(", ");
-  return (
+  const content = (
     <>
       <span
         className={`cricket-roster-avatar-wrap${lead ? ` is-lead-${lead.toLowerCase()}` : ""}`}
@@ -386,7 +440,7 @@ export function RosterPlayer({
       </span>
       <span className="cricket-roster-who">
         <strong>
-          <PlayerLink playerId={linked ? player?.id : null}>{name}</PlayerLink>
+          {name}
         </strong>
         {(role || roleNames) && (
           <small className="cricket-roster-meta">
@@ -400,6 +454,11 @@ export function RosterPlayer({
         )}
       </span>
     </>
+  );
+  return (
+    <PlayerLink playerId={linked ? player?.id : null} className="cricket-roster-pick">
+      {content}
+    </PlayerLink>
   );
 }
 

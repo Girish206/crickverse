@@ -11,6 +11,7 @@ import InputComp from "../../dms/components/InputComp";
 import { ChipChoice } from "../CricketChoices";
 import { formatMobile, normalizeMobile } from "../mobile";
 import { PLAYER_ROLES } from "../playerRoles";
+import { resetTips } from "../TipsTour";
 import { PlayerAvatar } from "../players/PlayerAvatar";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
@@ -223,6 +224,16 @@ function ProfileForm({ me }: { me: CricketMe }) {
         >
           <i className="fa-solid fa-check me-2" aria-hidden="true"></i>Save changes
         </CustomButton>
+        <button
+          type="button"
+          className="cv-profile-tips"
+          onClick={() => {
+            resetTips();
+            toast.success("Tips will show again on each screen");
+          }}
+        >
+          <i className="fa-solid fa-lightbulb" aria-hidden="true"></i> Show tips again
+        </button>
         <button type="button" className="cv-profile-signout" onClick={handleLogout}>
           <i className="fa-solid fa-right-from-bracket" aria-hidden="true"></i> Sign out
         </button>

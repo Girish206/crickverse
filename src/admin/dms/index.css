@@ -4,12 +4,13 @@
    src/styles/brand.css, so the admin matches the public portfolio: change a
    brand colour there and both follow. */
 :root {
-  /* Primary: the logo's orange (deep shade, readable under white text) */
-  --primary: var(--brand-orange-deep);
+  /* Primary: maroon (readable under white text and on white) */
+  --primary: var(--brand-maroon);
   /* Same as --primary, as an "r, g, b" triplet for rgba(var(--primary-rgb), alpha) */
-  --primary-rgb: var(--brand-orange-deep-rgb);
-  /* Crimson → orange, for primary buttons and highlights */
-  --primary-gradient: var(--brand-gradient);
+  --primary-rgb: var(--brand-maroon-rgb);
+  /* Deep maroon, for primary buttons and highlights */
+  --primary-gradient: var(--brand-gradient-maroon);
+  --hero-gradient: var(--brand-gradient-sky);
 
   /* Lighter shades (tints) */
   --primary-light-1: color-mix(in srgb, var(--primary) 88%, #fff);
@@ -65,4 +66,7 @@
   --logo-crimson-light: color-mix(in srgb, var(--brand-crimson) 18%, #fff);
   --logo-orange-light: color-mix(in srgb, var(--brand-orange) 18%, #fff);
   --logo-gold-light: color-mix(in srgb, var(--brand-amber) 18%, #fff);
+  /* Main layout background: a calm warm off-white (Layout.css). */
+  --layout-bg-top: #fbfaf8;
+  --layout-bg-bottom: #f3f1ed;
 }

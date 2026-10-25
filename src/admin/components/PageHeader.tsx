@@ -58,6 +58,7 @@ export function PageHeaderAction({
   danger,
   active,
   disabled,
+  tour,
 }: {
   icon: string;
   label: string;
@@ -66,6 +67,8 @@ export function PageHeaderAction({
   // Highlighted, for a toggle that's on (following).
   active?: boolean;
   disabled?: boolean;
+  // What the tips point at (TipsTour).
+  tour?: string;
 }) {
   return (
     <button
@@ -74,6 +77,7 @@ export function PageHeaderAction({
       onClick={onClick}
       disabled={disabled}
       aria-pressed={active}
+      data-tour={tour}
       aria-label={label}
       title={label}
     >

@@ -856,22 +856,14 @@
 }
 
 /* Dark theme: --primary-dark-1 is a lighter tint here, so the light band
-   washes out to peach. Use a deep ember band on the navy instead. */
+   washes out to peach. Use the home hero's charcoal → maroon instead. */
 @media (max-width: 769px) {
   :root[data-bs-theme="dark"] .sidebar.sidebar-open .sidebar-mobile-head {
-    background:
-      radial-gradient(circle at 0% 0%, rgba(var(--primary-rgb), 0.45), transparent 60%),
-      linear-gradient(
-        125deg,
-        rgba(var(--primary-rgb), 0.3) 0%,
-        rgba(179, 20, 27, 0.28) 60%,
-        var(--adm-raised) 100%
-      ),
-      var(--adm-raised);
+    background: var(--hero-gradient);
     background-size: 160% 160%;
-    border: 1px solid rgba(var(--primary-rgb), 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.07);
     box-shadow:
-      0 10px 26px -12px rgba(var(--primary-rgb), 0.55),
+      0 10px 26px -14px rgba(0, 0, 0, 0.7),
       inset 0 1px 0 rgba(255, 255, 255, 0.06);
   }
 

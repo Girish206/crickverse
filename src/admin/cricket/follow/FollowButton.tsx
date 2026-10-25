@@ -1,6 +1,6 @@
 import { sameTarget, useMyFollows, useSetFollow } from "../../../api/hooks/cricket/useCricketFollows";
 import type { CricketFollowTarget } from "../../../api/types";
-import { PageHeaderAction } from "../../components/PageHeader";
+import type { SettingsMenuItem } from "../SettingsMenu";
 
 // Whether the signed-in player can follow the target, and does. Hidden for
 // accounts without a player, and on the player's own profile.
@@ -36,17 +36,15 @@ export function FollowButton({ target }: { target: CricketFollowTarget }) {
   );
 }
 
-// The same, as a round PageHeader action (a tournament or team page).
-export function FollowHeaderAction({ target }: { target: CricketFollowTarget }) {
+// The same, as an item in a page's settings menu (a tournament or team page).
+export function useFollowMenuItem(target: CricketFollowTarget): SettingsMenuItem | null {
   const { hidden, following, toggle, pending } = useFollowState(target);
   if (hidden) return null;
-  return (
-    <PageHeaderAction
-      icon={`${following ? "fa-solid" : "fa-regular"} fa-star`}
-      label={following ? "Unfollow" : "Follow"}
-      active={following}
-      disabled={pending}
-      onClick={toggle}
-    />
-  );
+  return {
+    icon: `${following ? "fa-solid" : "fa-regular"} fa-heart`,
+    label: following ? "Unfollow" : "Follow",
+    description: following ? "You'll stop seeing its matches on your home" : "See its matches on your home",
+    disabled: pending,
+    onClick: toggle,
+  };
 }

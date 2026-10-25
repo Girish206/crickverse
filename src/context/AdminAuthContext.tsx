@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { apiClient, getAdminToken, setAdminToken } from "../api/client";
 import type { ApiEnvelope } from "../api/types";
 
-// Namma Aaata signs in with the shared Girish Creations account (same API,
+// CricDesk signs in with the shared Girish Creations account (same API,
 // same /admin/auth/login), but only accounts with cricket access get in.
 // Players can also sign themselves up. Sessions are "remembered" (long-lived
 // tokens, renewed each time the app opens), so nobody signs in every visit.
@@ -133,10 +133,10 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// A valid Girish Creations account that hasn't been given Namma Aaata access.
+// A valid Girish Creations account that hasn't been given CricDesk access.
 export class NoCricketAccessError extends Error {
   constructor() {
-    super("This account doesn't have Namma Aaata access yet. Ask your organiser to turn it on.");
+    super("This account doesn't have CricDesk access yet. Ask your organiser to turn it on.");
   }
 }
 

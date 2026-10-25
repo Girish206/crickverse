@@ -1,4 +1,6 @@
+import { useState } from "react";
 import type { CricketTournament } from "../../../api/types";
+import { ImageViewer, viewerTrigger } from "../ImageViewer";
 import { bannerFor, logoFor } from "./tournamentArt";
 
 const shortDate = (value: string) =>
@@ -26,14 +28,26 @@ export function TournamentBanner({ tournament: t }: { tournament: CricketTournam
     ? `${shortDate(t.startDate)}${t.endDate && t.endDate !== t.startDate ? ` – ${shortDate(t.endDate)}` : ""}`
     : null;
   const phase = phaseOf(t);
+  // The logo or the banner, opened full size.
+  const [viewing, setViewing] = useState<{ src: string; alt: string; round?: boolean } | null>(null);
 
   return (
     <div className="cricket-th">
-      <div className="cricket-th-cover" style={{ backgroundImage: `url(${bannerFor(t)})` }} />
+      <div
+        className="cricket-th-cover is-viewable"
+        style={{ backgroundImage: `url(${bannerFor(t)})` }}
+        aria-label={`${t.name} banner`}
+        {...viewerTrigger(() => setViewing({ src: bannerFor(t), alt: `${t.name} banner` }))}
+      />
 
       {/* Floating card straddling the cover's bottom edge. */}
       <div className="cricket-th-identity">
-        <span className="cricket-tour-logo" style={{ backgroundImage: `url(${logoFor(t)})` }} aria-hidden="true" />
+        <span
+          className="cricket-tour-logo is-viewable"
+          style={{ backgroundImage: `url(${logoFor(t)})` }}
+          aria-label={`${t.name} logo`}
+          {...viewerTrigger(() => setViewing({ src: logoFor(t), alt: `${t.name} logo`, round: true }))}
+        />
         <div className="cricket-th-title">
           <h1>{t.name}</h1>
           {(phase || dates || place) && (
@@ -53,6 +67,7 @@ export function TournamentBanner({ tournament: t }: { tournament: CricketTournam
           )}
         </div>
       </div>
+      {viewing && <ImageViewer src={viewing.src} alt={viewing.alt} round={viewing.round} onClose={() => setViewing(null)} />}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Namma Aaata brand colours — the Karnataka flag: yellow (ಹಳದಿ) over red
+   CricDesk brand colours — the Karnataka flag: yellow (ಹಳದಿ) over red
    (ಕೆಂಪು), with a red-orange between them for gradients and a deep
    neutral charcoal for the dark theme. Every screen reads these through
    admin/dms/index.css and dark.css; change a value here and the app follows.
@@ -19,17 +19,17 @@
 :root {
   /* Logo colours */
   --brand-navy: #2a0f12;
-  --brand-crimson: #d7261e;
+  --brand-crimson: #c9443b;
   --brand-orange: #e8501f;
   --brand-amber: #ffcd00;
 
   /* Readable on white / under white text */
-  --brand-crimson-deep: #b3141b;
-  --brand-orange-deep: #c0311b;
+  --brand-crimson-deep: #a8362f;
+  --brand-orange-deep: #c04a26;
   --brand-amber-deep: #a16207;
 
   /* Readable on the dark base */
-  --brand-crimson-bright: #ff5a4e;
+  --brand-crimson-bright: #f2756b;
   --brand-orange-bright: #ff7a45;
   --brand-amber-bright: #ffd83d;
 
@@ -41,16 +41,30 @@
   /* "r, g, b" triplets, for rgba(var(--brand-…-rgb), alpha) */
   --brand-navy-rgb: 42, 15, 18;
   --brand-navy-night-rgb: 15, 16, 18;
-  --brand-crimson-rgb: 215, 38, 30;
+  --brand-crimson-rgb: 201, 68, 59;
   --brand-orange-rgb: 232, 80, 31;
-  --brand-orange-deep-rgb: 192, 49, 27;
+  --brand-orange-deep-rgb: 192, 74, 38;
   --brand-amber-rgb: 255, 205, 0;
 
   /* Gradients (red → orange → yellow, the flag read top to bottom in
      reverse). The button gradients stop at orange so white text stays
      readable; yellow only appears in text and decorative gradients. */
-  --brand-gradient: linear-gradient(120deg, var(--brand-crimson-deep) 0%, #c42a1a 55%, var(--brand-orange-deep) 100%);
-  --brand-gradient-night: linear-gradient(120deg, var(--brand-crimson) 0%, #e2401f 55%, #e0560f 100%);
+  --brand-gradient: linear-gradient(120deg, var(--brand-crimson-deep) 0%, #b8452c 55%, var(--brand-orange-deep) 100%);
+  --brand-gradient-night: linear-gradient(120deg, #94302b 0%, #a8402c 55%, #b5522b 100%);
+  /* Maroon: the app's main theme colour, from the night-sky banner below.
+     The plain one keeps white text on it and reads on white; -bright is the
+     lighter shade for text / fills on the dark theme. */
+  --brand-maroon: #7a2420;
+  --brand-maroon-rgb: 122, 36, 32;
+  --brand-maroon-bright: #d06a60;
+  --brand-maroon-bright-rgb: 208, 106, 96;
+  --brand-gradient-maroon: linear-gradient(120deg, #3a1214 0%, #5a1d1c 55%, #7a2420 100%);
+
+  /* Night sky (the stock tournament banner-4): charcoal into deep maroon,
+     for the large hero / cover surfaces. The -night one is a step lighter
+     (more maroon) so it stands off the dark theme's charcoal page and cards. */
+  --brand-gradient-sky: linear-gradient(120deg, #0f1012 0%, #24111a 45%, #3a1214 100%);
+  --brand-gradient-sky-night: linear-gradient(120deg, #26181b 0%, #3a1519 45%, #561a1b 100%);
   --brand-gradient-vivid: linear-gradient(120deg, var(--brand-crimson) 0%, var(--brand-orange) 55%, var(--brand-amber) 100%);
   --brand-gradient-text: linear-gradient(100deg, var(--brand-crimson-deep) 0%, #d1400f 50%, var(--brand-amber-deep) 100%);
   --brand-gradient-text-night: linear-gradient(

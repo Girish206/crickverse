@@ -34,6 +34,13 @@ export function matchStageLabel(match: CricketMatch) {
   return stageLabel(match.stage ?? "league");
 }
 
+// "Test Strikers" → "TS", for the team badge.
+export function teamInitials(name: string) {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  const letters = words.length > 1 ? words[0][0] + words[1][0] : (words[0] ?? "?").slice(0, 2);
+  return letters.toUpperCase();
+}
+
 export function formatMatchDate(value: string | null) {
   if (!value) return "Date not set";
   return new Date(value).toLocaleString(undefined, {

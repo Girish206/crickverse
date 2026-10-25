@@ -1,10 +1,13 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAdminAuth } from "../context/AdminAuthContext";
 
+// Signed-out visitors go to sign in, remembering the page (a shared link)
+// to come back to afterwards.
 export function ProtectedRoute() {
   const { isAuthenticated } = useAdminAuth();
+  const location = useLocation();
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
   }
   return <Outlet />;
 }
