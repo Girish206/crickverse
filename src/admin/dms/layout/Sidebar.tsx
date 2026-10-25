@@ -9,12 +9,14 @@ const Sidebar = ({
     isSidebarOpen,
     toggleSidebar,
     setSidebarOpen,
+    onShareApp,
 }: {
     activeSubItem: string;
     activeItem: string;
     isSidebarOpen: boolean;
     toggleSidebar: () => void;
     setSidebarOpen: (open: boolean) => void;
+    onShareApp: () => void;
 }) => {
     const { logout, admin } = useAdminAuth();
     const navigate = useNavigate();
@@ -220,6 +222,15 @@ const Sidebar = ({
             </div>
 
             <div className="sidebar-footer">
+                <button
+                    type="button"
+                    onClick={onShareApp}
+                    className={`share-app-btn nav-link ${!isSidebarOpen ? "justify-content-center" : ""}`}
+                    title={!isSidebarOpen ? "Share CricDesk" : undefined}
+                >
+                    <i className="fa-solid fa-share-nodes icon"></i>
+                    {isSidebarOpen && <span>Share CricDesk</span>}
+                </button>
                 <Link
                     to="#"
                     onClick={(e) => {

@@ -19,19 +19,7 @@ interface LinkTile {
   onClick: () => void;
 }
 
-// The header's Share button, opening a sheet from the bottom: a preview of
-// what's shared (picture, name, link), tiles sending the link (WhatsApp,
-// Telegram, copy, the phone's share sheet), then the page's image cards.
-// A link opened signed out signs in first and comes back to the page
-// (ProtectedRoute / AdminLoginPage).
-export function ShareMenu({
-  heading,
-  path,
-  title,
-  text,
-  image,
-  items = [],
-}: {
+export interface ShareSheetProps {
   // The sheet's title, e.g. "Share tournament".
   heading: string;
   path: string;
@@ -42,8 +30,46 @@ export function ShareMenu({
   // The preview's picture (a logo); its initial on a colour without one.
   image?: string;
   items?: ShareMenuItem[];
-}) {
+}
+
+// The header's Share button, opening ShareSheet.
+export function ShareMenu(props: ShareSheetProps) {
   const [open, setOpen] = useState(false);
+  return (
+    <>
+      <PageHeaderAction icon="fa-solid fa-share-nodes" label="Share" tour="share" active={open} onClick={() => setOpen(true)} />
+      {open && <ShareSheet {...props} onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
+// Inviting someone to the app itself (the menus' "Share CricDesk").
+export function ShareAppSheet({ onClose }: { onClose: () => void }) {
+  return (
+    <ShareSheet
+      heading="Share CricDesk"
+      path="/"
+      title="CricDesk"
+      text="Score matches ball by ball, run tournaments and track your cricket stats on CricDesk. Join me:"
+      image="/favicon.svg"
+      onClose={onClose}
+    />
+  );
+}
+
+// A sheet from the bottom: a preview of what's shared (picture, name, link),
+// tiles sending the link (WhatsApp, Telegram, copy, the phone's share
+// sheet), then the page's image cards. A link opened signed out signs in
+// first and comes back to the page (ProtectedRoute / AdminLoginPage).
+export function ShareSheet({
+  heading,
+  path,
+  title,
+  text,
+  image,
+  items = [],
+  onClose,
+}: ShareSheetProps & { onClose: () => void }) {
   const url = new URL(path, window.location.origin).toString();
   const message = `${text}\n${url}`;
   const canShare = typeof navigator.share === "function";
@@ -92,65 +118,60 @@ export function ShareMenu({
 
   // Tiles and rows close the sheet first (an image card opens its own).
   const run = (action: () => void) => () => {
-    setOpen(false);
+    onClose();
     action();
   };
 
   return (
-    <>
-      <PageHeaderAction icon="fa-solid fa-share-nodes" label="Share" tour="share" active={open} onClick={() => setOpen(true)} />
-      {open && (
-        <BottomSheet title={heading} icon="fa-solid fa-share-nodes" onClose={() => setOpen(false)}>
-          <div className="cricket-share-preview">
-            {image ? (
-              <span className="cricket-share-preview-pic" style={{ backgroundImage: `url(${image})` }} aria-hidden="true" />
-            ) : (
-              <span className="cricket-share-preview-pic" style={{ background: avatarColorFor(title) }} aria-hidden="true">
-                {title.charAt(0).toUpperCase()}
-              </span>
-            )}
-            <span className="cricket-share-preview-text">
-              <strong>{title}</strong>
-              <small>{url.replace(/^https?:\/\//, "")}</small>
-            </span>
-            <button type="button" className="cricket-share-preview-copy" onClick={copyLink} aria-label="Copy link" title="Copy link">
-              <i className="fa-regular fa-copy" aria-hidden="true"></i>
-            </button>
-          </div>
+    <BottomSheet title={heading} icon="fa-solid fa-share-nodes" onClose={onClose}>
+      <div className="cricket-share-preview">
+        {image ? (
+          <span className="cricket-share-preview-pic" style={{ backgroundImage: `url(${image})` }} aria-hidden="true" />
+        ) : (
+          <span className="cricket-share-preview-pic" style={{ background: avatarColorFor(title) }} aria-hidden="true">
+            {title.charAt(0).toUpperCase()}
+          </span>
+        )}
+        <span className="cricket-share-preview-text">
+          <strong>{title}</strong>
+          <small>{url.replace(/^https?:\/\//, "")}</small>
+        </span>
+        <button type="button" className="cricket-share-preview-copy" onClick={copyLink} aria-label="Copy link" title="Copy link">
+          <i className="fa-regular fa-copy" aria-hidden="true"></i>
+        </button>
+      </div>
 
-          <h3 className="cricket-share-label">Send link</h3>
-          <div className="cricket-share-tiles">
-            {tiles.map((tile) => (
-              <button key={tile.label} type="button" onClick={run(tile.onClick)}>
-                <span className={tile.tone}>
-                  <i className={tile.icon} aria-hidden="true"></i>
+      <h3 className="cricket-share-label">Send link</h3>
+      <div className="cricket-share-tiles">
+        {tiles.map((tile) => (
+          <button key={tile.label} type="button" onClick={run(tile.onClick)}>
+            <span className={tile.tone}>
+              <i className={tile.icon} aria-hidden="true"></i>
+            </span>
+            {tile.label}
+          </button>
+        ))}
+      </div>
+
+      {items.length > 0 && (
+        <>
+          <h3 className="cricket-share-label">Share as image</h3>
+          <div className="cricket-share-rows">
+            {items.map((item) => (
+              <button key={item.label} type="button" onClick={run(item.onClick)}>
+                <span className="cricket-share-row-icon">
+                  <i className={item.icon} aria-hidden="true"></i>
                 </span>
-                {tile.label}
+                <span className="cricket-share-row-text">
+                  <strong>{item.label}</strong>
+                  <small>{item.description}</small>
+                </span>
+                <i className="fa-solid fa-chevron-right cricket-share-row-go" aria-hidden="true"></i>
               </button>
             ))}
           </div>
-
-          {items.length > 0 && (
-            <>
-              <h3 className="cricket-share-label">Share as image</h3>
-              <div className="cricket-share-rows">
-                {items.map((item) => (
-                  <button key={item.label} type="button" onClick={run(item.onClick)}>
-                    <span className="cricket-share-row-icon">
-                      <i className={item.icon} aria-hidden="true"></i>
-                    </span>
-                    <span className="cricket-share-row-text">
-                      <strong>{item.label}</strong>
-                      <small>{item.description}</small>
-                    </span>
-                    <i className="fa-solid fa-chevron-right cricket-share-row-go" aria-hidden="true"></i>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </BottomSheet>
+        </>
       )}
-    </>
+    </BottomSheet>
   );
 }

@@ -124,12 +124,7 @@
   flex: 1 1 auto;
 }
 .cricket-module .admin-page-header .admin-page-title-text h1 {
-  font-size: var(--fs-xl);
-}
-@media (max-width: 560px) {
-  .cricket-module .admin-page-header .admin-page-title-text h1 {
-    font-size: var(--fs-lg);
-  }
+  font-size: var(--fs-md);
 }
 
 .cricket-match-status {

@@ -11,9 +11,11 @@ interface NavbarProps {
     isSidebarOpen: boolean;
     isDark: boolean;
     toggleTheme: () => void;
+    // Opens the "Share CricDesk" sheet (Layout).
+    onShareApp: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ toggleSidebar, isDark, toggleTheme }) => {
+const Navbar: React.FC<NavbarProps> = ({ toggleSidebar, isDark, toggleTheme, onShareApp }) => {
     const navigate = useNavigate();
     const [scrolled, setScrolled] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
@@ -132,6 +134,21 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar, isDark, toggleTheme }) =
                                     <span className="navbar-user-dropdown-label">My Profile</span>
                                     <i className="fa-solid fa-chevron-right navbar-user-dropdown-chevron" aria-hidden="true"></i>
                                 </Link>
+                                <button
+                                    type="button"
+                                    className="navbar-user-dropdown-item"
+                                    role="menuitem"
+                                    onClick={() => {
+                                        setMenuOpen(false);
+                                        onShareApp();
+                                    }}
+                                >
+                                    <span className="navbar-user-dropdown-icon">
+                                        <i className="fa-solid fa-share-nodes" aria-hidden="true"></i>
+                                    </span>
+                                    <span className="navbar-user-dropdown-label">Share CricDesk</span>
+                                    <i className="fa-solid fa-chevron-right navbar-user-dropdown-chevron" aria-hidden="true"></i>
+                                </button>
                                 <div className="navbar-user-dropdown-divider"></div>
                                 <button type="button" className="navbar-user-dropdown-item is-danger" role="menuitem" onClick={handleLogout}>
                                     <span className="navbar-user-dropdown-icon">

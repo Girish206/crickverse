@@ -12,6 +12,7 @@ import { ChipChoice } from "../CricketChoices";
 import { formatMobile, normalizeMobile } from "../mobile";
 import { PLAYER_ROLES } from "../playerRoles";
 import { resetTips } from "../TipsTour";
+import { ShareAppSheet } from "../ShareMenu";
 import { PlayerAvatar } from "../players/PlayerAvatar";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
@@ -44,6 +45,7 @@ function ProfileForm({ me }: { me: CricketMe }) {
   const updateProfile = useUpdateMyProfile();
   const setPhoto = useSetMyPhoto();
   const player = me.player;
+  const [sharingApp, setSharingApp] = useState(false);
 
   const [name, setName] = useState(player?.name ?? admin?.name ?? "");
   const [mobile, setMobile] = useState(me.accountMobile ? formatMobile(me.accountMobile) : "");
@@ -224,6 +226,10 @@ function ProfileForm({ me }: { me: CricketMe }) {
         >
           <i className="fa-solid fa-check me-2" aria-hidden="true"></i>Save changes
         </CustomButton>
+        <button type="button" className="cv-profile-tips" onClick={() => setSharingApp(true)}>
+          <i className="fa-solid fa-share-nodes" aria-hidden="true"></i> Share CricDesk
+        </button>
+        {sharingApp && <ShareAppSheet onClose={() => setSharingApp(false)} />}
         <button
           type="button"
           className="cv-profile-tips"

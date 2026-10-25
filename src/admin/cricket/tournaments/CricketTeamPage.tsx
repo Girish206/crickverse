@@ -444,11 +444,7 @@ export function RosterPlayer({
         </strong>
         {(role || roleNames) && (
           <small className="cricket-roster-meta">
-            {role && (
-              <span>
-                <i className={`fa-solid ${role.icon}`} aria-hidden="true"></i> {role.label}
-              </span>
-            )}
+            {role && <span>{role.label}</span>}
             {roleNames && <span className="visually-hidden">{roleNames}</span>}
           </small>
         )}

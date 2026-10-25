@@ -3,6 +3,7 @@ import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import BottomNav from "./BottomNav";
 import CricketBackdrop from "./CricketBackdrop";
+import { ShareAppSheet } from "../../cricket/ShareMenu";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { useAdminBodyClass } from "../../useAdminBodyClass";
 import { useAdminTheme } from "../../useAdminTheme";
@@ -26,6 +27,7 @@ const Layout = ({
     const { isDark, toggle: toggleTheme } = useAdminTheme();
     const [isSidebarOpen, setisSidebarOpen] = useState(false);
     const [closing, setClosing] = useState(false);
+    const [sharingApp, setSharingApp] = useState(false);
     const { mainBg } = useAdminAuth();
 
     const toggleSidebar = () => {
@@ -68,6 +70,12 @@ const Layout = ({
         }
     };
 
+    // The phone drawer sits above sheets, so it closes first.
+    const shareApp = () => {
+        setSidebarOpen(false);
+        setSharingApp(true);
+    };
+
     return (
         <div
             className={`layout-wrapper ${mainBg} ${isSidebarOpen ? "sidebar-open" : "sidebar-closed"} ${
@@ -84,6 +92,7 @@ const Layout = ({
                     isSidebarOpen={isSidebarOpen}
                     isDark={isDark}
                     toggleTheme={toggleTheme}
+                    onShareApp={shareApp}
                 />
             )}
 
@@ -106,6 +115,7 @@ const Layout = ({
                             isSidebarOpen={isSidebarOpen}
                             toggleSidebar={toggleSidebar}
                             setSidebarOpen={setSidebarOpen}
+                            onShareApp={shareApp}
                         />
                     </div>
                 </div>
@@ -119,9 +129,12 @@ const Layout = ({
                         isSidebarOpen={isSidebarOpen}
                         toggleSidebar={toggleSidebar}
                         setSidebarOpen={setSidebarOpen}
+                        onShareApp={shareApp}
                     />
                 </div>
             )}
+
+            {sharingApp && <ShareAppSheet onClose={() => setSharingApp(false)} />}
 
             {isMainScreen && <BottomNav onMore={() => setSidebarOpen(true)} />}
 

@@ -427,6 +427,36 @@
   box-shadow: 0 8px 20px rgba(244, 63, 94, 0.2);
 }
 
+/* "Share CricDesk", above Logout. */
+.share-app-btn {
+  width: 100%;
+  display: flex !important;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px !important;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(var(--primary-rgb), 0.06);
+  color: var(--primary) !important;
+  font-weight: 700 !important;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.share-app-btn i {
+  font-size: var(--fs-md);
+}
+.share-app-btn:hover {
+  background: rgba(var(--primary-rgb), 0.12);
+}
+.sidebar-footer .share-app-btn + .logout-btn {
+  margin-top: 8px;
+}
+.sidebar-close .share-app-btn {
+  justify-content: center !important;
+  padding: 12px 0 !important;
+}
+
 .sidebar-close .logout-btn {
   justify-content: center !important;
   padding: 12px 0 !important;

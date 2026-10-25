@@ -226,7 +226,7 @@ const HOME_TIPS: TipStep[] = [
   {
     target: "account",
     title: "Your account",
-    text: "Edit your profile, photo and playing role, or sign out. The moon button switches dark mode.",
+    text: "Edit your profile, photo and playing role, share CricDesk with friends, or sign out. The moon button switches dark mode.",
   },
 ];
 
