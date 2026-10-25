@@ -15,17 +15,17 @@ export interface CompressOptions {
 // The server's upload cap; a compressed image above it is rejected.
 export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 
-// Every stored image is kept under this.
-const TARGET_BYTES = 20 * 1024;
-
 // Presets matching where each image is displayed (with room for 2x screens).
-export const PLAYER_PHOTO: CompressOptions = { maxSize: 400, quality: 0.8, maxBytes: TARGET_BYTES };
-export const TOURNAMENT_LOGO: CompressOptions = { maxSize: 400, quality: 0.8, maxBytes: TARGET_BYTES };
-export const TOURNAMENT_BANNER: CompressOptions = { maxSize: 1200, quality: 0.7, maxBytes: TARGET_BYTES };
+// Photos also open full screen (ImageViewer) and go on the share cards, so
+// they're kept sharp enough for that: a typical one lands around 60–150 KB,
+// thousands of which still fit the database comfortably.
+export const PLAYER_PHOTO: CompressOptions = { maxSize: 1080, quality: 0.86, maxBytes: 200 * 1024 };
+export const TOURNAMENT_LOGO: CompressOptions = { maxSize: 512, quality: 0.88, maxBytes: 80 * 1024 };
+export const TOURNAMENT_BANNER: CompressOptions = { maxSize: 1600, quality: 0.84, maxBytes: 250 * 1024 };
 
 // Below these the image looks too poor, so shrink it instead.
-const MIN_QUALITY = 0.4;
-const MIN_SIZE = 96;
+const MIN_QUALITY = 0.65;
+const MIN_SIZE = 320;
 
 function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -46,6 +46,27 @@ function loadImage(file: File): Promise<HTMLImageElement> {
 const toBlob = (canvas: HTMLCanvasElement, type: string, quality: number) =>
   new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, quality));
 
+// Scales the image down by halves until the last step, so a big phone photo
+// keeps its detail instead of the single-jump scaling's jagged, grainy look.
+function downscale(img: HTMLImageElement, width: number, height: number) {
+  let source: CanvasImageSource = img;
+  let w = img.naturalWidth;
+  let h = img.naturalHeight;
+  while (w / 2 > width && h / 2 > height) {
+    w = Math.round(w / 2);
+    h = Math.round(h / 2);
+    const step = document.createElement("canvas");
+    step.width = w;
+    step.height = h;
+    const ctx = step.getContext("2d");
+    if (!ctx) break;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(source, 0, 0, w, h);
+    source = step;
+  }
+  return source;
+}
+
 // One encode at the given size: WebP, or JPEG on white where the browser
 // can't encode WebP (it hands back a PNG instead).
 async function encode(img: HTMLImageElement, scale: number, quality: number, webp: boolean) {
@@ -59,7 +80,7 @@ async function encode(img: HTMLImageElement, scale: number, quality: number, web
     ctx.fillStyle = "#fff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
-  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  ctx.drawImage(downscale(img, canvas.width, canvas.height), 0, 0, canvas.width, canvas.height);
   const blob = await toBlob(canvas, webp ? "image/webp" : "image/jpeg", quality);
   return blob && blob.type === (webp ? "image/webp" : "image/jpeg") ? blob : null;
 }
@@ -86,10 +107,10 @@ export async function compressImage(
   // Over budget: lower the quality first, then the size, until it fits
   // (or the image can't get any smaller).
   while (blob.size > maxBytes) {
-    if (q > MIN_QUALITY) q = Math.max(MIN_QUALITY, q - 0.1);
+    if (q > MIN_QUALITY) q = Math.max(MIN_QUALITY, q - 0.05);
     else if (longest * scale > MIN_SIZE) {
-      scale = Math.max(MIN_SIZE / longest, scale * 0.8);
-      q = quality - 0.2;
+      scale = Math.max(MIN_SIZE / longest, scale * 0.85);
+      q = quality - 0.1;
     } else break;
     const next = await encode(img, scale, q, webp);
     if (!next) break;
