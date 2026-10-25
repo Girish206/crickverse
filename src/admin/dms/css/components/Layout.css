@@ -123,6 +123,32 @@
    z-index: auto;
 }
 
+/* The Girish Creations signature closes every page on desktop: the main
+   column is at least a screen tall, so on a short page it sits at the
+   bottom of the screen, and on a long one after the content. Phones show
+   it in the menu drawer instead. */
+@media (min-width: 770px) {
+   .scrollable-main {
+      display: flex;
+      flex-direction: column;
+   }
+
+   .scrollable-main > * {
+      min-width: 0;
+   }
+
+   .main-signature {
+      margin-top: auto;
+      padding-top: 2rem;
+   }
+}
+
+@media (max-width: 769px) {
+   .main-signature {
+      display: none;
+   }
+}
+
 /* Sidebar open state */
 .scrollable-main.sidebar-open {
    padding-left: 260px;

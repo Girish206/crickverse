@@ -3,6 +3,7 @@ import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import BottomNav from "./BottomNav";
 import CricketBackdrop from "./CricketBackdrop";
+import { BrandSignature } from "../../components/BrandSignature";
 import { ShareAppSheet } from "../../cricket/ShareMenu";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { useAdminBodyClass } from "../../useAdminBodyClass";
@@ -145,6 +146,10 @@ const Layout = ({
                 } ${isMainScreen ? "" : "is-subpage"}`}
             >
                 {children}
+                {/* Desktop only; phones show it in the menu drawer instead. */}
+                <div className="main-signature">
+                    <BrandSignature small />
+                </div>
             </main>
         </div>
     );
