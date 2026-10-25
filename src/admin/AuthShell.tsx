@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useAdminBodyClass } from "./useAdminBodyClass";
 import { useAdminTheme } from "./useAdminTheme";
+import { BrandSignature } from "./components/BrandSignature";
 import "./dms/global.css";
 import "./dms/css/Login.css";
 
@@ -43,9 +44,7 @@ export function AuthShell({
 
         {footer && <p className="admin-login-switch">{footer}</p>}
 
-        <p className="admin-login-footnote">
-          <i className="fa-solid fa-baseball-bat-ball"></i> A Girish Creations project
-        </p>
+        <BrandSignature />
       </div>
     </div>
   );

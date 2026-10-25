@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { MenuItem } from "./MenuItem";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { Link, useNavigate } from "react-router-dom";
+import { BrandSignature } from "../../components/BrandSignature";
 
 const Sidebar = ({
     activeSubItem,
@@ -10,6 +11,7 @@ const Sidebar = ({
     toggleSidebar,
     setSidebarOpen,
     onShareApp,
+    showSignature = false,
 }: {
     activeSubItem: string;
     activeItem: string;
@@ -17,6 +19,8 @@ const Sidebar = ({
     toggleSidebar: () => void;
     setSidebarOpen: (open: boolean) => void;
     onShareApp: () => void;
+    // The phone menu drawer ends with the Girish Creations signature.
+    showSignature?: boolean;
 }) => {
     const { logout, admin } = useAdminAuth();
     const navigate = useNavigate();
@@ -243,6 +247,7 @@ const Sidebar = ({
                     <i className="fa-solid fa-right-from-bracket icon"></i>
                     {isSidebarOpen && <span>Logout</span>}
                 </Link>
+                {showSignature && <BrandSignature small />}
             </div>
         </div>
     );

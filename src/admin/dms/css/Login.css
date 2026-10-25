@@ -172,20 +172,6 @@
   text-align: left;
 }
 
-.admin-login-footnote {
-  margin: 1.25rem 0 0;
-  color: rgba(255, 255, 255, 0.55);
-  font-size: var(--fs-xs);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-.admin-login-footnote i {
-  color: var(--logo-gold);
-}
-
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -233,4 +219,50 @@
 
 .admin-login-switch a:hover {
   text-decoration: underline;
+}
+
+/* After "Next": the number/email they typed, with a way back to change it. */
+.admin-login-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 1rem;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(var(--brand-crimson-rgb), 0.06);
+  border: 1px solid rgba(var(--brand-crimson-rgb), 0.15);
+  color: var(--bs-body-color);
+}
+
+.admin-login-identity i {
+  color: rgb(var(--brand-crimson-rgb));
+}
+
+.admin-login-identity-value {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-login-identity-change {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: rgb(var(--brand-crimson-rgb));
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+.admin-login-identity-change:hover {
+  text-decoration: underline;
+}
+
+.admin-login-hint {
+  margin: 0.85rem 0 0;
+  color: var(--bs-secondary-color);
+  font-size: var(--fs-xs);
+  text-align: center;
 }

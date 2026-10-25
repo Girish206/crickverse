@@ -116,6 +116,7 @@ const Layout = ({
                             toggleSidebar={toggleSidebar}
                             setSidebarOpen={setSidebarOpen}
                             onShareApp={shareApp}
+                            showSignature
                         />
                     </div>
                 </div>

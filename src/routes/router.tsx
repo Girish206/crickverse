@@ -2,7 +2,6 @@ import type { ComponentType } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { ProtectedRoute, PublicOnlyRoute, RequireSuperAdmin } from "../admin/ProtectedRoute";
 import { AdminLoginPage } from "../admin/AdminLoginPage";
-import { RegisterPage } from "../admin/RegisterPage";
 
 const page = <T,>(load: () => Promise<T>, pick: (module: T) => ComponentType) => async () => ({
   Component: pick(await load()),
@@ -16,7 +15,8 @@ export const router = createBrowserRouter([
     element: <PublicOnlyRoute />,
     children: [
       { path: "/login", element: <AdminLoginPage /> },
-      { path: "/register", element: <RegisterPage /> },
+      // Sign-up is a step of the sign-in screen now; old links still land there.
+      { path: "/register", element: <Navigate to="/login" replace /> },
     ],
   },
   {

@@ -1,0 +1,87 @@
+.brand-signature {
+  --sig-label: var(--bs-secondary-color);
+  --sig-line: rgba(var(--bs-emphasis-color-rgb), 0.18);
+  --sig-name: var(--bs-emphasis-color);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-signature-on-dark {
+  --sig-label: rgba(255, 255, 255, 0.5);
+  --sig-line: rgba(255, 255, 255, 0.25);
+  --sig-name: #fff;
+  margin: 1.5rem 0 0;
+}
+
+.brand-signature-by {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--sig-label);
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.brand-signature-by::before,
+.brand-signature-by::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--sig-line));
+}
+
+.brand-signature-by::after {
+  background: linear-gradient(90deg, var(--sig-line), transparent);
+}
+
+.brand-signature-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-signature-logo {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 6px rgba(var(--brand-orange-rgb), 0.45));
+}
+
+.brand-signature-name {
+  color: var(--sig-name);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+/* Under Logout in the phone menu drawer: smaller and quieter than on the
+   sign-in screen. */
+.brand-signature-sm {
+  max-width: 220px;
+  margin: 14px auto 0;
+  gap: 4px;
+}
+
+.brand-signature-sm .brand-signature-by {
+  font-size: 0.55rem;
+  gap: 10px;
+}
+
+.brand-signature-sm .brand-signature-brand {
+  gap: 6px;
+}
+
+.brand-signature-sm .brand-signature-logo {
+  width: 20px;
+  height: 20px;
+}
+
+.brand-signature-sm .brand-signature-name {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
