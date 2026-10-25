@@ -40,8 +40,8 @@ const COPY: Record<Step, { heading: string; subtitle: string; submit: string; lo
   },
 };
 
-// CricDesk sign-in and sign-up on one screen: the mobile number (or an
-// organiser's email) first, then a password for an existing account, a new
+// CricDesk sign-in and sign-up on one screen: the mobile number first (the
+// field says so, but an organiser's email works there too), then a password for an existing account, a new
 // password for a team-added player who has none yet, or name and password
 // for a new number. Signing in once keeps them signed in on this device.
 export function AdminLoginPage() {
@@ -77,7 +77,7 @@ export function AdminLoginPage() {
   function validate() {
     const next: Record<string, string> = {};
     if (step === "identify" && !identifier.includes("@") && !mobile)
-      next.identifier = "Enter a valid 10-digit mobile number or your email";
+      next.identifier = "Enter a valid 10-digit mobile number";
     if (step === "password" && !password) next.password = "Enter your password";
     if (step === "register" && name.trim().length < 2) next.name = "Enter your name";
     if (step === "setPassword" || step === "register") {
@@ -154,9 +154,9 @@ export function AdminLoginPage() {
             onChange={(e) => setIdentifier(e.target.value)}
             floating={true}
             required
-            icon="fa-solid fa-mobile-screen"
+            icon={`fa-solid ${identifier.includes("@") ? "fa-envelope" : "fa-mobile-screen"}`}
             iconPosition="right"
-            label="Mobile number or email"
+            label="Mobile number"
             error={errors.identifier}
           />
         ) : (
