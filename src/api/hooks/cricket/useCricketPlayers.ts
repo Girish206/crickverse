@@ -16,9 +16,12 @@ export interface CricketPlayerInput {
 }
 
 // The signed-in user's player record, tournaments and matches.
+// Home, My Matches and My Teams read their matches from here; back in the
+// app, it catches up at once.
 export function useCricketMe() {
   return useQuery({
     queryKey: ["cricket-me"],
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const { data } = await apiClient.get<ApiEnvelope<CricketMe>>("/admin/cricket/me");
       return data.data;

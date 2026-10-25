@@ -12,6 +12,7 @@ import { roleOf } from "../playerRoles";
 import { PlayerAvatar } from "./PlayerAvatar";
 import { PlayerLink } from "./PlayerProfileSheet";
 import { useCricketTournaments } from "../../../api/hooks/cricket/useCricketTournaments";
+import { useCricketMatches } from "../../../api/hooks/cricket/useCricketMatches";
 import { CricketKpis } from "../CricketKpis";
 import { CricketPlayerProfileLoader } from "./CricketPlayerProfile";
 import "../../dms/css/adminDisplays.css";
@@ -34,6 +35,10 @@ export function CricketPlayersList() {
   const [search, setSearch] = useState("");
   const { data: tournaments } = useCricketTournaments();
   const inSquads = new Set((tournaments ?? []).flatMap((t) => t.playerIds));
+  // Anyone named in a match's teams has a record to keep, so they can't be
+  // deleted (the server refuses too). Nobody can until the matches load.
+  const { data: matches } = useCricketMatches();
+  const played = new Set((matches ?? []).flatMap((m) => m.teams.flatMap((t) => t.playerIds)));
   const pickedCount = (players ?? []).filter((player) => inSquads.has(player.id)).length;
 
   const term = search.trim().toLowerCase();
@@ -130,7 +135,7 @@ export function CricketPlayersList() {
                   <RowActions
                     onView={() => setModal({ mode: "view", id: player.id })}
                     onEdit={() => setModal({ mode: "edit", id: player.id })}
-                    onDelete={() => handleDelete(player.id, player.name)}
+                    onDelete={matches && !played.has(player.id) ? () => handleDelete(player.id, player.name) : undefined}
                   >
                     <button
                       type="button"

@@ -39,6 +39,8 @@ export function useCricketMatches(tournamentId?: number | "none", { enabled = tr
   return useQuery({
     queryKey: ["cricket-matches", "list", tournamentId ?? "all"],
     enabled,
+    // Back in the app, catch up at once.
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const { data } = await apiClient.get<ApiEnvelope<CricketMatch[]>>("/admin/cricket/matches", {
         params: tournamentId ? { tournamentId } : undefined,
@@ -48,16 +50,70 @@ export function useCricketMatches(tournamentId?: number | "none", { enabled = tr
   });
 }
 
-// A live match refreshes itself so people following along see new balls.
+// How often an open live match checks for new balls.
+const LIVE_REFRESH = 3_000;
+
+type CricketInningsData = CricketMatch["innings"][number];
+// GET /matches/:id/live: the match with only the balls from `fromBall` on.
+type LiveMatch = Omit<CricketMatch, "innings"> & { innings: (CricketInningsData & { fromBall: number })[] };
+
+// The match, loaded in full once (and again on coming back to the app).
+// While it's live, every 3s it asks only for what's new — the details plus
+// the balls after the ones it has — and adds them to what it holds, so
+// viewers follow along ball by ball without re-downloading the match.
 export function useCricketMatch(id: number) {
-  return useQuery({
-    queryKey: ["cricket-matches", id],
-    refetchInterval: (query) => (query.state.data?.status === "live" ? 10000 : false),
+  const queryClient = useQueryClient();
+  const key = ["cricket-matches", id];
+  const query = useQuery({
+    queryKey: key,
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const { data } = await apiClient.get<ApiEnvelope<CricketMatch>>(`/admin/cricket/matches/${id}`);
       return data.data;
     },
   });
+  const live = query.data?.status === "live";
+
+  useEffect(() => {
+    if (!live) return;
+    const matchKey = ["cricket-matches", id];
+    let busy = false;
+    const timer = window.setInterval(async () => {
+      // Skip while hidden, still waiting on the last ask, or while the scorer
+      // is saving a ball (their own save brings the new state).
+      if (busy || document.hidden || queryClient.isMutating() > 0) return;
+      const held = queryClient.getQueryData<CricketMatch>(matchKey);
+      if (!held) return;
+      busy = true;
+      try {
+        const { data } = await apiClient.get<ApiEnvelope<LiveMatch>>(`/admin/cricket/matches/${id}/live`, {
+          params: { known: held.innings.map((inn) => inn.balls.length).join(",") },
+        });
+        // Something newer arrived meanwhile (a save): keep that.
+        if (queryClient.getQueryData(matchKey) !== held || queryClient.isMutating() > 0) return;
+        const next: CricketMatch = {
+          ...data.data,
+          innings: data.data.innings.map(({ fromBall, balls, ...inn }, i) => ({
+            ...inn,
+            balls: [...(held.innings[i]?.balls ?? []).slice(0, fromBall), ...balls],
+          })),
+        };
+        queryClient.setQueryData(matchKey, next);
+        // It just finished: refresh the lists and Home to show the result.
+        if (next.status !== "live") {
+          queryClient.invalidateQueries({ queryKey: ["cricket-matches", "list"] });
+          queryClient.invalidateQueries({ queryKey: ["cricket-me"] });
+        }
+      } catch {
+        // Try again on the next tick.
+      } finally {
+        busy = false;
+      }
+    }, LIVE_REFRESH);
+    return () => window.clearInterval(timer);
+  }, [id, live, queryClient]);
+
+  return query;
 }
 
 // Every match action returns the updated match: seed its cache entry so the

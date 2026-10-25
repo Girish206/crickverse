@@ -32,7 +32,32 @@ function markSeen(id: string) {
   }
 }
 
-// Shows every screen's tips again (My Profile's "Show tips again").
+// Off = no screen opens its tips by itself (a "Show tips" menu item still
+// does). Kept outside KEY_PREFIX so resetTips leaves it alone.
+const OFF_KEY = "cv-tips-off";
+
+export function tipsOff() {
+  try {
+    return localStorage.getItem(OFF_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+// Turning tips back on also shows every screen's tips again.
+export function setTipsOff(off: boolean) {
+  try {
+    if (off) localStorage.setItem(OFF_KEY, "1");
+    else {
+      localStorage.removeItem(OFF_KEY);
+      resetTips();
+    }
+  } catch {
+    // Nothing to remember it in.
+  }
+}
+
+// Shows every screen's tips again.
 export function resetTips() {
   try {
     Object.keys(localStorage)
@@ -69,7 +94,7 @@ export function useTips(id: string, steps: TipStep[], ready = true): { start: ()
   }, []);
 
   useEffect(() => {
-    if (!ready || seen(id)) return;
+    if (!ready || seen(id) || tipsOff()) return;
     // Let the page settle (lazy tabs, fonts) before measuring.
     const timer = window.setTimeout(start, 700);
     return () => window.clearTimeout(timer);
@@ -82,7 +107,16 @@ export function useTips(id: string, steps: TipStep[], ready = true): { start: ()
 
   return {
     start,
-    element: shown && <TipsOverlay steps={shown} onClose={close} />,
+    element: shown && (
+      <TipsOverlay
+        steps={shown}
+        onClose={close}
+        onTurnOff={() => {
+          setTipsOff(true);
+          close();
+        }}
+      />
+    ),
   };
 }
 
@@ -93,7 +127,15 @@ interface Box {
   height: number;
 }
 
-function TipsOverlay({ steps, onClose }: { steps: TipStep[]; onClose: () => void }) {
+function TipsOverlay({
+  steps,
+  onClose,
+  onTurnOff,
+}: {
+  steps: TipStep[];
+  onClose: () => void;
+  onTurnOff: () => void;
+}) {
   const [index, setIndex] = useState(0);
   const [box, setBox] = useState<Box | null>(null);
   const [cardHeight, setCardHeight] = useState(0);
@@ -209,6 +251,9 @@ function TipsOverlay({ steps, onClose }: { steps: TipStep[]; onClose: () => void
             {last ? "Got it" : "Next"}
           </button>
         </div>
+        <button type="button" className="cv-tip-off" onClick={onTurnOff}>
+          Don't show tips
+        </button>
       </div>
     </div>,
     document.body,

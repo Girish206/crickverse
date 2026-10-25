@@ -33,7 +33,7 @@ const byDate = (a: CricketMatch, b: CricketMatch) =>
 const dayLabel = (value: string) =>
   new Date(value).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
 
-const timeLabel = (value: string) => new Date(value).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+const timeLabel = (value: string) => new Date(value).toLocaleTimeString(undefined, { hour: "numeric", hour12: true, minute: "2-digit" });
 
 // The live and upcoming matches in order, grouped by day (undated ones
 // last), then each knockout phase's playoffs not scheduled yet, with the

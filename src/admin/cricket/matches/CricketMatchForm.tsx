@@ -41,11 +41,16 @@ export function toLocalInput(value: string | null) {
   return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 }
 
-// Teams a one-off match can pick (tournament teams, and the one-off sides
-// of matches you play in, follow or organise), once each by teamKeyOf, so
-// two different teams with the same name are both listed and kept apart.
+// Teams a one-off match can pick (your saved teams, tournament teams, and the
+// one-off sides of matches you play in, follow or organise), once each by
+// teamKeyOf, so two different teams with the same name are both listed and
+// kept apart.
 function knownTeams(tournaments: CricketTournament[] | undefined, me: CricketMe | undefined) {
   const teams = new Map<string, { key: string; name: string; note: string; playerIds: Set<number> }>();
+  // Teams made outside a tournament: picking one fills the side with its players.
+  for (const team of me?.savedTeams ?? []) {
+    teams.set(team.teamKey, { key: team.teamKey, name: team.name.trim(), note: "Your team", playerIds: new Set(team.playerIds) });
+  }
   for (const t of tournaments ?? []) {
     t.teams.forEach((team, index) => {
       const key = `t:${t.id}:${index}`;

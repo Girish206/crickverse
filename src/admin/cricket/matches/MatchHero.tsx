@@ -45,7 +45,7 @@ function FaceOff({ match, colors }: { match: CricketMatch; colors: string[] }) {
         {at ? (
           <>
             <span className="cricket-faceoff-time">
-              {at.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+              {at.toLocaleTimeString(undefined, { hour: "numeric", hour12: true, minute: "2-digit" })}
             </span>
             <span className="cricket-faceoff-date">
               {at.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}

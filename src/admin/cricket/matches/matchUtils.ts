@@ -48,6 +48,7 @@ export function formatMatchDate(value: string | null) {
     month: "short",
     year: "numeric",
     hour: "numeric",
+    hour12: true,
     minute: "2-digit",
   });
 }

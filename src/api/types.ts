@@ -36,6 +36,22 @@ export interface CricketMe {
   // its matches).
   scoringTournaments: CricketTournament[];
   scoringMatches: CricketMatch[];
+  // Teams made outside a tournament that they created or play for.
+  savedTeams: CricketSavedTeam[];
+}
+
+// A team made outside any tournament ("Create team"). One-off matches that
+// pick it carry its teamKey ("f:<uuid>") on their side.
+export interface CricketSavedTeam {
+  id: number;
+  teamKey: string;
+  name: string;
+  playerIds: number[];
+  captainId: number | null;
+  viceCaptainId: number | null;
+  keeperId: number | null;
+  createdById: number;
+  createdAt: string;
 }
 
 export type CricketFollowKind = "player" | "team" | "tournament";

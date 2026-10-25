@@ -157,6 +157,20 @@
 }
 .cv-tip-next:focus-visible,
 .cv-tip-back:focus-visible,
+/* Turns tips off everywhere, under the buttons. */
+.cv-tip-off {
+  display: block;
+  margin: 10px auto 0;
+  padding: 2px 6px;
+  border: 0;
+  background: transparent;
+  color: var(--muted-color);
+  font: inherit;
+  font-size: var(--fs-xs, 0.75rem);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.cv-tip-off:focus-visible,
 .cv-tip-skip:focus-visible {
   outline: 2px solid var(--secondary);
   outline-offset: 2px;

@@ -31,7 +31,7 @@ import "../cricket.css";
 
 const fixtureDate = (value: string | null) =>
   value
-    ? new Date(value).toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })
+    ? new Date(value).toLocaleString(undefined, { weekday: "short", day: "numeric", month: "short", hour: "numeric", hour12: true, minute: "2-digit" })
     : "Date to be set";
 
 function shuffled<T>(items: T[]) {

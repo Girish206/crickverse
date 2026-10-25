@@ -122,3 +122,15 @@ textarea {
   font-style: italic;
   letter-spacing: 0.06em;
 }
+
+/* Phones: no scrollbars anywhere — lists, sheets, tables and tab strips
+   still scroll with a swipe, just without a bar drawn beside or under them.
+   !important beats the "thin, on hover" bars some lists set. */
+@media (max-width: 768px) {
+  * {
+    scrollbar-width: none !important;
+  }
+  *::-webkit-scrollbar {
+    display: none;
+  }
+}

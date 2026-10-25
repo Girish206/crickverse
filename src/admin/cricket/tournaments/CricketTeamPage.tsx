@@ -6,8 +6,10 @@ import {
   useCricketTournament,
   useMoveCricketPlayer,
   useRemoveCricketTeam,
+  useSetCricketSquad,
   useSetCricketTeamRoles,
   useSwapCricketPlayers,
+  useUpdateCricketTeam,
 } from "../../../api/hooks/cricket/useCricketTournaments";
 import type { CricketPlayer } from "../../../api/types";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
@@ -81,13 +83,20 @@ export function CricketTeamPage() {
   const { data: players } = useCricketPlayers();
   const removeTeam = useRemoveCricketTeam();
   const setRoles = useSetCricketTeamRoles();
+  const updateTeam = useUpdateCricketTeam();
+  const setSquad = useSetCricketSquad();
   const [editing, setEditing] = useState(false);
   const [adding, setAdding] = useState(false);
   const [sharing, setSharing] = useState(false);
   // Player whose "Move / swap" sheet is open.
   const [moving, setMoving] = useState<number | null>(null);
+  // Player whose "⋮" sheet (move / swap, remove) is open.
+  const [actionsFor, setActionsFor] = useState<number | null>(null);
   const [params, setParams] = useSearchParams();
   const location = useLocation();
+  // Opened from My Teams: the team stands on its own there, so the header
+  // leaves out the tournament (the Info tab still links to it).
+  const fromMyTeams = (location.state as { from?: string } | null)?.from === "/my-teams";
   const requested = params.get("tab") as Tab | null;
   const tab: Tab = requested && TABS.some((t) => t.value === requested) ? requested : "info";
   const { admin } = useAdminAuth();
@@ -136,13 +145,34 @@ export function CricketTeamPage() {
     }
   }
 
+  // Takes the player off this team (the server clears any captain /
+  // vice-captain / keeper role they held) and out of the tournament's squad.
+  async function handleRemovePlayer(playerId: number) {
+    const name = playerById.get(playerId)?.name ?? "this player";
+    if (
+      await confirmAction(
+        `Remove ${name}?`,
+        `They leave ${team!.name} and the ${tournament!.name} tournament.`,
+        "Yes, remove",
+      )
+    ) {
+      await updateTeam.mutateAsync({
+        id,
+        index: teamIndex,
+        name: team!.name,
+        playerIds: team!.playerIds.filter((pid) => pid !== playerId),
+      });
+      await setSquad.mutateAsync({ id, playerIds: tournament!.playerIds.filter((pid) => pid !== playerId) });
+    }
+  }
+
   const showAddBar = canAddPlayers && tab === "players";
   return (
     <div className={`cricket-page ${showAddBar ? "has-action-bar" : ""}`.trim()}>
       {tips.element}
       <PageHeader
         title={team.name}
-        subtitle={tournament.name}
+        subtitle={fromMyTeams ? undefined : tournament.name}
         back={backTo}
         backLabel="All teams"
         actions={
@@ -197,9 +227,11 @@ export function CricketTeamPage() {
               <div className="cricket-th-title">
                 <h1>{team.name}</h1>
                 <div className="cricket-th-meta">
-                  <span>
-                    <i className="fa-solid fa-trophy" aria-hidden="true"></i> {tournament.name}
-                  </span>
+                  {!fromMyTeams && (
+                    <span>
+                      <i className="fa-solid fa-trophy" aria-hidden="true"></i> {tournament.name}
+                    </span>
+                  )}
                   <span>
                     <i className="fa-solid fa-users" aria-hidden="true"></i> {team.playerIds.length} players
                   </span>
@@ -273,14 +305,14 @@ export function CricketTeamPage() {
                       onChange={(roles) => setRoles.mutate({ id, index: teamIndex, ...roles })}
                     />
                   )}
-                  {canManage && tournament.teams.length > 1 && (
+                  {canManage && (
                     <button
                       type="button"
-                      className="cricket-roster-action"
-                      onClick={() => setMoving(playerId)}
-                      aria-label={`Move or swap ${playerById.get(playerId)?.name ?? "player"}`}
+                      className="cricket-roster-more"
+                      onClick={() => setActionsFor(playerId)}
+                      aria-label={`More for ${playerById.get(playerId)?.name ?? "player"}`}
                     >
-                      <i className="fa-solid fa-right-left" aria-hidden="true"></i> Move
+                      <i className="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i>
                     </button>
                   )}
                 </li>
@@ -328,6 +360,49 @@ export function CricketTeamPage() {
       )}
 
       {adding && <AddTeamPlayersSheet tournament={tournament} teamIndex={teamIndex} onClose={() => setAdding(false)} />}
+
+      {actionsFor !== null && (
+        <BottomSheet
+          title={playerById.get(actionsFor)?.name ?? "Player"}
+          icon="fa-solid fa-user"
+          onClose={() => setActionsFor(null)}
+        >
+          <div className="cricket-settings-list">
+            {tournament.teams.length > 1 && (
+              <button
+                type="button"
+                className="cricket-settings-item"
+                onClick={() => {
+                  setMoving(actionsFor);
+                  setActionsFor(null);
+                }}
+              >
+                <i className="fa-solid fa-right-left" aria-hidden="true"></i>
+                <span>
+                  Move or swap
+                  <small>Send to another team, or trade with one of its players</small>
+                </span>
+                <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
+              </button>
+            )}
+            <button
+              type="button"
+              className="cricket-settings-item is-danger"
+              disabled={updateTeam.isPending || setSquad.isPending}
+              onClick={() => {
+                setActionsFor(null);
+                handleRemovePlayer(actionsFor);
+              }}
+            >
+              <i className="fa-solid fa-user-minus" aria-hidden="true"></i>
+              <span>
+                Remove player
+                <small>Takes them off the team and out of the tournament</small>
+              </span>
+            </button>
+          </div>
+        </BottomSheet>
+      )}
 
       {moving !== null && (
         <MoveSheet

@@ -14,7 +14,7 @@ const ROW_SPLIT = 62;
 
 const shortDate = (value: string | null) =>
   value
-    ? new Date(value).toLocaleString(undefined, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })
+    ? new Date(value).toLocaleString(undefined, { day: "numeric", month: "short", hour: "numeric", hour12: true, minute: "2-digit" })
     : "Date TBD";
 
 // Lays the bracket out left to right: a match sits one column after the

@@ -2,9 +2,10 @@ import { useState } from "react";
 import { BottomSheet } from "./BottomSheet";
 import { CricketMatchForm } from "./matches/CricketMatchForm";
 import { CricketTournamentForm } from "./tournaments/CricketTournamentForm";
+import { CreateSavedTeamForm } from "./teams/SavedTeamPage";
 import "./cricket.css";
 
-type Step = "choose" | "match" | "tournament" | null;
+type Step = "choose" | "match" | "tournament" | "team" | null;
 
 const CHOICES = [
   {
@@ -19,10 +20,16 @@ const CHOICES = [
     label: "Add / Start Tournament",
     note: "Players, teams and a fixture list",
   },
+  {
+    step: "team",
+    icon: "fa-people-group",
+    label: "Create Team",
+    note: "Your own team and players, to pick for matches",
+  },
 ] as const;
 
-// The navbar's "+": pick a match or a tournament, then fill in its form.
-// Both forms open the new match / tournament once saved.
+// The navbar's "+": pick a match, a tournament or a team, then fill in its
+// form. Each opens what it made once saved.
 export function QuickCreate() {
   const [step, setStep] = useState<Step>(null);
   const close = () => setStep(null);
@@ -33,8 +40,8 @@ export function QuickCreate() {
         type="button"
         className="navbar-theme-btn"
         onClick={() => setStep("choose")}
-        title="Add a match or tournament"
-        aria-label="Add a match or tournament"
+        title="Create a match, tournament or team"
+        aria-label="Create a match, tournament or team"
         data-tour="create"
       >
         <i className="fa-solid fa-plus" aria-hidden="true"></i>
@@ -68,6 +75,11 @@ export function QuickCreate() {
       {step === "tournament" && (
         <BottomSheet title="New Tournament" onClose={close} wide>
           <CricketTournamentForm onSaved={close} />
+        </BottomSheet>
+      )}
+      {step === "team" && (
+        <BottomSheet title="New Team" icon="fa-solid fa-people-group" onClose={close}>
+          <CreateSavedTeamForm onSaved={close} />
         </BottomSheet>
       )}
     </>

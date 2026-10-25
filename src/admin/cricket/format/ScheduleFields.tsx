@@ -138,6 +138,7 @@ export function ScheduleFields({
     new Date(iso).toLocaleString(undefined, {
       ...(oneDay ? {} : { weekday: "short", day: "numeric", month: "short" }),
       hour: "numeric",
+      hour12: true,
       minute: "2-digit",
     });
 

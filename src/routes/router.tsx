@@ -60,6 +60,11 @@ export const router = createBrowserRouter([
             path: "teams/friendly/:name",
             lazy: page(() => import("../admin/cricket/teams/FriendlyTeamPage"), (m) => m.FriendlyTeamPage),
           },
+          // A team made outside any tournament ("Create Team").
+          {
+            path: "teams/saved/:id",
+            lazy: page(() => import("../admin/cricket/teams/SavedTeamPage"), (m) => m.SavedTeamPage),
+          },
           {
             path: "matches/:id",
             lazy: page(() => import("../admin/cricket/matches/CricketMatchPage"), (m) => m.CricketMatchPage),

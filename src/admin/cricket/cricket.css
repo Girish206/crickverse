@@ -745,22 +745,27 @@
     gap: 10px;
   }
   .cricket-match-card {
-    gap: 8px;
-    padding: 12px 12px 12px 16px;
-    border-radius: 14px;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 16px;
+  }
+  .cricket-match-card-tag {
+    margin: -12px -14px 0;
+    padding: 6px 14px;
   }
   .cricket-match-card-badge {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
+    width: 40px;
+    height: 40px;
   }
-  .cricket-match-card-name,
-  .cricket-match-card-score {
-    font-size: var(--fs-base);
+  .cricket-match-card-vs {
+    margin-top: 10px;
+  }
+  .cricket-match-card-when-centre {
+    margin-top: 4px;
   }
   .cricket-match-card-note {
-    margin: 0 -12px -12px -16px;
-    padding: 7px 12px 7px 16px;
+    margin: 0 -14px -12px;
+    padding: 7px 14px;
     font-size: var(--fs-xs);
   }
   .cricket-dash-grid {
@@ -3548,6 +3553,24 @@
   color: #fff;
   font-size: var(--fs-md);
   font-weight: 700;
+  position: relative;
+}
+/* Organisers: generated (wand) or hand-picked (hand) team, on the logo's
+   corner. */
+.cricket-team-card-kind {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--bs-card-bg, var(--bs-body-bg));
+  border-radius: 50%;
+  background: var(--theme-text-dark);
+  color: var(--bs-body-bg);
+  font-size: 9px;
 }
 .cricket-team-card-text {
   flex: 1;
@@ -3672,6 +3695,20 @@
   color: var(--primary);
   font-size: var(--fs-sm);
   font-weight: 600;
+}
+/* Team page: a player's "⋮" (move / swap, remove). */
+.cricket-roster-more {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted-color);
+}
+.cricket-roster-more:hover {
+  background: rgba(var(--primary-rgb), 0.08);
+  color: var(--primary);
 }
 /* Share squad sheet (ShareSquadSheet.tsx): the card preview, then actions. */
 .cricket-squad-share img,

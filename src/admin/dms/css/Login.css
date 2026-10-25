@@ -266,3 +266,41 @@
   font-size: var(--fs-xs);
   text-align: center;
 }
+
+/* Light theme: the same screen on warm paper (the status bar's #f6f3ef)
+   instead of the stadium-night backdrop, with softer glows and the text in
+   the logo's maroon and crimson. Dark keeps the night look above. */
+:root[data-bs-theme="light"] .admin-login-shell {
+  background:
+    radial-gradient(ellipse 90% 55% at 50% 0%, rgba(var(--brand-crimson-rgb), 0.16) 0%, transparent 70%),
+    linear-gradient(180deg, #fbf8f4 0%, #f6f3ef 100%);
+  color: rgb(var(--brand-navy-rgb));
+}
+:root[data-bs-theme="light"] .admin-login-ash {
+  opacity: 0.45;
+}
+:root[data-bs-theme="light"] .admin-login-card {
+  box-shadow:
+    0 24px 60px rgba(var(--brand-navy-rgb), 0.14),
+    0 0 0 1px rgba(var(--brand-navy-rgb), 0.06);
+}
+:root[data-bs-theme="light"] .admin-login-badge {
+  background: rgba(var(--brand-crimson-rgb), 0.08);
+  border-color: rgba(var(--brand-crimson-rgb), 0.35);
+  color: rgb(var(--brand-maroon-rgb));
+}
+:root[data-bs-theme="light"] .admin-login-heading {
+  background-image: linear-gradient(90deg, rgb(var(--brand-maroon-rgb)) 0%, rgb(var(--brand-orange-deep-rgb)) 100%);
+}
+:root[data-bs-theme="light"] .admin-login-subtitle,
+:root[data-bs-theme="light"] .admin-login-switch {
+  color: rgba(var(--brand-navy-rgb), 0.7);
+}
+:root[data-bs-theme="light"] .admin-login-switch a {
+  color: rgb(var(--brand-crimson-rgb));
+}
+:root[data-bs-theme="light"] .brand-signature-on-dark {
+  --sig-label: rgba(var(--brand-navy-rgb), 0.55);
+  --sig-line: rgba(var(--brand-navy-rgb), 0.2);
+  --sig-name: rgb(var(--brand-navy-rgb));
+}

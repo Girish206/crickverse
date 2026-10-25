@@ -11,7 +11,7 @@ import InputComp from "../../dms/components/InputComp";
 import { ChipChoice } from "../CricketChoices";
 import { formatMobile, normalizeMobile } from "../mobile";
 import { PLAYER_ROLES } from "../playerRoles";
-import { resetTips } from "../TipsTour";
+import { setTipsOff, tipsOff } from "../TipsTour";
 import { ShareAppSheet } from "../ShareMenu";
 import { PlayerAvatar } from "../players/PlayerAvatar";
 import "../../dms/css/adminDisplays.css";
@@ -46,6 +46,7 @@ function ProfileForm({ me }: { me: CricketMe }) {
   const setPhoto = useSetMyPhoto();
   const player = me.player;
   const [sharingApp, setSharingApp] = useState(false);
+  const [noTips, setNoTips] = useState(tipsOff);
 
   const [name, setName] = useState(player?.name ?? admin?.name ?? "");
   const [mobile, setMobile] = useState(me.accountMobile ? formatMobile(me.accountMobile) : "");
@@ -234,11 +235,12 @@ function ProfileForm({ me }: { me: CricketMe }) {
           type="button"
           className="cv-profile-tips"
           onClick={() => {
-            resetTips();
-            toast.success("Tips will show again on each screen");
+            setTipsOff(!noTips);
+            setNoTips(!noTips);
+            toast.success(noTips ? "Tips will show again on each screen" : "Tips turned off");
           }}
         >
-          <i className="fa-solid fa-lightbulb" aria-hidden="true"></i> Show tips again
+          <i className="fa-solid fa-lightbulb" aria-hidden="true"></i> {noTips ? "Turn tips on" : "Turn tips off"}
         </button>
         <button type="button" className="cv-profile-signout" onClick={handleLogout}>
           <i className="fa-solid fa-right-from-bracket" aria-hidden="true"></i> Sign out

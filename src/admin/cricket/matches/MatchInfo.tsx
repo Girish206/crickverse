@@ -9,7 +9,7 @@ import { matchStageLabel } from "./matchUtils";
 
 const dateText = (value: string) =>
   new Date(value).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).replace(/ /g, "-");
-const timeText = (value: string) => new Date(value).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+const timeText = (value: string) => new Date(value).toLocaleTimeString(undefined, { hour: "numeric", hour12: true, minute: "2-digit" });
 
 // "42 min", "1 min", or "Under a minute".
 function minutesText(ms: number) {

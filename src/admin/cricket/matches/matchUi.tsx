@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { useNavigate } from "react-router-dom";
 import type { CricketMatch, CricketMatchStatus } from "../../../api/types";
 import { avatarColorFor } from "../avatarColor";
@@ -28,6 +29,20 @@ export interface MatchTag {
   label: string;
   // Right end of the ribbon, e.g. when an upcoming match starts.
   aside?: string;
+}
+
+// Between the two teams: when an upcoming match starts (time over date),
+// else "vs".
+function MatchCardCentre({ match }: { match: CricketMatch }) {
+  if (match.status !== "scheduled") return <span className="cricket-match-card-vs">vs</span>;
+  if (!match.scheduledAt) return <span className="cricket-match-card-when-centre"><strong>TBD</strong><small>Date not set</small></span>;
+  const at = new Date(match.scheduledAt);
+  return (
+    <span className="cricket-match-card-when-centre">
+      <strong>{at.toLocaleTimeString(undefined, { hour: "numeric", hour12: true, minute: "2-digit" })}</strong>
+      <small>{at.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}</small>
+    </span>
+  );
 }
 
 // The fixture/result card used on every match list; opens the match centre.
@@ -64,37 +79,44 @@ export function MatchCard({
       <div className="cricket-match-card-top">
         <span className="cricket-match-card-meta">
           <span className="cricket-match-card-stage">{matchStageLabel(match)}</span>
-          <span className="cricket-match-card-context">
-            {" · "}
-            {tournamentName ? `${tournamentName} · ` : ""}
-            {match.overs} ov
-          </span>
+          {tournamentName && (
+            <span className="cricket-match-card-context" title={tournamentName}>
+              {tournamentName}
+            </span>
+          )}
         </span>
         <MatchStatusBadge status={match.status} />
       </div>
 
+      {/* Face-off: first team · when (upcoming) or "vs" · second team, each
+          team a centred column of badge, name and score. */}
       <div className="cricket-match-card-teams">
-        {battingOrder(match).map((slot) => {
+        {battingOrder(match).map((slot, i) => {
           const team = match.teams[slot];
           const score = teamScore(match, slot);
           const state = decided ? (match.winner === slot ? "is-winner" : "is-loser") : "";
           return (
-            <div className={`cricket-match-card-team ${state}`.trim()} key={slot}>
-              <span className="cricket-match-card-badge" style={{ background: avatarColorFor(team.name) }} aria-hidden="true">
-                {teamInitials(team.name)}
-              </span>
-              <span className="cricket-match-card-name">{team.name}</span>
-              {match.winner === slot && decided && (
-                <i className="fa-solid fa-trophy cricket-match-card-trophy" aria-label="Winner"></i>
-              )}
-              {score ? (
-                <span className="cricket-match-card-score">
-                  {score.runs} <small>({score.overs})</small>
+            <Fragment key={slot}>
+              {i === 1 && <MatchCardCentre match={match} />}
+              <div className={`cricket-match-card-team ${state}`.trim()}>
+                <span className="cricket-match-card-badge" style={{ background: avatarColorFor(team.name) }} aria-hidden="true">
+                  {teamInitials(team.name)}
                 </span>
-              ) : (
-                match.status === "live" && <span className="cricket-match-card-yet">Yet to bat</span>
-              )}
-            </div>
+                <span className="cricket-match-card-name" title={team.name}>
+                  {team.name}
+                  {match.winner === slot && decided && (
+                    <i className="fa-solid fa-trophy cricket-match-card-trophy" aria-label="Winner"></i>
+                  )}
+                </span>
+                {score ? (
+                  <span className="cricket-match-card-score">
+                    {score.runs} <small>({score.overs})</small>
+                  </span>
+                ) : (
+                  match.status === "live" && <span className="cricket-match-card-yet">Yet to bat</span>
+                )}
+              </div>
+            </Fragment>
           );
         })}
       </div>
@@ -103,16 +125,22 @@ export function MatchCard({
         <div className="cricket-match-card-result">{match.resultText ?? "In progress"}</div>
       )}
       <div className="cricket-match-card-when">
-        <span>
-          <i className="fa-regular fa-calendar" aria-hidden="true"></i>
-          {formatMatchDate(match.scheduledAt)}
-        </span>
-        {match.venue && (
+        {match.status !== "scheduled" && (
           <span>
-            <i className="fa-solid fa-location-dot" aria-hidden="true"></i>
-            {match.venue}
+            <i className="fa-regular fa-calendar" aria-hidden="true"></i>
+            {formatMatchDate(match.scheduledAt)}
           </span>
         )}
+        {(match.venue || match.city) && (
+          <span className="cricket-match-card-place" title={[match.venue, match.city].filter(Boolean).join(", ")}>
+            <i className="fa-solid fa-location-dot" aria-hidden="true"></i>
+            {[match.venue, match.city].filter(Boolean).join(", ")}
+          </span>
+        )}
+        <span className="cricket-match-card-overs">
+          <i className="fa-solid fa-baseball" aria-hidden="true"></i>
+          {match.overs} overs
+        </span>
       </div>
       {footnote && (
         <div className="cricket-match-card-note">

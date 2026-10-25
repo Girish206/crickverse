@@ -73,15 +73,22 @@ function TeamCards({
     <div className="cricket-team-cards">
       {tournament.teams.map((team, teamIndex) => {
         const row = record.get(teamIndex);
+        const generated = isGeneratedTeam(team);
+        const kind = generated ? "Balanced by the app" : "Picked by hand";
         return (
           <Link key={teamIndex} to={`/tournaments/${tournament.id}/teams/${teamIndex}`} className="cricket-team-card">
             <span className="cricket-team-card-logo" style={{ background: avatarColorFor(team.name) }} aria-hidden="true">
               {team.name.charAt(0).toUpperCase()}
+              {showKind && (
+                <span className="cricket-team-card-kind" title={kind}>
+                  <i className={`fa-solid ${generated ? "fa-wand-magic-sparkles" : "fa-hand"}`}></i>
+                </span>
+              )}
             </span>
             <span className="cricket-team-card-text">
               <strong>
                 {team.name}
-                {showKind && <span className="cricket-role-tag">{isGeneratedTeam(team) ? "Auto" : "Manual"}</span>}
+                {showKind && <span className="visually-hidden"> ({kind})</span>}
               </strong>
               <small>
                 {team.playerIds.length} player{team.playerIds.length === 1 ? "" : "s"}

@@ -188,38 +188,27 @@
   grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
   gap: 14px;
 }
+/* Match card (MatchCard): stage and tournament with the status pill, the
+   two teams facing off around the start time or "vs", a tinted result
+   strip, then venue and overs. Live cards glow crimson. */
 .cricket-match-card {
-  --match-accent: var(--muted-color);
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   min-width: 0;
-  padding: 14px 16px 14px 20px;
+  padding: 14px 16px;
   overflow: hidden;
   background: var(--adm-surface, #fff);
   border: 1px solid var(--border-color);
-  border-radius: 16px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  border-radius: 18px;
+  box-shadow: 0 2px 12px rgba(var(--brand-navy-rgb), 0.06);
   cursor: pointer;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
-.cricket-match-card::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 4px;
-  background: var(--match-accent);
-}
 .cricket-match-card.is-live {
-  --match-accent: #dc2626;
-  border-color: rgba(220, 38, 38, 0.35);
-}
-.cricket-match-card.is-scheduled {
-  --match-accent: var(--secondary);
-}
-.cricket-match-card.is-completed {
-  --match-accent: #16a34a;
+  border-color: rgba(var(--brand-crimson-rgb), 0.45);
+  box-shadow: 0 0 0 3px rgba(var(--brand-crimson-rgb), 0.08), 0 2px 12px rgba(var(--brand-navy-rgb), 0.06);
 }
 .cricket-match-card:hover,
 .cricket-match-card:focus-visible {
@@ -238,76 +227,96 @@
 .cricket-match-card-meta {
   display: flex;
   align-items: center;
-  gap: 0;
+  gap: 6px;
   min-width: 0;
   font-size: var(--fs-xs);
   color: var(--muted-color);
 }
 .cricket-match-card-stage {
   flex: none;
-  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(var(--primary-rgb), 0.1);
   color: var(--primary);
+  font-size: var(--fs-2xs);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 .cricket-match-card-context {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 600;
 }
-/* Status as plain coloured text here, not the pill used elsewhere. */
 .cricket-match-card .cricket-match-status {
   flex: none;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  font-size: var(--fs-xs);
+  font-size: var(--fs-2xs);
+}
+/* The flag yellow doesn't read on a white card: deep gold instead. */
+.cricket-match-card .cricket-match-status.is-scheduled {
+  background: rgba(176, 128, 0, 0.12);
+  color: rgb(150, 108, 0);
+}
+:root[data-bs-theme="dark"] .cricket-match-card .cricket-match-status.is-scheduled {
+  background: rgba(var(--brand-amber-rgb), 0.14);
+  color: rgb(var(--brand-amber-rgb));
+}
+:root[data-bs-theme="dark"] .cricket-match-card.is-live .cricket-match-card-result {
+  color: rgb(232, 104, 94);
 }
 
 .cricket-match-card-teams {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: start;
   gap: 8px;
 }
 .cricket-match-card-team {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 4px;
   min-width: 0;
+  text-align: center;
   color: var(--theme-text-dark);
 }
 .cricket-match-card-badge {
   flex: none;
   display: grid;
   place-items: center;
-  width: 22px;
-  height: 22px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  font-size: var(--fs-3xs);
+  border: 3px solid var(--adm-surface, #fff);
+  box-shadow: 0 0 0 1px var(--border-color), 0 4px 10px rgba(var(--brand-navy-rgb), 0.12);
+  font-size: var(--fs-sm);
   font-weight: 800;
   color: #fff;
 }
+/* One line, cut short with "…" (full name on hover). */
 .cricket-match-card-name {
-  flex: 1;
-  min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: var(--fs-md);
-  font-weight: 600;
+  font-size: var(--fs-base);
+  font-weight: 700;
+  line-height: 1.25;
 }
 .cricket-match-card-trophy {
-  flex: none;
+  margin-left: 4px;
   font-size: var(--fs-xs);
   color: var(--brand-amber-deep, #a16207);
 }
 .cricket-match-card-score {
-  flex: none;
-  font-size: var(--fs-md);
+  font-size: var(--fs-lg);
   font-weight: 800;
+  line-height: 1.1;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 .cricket-match-card-yet {
-  flex: none;
   font-size: var(--fs-xs);
   color: var(--muted-color);
 }
@@ -324,20 +333,84 @@
   font-weight: 500;
   color: var(--muted-color);
 }
+.cricket-match-card-score small {
+  font-size: var(--fs-xs);
+}
+
+/* Between the teams, level with the badges. */
+.cricket-match-card-vs {
+  margin-top: 12px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.08);
+  color: var(--muted-color);
+  font-size: var(--fs-2xs);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.cricket-match-card-when-centre {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  margin-top: 6px;
+  padding: 0 4px;
+  white-space: nowrap;
+}
+.cricket-match-card-when-centre strong {
+  font-size: var(--fs-md);
+  font-weight: 800;
+  color: var(--theme-text-dark);
+  font-variant-numeric: tabular-nums;
+}
+.cricket-match-card-when-centre small {
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  color: var(--muted-color);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
 
 .cricket-match-card-result {
+  padding: 7px 10px;
+  border-left: 3px solid var(--primary);
+  border-radius: 8px;
+  background: rgba(var(--primary-rgb), 0.07);
   font-size: var(--fs-sm);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--theme-text-dark);
+}
+.cricket-match-card.is-live .cricket-match-card-result {
+  border-left-color: rgb(var(--brand-crimson-rgb));
+  background: rgba(var(--brand-crimson-rgb), 0.08);
+  color: rgb(var(--brand-crimson-rgb));
 }
 .cricket-match-card-when {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px 14px;
-  padding-top: 8px;
-  border-top: 1px dashed var(--border-color);
+  gap: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color);
   font-size: var(--fs-xs);
   color: var(--muted-color);
+}
+.cricket-match-card-when span {
+  min-width: 0;
+}
+/* One line: date, place and overs side by side; a long ground and city
+   is cut short with "…" (full text on hover), the rest stay whole. */
+.cricket-match-card-when > span {
+  flex: none;
+  white-space: nowrap;
+}
+.cricket-match-card-when > .cricket-match-card-place {
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cricket-match-card-overs {
+  flex: none;
+  white-space: nowrap;
 }
 .cricket-match-card-when i {
   margin-right: 5px;
@@ -346,8 +419,8 @@
   display: flex;
   align-items: baseline;
   gap: 6px;
-  margin: 0 -16px -14px -20px;
-  padding: 8px 16px 8px 20px;
+  margin: 0 -16px -14px;
+  padding: 8px 16px;
   font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--primary);
@@ -362,8 +435,8 @@
   align-items: center;
   gap: 6px;
   min-width: 0;
-  margin: -14px -16px 0 -20px;
-  padding: 6px 16px 6px 20px;
+  margin: -14px -16px 0;
+  padding: 6px 16px;
   font-size: var(--fs-xs);
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -376,9 +449,6 @@
 .cricket-match-card.is-mine {
   border-color: rgba(var(--primary-rgb), 0.45);
   background: linear-gradient(180deg, rgba(var(--primary-rgb), 0.08), transparent 70%), var(--adm-surface, #fff);
-}
-.cricket-match-card.is-mine:not(.is-live) {
-  --match-accent: var(--primary);
 }
 .cricket-match-card.is-mine .cricket-match-card-tag {
   color: #fff;
@@ -2561,4 +2631,104 @@
 }
 :root[data-bs-theme="dark"] .cricket-commentary-balls li.is-wicket .cricket-commentary-text > strong {
   color: #f87171;
+}
+
+/* Home: Live now, Up next and Your tournaments as sideways-swiping rows.
+   One card fills the row; with more, each is narrower so the next one shows
+   at the right edge as a hint to swipe. */
+.cricket-home-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: min(100%, 440px);
+  gap: 12px;
+  margin: 0 -2px;
+  padding: 2px 2px 6px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.cricket-home-rail::-webkit-scrollbar {
+  display: none;
+}
+.cricket-home-rail.is-peek {
+  grid-auto-columns: min(340px, 85%);
+}
+.cricket-home-rail > * {
+  min-width: 0;
+  scroll-snap-align: start;
+}
+
+/* Home sections: each in its own colour from the brand palette
+   (src/styles/brand.css) — a softly tinted panel with a
+   coloured edge, and the heading's icon in a matching round badge. */
+.cricket-home-section {
+  --section-rgb: var(--primary-rgb);
+  padding: 14px 14px 12px;
+  border: 1px solid rgba(var(--section-rgb), 0.18);
+  border-top: 3px solid rgb(var(--section-rgb));
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(var(--section-rgb), 0.08) 0%, rgba(var(--section-rgb), 0.02) 120px);
+}
+/* Crimson, gold (the amber deepened to read on light), maroon, orange and
+   the logo's dark navy. */
+.cricket-home-section.is-live {
+  --section-rgb: var(--brand-crimson-rgb);
+}
+.cricket-home-section.is-next {
+  --section-rgb: 176, 128, 0;
+}
+.cricket-home-section.is-last {
+  --section-rgb: var(--brand-maroon-rgb);
+}
+.cricket-home-section.is-tournaments,
+.cricket-home-section.is-all {
+  --section-rgb: var(--brand-orange-deep-rgb);
+}
+.cricket-home-section.is-following {
+  --section-rgb: var(--brand-navy-rgb);
+}
+.cricket-home-icon {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(var(--section-rgb), 0.14);
+}
+.cricket-home-section .cricket-section-title .cricket-home-icon i {
+  margin: 0;
+  color: rgb(var(--section-rgb));
+  font-size: var(--fs-sm);
+}
+.cricket-home-section .cricket-home-head .admin-link {
+  color: rgb(var(--section-rgb));
+}
+/* Dark: brighter shades of the same colours so they read on the dark panel. */
+:root[data-bs-theme="dark"] .cricket-home-section.is-live {
+  --section-rgb: 232, 104, 94;
+}
+:root[data-bs-theme="dark"] .cricket-home-section.is-next {
+  --section-rgb: var(--brand-amber-rgb);
+}
+:root[data-bs-theme="dark"] .cricket-home-section.is-last {
+  --section-rgb: var(--brand-maroon-bright-rgb);
+}
+:root[data-bs-theme="dark"] .cricket-home-section.is-tournaments,
+:root[data-bs-theme="dark"] .cricket-home-section.is-all {
+  --section-rgb: 245, 140, 80;
+}
+:root[data-bs-theme="dark"] .cricket-home-section.is-following {
+  --section-rgb: 214, 190, 160;
+}
+/* A section's count next to its heading (My Matches' panel). */
+.cricket-home-count {
+  margin-left: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(var(--section-rgb), 0.14);
+  color: rgb(var(--section-rgb));
+  font-size: var(--fs-2xs);
+  font-weight: 700;
 }

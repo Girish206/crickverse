@@ -22,6 +22,9 @@ import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
 import { Loader } from "../../components/Loader";
+import { Button } from "../../components/Button";
+import { BottomSheet } from "../BottomSheet";
+import { CreateSavedTeamForm } from "../teams/SavedTeamPage";
 
 // The main menu pages' titles: icon (as in the sidebar) and what each is for.
 type PageTitle = { title: string; icon: string; subtitle: string };
@@ -116,7 +119,7 @@ const greeting = () => {
 function startsText(m: CricketMatch) {
   if (!m.scheduledAt) return "Date not set";
   const at = new Date(m.scheduledAt);
-  const time = at.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  const time = at.toLocaleTimeString(undefined, { hour: "numeric", hour12: true, minute: "2-digit" });
   const days = Math.round((startOfDay(at) - startOfDay(new Date())) / 86400000);
   if (days === 0) return `Today, ${time}`;
   if (days === 1) return `Tomorrow, ${time}`;
@@ -168,9 +171,14 @@ function HomeHero({ me }: { me: CricketMe }) {
   );
 }
 
+// Each home section's own colour (tinted panel and icon badge), so they're
+// easy to tell apart at a glance.
+type SectionTone = "live" | "next" | "last" | "tournaments" | "following";
+
 function HomeSection({
   title,
   icon,
+  tone,
   badge,
   link,
   tour,
@@ -178,6 +186,7 @@ function HomeSection({
 }: {
   title: string;
   icon: string;
+  tone: SectionTone;
   badge?: ReactNode;
   link?: { to: string; label: string };
   // What the tips point at (TipsTour).
@@ -185,10 +194,13 @@ function HomeSection({
   children: ReactNode;
 }) {
   return (
-    <section className="cricket-home-section" data-tour={tour}>
+    <section className={`cricket-home-section is-${tone}`} data-tour={tour}>
       <div className="cricket-home-head">
         <h2 className="cricket-section-title cricket-home-heading">
-          <i className={icon} aria-hidden="true"></i> {title}
+          <span className="cricket-home-icon" aria-hidden="true">
+            <i className={icon}></i>
+          </span>
+          {title}
           {badge}
         </h2>
         {link && (
@@ -200,6 +212,12 @@ function HomeSection({
       {children}
     </section>
   );
+}
+
+// A row of cards to swipe through sideways. With more than one, each card is
+// a little narrower than the row so the next one peeks in on the right.
+function HomeRail({ children }: { children: ReactNode[] }) {
+  return <div className={`cricket-home-rail ${children.length > 1 ? "is-peek" : ""}`.trim()}>{children}</div>;
 }
 
 const HOME_TIPS: TipStep[] = [
@@ -269,14 +287,24 @@ function HomeFeed({ me }: { me: CricketMe }) {
     />
   );
 
-  const firstUp = (matches: CricketMatch[]) =>
-    matches.filter((m) => m.status === "scheduled").sort((a, b) => scheduledTime(a) - scheduledTime(b))[0];
   const live = [...mine, ...following].filter((m) => m.status === "live");
-  const next = [firstUp(mine), firstUp(following)].filter((m): m is CricketMatch => Boolean(m));
+  // Up next: two scheduled matches — ones I play in first, then ones I
+  // organise or score, then followed ones, soonest first within each — so
+  // the fixtures I organise don't push out the ones I'm playing.
+  const rank = (m: CricketMatch) =>
+    m.teams.some((t) => t.playerIds.includes(playerId)) ? 0 : mineIds.has(m.id) ? 1 : 2;
+  const next = [...mine, ...following]
+    .filter((m) => m.status === "scheduled")
+    .sort((a, b) => rank(a) - rank(b) || scheduledTime(a) - scheduledTime(b))
+    .slice(0, 2);
   const lastResult = me.matches
     .filter((m) => m.status === "completed" || m.status === "abandoned")
     .sort((a, b) => playedAt(b) - playedAt(a))[0];
-  const runningTournaments = me.tournaments.filter((t) => ["ongoing", "upcoming"].includes(tournamentPhase(t)));
+  // The latest two (by start date) of my ongoing or upcoming tournaments.
+  const runningTournaments = me.tournaments
+    .filter((t) => ["ongoing", "upcoming"].includes(tournamentPhase(t)))
+    .sort((a, b) => (b.startDate ?? b.createdAt).localeCompare(a.startDate ?? a.createdAt))
+    .slice(0, 2);
 
   return (
     <div className="cricket-home">
@@ -287,6 +315,7 @@ function HomeFeed({ me }: { me: CricketMe }) {
         <HomeSection
           title="Live now"
           icon="fa-solid fa-tower-broadcast"
+          tone="live"
           badge={
             <span className="cricket-home-live">
               <span className="cricket-live-dot" aria-hidden="true"></span>
@@ -294,25 +323,25 @@ function HomeFeed({ me }: { me: CricketMe }) {
             </span>
           }
         >
-          <div className="cricket-match-grid">{live.map((m) => card(m))}</div>
+          <HomeRail>{live.map((m) => card(m))}</HomeRail>
         </HomeSection>
       )}
 
       {next.length > 0 && (
-        <HomeSection title="Up next" icon="fa-solid fa-clock" link={{ to: "/my-matches", label: "All matches" }}>
-          <div className="cricket-match-grid">{next.map((m) => card(m, startsText(m)))}</div>
+        <HomeSection title="Up next" icon="fa-solid fa-clock" tone="next" link={{ to: "/my-matches", label: "All matches" }}>
+          <HomeRail>{next.map((m) => card(m, startsText(m)))}</HomeRail>
         </HomeSection>
       )}
 
       {lastResult && (
-        <HomeSection title="Your last match" icon="fa-solid fa-flag-checkered" link={{ to: "/my-matches", label: "History" }}>
+        <HomeSection title="Your last match" icon="fa-solid fa-flag-checkered" tone="last" link={{ to: "/my-matches", label: "History" }}>
           <div className="cricket-match-grid">{card(lastResult)}</div>
         </HomeSection>
       )}
 
       {runningTournaments.length > 0 && (
-        <HomeSection title="Your tournaments" icon="fa-solid fa-medal" link={{ to: "/my-tournaments", label: "See all" }}>
-          <div className="admin-card-grid">
+        <HomeSection title="Your tournaments" icon="fa-solid fa-medal" tone="tournaments" link={{ to: "/my-tournaments", label: "See all" }}>
+          <HomeRail>
             {runningTournaments.map((t) => (
               <TournamentCard
                 key={t.id}
@@ -321,11 +350,11 @@ function HomeFeed({ me }: { me: CricketMe }) {
                 footnote={<TeamFootnote teamName={t.teams.find((team) => team.playerIds.includes(playerId))?.name ?? null} />}
               />
             ))}
-          </div>
+          </HomeRail>
         </HomeSection>
       )}
 
-      <HomeSection title="Players you follow" icon="fa-solid fa-users" link={{ to: "/following", label: "Manage" }} tour="following">
+      <HomeSection title="Players you follow" icon="fa-solid fa-users" tone="following" link={{ to: "/following", label: "Manage" }} tour="following">
         {followedIds.length === 0 ? (
           <div className="admin-empty-state">
             Follow players to see their matches here. <Link to="/following">Find players to follow</Link>.
@@ -438,6 +467,7 @@ export function MyCricketMatches() {
           />
           <MatchesBoard
             key="mine"
+            panel
             matches={me.matches}
             tournamentNames={tournamentNames}
             footnote={(match) => {
@@ -447,11 +477,11 @@ export function MyCricketMatches() {
           />
         </>
       ) : show === "organising" ? (
-        <MatchesBoard key="organising" matches={organisingMatches(me)} tournamentNames={tournamentNames} />
+        <MatchesBoard key="organising" panel matches={organisingMatches(me)} tournamentNames={tournamentNames} />
       ) : me.followedTournaments.length === 0 && followedIds.length === 0 ? (
         nothingFollowed("tournaments, teams or players")
       ) : (
-        <MatchesBoard key="following" matches={following} tournamentNames={tournamentNames} footnote={footnote} />
+        <MatchesBoard key="following" panel matches={following} tournamentNames={tournamentNames} footnote={footnote} />
       )}
     </ListCard>
   );
@@ -518,6 +548,8 @@ interface MyTeam {
   name: string;
   // The tournament it plays in; null for friendly (one-off) match sides.
   tournamentName: string | null;
+  // A team made outside any tournament (CricketSavedTeam).
+  saved?: boolean;
   role: string;
   playerCount: number;
   matches: CricketMatch[];
@@ -554,6 +586,19 @@ function myTeams(me: CricketMe, playerId: number, tournamentsById: Map<number, C
       link: `/tournaments/${tournamentId}/teams/${index}`,
     };
   };
+  // Teams I made or play for outside any tournament, even before a match.
+  for (const team of me.savedTeams) {
+    teams.set(team.teamKey, {
+      key: team.teamKey,
+      name: team.name,
+      tournamentName: null,
+      saved: true,
+      role: team.playerIds.includes(playerId) ? roleIn(team, playerId) : "Organiser",
+      playerCount: team.playerIds.length,
+      matches: [],
+      link: `/teams/saved/${team.id}`,
+    });
+  }
   for (const tournament of me.tournaments) {
     tournament.teams.forEach((team, index) => {
       if (team.playerIds.includes(playerId)) {
@@ -610,7 +655,7 @@ function TeamCard({ team, playerId }: { team: MyTeam; playerId: number }) {
         </span>
         <span className="cricket-my-team-name">
           <h3 className="admin-item-card-title">{team.name}</h3>
-          <small className="text-muted">{team.tournamentName ?? "Friendly matches"}</small>
+          <small className="text-muted">{team.tournamentName ?? (team.saved ? "Your team" : "Friendly matches")}</small>
         </span>
       </div>
       <div className="cricket-chip-row">
@@ -641,6 +686,7 @@ const TEAM_FILTERS: { value: TeamFilter; label: string }[] = [
 
 export function MyCricketTeams() {
   const [filter, setFilter] = useState<TeamFilter>("all");
+  const [creating, setCreating] = useState(false);
   const { me, fallback } = useMyCricket(TITLES.teams);
   const { data: tournaments } = useCricketTournaments();
   if (!me) return fallback;
@@ -652,7 +698,20 @@ export function MyCricketTeams() {
   const teams = myTeams(me, playerId, tournamentsById);
   const visible = teams.filter((team) => filter === "all" || (filter === "tournament") === (team.tournamentName !== null));
   return (
-    <ListCard {...TITLES.teams} plain>
+    <ListCard
+      {...TITLES.teams}
+      plain
+      action={
+        <Button variant="primary" onClick={() => setCreating(true)}>
+          <i className="fa-solid fa-plus" aria-hidden="true"></i> Create Team
+        </Button>
+      }
+    >
+      {creating && (
+        <BottomSheet title="New Team" icon="fa-solid fa-people-group" onClose={() => setCreating(false)}>
+          <CreateSavedTeamForm onSaved={() => setCreating(false)} />
+        </BottomSheet>
+      )}
       <div className="cricket-squad-toolbar">
         <div className="admin-segmented cricket-tabs cricket-text-tabs" role="tablist" aria-label="Team kind">
           {TEAM_FILTERS.map((f) => (
@@ -670,7 +729,9 @@ export function MyCricketTeams() {
         </div>
       </div>
       {visible.length === 0 ? (
-        <div className="admin-empty-state">{teams.length === 0 ? "You're not on a team yet." : "No teams here."}</div>
+        <div className="admin-empty-state">
+          {teams.length === 0 ? "You're not on a team yet — create one with Create Team." : "No teams here."}
+        </div>
       ) : (
         <div className="admin-card-grid">
           {visible.map((team) => (
