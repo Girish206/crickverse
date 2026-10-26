@@ -13,38 +13,10 @@
   padding: 18px;
 }
 
-/* Photo above the name, centred, on a flag-gradient band. */
-.cv-profile-hero {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  text-align: center;
-  padding: 20px 18px;
-  overflow: hidden;
-  border: 0;
-  background: var(--brand-gradient);
-  color: #fff;
-}
-:root[data-bs-theme="dark"] .cv-profile-hero {
-  background: var(--brand-gradient-night);
-}
-.cv-profile-hero::after {
-  content: "";
-  position: absolute;
-  right: -40px;
-  top: -60px;
-  width: 180px;
-  height: 180px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(var(--brand-amber-rgb), 0.45), transparent 70%);
-  pointer-events: none;
-}
-
+/* The banner (the Home hero, src/admin/cricket/cricket-matches.css): the
+   photo with a camera badge, then who they are. */
 .cv-profile-photo {
   position: relative;
-  z-index: 1;
   flex: none;
   cursor: pointer;
 }
@@ -52,68 +24,88 @@
   cursor: default;
 }
 .cv-profile-avatar {
-  width: 76px;
-  height: 76px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 3px solid rgba(255, 255, 255, 0.85);
-  border-radius: 50%;
-  color: #fff;
-  font-size: var(--fs-2xl);
-  font-weight: 700;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+  width: 72px;
+  height: 72px;
 }
 .cv-profile-cam {
   position: absolute;
   right: -2px;
-  bottom: 2px;
-  width: 28px;
-  height: 28px;
+  bottom: 0;
+  width: 26px;
+  height: 26px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
   background: #fff;
   color: var(--brand-crimson-deep);
-  font-size: var(--fs-xs);
+  font-size: var(--fs-2xs);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
-
+/* "Player", the name and the role, stacked close. */
 .cv-profile-id {
-  position: relative;
-  z-index: 1;
-  min-width: 0;
-  max-width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   gap: 2px;
 }
+.cv-profile-id small {
+  font-size: var(--fs-3xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
 .cv-profile-id h2 {
-  margin: 0;
   max-width: 100%;
+  margin: 0;
   overflow: hidden;
   font-family: var(--cv-display);
-  font-size: var(--fs-lg);
-  font-weight: 700;
+  font-size: var(--fs-xl);
+  font-weight: 800;
+  line-height: 1.15;
   color: #fff;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.cv-profile-id > span {
+.cv-profile-role {
   font-size: var(--fs-sm);
+  font-weight: 500;
   opacity: 0.9;
 }
-.cv-profile-id .cricket-media-remove {
+/* The photo on the right, Remove photo as text under it. */
+.cv-profile-photo-col {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.cv-profile-remove {
   padding: 0;
-  margin-top: 4px;
   border: 0;
   background: none;
   color: #fff;
-  font-size: var(--fs-xs);
+  font-size: var(--fs-2xs);
+  font-weight: 600;
   text-decoration: underline;
+  text-underline-offset: 2px;
   opacity: 0.85;
+  cursor: pointer;
+}
+.cv-profile-remove:hover,
+.cv-profile-remove:focus-visible {
+  opacity: 1;
+}
+.cv-profile-remove:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+@media (max-width: 576px) {
+  .cv-profile-avatar {
+    width: 60px;
+    height: 60px;
+  }
+  .cv-profile-id h2 {
+    font-size: var(--fs-lg);
+  }
 }
 
 .cv-profile-section {

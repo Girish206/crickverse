@@ -11,7 +11,7 @@ import CustomButton from "../../dms/components/CustomButton";
 import InputComp from "../../dms/components/InputComp";
 import { ChipChoice } from "../CricketChoices";
 import { formatMobile, normalizeMobile } from "../mobile";
-import { PLAYER_ROLES } from "../playerRoles";
+import { PLAYER_ROLES, roleOf } from "../playerRoles";
 import { setTipsOff, tipsOff } from "../TipsTour";
 import { ShareAppSheet } from "../ShareMenu";
 import { SettingsMenu } from "../SettingsMenu";
@@ -60,6 +60,8 @@ function ProfileForm({ me }: { me: CricketMe }) {
   const [photoError, setPhotoError] = useState<string | null>(null);
 
   const displayName = name.trim() || admin?.name || "?";
+  // The saved role, not the one being picked below.
+  const savedRole = roleOf(player?.role ?? null);
 
   async function pickPhoto(e: ChangeEvent<HTMLInputElement>) {
     const picked = e.target.files?.[0];
@@ -109,32 +111,40 @@ function ProfileForm({ me }: { me: CricketMe }) {
 
   return (
     <form onSubmit={handleSubmit} noValidate className="cv-profile-form">
-      <section className="card cv-profile-hero">
-        <label className={`cv-profile-photo ${player ? "" : "is-disabled"}`.trim()}>
-          {player && <input type="file" accept="image/*" hidden onChange={pickPhoto} disabled={setPhoto.isPending} />}
-          <PlayerAvatar name={displayName} photoUrl={player?.photoUrl} className="cv-profile-avatar" />
-          {player && (
-            <span className="cv-profile-cam" aria-hidden="true">
-              <i className={`fa-solid ${setPhoto.isPending ? "fa-spinner fa-spin" : "fa-camera"}`}></i>
-            </span>
-          )}
-        </label>
-        <div className="cv-profile-id">
-          <h2>{displayName}</h2>
-          <span>
-            {admin?.isSuperAdmin ? "Organiser" : "Player"}
-            {player?.role && ` · ${PLAYER_ROLES.find((r) => r.value === player.role)?.label}`}
-          </span>
-          {player?.photoUrl && (
-            <button
-              type="button"
-              className="cricket-media-remove"
-              disabled={setPhoto.isPending}
-              onClick={() => setPhoto.mutate(null)}
-            >
-              Remove photo
-            </button>
-          )}
+      {/* The Home hero: who they are on the left; the photo (tap to change)
+          on the right, with Remove photo under it. */}
+      <section className="cricket-home-hero cv-profile-hero">
+        <div className="cricket-home-hero-top">
+          <div className="cricket-home-hero-name cv-profile-id">
+            <small>{admin?.isSuperAdmin ? "Organiser" : "Player"}</small>
+            <h2>{displayName}</h2>
+            {savedRole && <span className="cv-profile-role">{savedRole.label}</span>}
+          </div>
+          <div className="cv-profile-photo-col">
+            <label className={`cv-profile-photo ${player ? "" : "is-disabled"}`.trim()}>
+              {player && <input type="file" accept="image/*" hidden onChange={pickPhoto} disabled={setPhoto.isPending} />}
+              <PlayerAvatar
+                name={displayName}
+                photoUrl={player?.photoUrl}
+                className="cricket-player-avatar cricket-home-hero-avatar cv-profile-avatar"
+              />
+              {player && (
+                <span className="cv-profile-cam" aria-hidden="true">
+                  <i className={`fa-solid ${setPhoto.isPending ? "fa-spinner fa-spin" : "fa-camera"}`}></i>
+                </span>
+              )}
+            </label>
+            {player?.photoUrl && (
+              <button
+                type="button"
+                className="cv-profile-remove"
+                disabled={setPhoto.isPending}
+                onClick={() => setPhoto.mutate(null)}
+              >
+                Remove photo
+              </button>
+            )}
+          </div>
         </div>
       </section>
       {photoError && <div className="admin-banner admin-banner-error">{photoError}</div>}
