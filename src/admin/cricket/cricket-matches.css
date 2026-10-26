@@ -2650,10 +2650,9 @@
   border: 1px solid rgba(var(--section-rgb), 0.18);
   border-top: 3px solid rgb(var(--section-rgb));
   border-radius: 18px;
-  /* The tint over a solid surface, so the page's backdrop art doesn't show
-     through and grey it out. */
-  background: linear-gradient(180deg, rgba(var(--section-rgb), 0.1) 0%, rgba(var(--section-rgb), 0.03) 120px),
-    var(--adm-surface, #fff);
+  /* See-through, so the page's backdrop art shows behind; the tint is a
+     little stronger at the top so the colour still reads over it. */
+  background: linear-gradient(180deg, rgba(var(--section-rgb), 0.12) 0%, rgba(var(--section-rgb), 0.04) 160px);
   box-shadow: 0 6px 20px -12px rgba(var(--section-rgb), 0.45);
 }
 /* Crimson, gold (the amber deepened to read on light), maroon, orange and
