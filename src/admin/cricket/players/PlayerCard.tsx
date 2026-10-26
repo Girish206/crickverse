@@ -51,11 +51,7 @@ export function PlayerCard({
           <strong>{name}</strong>
           {(role || note) && (
             <small>
-              {role && (
-                <>
-                  <i className={`fa-solid ${role.icon}`} aria-hidden="true"></i> {role.label}
-                </>
-              )}
+              {role?.label}
               {role && note ? " · " : ""}
               {note}
             </small>

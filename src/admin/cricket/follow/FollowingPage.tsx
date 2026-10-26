@@ -217,9 +217,7 @@ export function FollowingPage() {
                 </strong>
                 <small>
                   {role ? (
-                    <>
-                      <i className={`fa-solid ${role.icon}`} aria-hidden="true"></i> {role.label}
-                    </>
+                    role.label
                   ) : (
                     "Role not set"
                   )}

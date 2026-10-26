@@ -151,7 +151,7 @@ function HomeHero({ me }: { me: CricketMe }) {
           <h1>{player.name}</h1>
           {role && (
             <span className="cricket-home-hero-role">
-              <i className={`fa-solid ${role.icon}`} aria-hidden="true"></i> {role.label}
+              {role.label}
             </span>
           )}
         </div>

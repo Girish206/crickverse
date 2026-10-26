@@ -82,7 +82,7 @@ export function CricketPlayerProfile({
           <div className="cricket-home-hero-name">
             <h2>{player.name}</h2>
             <span className="cricket-home-hero-role">
-              {role && <i className={`fa-solid ${role.icon}`} aria-hidden="true"></i>} {role ? role.label : "Role not set"}
+              {role ? role.label : "Role not set"}
             </span>
           </div>
           <FollowButton target={{ kind: "player", targetId: player.id, teamIndex: null }} />

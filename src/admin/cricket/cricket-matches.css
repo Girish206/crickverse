@@ -200,15 +200,28 @@
   padding: 14px 16px;
   overflow: hidden;
   background: var(--adm-surface, #fff);
-  border: 1px solid var(--border-color);
+  border: 1px solid rgba(var(--brand-navy-rgb), 0.2);
   border-radius: 18px;
-  box-shadow: 0 2px 12px rgba(var(--brand-navy-rgb), 0.06);
+  box-shadow: 0 2px 4px rgba(var(--brand-navy-rgb), 0.06), 0 8px 22px -8px rgba(var(--brand-navy-rgb), 0.22);
   cursor: pointer;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 .cricket-match-card.is-live {
   border-color: rgba(var(--brand-crimson-rgb), 0.45);
-  box-shadow: 0 0 0 3px rgba(var(--brand-crimson-rgb), 0.08), 0 2px 12px rgba(var(--brand-navy-rgb), 0.06);
+  box-shadow: 0 0 0 3px rgba(var(--brand-crimson-rgb), 0.08), 0 8px 22px -8px rgba(var(--brand-navy-rgb), 0.22);
+}
+/* Dark: the navy line and shadow vanish on the dark surface; a lighter edge
+   and a deeper shadow instead. */
+:root[data-bs-theme="dark"] .cricket-match-card {
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3), 0 10px 24px -8px rgba(0, 0, 0, 0.6);
+}
+:root[data-bs-theme="dark"] .cricket-match-card.is-live {
+  border-color: rgba(var(--brand-crimson-rgb), 0.55);
+}
+:root[data-bs-theme="dark"] .cricket-match-card:hover,
+:root[data-bs-theme="dark"] .cricket-match-card:focus-visible {
+  border-color: rgba(var(--primary-rgb), 0.55);
 }
 .cricket-match-card:hover,
 .cricket-match-card:focus-visible {
@@ -525,10 +538,12 @@
   align-items: center;
   gap: 14px;
 }
-.cricket-home-hero-avatar {
-  width: 64px;
-  height: 64px;
-  font-size: var(--fs-xl);
+/* Under .cricket-home-hero so it outranks the plain .cricket-player-avatar
+   sizes in cricket.css, which load after this file. */
+.cricket-home-hero .cricket-home-hero-avatar {
+  width: 80px;
+  height: 80px;
+  font-size: var(--fs-2xl);
   border: 3px solid rgba(255, 255, 255, 0.7);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
 }
@@ -599,8 +614,9 @@
   padding: 10px 6px;
   border-radius: 14px;
   text-align: center;
-  background: rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(2px);
+  /* No backdrop blur: over the flat gradient it showed nothing and cost a
+     re-blur every scroll frame. */
+  background: rgba(255, 255, 255, 0.16);
 }
 .cricket-home-hero-stats strong {
   font-size: var(--fs-xl);
@@ -621,10 +637,10 @@
     padding: 16px;
     border-radius: 16px;
   }
-  .cricket-home-hero-avatar {
-    width: 52px;
-    height: 52px;
-    font-size: var(--fs-lg);
+  .cricket-home-hero .cricket-home-hero-avatar {
+    width: 64px;
+    height: 64px;
+    font-size: var(--fs-xl);
   }
   .cricket-home-hero-name h1 {
     font-size: var(--fs-lg);
@@ -3100,6 +3116,12 @@
 .cricket-profile-hero {
   margin-bottom: 14px;
 }
+/* A bigger photo than Home's: here it's the subject of the page. */
+.cricket-home-hero.cricket-profile-hero .cricket-home-hero-avatar {
+  width: 92px;
+  height: 92px;
+  font-size: var(--fs-2xl);
+}
 .cricket-profile-hero + .cricket-stat-cards {
   margin-top: 0;
 }
@@ -3153,6 +3175,11 @@
   opacity: 0.85;
 }
 @media (max-width: 576px) {
+  .cricket-home-hero.cricket-profile-hero .cricket-home-hero-avatar {
+    width: 76px;
+    height: 76px;
+    font-size: var(--fs-xl);
+  }
   .cricket-profile-hero .cricket-home-hero-name h2 {
     font-size: var(--fs-lg);
   }

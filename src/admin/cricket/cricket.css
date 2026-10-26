@@ -202,9 +202,10 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.cricket-role-icon {
+.cricket-role-label {
+  flex: none;
   color: var(--muted-color);
-  font-size: var(--fs-sm);
+  font-size: var(--fs-xs);
 }
 
 .cricket-set-list {
@@ -337,7 +338,7 @@
   background: var(--primary-gradient);
   color: #fff;
 }
-.cricket-team-player.is-selected .cricket-role-icon,
+.cricket-team-player.is-selected .cricket-role-label,
 .cricket-team-player.is-selected .cricket-set-tag {
   color: #fff;
 }
@@ -3286,8 +3287,8 @@
 }
 .cricket-board-avatar {
   flex: none;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -3312,8 +3313,8 @@
     font-size: var(--fs-sm);
   }
   .cricket-board-avatar {
-    width: 32px;
-    height: 32px;
+    width: 38px;
+    height: 38px;
   }
   .cricket-stats .cricket-board-list li {
     padding: 7px 10px;
@@ -4121,14 +4122,14 @@ button.cricket-app-row {
 /* ===== Match setup page (/matches/:id/setup) ===== */
 /* A plain backdrop here: the glow shapes and cricket scene behind every
    screen made the white cards look muddy. */
-.layout-wrapper:has(.cricket-setup-page) {
+.layout-wrapper:has(.cricket-setup-page)::before {
   background: #f4f5f7;
 }
 .layout-wrapper:has(.cricket-setup-page) .admin-bg-shape,
 .layout-wrapper:has(.cricket-setup-page) .cv-backdrop {
   display: none;
 }
-:root[data-bs-theme="dark"] .layout-wrapper:has(.cricket-setup-page) {
+:root[data-bs-theme="dark"] .layout-wrapper:has(.cricket-setup-page)::before {
   background: var(--adm-bg);
 }
 .cricket-setup-page {
@@ -6172,6 +6173,19 @@ tbody tr:first-child .cricket-standings-rank {
 }
 .cricket-invite-note {
   color: var(--muted-color);
+}
+.cricket-invite-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+/* Under the profile sheet's divider: the full width of it, centred. */
+.cricket-invite-row .cricket-invite {
+  align-items: stretch;
+  text-align: center;
 }
 .cricket-invite-code {
   display: flex;

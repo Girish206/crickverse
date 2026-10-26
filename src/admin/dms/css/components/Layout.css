@@ -18,13 +18,23 @@
       soft pastel logo-color wash used on the login screen (index.css's
       --logo-*-light), instead of the reference DMS app's own stock photo
       (education-bg-1.jpg), which had nothing to do with this site. */
+}
+
+/* The background on its own viewport-pinned layer rather than
+   `background-attachment: fixed`, which repaints the whole screen on every
+   scroll frame and made busy pages (the dashboard) stutter. First in paint
+   order, so the glow shapes, backdrop art and content all sit above it. */
+.layout-wrapper::before {
+   content: "";
+   position: fixed;
+   inset: 0;
+   z-index: 0;
+   pointer-events: none;
    background-image: var(--bg-overlay, linear-gradient(rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.88))),
       linear-gradient(170deg, var(--layout-bg-top) 0%, var(--layout-bg-bottom) 100%);
    background-size: cover;
    background-position: center;
-   background-attachment: fixed;
    background-repeat: no-repeat;
-   transition: background-image 0.3s ease;
 }
 
 /* Same rotating corner-glow treatment as the login screen (see

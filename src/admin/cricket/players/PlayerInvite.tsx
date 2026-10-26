@@ -59,11 +59,11 @@ export function PlayerInvite({ playerId, mobile }: { playerId: number; mobile?: 
     <div className="cricket-invite">
       <button
         type="button"
-        className="btn btn-sm btn-outline-primary"
+        className="btn btn-outline-custom-primary cricket-invite-btn"
         disabled={invite.isPending}
         onClick={() => invite.mutate(playerId, { onError: (err) => setError(messageFor(err)) })}
       >
-        <i className="fa-solid fa-paper-plane me-1" aria-hidden="true"></i>
+        <i className="fa-solid fa-paper-plane" aria-hidden="true"></i>
         {invite.isPending ? "Getting code..." : "Invite to CricDesk"}
       </button>
       {error && <small className="cricket-invite-note">{error}</small>}

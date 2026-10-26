@@ -1,10 +1,10 @@
 import type { CricketPlayerRole } from "../../api/types";
 
-export const PLAYER_ROLES: { value: CricketPlayerRole; label: string; icon: string }[] = [
-  { value: "batter", label: "Batter", icon: "fa-baseball-bat-ball" },
-  { value: "bowler", label: "Bowler", icon: "fa-baseball" },
-  { value: "all-rounder", label: "All-rounder", icon: "fa-star" },
-  { value: "wicket-keeper", label: "Wicket-keeper", icon: "fa-mitten" },
+export const PLAYER_ROLES: { value: CricketPlayerRole; label: string }[] = [
+  { value: "batter", label: "Batter" },
+  { value: "bowler", label: "Bowler" },
+  { value: "all-rounder", label: "All-rounder" },
+  { value: "wicket-keeper", label: "Wicket-keeper" },
 ];
 
 export function roleOf(role: CricketPlayerRole | null) {

@@ -27,7 +27,7 @@ function PlayerLabel({ player }: { player: CricketPlayer | undefined }) {
   return (
     <>
       <span className="cricket-player-name">{player?.name ?? "Removed player"}</span>
-      {role && <i className={`fa-solid ${role.icon} cricket-role-icon`} title={role.label} aria-label={role.label}></i>}
+      {role && <small className="cricket-role-label">{role.label}</small>}
     </>
   );
 }
