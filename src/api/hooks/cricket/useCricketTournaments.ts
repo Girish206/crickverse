@@ -175,6 +175,16 @@ export function useUpdateCricketTeam() {
   );
 }
 
+// A new logo file, or null to remove the current one.
+export function useSetCricketTeamLogo() {
+  return useTournamentMutation(({ id, index, logo }: { id: number; index: number; logo: File | null }) => {
+    const form = new FormData();
+    if (logo) form.append("logo", logo);
+    else form.append("removeLogo", "true");
+    return apiClient.put(`/admin/cricket/tournaments/${id}/teams/${index}/logo`, form);
+  });
+}
+
 // The player with this mobile (null = a new number), for the team's captain
 // or a super admin adding players to it.
 export async function lookupCricketTeamPlayer(id: number, index: number, mobile: string) {

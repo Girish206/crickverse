@@ -22,7 +22,6 @@ import { TeamInviteSheet } from "../qr/ShowQrSheets";
 import { SettingsMenu } from "../SettingsMenu";
 import { confirmAction } from "../../components/confirmDelete";
 import { BottomSheet } from "../BottomSheet";
-import { avatarColorFor } from "../avatarColor";
 import { MatchesBoard } from "../matches/CricketMatchesList";
 import { roleOf } from "../playerRoles";
 import { StatTiles, type StatGroup } from "../StatTiles";
@@ -36,6 +35,7 @@ import { ShareMenu } from "../ShareMenu";
 import { useTips, type TipStep } from "../TipsTour";
 import { TeamForm } from "./CricketTeamTools";
 import { bannerFor } from "./tournamentArt";
+import { TeamBadge } from "../teams/TeamLogoField";
 import { TeamRecordCard } from "../teams/TeamRecordCard";
 import { roleTagInfo, roleTagsFor, rolesOf, TeamRoleChips } from "./TeamRoleChips";
 import "../../dms/css/adminDisplays.css";
@@ -233,9 +233,7 @@ export function CricketTeamPage() {
           <div className="cricket-th">
             <div className="cricket-th-cover" style={{ backgroundImage: `url(${bannerFor(tournament)})` }} />
             <div className="cricket-th-identity">
-              <span className="cricket-tour-logo" style={{ background: avatarColorFor(team.name) }} aria-hidden="true">
-                {team.name.charAt(0).toUpperCase()}
-              </span>
+              <TeamBadge name={team.name} logoUrl={team.logoUrl} />
               <div className="cricket-th-title">
                 <h1>{team.name}</h1>
                 <div className="cricket-th-meta">

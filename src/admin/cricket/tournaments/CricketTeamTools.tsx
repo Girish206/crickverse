@@ -6,6 +6,7 @@ import { messageFor } from "../../../api/mutationErrors";
 import {
   useAddCricketTeams,
   useCricketTournaments,
+  useSetCricketTeamLogo,
   useUpdateCricketTeam,
 } from "../../../api/hooks/cricket/useCricketTournaments";
 import { isGeneratedTeam, type CricketTournament } from "../../../api/types";
@@ -17,6 +18,8 @@ import { AddPlayerByMobile } from "../players/AddPlayerByMobile";
 import { PlayerCard } from "../players/PlayerCard";
 import { QrScannerSheet, type ScanReply } from "../qr/QrScannerSheet";
 import type { QrTarget } from "../qr/qrLinks";
+import { TeamLogoField } from "../teams/TeamLogoField";
+import { useImagePick } from "./CricketTournamentForm";
 import { NO_ROLES, rolesOf, rolesWithout, TeamRoleChips, type TeamRoles } from "./TeamRoleChips";
 
 export const MAX_TEAMS = 16;
@@ -101,7 +104,9 @@ export function TeamForm({
   const { data: players } = useCricketPlayers();
   const addTeams = useAddCricketTeams();
   const updateTeam = useUpdateCricketTeam();
+  const setLogo = useSetCricketTeamLogo();
   const existing = index === undefined ? undefined : tournament.teams[index];
+  const logo = useImagePick(existing?.logoUrl);
   const [name, setName] = useState(existing?.name ?? defaultTeamNames(tournament, 1)[0]);
   const [picked, setPicked] = useState<number[]>(existing?.playerIds ?? []);
   const [roles, setRoles] = useState<TeamRoles>(existing ? rolesOf(existing) : NO_ROLES);
@@ -122,7 +127,7 @@ export function TeamForm({
   const visible = (players ?? []).filter(
     (player) => listedIds.includes(player.id) && player.name.toLowerCase().includes(search.trim().toLowerCase()),
   );
-  const saving = addTeams.isPending || updateTeam.isPending;
+  const saving = addTeams.isPending || updateTeam.isPending || setLogo.isPending;
 
   function toggle(playerId: number) {
     if (picked.includes(playerId)) {
@@ -141,13 +146,21 @@ export function TeamForm({
       return setError(`There's already a team called "${trimmed}".`);
     }
     const team = { name: trimmed, playerIds: picked, ...roles };
-    if (index === undefined) await addTeams.mutateAsync({ id: tournament.id, teams: [{ ...team, manual: true }] });
-    else await updateTeam.mutateAsync({ id: tournament.id, index, ...team });
+    const saved =
+      index === undefined
+        ? await addTeams.mutateAsync({ id: tournament.id, teams: [{ ...team, manual: true }] })
+        : await updateTeam.mutateAsync({ id: tournament.id, index, ...team });
+    // undefined = untouched; null = removed (only if there was one). A new
+    // team is the last one.
+    if (logo.file || (logo.file === null && existing?.logoUrl)) {
+      await setLogo.mutateAsync({ id: tournament.id, index: index ?? saved.teams.length - 1, logo: logo.file });
+    }
     onSaved();
   }
 
   return (
     <ModalForm onSubmit={onSubmit}>
+      <TeamLogoField pick={logo} />
       <InputComp
         label="Team Name"
         required

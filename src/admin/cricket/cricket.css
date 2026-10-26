@@ -2182,6 +2182,12 @@
   width: 26px;
   height: 26px;
 }
+/* In a form (the team forms), not over a banner. */
+.cricket-logo-wrap.is-inline {
+  position: static;
+  align-items: center;
+  margin-bottom: 1rem;
+}
 .cricket-logo-caption {
   font-size: var(--fs-sm);
   font-weight: 600;
@@ -6310,4 +6316,79 @@ tbody tr:first-child .cricket-standings-rank {
 }
 .cricket-db-note b {
   color: var(--theme-text-dark);
+}
+
+/* ===== Search (GlobalSearch, from the navbar) ===== */
+.cricket-search {
+  --th-logo: 38px;
+}
+.cricket-search-field {
+  position: relative;
+  margin-bottom: 12px;
+}
+.cricket-search-field > i {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted-color);
+  pointer-events: none;
+}
+/* !important to beat the underline fields' own padding (InputComp.css). */
+.cricket-search-field input.form-control {
+  padding-left: 36px !important;
+}
+.cricket-search-empty-icon {
+  display: block;
+  margin-bottom: 8px;
+  font-size: var(--fs-xl);
+  opacity: 0.5;
+}
+.cricket-search-kinds {
+  margin-bottom: 14px;
+  overflow-x: auto;
+}
+.cricket-search-section + .cricket-search-section {
+  margin-top: 18px;
+}
+.cricket-search-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted-color);
+}
+.cricket-search-section h3 span {
+  margin-left: auto;
+  font-weight: 600;
+}
+.cricket-search-row .cricket-picker-item.is-locked {
+  cursor: default;
+}
+.cricket-search-row .cricket-picker-item.is-locked:hover {
+  background: transparent;
+}
+.cricket-search-row .cricket-picker-avatar {
+  overflow: hidden;
+  object-fit: cover;
+}
+.cricket-search-more {
+  margin-top: 6px;
+  padding: 6px 4px;
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+.cricket-search-note {
+  margin: 12px 0 0;
+  font-size: var(--fs-xs);
+  color: var(--muted-color);
+  text-align: center;
 }

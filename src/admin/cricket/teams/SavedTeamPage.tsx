@@ -7,6 +7,7 @@ import {
   useCreateCricketSavedTeam,
   useCricketSavedTeam,
   useDeleteCricketSavedTeam,
+  useSetCricketSavedTeamLogo,
   useSetCricketSavedTeamRoles,
   useUpdateCricketSavedTeam,
 } from "../../../api/hooks/cricket/useCricketSavedTeams";
@@ -20,7 +21,6 @@ import { ModalForm } from "../../components/ModalForm";
 import { PageHeader, PageHeaderAction } from "../../components/PageHeader";
 import { SubmitButton } from "../../components/SubmitButton";
 import InputComp from "../../dms/components/InputComp";
-import { avatarColorFor } from "../avatarColor";
 import { BottomSheet } from "../BottomSheet";
 import { LeaderboardGrid } from "../leaderboard/CricketLeaderboard";
 import { MatchesBoard } from "../matches/CricketMatchesList";
@@ -31,7 +31,9 @@ import { teamStats } from "../stats";
 import { AddPlayersByMobileSheet } from "../tournaments/AddTeamPlayersSheet";
 import { RosterPlayer, TeamStatsView } from "../tournaments/CricketTeamPage";
 import { roleTagsFor, rolesOf, TeamRoleChips } from "../tournaments/TeamRoleChips";
+import { useImagePick } from "../tournaments/CricketTournamentForm";
 import { bannerFor } from "../tournaments/tournamentArt";
+import { TeamBadge, TeamLogoField } from "./TeamLogoField";
 import { TeamRecordCard } from "./TeamRecordCard";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
@@ -49,10 +51,13 @@ const TABS: { value: Tab; label: string }[] = [
 
 const when = (m: CricketMatch) => m.scheduledAt ?? m.createdAt;
 
-// "Create Team" (the + menu and My Teams): a name now, players on its page.
+// "Create Team" (the + menu and My Teams): a name and logo now, players on
+// its page.
 export function CreateSavedTeamForm({ onSaved }: { onSaved: () => void }) {
   const navigate = useNavigate();
   const createTeam = useCreateCricketSavedTeam();
+  const setLogo = useSetCricketSavedTeamLogo();
+  const logo = useImagePick(null);
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -60,6 +65,7 @@ export function CreateSavedTeamForm({ onSaved }: { onSaved: () => void }) {
     e.preventDefault();
     if (!name.trim()) return setError("Enter the team's name");
     const team = await createTeam.mutateAsync(name.trim());
+    if (logo.file) await setLogo.mutateAsync({ id: team.id, logo: logo.file });
     onSaved();
     navigate(`/teams/saved/${team.id}?tab=players`, { state: { from: "/my-teams" } });
   }
@@ -67,6 +73,7 @@ export function CreateSavedTeamForm({ onSaved }: { onSaved: () => void }) {
   return (
     <ModalForm onSubmit={onSubmit}>
       <p className="admin-hint">A team of your own, outside any tournament. Add its players next, then pick it when you create a match.</p>
+      <TeamLogoField pick={logo} />
       <InputComp
         label="Team Name"
         required
@@ -78,23 +85,28 @@ export function CreateSavedTeamForm({ onSaved }: { onSaved: () => void }) {
           setError(null);
         }}
       />
-      <SubmitButton loading={createTeam.isPending}>Create Team</SubmitButton>
+      <SubmitButton loading={createTeam.isPending || setLogo.isPending}>Create Team</SubmitButton>
     </ModalForm>
   );
 }
 
-function RenameForm({ team, onSaved }: { team: CricketSavedTeam; onSaved: () => void }) {
+function EditTeamForm({ team, onSaved }: { team: CricketSavedTeam; onSaved: () => void }) {
   const updateTeam = useUpdateCricketSavedTeam();
+  const setLogo = useSetCricketSavedTeamLogo();
+  const logo = useImagePick(team.logoUrl);
   const [name, setName] = useState(team.name);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (name.trim() && name.trim() !== team.name) await updateTeam.mutateAsync({ id: team.id, name: name.trim() });
+    // undefined = untouched; null = removed (only if there was one).
+    if (logo.file || (logo.file === null && team.logoUrl)) await setLogo.mutateAsync({ id: team.id, logo: logo.file });
     onSaved();
   }
 
   return (
     <ModalForm onSubmit={onSubmit}>
+      <TeamLogoField pick={logo} />
       <InputComp
         label="Team Name"
         required
@@ -102,7 +114,7 @@ function RenameForm({ team, onSaved }: { team: CricketSavedTeam; onSaved: () => 
         value={name}
         onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
       />
-      <SubmitButton loading={updateTeam.isPending}>Save</SubmitButton>
+      <SubmitButton loading={updateTeam.isPending || setLogo.isPending}>Save</SubmitButton>
     </ModalForm>
   );
 }
@@ -218,7 +230,7 @@ export function SavedTeamPage() {
               <SettingsMenu
                 title="Team settings"
                 items={[
-                  { icon: "fa-solid fa-pen", label: "Rename team", onClick: () => setRenaming(true) },
+                  { icon: "fa-solid fa-pen", label: "Edit team", onClick: () => setRenaming(true) },
                   ...(canDelete
                     ? [
                         {
@@ -242,9 +254,7 @@ export function SavedTeamPage() {
           <div className="cricket-th">
             <div className="cricket-th-cover" style={{ backgroundImage: `url(${bannerFor({ id: team.id, bannerUrl: null })})` }} />
             <div className="cricket-th-identity">
-              <span className="cricket-tour-logo" style={{ background: avatarColorFor(team.name) }} aria-hidden="true">
-                {team.name.charAt(0).toUpperCase()}
-              </span>
+              <TeamBadge name={team.name} logoUrl={team.logoUrl} />
               <div className="cricket-th-title">
                 <h1>{team.name}</h1>
                 <div className="cricket-th-meta">
@@ -379,8 +389,8 @@ export function SavedTeamPage() {
       )}
 
       {renaming && (
-        <BottomSheet title="Rename Team" icon="fa-solid fa-pen" onClose={() => setRenaming(false)}>
-          <RenameForm team={team} onSaved={() => setRenaming(false)} />
+        <BottomSheet title="Edit Team" icon="fa-solid fa-pen" onClose={() => setRenaming(false)}>
+          <EditTeamForm team={team} onSaved={() => setRenaming(false)} />
         </BottomSheet>
       )}
 

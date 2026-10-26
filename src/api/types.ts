@@ -50,6 +50,8 @@ export interface CricketSavedTeam {
   captainId: number | null;
   viceCaptainId: number | null;
   keeperId: number | null;
+  // Uploaded logo; null = none (its initial is shown).
+  logoUrl: string | null;
   createdById: number;
   createdAt: string;
 }
@@ -129,6 +131,8 @@ export interface CricketTeam {
   // Built by hand or copied from another tournament; missing = generated
   // from matched sets. Generating only refills the generated teams.
   manual?: boolean;
+  // Uploaded logo; null / missing = none (its initial is shown).
+  logoUrl?: string | null;
 }
 
 // Teams generated from matched sets (the ones generating refills).

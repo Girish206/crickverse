@@ -42,7 +42,7 @@ const today = () => {
 type Errors = Partial<Record<"name" | "city" | "ground" | "organiserName" | "organiserMobile" | "organiserEmail" | "startDate" | "endDate" | "category" | "ballType" | "matchType" | "overs" | "bowlerOverLimit" | "image", string>>;
 
 // A picked image: a new file (with a preview URL), the current one, or none.
-function useImagePick(current: string | null | undefined) {
+export function useImagePick(current: string | null | undefined) {
   const [file, setFile] = useState<File | null | undefined>(undefined);
   const preview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
   useEffect(() => () => {

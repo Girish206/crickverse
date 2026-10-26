@@ -41,6 +41,16 @@ export function useSetCricketSavedTeamRoles() {
   return useSavedTeamMutation(({ id, ...roles }: CricketTeamRoles & { id: number }) => apiClient.put(url(id, "/roles"), roles));
 }
 
+// A new logo file, or null to remove the current one.
+export function useSetCricketSavedTeamLogo() {
+  return useSavedTeamMutation(({ id, logo }: { id: number; logo: File | null }) => {
+    const form = new FormData();
+    if (logo) form.append("logo", logo);
+    else form.append("removeLogo", "true");
+    return apiClient.put(url(id, "/logo"), form);
+  });
+}
+
 // New numbers (with a name) become new players; a player picked from their
 // QR code comes by id.
 export function useAddCricketSavedTeamPlayers() {

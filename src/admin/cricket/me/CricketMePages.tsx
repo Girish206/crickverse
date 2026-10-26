@@ -122,7 +122,7 @@ function startsText(m: CricketMatch) {
   const time = at.toLocaleTimeString(undefined, { hour: "numeric", hour12: true, minute: "2-digit" });
   const days = Math.round((startOfDay(at) - startOfDay(new Date())) / 86400000);
   if (days === 0) return `Today, ${time}`;
-  if (days === 1) return `Tomorrow, ${time}`;
+  if (days === 1) return `Tom, ${time}`;
   if (days > 1 && days < 7) return `In ${days} days`;
   return at.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
 }
@@ -218,7 +218,7 @@ function HomeFeed({ me }: { me: CricketMe }) {
   const tagOf = (m: CricketMatch): MatchTag => {
     if (!mineIds.has(m.id)) return { tone: "following", icon: "fa-solid fa-star", label: "Following" };
     const team = m.teams.find((t) => t.playerIds.includes(playerId));
-    if (team) return { tone: "mine", icon: "fa-solid fa-user", label: `You're playing · ${team.name}` };
+    if (team) return { tone: "mine", icon: "fa-solid fa-user", label: `Playing · ${team.name}` };
     return me.createdMatches.some((c) => c.id === m.id)
       ? { tone: "organising", icon: "fa-solid fa-clipboard-list", label: "You're organising" }
       : { tone: "organising", icon: "fa-solid fa-pen", label: "You're scoring" };
