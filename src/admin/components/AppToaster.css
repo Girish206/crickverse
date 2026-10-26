@@ -1,7 +1,61 @@
-/* Sonner pins the close button to the top-left corner, over the icon —
-   move it to the top-right instead. */
-[data-sonner-toaster] [data-sonner-toast] [data-close-button] {
-  left: auto;
-  right: 0;
-  transform: translate(35%, -35%);
+/* Toasts as the app's cards: its surface and text, a coloured edge and icon
+   per kind. Sonner adds its CSS after ours, so these selectors are written
+   to outweigh its rules (the toaster's repeated where it sets the same
+   variables per theme). */
+[data-sonner-toaster][data-sonner-toaster][data-sonner-toaster] {
+  --normal-bg: var(--adm-surface, #fff);
+  --normal-border: var(--border-color);
+  --normal-text: var(--theme-text-dark);
+  --normal-bg-hover: var(--adm-surface, #fff);
+  --normal-border-hover: var(--muted-color);
+  --border-radius: 14px;
+  /* Sonner pins the close button over the icon at the top left; top right
+     instead. */
+  --toast-close-button-start: unset;
+  --toast-close-button-end: 0;
+  --toast-close-button-transform: translate(35%, -35%);
+}
+
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] {
+  --toast-accent: var(--primary);
+  padding: 12px 14px;
+  border-left: 4px solid var(--toast-accent);
+  font-family: inherit;
+  font-weight: 600;
+  box-shadow: 0 10px 28px -12px rgba(15, 16, 18, 0.35);
+}
+[data-sonner-toaster] [data-sonner-toast][data-type="success"] {
+  --toast-accent: #16a34a;
+}
+[data-sonner-toaster] [data-sonner-toast][data-type="error"] {
+  --toast-accent: rgb(var(--brand-crimson-rgb));
+}
+[data-sonner-toaster] [data-sonner-toast][data-type="warning"] {
+  --toast-accent: #d97706;
+}
+[data-sonner-toaster] [data-sonner-toast] [data-icon] {
+  color: var(--toast-accent);
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-description] {
+  font-weight: 400;
+  color: var(--muted-color);
+}
+[data-sonner-toaster][data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-close-button] {
+  color: var(--muted-color);
+}
+[data-sonner-toaster][data-sonner-toaster] [data-sonner-toast][data-styled="true"] [data-close-button]:hover {
+  background: var(--adm-surface, #fff);
+  border-color: var(--muted-color);
+  color: var(--theme-text-dark);
+}
+
+/* Dark: brighter accents so they read on the dark surface. */
+:root[data-bs-theme="dark"] [data-sonner-toaster] [data-sonner-toast][data-type="success"] {
+  --toast-accent: #4ade80;
+}
+:root[data-bs-theme="dark"] [data-sonner-toaster] [data-sonner-toast][data-type="error"] {
+  --toast-accent: #f87171;
+}
+:root[data-bs-theme="dark"] [data-sonner-toaster] [data-sonner-toast][data-type="warning"] {
+  --toast-accent: #fbbf5a;
 }
