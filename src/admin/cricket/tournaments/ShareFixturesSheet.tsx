@@ -3,12 +3,13 @@ import type { CricketMatch, CricketTournament } from "../../../api/types";
 import { avatarColorFor } from "../avatarColor";
 import { makeResolver, slotMatch, sourceLabel } from "../format/formatEngine";
 import { matchStageLabel, teamInitials } from "../matches/matchUtils";
-import { AMBER, CARD_TOP, canvasBlob, drawCardFrame, ellipsize, fitFont, FONT, RED, roundRect, ShareCardSheet, W } from "./shareCard";
+import { AMBER, CARD_TOP, canvasBlob, drawCardFrame, ellipsize, fitFont, FONT, loadImage, RED, roundRect, ShareCardSheet, W } from "./shareCard";
 
 interface FixtureSide {
   name: string;
   // False for a playoff place not settled yet ("1st, League", "Winner Q1").
   known: boolean;
+  logoUrl?: string | null;
 }
 
 interface FixtureEntry {
@@ -50,8 +51,8 @@ export function upcomingFixtures(tournament: CricketTournament, matches: Cricket
       stage: matchStageLabel(match),
       live: match.status === "live",
       time: match.scheduledAt ? timeLabel(match.scheduledAt) : null,
-      teamA: { name: match.teams[0]?.name ?? "TBD", known: true },
-      teamB: { name: match.teams[1]?.name ?? "TBD", known: true },
+      teamA: { name: match.teams[0]?.name ?? "TBD", known: true, logoUrl: match.teams[0]?.logoUrl },
+      teamB: { name: match.teams[1]?.name ?? "TBD", known: true, logoUrl: match.teams[1]?.logoUrl },
     });
   });
 
@@ -66,7 +67,9 @@ export function upcomingFixtures(tournament: CricketTournament, matches: Cricket
       .map((slot) => {
         const side = (source: typeof slot.home): FixtureSide => {
           const index = resolve(source);
-          return index === null ? { name: sourceLabel(format, source, teamName), known: false } : { name: teamName(index), known: true };
+          return index === null
+            ? { name: sourceLabel(format, source, teamName), known: false }
+            : { name: teamName(index), known: true, logoUrl: tournament.teams[index]?.logoUrl };
         };
         return { tag: slot.code, stage: slot.label, live: false, time: null, teamA: side(slot.home), teamB: side(slot.away) };
       });
@@ -114,13 +117,28 @@ async function drawFixturesCard(tournament: CricketTournament, days: FixtureDay[
   const vsX = SIDE + infoW + (rowW - infoW) / 2;
   const badgeR = 28;
   const nameW = vsX - 40 - (SIDE + infoW + badgeR * 2 + 34);
+  // Team logos, loaded once each.
+  const logoUrls = [
+    ...new Set(days.flatMap((day) => day.fixtures.flatMap((f) => [f.teamA.logoUrl, f.teamB.logoUrl])).filter((url) => url != null)),
+  ];
+  const logos = new Map(await Promise.all(logoUrls.map(async (url) => [url, await loadImage(url)] as const)));
 
-  // A team's initials, or "?" for a place not settled yet.
+  // A team's logo or initials, or "?" for a place not settled yet.
   const drawBadge = (side: FixtureSide, cx: number, cy: number) => {
-    ctx.fillStyle = side.known ? avatarColorFor(side.name) : "rgba(255, 255, 255, 0.14)";
+    const logo = side.known && side.logoUrl ? logos.get(side.logoUrl) : null;
+    ctx.fillStyle = logo ? "#ffffff" : side.known ? avatarColorFor(side.name) : "rgba(255, 255, 255, 0.14)";
     ctx.beginPath();
     ctx.arc(cx, cy, badgeR, 0, Math.PI * 2);
     ctx.fill();
+    if (logo) {
+      ctx.save();
+      ctx.clip();
+      // Cover the circle, like the app's badges.
+      const scale = Math.max((badgeR * 2) / logo.width, (badgeR * 2) / logo.height);
+      ctx.drawImage(logo, cx - (logo.width * scale) / 2, cy - (logo.height * scale) / 2, logo.width * scale, logo.height * scale);
+      ctx.restore();
+      return;
+    }
     ctx.fillStyle = "#ffffff";
     ctx.font = `800 22px ${FONT}`;
     ctx.textAlign = "center";

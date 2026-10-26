@@ -72,6 +72,7 @@ interface CricketTeamInviteBase {
   keeperId: number | null;
   joined: boolean;
   teamKey: string;
+  logoUrl: string | null;
 }
 
 export type CricketTeamInvite =
@@ -363,6 +364,8 @@ export interface CricketMatchTeam {
   // missing on tournament matches and older one-offs. Read it through
   // teamKeyOf.
   teamKey?: string | null;
+  // The team's logo, copied onto the match like its name.
+  logoUrl?: string | null;
 }
 
 export type CricketMatchStatus = "scheduled" | "live" | "completed" | "abandoned";

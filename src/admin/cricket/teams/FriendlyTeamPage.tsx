@@ -8,7 +8,6 @@ import { Button } from "../../components/Button";
 import { ListCard } from "../../components/ListCard";
 import { Loader } from "../../components/Loader";
 import { PageHeader } from "../../components/PageHeader";
-import { avatarColorFor } from "../avatarColor";
 import { canManageMatch } from "../canManage";
 import { LeaderboardGrid } from "../leaderboard/CricketLeaderboard";
 import { MatchesBoard } from "../matches/CricketMatchesList";
@@ -21,6 +20,7 @@ import { bannerFor } from "../tournaments/tournamentArt";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
+import { TeamMark } from "./TeamMark";
 
 type Tab = "info" | "players" | "matches" | "leaderboard" | "stats";
 
@@ -137,9 +137,7 @@ export function FriendlyTeamPage() {
               style={{ backgroundImage: `url(${bannerFor({ id: nameSeed(key), bannerUrl: null })})` }}
             />
             <div className="cricket-th-identity">
-              <span className="cricket-tour-logo" style={{ background: avatarColorFor(displayName) }} aria-hidden="true">
-                {displayName.charAt(0).toUpperCase()}
-              </span>
+              <TeamMark className="cricket-tour-logo" name={displayName} logoUrl={latest.logoUrl} />
               <div className="cricket-th-title">
                 <h1>{displayName}</h1>
                 <div className="cricket-th-meta">

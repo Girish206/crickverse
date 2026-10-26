@@ -203,6 +203,7 @@ function GroupTables({
             {phase.groups.length > 1 && <h4>Group {group.name}</h4>}
             <StandingsTable
               rows={groupTable(tournament, format, phase, group, matches)}
+              teams={tournament.teams}
               qualify={phase.qualify}
               settled={isGroupDone(phase, group, matches)}
               matches={groupTableMatches(format, phase, group, matches)}

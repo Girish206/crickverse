@@ -6,7 +6,6 @@ import { useFollowCounts, useMyFollows } from "../../../api/hooks/cricket/useCri
 import type { CricketFollowKind, CricketTournament } from "../../../api/types";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { ListCard } from "../../components/ListCard";
-import { avatarColorFor } from "../avatarColor";
 import { CricketKpis } from "../CricketKpis";
 import { roleOf } from "../playerRoles";
 import { PlayerAvatar } from "../players/PlayerAvatar";
@@ -17,6 +16,7 @@ import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
 import { Loader } from "../../components/Loader";
+import { TeamMark } from "../teams/TeamMark";
 
 type Mode = "following" | "discover";
 
@@ -192,9 +192,7 @@ export function FollowingPage() {
             key={`${tournament.id}-${index}`}
             to={canOpen(tournament) ? `/tournaments/${tournament.id}/teams/${index}` : null}
             logo={
-              <span className="cricket-team-card-logo" style={{ background: avatarColorFor(team.name) }} aria-hidden="true">
-                {team.name.charAt(0).toUpperCase()}
-              </span>
+              <TeamMark className="cricket-team-card-logo" name={team.name} logoUrl={team.logoUrl} />
             }
             title={team.name}
             detail={`${tournament.name} · ${plural(team.playerIds.length, "player")}`}

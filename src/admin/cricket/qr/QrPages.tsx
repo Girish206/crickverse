@@ -8,10 +8,10 @@ import type { CricketTeamInvite } from "../../../api/types";
 import { ListCard } from "../../components/ListCard";
 import { Loader } from "../../components/Loader";
 import { PageHeader } from "../../components/PageHeader";
-import { avatarColorFor } from "../avatarColor";
 import { useOpenPlayerProfile } from "../players/PlayerProfileSheet";
 import "../cricket.css";
 import "./qr.css";
+import { TeamMark } from "../teams/TeamMark";
 
 const teamPath = (invite: CricketTeamInvite) =>
   invite.kind === "saved"
@@ -62,9 +62,7 @@ export function JoinTeamPage() {
       <PageHeader title="Join Team" back="/" />
       <ListCard>
         <div className="cricket-join">
-          <span className="cricket-tour-logo" style={{ background: avatarColorFor(invite.name) }} aria-hidden="true">
-            {invite.name.charAt(0).toUpperCase()}
-          </span>
+          <TeamMark className="cricket-tour-logo" name={invite.name} logoUrl={invite.logoUrl} />
           <h1>{invite.name}</h1>
           <p>
             {invite.kind === "tournament" ? `A team in ${invite.tournamentName}` : "Team"} · {invite.playerIds.length}{" "}

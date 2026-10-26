@@ -1,9 +1,9 @@
 import { Fragment } from "react";
 import { useNavigate } from "react-router-dom";
 import type { CricketMatch, CricketMatchStatus } from "../../../api/types";
-import { avatarColorFor } from "../avatarColor";
 import { BALL_TYPES } from "../cricketOptions";
 import { formatMatchDate, battingOrder, matchStageLabel, teamInitials, teamScore } from "./matchUtils";
+import { TeamMark } from "../teams/TeamMark";
 
 const STATUS_LABELS: Record<CricketMatchStatus, string> = {
   scheduled: "Upcoming",
@@ -103,9 +103,7 @@ export function MatchCard({
             <Fragment key={slot}>
               {i === 1 && <MatchCardCentre match={match} />}
               <div className={`cricket-match-card-team ${state}`.trim()}>
-                <span className="cricket-match-card-badge" style={{ background: avatarColorFor(team.name) }} aria-hidden="true">
-                  {teamInitials(team.name)}
-                </span>
+                <TeamMark className="cricket-match-card-badge" name={team.name} logoUrl={team.logoUrl} text={teamInitials(team.name)} />
                 <span className="cricket-match-card-name" title={team.name}>
                   {team.name}
                   {match.winner === slot && decided && (

@@ -27,6 +27,7 @@ import { PlayerPicker } from "./PlayerPicker";
 import "../../admin.css";
 import "../cricket.css";
 import { Loader } from "../../components/Loader";
+import { TeamMark } from "../teams/TeamMark";
 
 type Slot = "strikerId" | "nonStrikerId" | "bowlerId";
 type Face = "heads" | "tails";
@@ -274,9 +275,7 @@ function MatchSetup({ match, nameOf, onExit, onStarted }: MatchSetupProps) {
                   <Fragment key={slot}>
                     {slot === 1 && <span className="cricket-setup-vs">vs</span>}
                     <div className="cricket-setup-team">
-                      <span className="cricket-setup-logo" style={{ background: teamColors[slot] }} aria-hidden="true">
-                        {team.name.charAt(0).toUpperCase()}
-                      </span>
+                      <TeamMark className="cricket-setup-logo" name={team.name} logoUrl={team.logoUrl} color={teamColors[slot]} />
                       <strong className="cricket-setup-team-name">{team.name}</strong>
                       <small className="cricket-setup-captain">
                         {roles[slot].captainId ? (
@@ -366,9 +365,7 @@ function MatchSetup({ match, nameOf, onExit, onStarted }: MatchSetupProps) {
                     recordToss(index as 0 | 1, decision);
                   }}
                 >
-                  <span className="cricket-pick-tile-logo" style={{ background: teamColors[index] }} aria-hidden="true">
-                    {team.name.charAt(0).toUpperCase()}
-                  </span>
+                  <TeamMark className="cricket-pick-tile-logo" name={team.name} logoUrl={team.logoUrl} color={teamColors[index]} />
                   <strong>{team.name}</strong>
                   {tossWinner === index && (
                     <i className="fa-solid fa-check cricket-pick-tile-check" aria-hidden="true"></i>

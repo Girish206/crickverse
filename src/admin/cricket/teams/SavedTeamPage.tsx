@@ -27,10 +27,13 @@ import { MatchesBoard } from "../matches/CricketMatchesList";
 import { teamKeyOf } from "../matches/matchUtils";
 import { TeamInviteSheet } from "../qr/ShowQrSheets";
 import { SettingsMenu } from "../SettingsMenu";
+import { ShareMenu } from "../ShareMenu";
 import { teamStats } from "../stats";
 import { AddPlayersByMobileSheet } from "../tournaments/AddTeamPlayersSheet";
 import { RosterPlayer, TeamStatsView } from "../tournaments/CricketTeamPage";
-import { roleTagsFor, rolesOf, TeamRoleChips } from "../tournaments/TeamRoleChips";
+import { NO_ROLES, roleTagsFor, rolesOf, rolesWithout, TeamRoleChips, type TeamRoles } from "../tournaments/TeamRoleChips";
+import { AddPlayerByMobile } from "../players/AddPlayerByMobile";
+import { PlayerCard } from "../players/PlayerCard";
 import { useImagePick } from "../tournaments/CricketTournamentForm";
 import { bannerFor } from "../tournaments/tournamentArt";
 import { TeamBadge, TeamLogoField } from "./TeamLogoField";
@@ -90,15 +93,47 @@ export function CreateSavedTeamForm({ onSaved }: { onSaved: () => void }) {
   );
 }
 
+// "Edit team", like a tournament team's: its logo, name, and players picked
+// (or added by mobile number) with their leaders.
 function EditTeamForm({ team, onSaved }: { team: CricketSavedTeam; onSaved: () => void }) {
+  const { data: players } = useCricketPlayers();
   const updateTeam = useUpdateCricketSavedTeam();
+  const setTeamRoles = useSetCricketSavedTeamRoles();
   const setLogo = useSetCricketSavedTeamLogo();
   const logo = useImagePick(team.logoUrl);
   const [name, setName] = useState(team.name);
+  const [picked, setPicked] = useState<number[]>(team.playerIds);
+  const [roles, setRoles] = useState<TeamRoles>(rolesOf(team));
+  const [search, setSearch] = useState("");
+
+  // The team's players plus anyone added by mobile number; unpicking keeps
+  // them listed so they can be picked again.
+  const listedIds = [...new Set([...team.playerIds, ...picked])];
+  const visible = (players ?? []).filter(
+    (player) => listedIds.includes(player.id) && player.name.toLowerCase().includes(search.trim().toLowerCase()),
+  );
+  const saving = updateTeam.isPending || setTeamRoles.isPending || setLogo.isPending;
+
+  function toggle(playerId: number) {
+    if (picked.includes(playerId)) {
+      setPicked(picked.filter((id) => id !== playerId));
+      setRoles(rolesWithout(roles, playerId));
+    } else {
+      setPicked([...picked, playerId]);
+    }
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    if (name.trim() && name.trim() !== team.name) await updateTeam.mutateAsync({ id: team.id, name: name.trim() });
+    const trimmed = name.trim();
+    const playersChanged = picked.length !== team.playerIds.length || picked.some((id) => !team.playerIds.includes(id));
+    if ((trimmed && trimmed !== team.name) || playersChanged) {
+      await updateTeam.mutateAsync({ id: team.id, name: trimmed || team.name, playerIds: picked });
+    }
+    const before = rolesOf(team);
+    if ((Object.keys(roles) as (keyof TeamRoles)[]).some((key) => roles[key] !== before[key])) {
+      await setTeamRoles.mutateAsync({ id: team.id, ...roles });
+    }
     // undefined = untouched; null = removed (only if there was one).
     if (logo.file || (logo.file === null && team.logoUrl)) await setLogo.mutateAsync({ id: team.id, logo: logo.file });
     onSaved();
@@ -114,7 +149,54 @@ function EditTeamForm({ team, onSaved }: { team: CricketSavedTeam; onSaved: () =
         value={name}
         onChange={(e: ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
       />
-      <SubmitButton loading={updateTeam.isPending || setLogo.isPending}>Save</SubmitButton>
+      <div className="d-flex justify-content-between align-items-center mb-2">
+        <label className="form-label m-0">
+          Players ({picked.length})
+          {picked.length > 0 && <small className="text-muted fw-normal"> · tap C, VC or WK to pick leaders</small>}
+        </label>
+        {picked.length > 0 && (
+          <button
+            type="button"
+            className="admin-link-btn"
+            onClick={() => {
+              setPicked([]);
+              setRoles(NO_ROLES);
+            }}
+          >
+            Clear
+          </button>
+        )}
+      </div>
+      <AddPlayerByMobile
+        blockedReason={(playerId) => (picked.includes(playerId) ? "Already in this team" : null)}
+        onAdded={(player) => setPicked((current) => [...current, player.id])}
+      />
+      <input
+        type="search"
+        className="form-control shadow-none my-2"
+        placeholder="Search players"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+      <div className="cricket-player-card-list cricket-team-pick-list">
+        {visible.length === 0 ? (
+          <div className="admin-empty-state">
+            {listedIds.length ? "No players match." : "No players yet — add them by mobile number above."}
+          </div>
+        ) : (
+          visible.map((player) => (
+            <PlayerCard
+              key={player.id}
+              player={player}
+              selected={picked.includes(player.id)}
+              onClick={() => toggle(player.id)}
+            >
+              <TeamRoleChips roles={roles} playerId={player.id} playerName={player.name} onChange={setRoles} />
+            </PlayerCard>
+          ))
+        )}
+      </div>
+      <SubmitButton loading={saving}>Save</SubmitButton>
     </ModalForm>
   );
 }
@@ -218,35 +300,44 @@ export function SavedTeamPage() {
         subtitle="Team"
         back={backTo}
         actions={
-          canManage ? (
-            <>
-              {/* The team's join QR code and link, for players to add themselves. */}
-              <PageHeaderAction
-                icon="fa-solid fa-qrcode"
-                label="Team QR code"
-                active={inviting}
-                onClick={() => setInviting(true)}
-              />
-              <SettingsMenu
-                title="Team settings"
-                items={[
-                  { icon: "fa-solid fa-pen", label: "Edit team", onClick: () => setRenaming(true) },
-                  ...(canDelete
-                    ? [
-                        {
-                          icon: "fa-solid fa-trash",
-                          label: "Delete team",
-                          description: "Its matches stay, as a friendly team",
-                          danger: true,
-                          disabled: deleteTeam.isPending,
-                          onClick: handleDelete,
-                        },
-                      ]
-                    : []),
-                ]}
-              />
-            </>
-          ) : undefined
+          <>
+            <ShareMenu
+              heading="Share team"
+              path={`/teams/saved/${team.id}`}
+              title={team.name}
+              image={team.logoUrl ?? undefined}
+              text={`${team.name} on CricDesk`}
+            />
+            {canManage && (
+              <>
+                {/* The team's join QR code and link, for players to add themselves. */}
+                <PageHeaderAction
+                  icon="fa-solid fa-qrcode"
+                  label="Team QR code"
+                  active={inviting}
+                  onClick={() => setInviting(true)}
+                />
+                <SettingsMenu
+                  title="Team settings"
+                  items={[
+                    { icon: "fa-solid fa-pen", label: "Edit team", onClick: () => setRenaming(true) },
+                    ...(canDelete
+                      ? [
+                          {
+                            icon: "fa-solid fa-trash",
+                            label: "Delete team",
+                            description: "Its matches stay, as a friendly team",
+                            danger: true,
+                            disabled: deleteTeam.isPending,
+                            onClick: handleDelete,
+                          },
+                        ]
+                      : []),
+                  ]}
+                />
+              </>
+            )}
+          </>
         }
       />
       <div className="cricket-th-sticky">
@@ -389,7 +480,7 @@ export function SavedTeamPage() {
       )}
 
       {renaming && (
-        <BottomSheet title="Edit Team" icon="fa-solid fa-pen" onClose={() => setRenaming(false)}>
+        <BottomSheet title="Edit Team" icon="fa-solid fa-pen" onClose={() => setRenaming(false)} wide>
           <EditTeamForm team={team} onSaved={() => setRenaming(false)} />
         </BottomSheet>
       )}

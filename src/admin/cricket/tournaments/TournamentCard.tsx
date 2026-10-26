@@ -1,10 +1,10 @@
 import { useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import type { CricketMatch, CricketTournament } from "../../../api/types";
-import { avatarColorFor } from "../avatarColor";
 import { championOf, makeResolver } from "../format/formatEngine";
 import { bannerFor } from "./tournamentArt";
 import { TournamentLogo } from "./TournamentLogo";
+import { TeamMark } from "../teams/TeamMark";
 
 export type TournamentPhase = "setup" | "upcoming" | "ongoing" | "completed";
 
@@ -73,8 +73,8 @@ function placeOf(t: CricketTournament) {
 }
 
 // The viewer's team in a tournament, for the card's bottom strip.
-export function TeamFootnote({ teamName }: { teamName: string | null }) {
-  if (!teamName) {
+export function TeamFootnote({ team }: { team: { name: string; logoUrl?: string | null } | null }) {
+  if (!team) {
     return (
       <span className="cricket-tour-card-team is-pending">
         <i className="fa-solid fa-hourglass-half" aria-hidden="true"></i>
@@ -84,12 +84,10 @@ export function TeamFootnote({ teamName }: { teamName: string | null }) {
   }
   return (
     <span className="cricket-tour-card-team">
-      <span className="cricket-tour-card-team-dot" style={{ background: avatarColorFor(teamName) }} aria-hidden="true">
-        {teamName.charAt(0).toUpperCase()}
-      </span>
+      <TeamMark className="cricket-tour-card-team-dot" name={team.name} logoUrl={team.logoUrl} />
       <span className="cricket-tour-card-team-text">
         <small>Your team</small>
-        <strong>{teamName}</strong>
+        <strong>{team.name}</strong>
       </span>
     </span>
   );

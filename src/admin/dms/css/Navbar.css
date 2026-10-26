@@ -785,6 +785,10 @@
 .navbar-user-dropdown-avatar {
   overflow: hidden;
 }
+/* The player photos' ring (cricket.css), in the menu's header. */
+.navbar-user-dropdown-avatar {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px rgba(var(--primary-rgb), 0.35);
+}
 .navbar-avatar-photo {
   width: 100%;
   height: 100%;

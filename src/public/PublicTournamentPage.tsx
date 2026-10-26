@@ -5,6 +5,7 @@ import { countsForTable, pointsTable, standings, type PointsRow } from "../admin
 import { formatMatchDate, matchStageLabel, teamInitials, teamScore } from "../admin/cricket/matches/matchUtils";
 import { PublicShell, PublicState } from "./PublicShell";
 import { useNameOf } from "./publicNames";
+import { TeamMark } from "../admin/cricket/teams/TeamMark";
 
 // /tournaments/:id for someone signed out (a shared link to a public
 // tournament): the table, fixtures and results, and the teams. Its matches
@@ -82,9 +83,13 @@ function TournamentView({ data }: { data: PublicTournamentData }) {
             {tournament.teams.map((team, i) => (
               <div key={i} className="cv-pt-team">
                 <h3>
-                  <span className="cv-pm-badge" aria-hidden="true">
-                    {teamInitials(team.name)}
-                  </span>
+                  <TeamMark
+                    className="cv-pm-badge"
+                    name={team.name}
+                    logoUrl={team.logoUrl}
+                    color="rgba(var(--primary-rgb), 0.12)"
+                    text={teamInitials(team.name)}
+                  />
                   {team.name}
                 </h3>
                 {team.playerIds.length ? (

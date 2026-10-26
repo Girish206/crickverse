@@ -108,7 +108,7 @@ export function AddPlayerByMobile({
             Change
           </button>
         ) : (
-          <button type="button" className="cricket-add-player-btn" disabled={!mobile.trim() || looking} onClick={next}>
+          <button type="button" className="cricket-add-player-btn" disabled={looking} onClick={next}>
             Next <i className="fa-solid fa-arrow-right" aria-hidden="true"></i>
           </button>
         )}

@@ -4,6 +4,7 @@ import { monogram } from "../../../utils/format";
 import { avatarColorFor } from "../avatarColor";
 import { chaseInfo, inningsSummary, rate } from "../stats";
 import { battingOrder, matchStageLabel, teamScore } from "./matchUtils";
+import { TeamMark } from "../teams/TeamMark";
 
 // "in 2 days", "in 3h 20m", "in 45m", or "Starting soon" once it's due.
 function startsIn(at: Date, now: number) {
@@ -32,9 +33,13 @@ function FaceOff({ match, colors }: { match: CricketMatch; colors: string[] }) {
   const at = match.scheduledAt ? new Date(match.scheduledAt) : null;
   const side = (slot: number) => (
     <div className="cricket-faceoff-team">
-      <span className="cricket-faceoff-badge" style={{ background: colors[slot] }}>
-        {monogram(match.teams[slot].name)}
-      </span>
+      <TeamMark
+        className="cricket-faceoff-badge"
+        name={match.teams[slot].name}
+        logoUrl={match.teams[slot].logoUrl}
+        color={colors[slot]}
+        text={monogram(match.teams[slot].name)}
+      />
       <span className="cricket-faceoff-name">{match.teams[slot].name}</span>
     </div>
   );
@@ -114,9 +119,7 @@ export function MatchHero({ match }: MatchHeroProps) {
             );
             const row = (
               <div key={slot} className={`cricket-hero-row ${i === 1 ? "is-right" : ""} ${battingNow === slot ? "is-batting" : ""} ${lost ? "is-lost" : ""}`}>
-                <span className="cricket-hero-badge" style={{ background: colors[slot] }}>
-                  {monogram(team.name)}
-                </span>
+                <TeamMark className="cricket-hero-badge" name={team.name} logoUrl={team.logoUrl} color={colors[slot]} text={monogram(team.name)} />
                 <span className="cricket-hero-side">
                   <span className="cricket-hero-name">
                     <span>{team.name}</span>

@@ -175,7 +175,7 @@ export function CricketTeamPage() {
       {tips.element}
       <PageHeader
         title={team.name}
-        subtitle={fromMyTeams ? undefined : tournament.name}
+        subtitle={fromMyTeams ? "Team" : tournament.name}
         back={backTo}
         backLabel="All teams"
         actions={
@@ -184,6 +184,7 @@ export function CricketTeamPage() {
               heading="Share team"
               path={`/tournaments/${id}/teams/${teamIndex}`}
               title={team.name}
+              image={team.logoUrl ?? undefined}
               text={`${team.name} · ${tournament.name} on CricDesk`}
               items={
                 team.playerIds.length > 0
@@ -244,6 +245,10 @@ export function CricketTeamPage() {
                   )}
                   <span>
                     <i className="fa-solid fa-users" aria-hidden="true"></i> {team.playerIds.length} players
+                  </span>
+                  <span>
+                    <i className="fa-solid fa-baseball-bat-ball" aria-hidden="true"></i> {teamMatches.length}{" "}
+                    {teamMatches.length === 1 ? "match" : "matches"}
                   </span>
                   {record && record.played > 0 && (
                     <span>

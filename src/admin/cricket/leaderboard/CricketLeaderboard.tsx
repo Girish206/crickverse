@@ -2,7 +2,7 @@ import { useState, type KeyboardEvent } from "react";
 import { Link } from "react-router-dom";
 import { useCricketMatches } from "../../../api/hooks/cricket/useCricketMatches";
 import { useCricketTournaments } from "../../../api/hooks/cricket/useCricketTournaments";
-import type { CricketMatch, CricketTournament } from "../../../api/types";
+import type { CricketMatch, CricketTeam, CricketTournament } from "../../../api/types";
 import { ListCard } from "../../components/ListCard";
 import { usePlayerNames, usePlayerPhotos } from "../matches/matchUtils";
 import { AwardCard } from "../matches/AwardCard";
@@ -10,7 +10,6 @@ import { PlayerAvatar } from "../players/PlayerAvatar";
 import { PlayerLink } from "../players/PlayerProfileSheet";
 import { PillSelect } from "../PillSelect";
 import { BALL_TYPES, MATCH_TYPES } from "../cricketOptions";
-import { avatarColorFor } from "../avatarColor";
 import {
   battingAverage,
   bestBowling,
@@ -32,6 +31,7 @@ import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
 import { Loader } from "../../components/Loader";
+import { TeamMark } from "../teams/TeamMark";
 
 type Category = "overall" | "batting" | "bowling" | "fielding";
 
@@ -390,7 +390,7 @@ vs {match.teams[1 - row.team].name}</span>
 export function PointsTable({ tournament, matches }: { tournament: CricketTournament; matches: CricketMatch[] }) {
   return (
     <div className="cricket-standings">
-      <StandingsTable rows={pointsTable(tournament, matches)} matches={matches.filter(countsForTable)} />
+      <StandingsTable rows={pointsTable(tournament, matches)} teams={tournament.teams} matches={matches.filter(countsForTable)} />
       <p className="admin-hint mt-2 mb-0">Win 2 points, tie or no result 1. NRR counts an all-out side as facing its full overs.</p>
     </div>
   );
@@ -401,11 +401,14 @@ export function PointsTable({ tournament, matches }: { tournament: CricketTourna
 // `matches` (the ones the table counts), each team opens to its results.
 export function StandingsTable({
   rows,
+  teams,
   qualify = 0,
   settled = false,
   matches,
 }: {
   rows: PointsRow[];
+  // The tournament's teams, for their logos.
+  teams?: CricketTeam[];
   qualify?: number;
   settled?: boolean;
   matches?: CricketMatch[];
@@ -452,9 +455,7 @@ export function StandingsTable({
                 </td>
                 <td className="is-team fw-semibold">
                   <span className="cricket-standings-name" title={row.name}>
-                    <span className="cricket-standings-logo" style={{ background: avatarColorFor(row.name) }} aria-hidden="true">
-                      {row.name.charAt(0).toUpperCase()}
-                    </span>
+                    <TeamMark className="cricket-standings-logo" name={row.name} logoUrl={teams?.[row.teamIndex]?.logoUrl} />
                     <span className="cricket-standings-label">{row.name}</span>
                     {settled && index < qualify && <span className="cricket-q-tag" title="Qualified">Q</span>}
                     {matches && <i className="fa-solid fa-chevron-down cricket-expand-icon" aria-hidden="true"></i>}

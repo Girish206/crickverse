@@ -1,11 +1,11 @@
 import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
 import type { CricketMatch, CricketPlayerRole, CricketTournament } from "../../../api/types";
 import { monogram } from "../../../utils/format";
-import { avatarColorFor } from "../avatarColor";
 import { PlayerAvatar } from "../players/PlayerAvatar";
 import { PlayerLink } from "../players/PlayerProfileSheet";
 import { roleOf } from "../playerRoles";
 import type { NameOf } from "../stats";
+import { TeamMark } from "../teams/TeamMark";
 
 // Batters first, then keepers, all-rounders and bowlers; no role set last.
 const ROLE_ORDER: CricketPlayerRole[] = ["batter", "wicket-keeper", "all-rounder", "bowler"];
@@ -85,9 +85,7 @@ export function MatchSquads({
       <div className="cricket-squad-row is-head">
         {match.teams.map((team, slot) => (
           <div key={slot} className={`cricket-squad-cell is-${slot === 0 ? "left" : "right"}`}>
-            <span className="cricket-squad-badge" style={{ background: avatarColorFor(team.name) }}>
-              {monogram(team.name)}
-            </span>
+            <TeamMark className="cricket-squad-badge" name={team.name} logoUrl={team.logoUrl} text={monogram(team.name)} />
             <span className="cricket-squad-team" title={team.name}>
               {team.name}
             </span>

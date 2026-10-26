@@ -17,7 +17,6 @@ import { battingCard, bowlingCard, oversText, playerOfMatch, playerStats } from 
 import { TeamFootnote, TournamentCard, TournamentsBoard, tournamentPhase } from "../tournaments/TournamentCard";
 import { PlayerAvatar } from "../players/PlayerAvatar";
 import { roleOf } from "../playerRoles";
-import { avatarColorFor } from "../avatarColor";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
@@ -25,6 +24,7 @@ import { Loader } from "../../components/Loader";
 import { Button } from "../../components/Button";
 import { BottomSheet } from "../BottomSheet";
 import { CreateSavedTeamForm } from "../teams/SavedTeamPage";
+import { TeamMark } from "../teams/TeamMark";
 
 // The main menu pages' titles: icon (as in the sidebar) and what each is for.
 type PageTitle = { title: string; icon: string; subtitle: string };
@@ -294,7 +294,7 @@ function HomeFeed({ me }: { me: CricketMe }) {
                 tournament={t}
                 matchCount={me.matches.filter((m) => m.tournamentId === t.id).length}
                 matches={[...mine, ...following]}
-                footnote={<TeamFootnote teamName={t.teams.find((team) => team.playerIds.includes(playerId))?.name ?? null} />}
+                footnote={<TeamFootnote team={t.teams.find((team) => team.playerIds.includes(playerId)) ?? null} />}
               />
             ))}
           </HomeRail>
@@ -539,7 +539,7 @@ export function MyCricketTournaments() {
           empty="You haven't been picked for a tournament yet."
           renderCard={card((tournament) => {
             const myTeam = tournament.teams.find((team) => team.playerIds.includes(playerId));
-            return <TeamFootnote teamName={myTeam?.name ?? null} />;
+            return <TeamFootnote team={myTeam ?? null} />;
           })}
         />
       ) : show === "organising" ? (
@@ -572,6 +572,7 @@ interface MyTeam {
   tournamentName: string | null;
   // A team made outside any tournament (CricketSavedTeam).
   saved?: boolean;
+  logoUrl: string | null;
   role: string;
   playerCount: number;
   matches: CricketMatch[];
@@ -602,6 +603,7 @@ function myTeams(me: CricketMe, playerId: number, tournamentsById: Map<number, C
       key: `t:${tournamentId}:${index}`,
       name: team?.name ?? side?.name ?? "Team",
       tournamentName: tournament?.name ?? "Tournament",
+      logoUrl: team?.logoUrl ?? side?.logoUrl ?? null,
       role: source ? roleIn(source, playerId) : "Player",
       playerCount: source?.playerIds.length ?? 0,
       matches: [],
@@ -615,6 +617,7 @@ function myTeams(me: CricketMe, playerId: number, tournamentsById: Map<number, C
       name: team.name,
       tournamentName: null,
       saved: true,
+      logoUrl: team.logoUrl,
       role: team.playerIds.includes(playerId) ? roleIn(team, playerId) : "Organiser",
       playerCount: team.playerIds.length,
       matches: [],
@@ -643,6 +646,7 @@ function myTeams(me: CricketMe, playerId: number, tournamentsById: Map<number, C
             key,
             name: side.name,
             tournamentName: null,
+            logoUrl: side.logoUrl ?? null,
             // The newest match comes first, so it sets the role and squad size.
             role: roleIn(side, playerId),
             playerCount: side.playerIds.length,
@@ -675,6 +679,7 @@ function opponentTeams(me: CricketMe, playerId: number, tournamentsById: Map<num
         key,
         name: side.name,
         tournamentName: match.tournamentId === null ? null : (tournament?.name ?? "Tournament"),
+        logoUrl: side.logoUrl ?? null,
         role: "Opponent",
         playerCount: tournament?.teams[side.teamIndex]?.playerIds.length ?? side.playerIds.length,
         matches: [],
@@ -708,6 +713,7 @@ function followedTeams(
         key: `t:${tournament.id}:${follow.teamIndex}`,
         name: team.name,
         tournamentName: tournament.name,
+        logoUrl: team.logoUrl ?? null,
         role: "Following",
         playerCount: team.playerIds.length,
         matches: pool.filter((m) => m.tournamentId === tournament.id && m.teams.some((t) => t.teamIndex === follow.teamIndex)),
@@ -736,9 +742,7 @@ function TeamCard({ team }: { team: MyTeam }) {
       onKeyDown={(e) => e.key === "Enter" && open()}
     >
       <div className="cricket-tour-card-title">
-        <span className="cricket-picker-avatar" style={{ background: avatarColorFor(team.name) }} aria-hidden="true">
-          {team.name.charAt(0).toUpperCase()}
-        </span>
+        <TeamMark className="cricket-picker-avatar cricket-my-team-logo" name={team.name} logoUrl={team.logoUrl} />
         <span className="cricket-my-team-name">
           <h3 className="admin-item-card-title">{team.name}</h3>
           <small className="text-muted">{team.tournamentName ?? (team.saved ? "Your team" : "Friendly matches")}</small>

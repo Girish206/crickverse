@@ -2182,11 +2182,26 @@
   width: 26px;
   height: 26px;
 }
-/* In a form (the team forms), not over a banner. */
+/* In a form (the team forms), not over a banner: a visible edge, as the
+   sheet behind it is the same colour as the picker's frame. */
 .cricket-logo-wrap.is-inline {
   position: static;
   align-items: center;
   margin-bottom: 1rem;
+}
+.cricket-logo-wrap.is-inline .cricket-logo-pick {
+  border: 2px solid var(--border-color);
+}
+
+/* A team logo (TeamMark) gets a thin edge so a white or light logo doesn't
+   melt into the page. Inset, so the badge keeps its size; badges that
+   already have a ring (match card, face-off, page header, My Teams) keep
+   theirs. */
+span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):not(.cricket-tour-logo):not(.cricket-my-team-logo) {
+  box-shadow: inset 0 0 0 1px var(--border-color);
+}
+.cricket-tour-logo.has-team-logo {
+  box-shadow: inset 0 0 0 1px var(--border-color), 0 0 0 2px var(--adm-surface, #fff), 0 0 0 3.5px rgba(var(--primary-rgb), 0.35);
 }
 .cricket-logo-caption {
   font-size: var(--fs-sm);
@@ -3195,6 +3210,21 @@
   margin-top: 12px;
 }
 
+/* Player photos and initials in lists get the team badges' ring
+   (.cricket-tour-logo): a gap the card's colour, then a soft primary edge.
+   Leaderboard medals and the captain's amber ring are set on their own. */
+.cricket-roster-avatar,
+.cricket-player-card-avatar,
+.cricket-board-avatar,
+.cricket-squad-avatar,
+.cricket-mvp-avatar,
+.cricket-award-avatar,
+.cricket-potm-avatar {
+  box-shadow: 0 0 0 2px var(--adm-surface, #fff), 0 0 0 3.5px rgba(var(--primary-rgb), 0.35);
+}
+.cricket-roster-avatar-wrap.is-lead-c .cricket-roster-avatar {
+  box-shadow: none;
+}
 /* Player photos: same box as the initial they replace. */
 .cricket-avatar-img {
   flex: none;
@@ -4780,6 +4810,13 @@ span.cricket-pick-tile-photo {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* The team's badge ringed like the team page's (.cricket-tour-logo). */
+.cricket-my-team-logo {
+  box-shadow: 0 0 0 2px var(--adm-surface, #fff), 0 0 0 3.5px rgba(var(--primary-rgb), 0.35);
+}
+.cricket-my-team-logo.has-team-logo {
+  box-shadow: inset 0 0 0 1px var(--border-color), 0 0 0 2px var(--adm-surface, #fff), 0 0 0 3.5px rgba(var(--primary-rgb), 0.35);
+}
 .cricket-my-team-name {
   min-width: 0;
   display: flex;
@@ -5983,9 +6020,14 @@ tbody tr:first-child .cricket-standings-rank {
   max-width: none;
   max-height: none;
   object-fit: cover;
-  border: 3px solid rgba(255, 255, 255, 0.85);
   border-radius: 50%;
   background: #fff;
+  /* The team badges' ring, scaled up: a white gap, then the primary colour,
+     with a soft glow off the dark backdrop. */
+  box-shadow:
+    0 0 0 4px #fff,
+    0 0 0 8px rgb(var(--primary-rgb)),
+    0 12px 40px rgba(0, 0, 0, 0.5);
 }
 .cricket-image-viewer-close {
   position: absolute;

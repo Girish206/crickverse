@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent } from "react";
 import { compressImage, MAX_UPLOAD_BYTES, TOURNAMENT_LOGO } from "../../../utils/compressImage";
-import { avatarColorFor } from "../avatarColor";
 import type { useImagePick } from "../tournaments/CricketTournamentForm";
+import { TeamMark } from "./TeamMark";
 
 // The team forms' logo picker, like the tournament form's: a round badge to
 // tap, with "Remove logo" once there's one. Saved separately after the team.
@@ -50,11 +50,5 @@ export function TeamLogoField({ pick }: { pick: ReturnType<typeof useImagePick> 
 
 // A team page's round badge: its logo, or its initial on its colour.
 export function TeamBadge({ name, logoUrl }: { name: string; logoUrl?: string | null }) {
-  return logoUrl ? (
-    <span className="cricket-tour-logo" style={{ backgroundImage: `url(${logoUrl})` }} aria-hidden="true" />
-  ) : (
-    <span className="cricket-tour-logo" style={{ background: avatarColorFor(name) }} aria-hidden="true">
-      {name.charAt(0).toUpperCase()}
-    </span>
-  );
+  return <TeamMark className="cricket-tour-logo" name={name} logoUrl={logoUrl} />;
 }

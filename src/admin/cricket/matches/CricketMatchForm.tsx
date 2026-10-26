@@ -39,6 +39,7 @@ import { fetchTeamInvite } from "../../../api/hooks/cricket/useCricketTeamInvite
 import { messageFor } from "../../../api/mutationErrors";
 import { QrScannerSheet, type ScanReply } from "../qr/QrScannerSheet";
 import type { QrTarget } from "../qr/qrLinks";
+import { TeamMark } from "../teams/TeamMark";
 
 // <input type="datetime-local"> wants local "YYYY-MM-DDTHH:mm".
 export function toLocalInput(value: string | null) {
@@ -52,22 +53,34 @@ export function toLocalInput(value: string | null) {
 // teamKeyOf, so two different teams with the same name are both listed and
 // kept apart.
 function knownTeams(tournaments: CricketTournament[] | undefined, me: CricketMe | undefined) {
-  const teams = new Map<string, { key: string; name: string; note: string; playerIds: Set<number> }>();
+  const teams = new Map<string, { key: string; name: string; note: string; playerIds: Set<number>; logoUrl: string | null }>();
   // Teams made outside a tournament: picking one fills the side with its players.
   for (const team of me?.savedTeams ?? []) {
-    teams.set(team.teamKey, { key: team.teamKey, name: team.name.trim(), note: "Your team", playerIds: new Set(team.playerIds) });
+    teams.set(team.teamKey, {
+      key: team.teamKey,
+      name: team.name.trim(),
+      note: "Your team",
+      playerIds: new Set(team.playerIds),
+      logoUrl: team.logoUrl,
+    });
   }
   for (const t of tournaments ?? []) {
     t.teams.forEach((team, index) => {
       const key = `t:${t.id}:${index}`;
-      teams.set(key, { key, name: team.name.trim(), note: t.name, playerIds: new Set(team.playerIds) });
+      teams.set(key, { key, name: team.name.trim(), note: t.name, playerIds: new Set(team.playerIds), logoUrl: team.logoUrl ?? null });
     });
   }
   const matches = me ? [...me.matches, ...me.followedMatches, ...me.followedPlayerMatches, ...me.createdMatches] : [];
   for (const match of matches.filter((m) => m.tournamentId === null)) {
     match.teams.forEach((side, slot) => {
       const key = teamKeyOf(match, slot);
-      const team = teams.get(key) ?? { key, name: side.name.trim(), note: "Friendly team", playerIds: new Set<number>() };
+      const team = teams.get(key) ?? {
+        key,
+        name: side.name.trim(),
+        note: "Friendly team",
+        playerIds: new Set<number>(),
+        logoUrl: side.logoUrl ?? null,
+      };
       side.playerIds.forEach((id) => team.playerIds.add(id));
       teams.set(key, team);
     });
@@ -77,6 +90,7 @@ function knownTeams(tournaments: CricketTournament[] | undefined, me: CricketMe 
     .map((team) => ({
       key: team.key,
       name: team.name,
+      logoUrl: team.logoUrl,
       note: team.playerIds.size ? `${team.note} · ${team.playerIds.size} players` : team.note,
     }))
     .sort((a, b) => a.name.localeCompare(b.name) || a.note.localeCompare(b.note));
@@ -254,14 +268,35 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
     if (!standalone) {
       const otherIndex = slot === 0 ? teamB : teamA;
       return (tournament?.teams ?? [])
-        .map((team, index) => ({ name: team.name, index, key: null as string | null, note: null as string | null }))
+        .map((team, index) => ({
+          name: team.name,
+          index,
+          key: null as string | null,
+          note: null as string | null,
+          logoUrl: team.logoUrl ?? null,
+        }))
         .filter(({ index }) => index !== otherIndex);
     }
     const other = sideName(slot === 0 ? 1 : 0).toLowerCase();
     return knownTeams(tournaments, me)
       .filter((team) => team.name.toLowerCase() !== other)
-      .map((team) => ({ name: team.name, index: null as number | null, key: team.key as string | null, note: team.note as string | null }));
+      .map((team) => ({
+        name: team.name,
+        index: null as number | null,
+        key: team.key as string | null,
+        note: team.note as string | null,
+        logoUrl: team.logoUrl,
+      }));
   }
+  // Each side's logo: its tournament team's, or the picked known team's.
+  const sideLogo = (slot: 0 | 1) => {
+    if (!standalone) {
+      const index = slot === 0 ? teamA : teamB;
+      return index === null ? null : (tournament?.teams[index]?.logoUrl ?? null);
+    }
+    const key = teamKeys[slot];
+    return key === null ? null : (knownTeams(tournaments, me).find((team) => team.key === key)?.logoUrl ?? null);
+  };
   // A new team comes with its captain (null for a known team, which comes
   // with its key instead).
   function pickTeam(slot: 0 | 1, name: string, index: number | null, captainId: number | null = null, key: string | null = null) {
@@ -453,13 +488,13 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
                   <Fragment key={slot}>
                     {slot === 1 && <span className="cricket-setup-vs">vs</span>}
                     <div className="cricket-setup-team">
-                      <span
-                        className={`cricket-setup-logo ${name ? "" : "is-empty"}`.trim()}
-                        style={name ? { background: avatarColorFor(name) } : undefined}
-                        aria-hidden="true"
-                      >
-                        {name ? name.charAt(0).toUpperCase() : <i className="fa-solid fa-shield-halved"></i>}
-                      </span>
+                      {name ? (
+                        <TeamMark className="cricket-setup-logo" name={name} logoUrl={sideLogo(slot)} />
+                      ) : (
+                        <span className="cricket-setup-logo is-empty" aria-hidden="true">
+                          <i className="fa-solid fa-shield-halved"></i>
+                        </span>
+                      )}
                       <strong className="cricket-setup-team-name">{name || `Team ${slot + 1}`}</strong>
                       {/* Only a newly named side has a captain to show (and change). */}
                       {standalone && captains[slot] !== null && (
@@ -895,7 +930,7 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
                 <ul className="cricket-picker-list">
                   {teamChoices(choosingTeam)
                     .filter(({ name }) => name.toLowerCase().includes(teamSearch.trim().toLowerCase()))
-                    .map(({ name, index, key, note }) => {
+                    .map(({ name, index, key, note, logoUrl }) => {
                       const selected = standalone
                         ? teamKeys[choosingTeam] === key
                         : sideName(choosingTeam).toLowerCase() === name.toLowerCase();
@@ -906,9 +941,7 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
                             className={`cricket-picker-item ${selected ? "is-selected" : ""}`}
                             onClick={() => pickTeam(choosingTeam, name, index, null, key)}
                           >
-                            <span className="cricket-picker-avatar" style={{ background: avatarColorFor(name) }}>
-                              {name.charAt(0).toUpperCase()}
-                            </span>
+                            <TeamMark className="cricket-picker-avatar" name={name} logoUrl={logoUrl} />
                             <span className="cricket-picker-text">
                               <strong>{name}</strong>
                               {note && <small>{note}</small>}

@@ -15,7 +15,6 @@ import { sameTarget, useMyFollows } from "../../../api/hooks/cricket/useCricketF
 import { useCricketMe } from "../../../api/hooks/cricket/useCricketPlayers";
 import { isGeneratedTeam, type CricketFollowTarget, type CricketMatch, type CricketTournament } from "../../../api/types";
 import { confirmAction } from "../../components/confirmDelete";
-import { avatarColorFor } from "../avatarColor";
 import { pointsTable } from "../stats";
 import { AutoNextRounds } from "../format/AutoNextRounds";
 import { ListCard } from "../../components/ListCard";
@@ -47,6 +46,7 @@ import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
 import { Loader } from "../../components/Loader";
+import { TeamMark } from "../teams/TeamMark";
 
 type Tab = "info" | "teams" | "matches" | "points" | "stats" | "totals";
 
@@ -92,14 +92,13 @@ function TeamCards({
         const kind = generated ? "Balanced by the app" : "Picked by hand";
         return (
           <Link key={teamIndex} to={`/tournaments/${tournament.id}/teams/${teamIndex}`} className="cricket-team-card">
-            <span className="cricket-team-card-logo" style={{ background: avatarColorFor(team.name) }} aria-hidden="true">
-              {team.name.charAt(0).toUpperCase()}
+            <TeamMark className="cricket-team-card-logo" name={team.name} logoUrl={team.logoUrl}>
               {showKind && (
                 <span className="cricket-team-card-kind" title={kind}>
                   <i className={`fa-solid ${generated ? "fa-wand-magic-sparkles" : "fa-hand"}`}></i>
                 </span>
               )}
-            </span>
+            </TeamMark>
             <span className="cricket-team-card-text">
               <strong>
                 {team.name}

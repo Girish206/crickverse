@@ -179,7 +179,8 @@ export function ShareSquadSheet({
 }) {
   const squad = squadOrder(team, playerById);
   const draw = useCallback(
-    () => drawSquadCard(tournament, team.name, squadOrder(team, playerById)),
+    // The team's own logo heads its card, when it has one.
+    () => drawSquadCard({ ...tournament, logoUrl: team.logoUrl || tournament.logoUrl }, team.name, squadOrder(team, playerById)),
     [tournament, team, playerById],
   );
   return (
