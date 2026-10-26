@@ -97,9 +97,9 @@ export const PRESETS: Preset[] = [
   {
     id: "knockout",
     name: "Straight knockout",
-    note: "Lose and you're out — a bracket for 2, 4, 8 or 16 teams",
+    note: "Lose and you're out — any number of teams; the top seeds get a bye when it doesn't divide evenly",
     icon: "fa-sitemap",
-    unfit: (teamCount) => ([2, 4, 8, 16].includes(teamCount) ? null : "Needs 2, 4, 8 or 16 teams"),
+    unfit: atLeast(2),
     usesGroups: false,
     defaults: () => base,
   },
@@ -197,29 +197,69 @@ const ROUNDS: { stage: CricketMatchStage; prefix: string; label: string }[] = [
   { stage: "round-of-16", prefix: "R", label: "Round of 16" },
 ];
 
-// A full bracket over the seeds, in seed order, round by round.
+// A bracket over the seeds, in seed order, round by round. With a team
+// count that isn't a power of two the bracket is drawn for the next one up
+// and the missing places are byes: the top seeds go straight into the
+// second round (their source is the seed itself), so the first round has
+// only the teams that need to play.
 function bracket(seeds: CricketTeamSource[], thirdPlace: boolean): CricketBracketSlot[] {
-  const rounds = Math.log2(seeds.length);
-  const order = bracketOrder(seeds.length);
+  const size = 2 ** Math.ceil(Math.log2(seeds.length));
+  const rounds = Math.log2(size);
+  const order = bracketOrder(size);
   const slots: CricketBracketSlot[] = [];
-  let previous: string[] = [];
+  // Who fills each place of the round being drawn: a seed (or null for a
+  // bye) in the first round, then the winner of the place pair before.
+  let places: (CricketTeamSource | null)[] = order.map((seed) => seeds[seed - 1] ?? null);
+  // The round before's matches, for the 3rd-place match (only when both
+  // semi-finals are played — a bye leaves no loser).
+  let previousWinners: string[] = [];
   for (let round = rounds - 1; round >= 0; round -= 1) {
     const { stage, prefix, label } = ROUNDS[round];
-    const count = 2 ** round;
-    const codes = Array.from({ length: count }, (_, i) => (count === 1 ? prefix : `${prefix}${i + 1}`));
-    codes.forEach((code, i) => {
-      const [home, away] =
-        previous.length === 0
-          ? [seeds[order[i * 2] - 1], seeds[order[i * 2 + 1] - 1]]
-          : [winner(previous[i * 2]), winner(previous[i * 2 + 1])];
-      slots.push(slot(code, count === 1 ? label : `${label} ${i + 1}`, stage, home, away));
-    });
-    if (count === 1 && thirdPlace && previous.length === 2) {
-      slots.splice(slots.length - 1, 0, slot("3P", "3rd Place", "third-place", loser(previous[0]), loser(previous[1])));
+    const pairs = Array.from({ length: places.length / 2 }, (_, i) => [places[i * 2], places[i * 2 + 1]] as const);
+    const played = pairs.filter(([home, away]) => home && away).length;
+    let number = 0;
+    const next: (CricketTeamSource | null)[] = [];
+    const winners: string[] = [];
+    for (const [home, away] of pairs) {
+      if (!home || !away) {
+        // A bye: whoever is there goes through without playing.
+        next.push(home ?? away);
+        continue;
+      }
+      number += 1;
+      const code = played === 1 ? (round === 0 ? prefix : `${prefix}1`) : `${prefix}${number}`;
+      if (round === 0 && thirdPlace && previousWinners.length === 2) {
+        slots.push(slot("3P", "3rd Place", "third-place", loser(previousWinners[0]), loser(previousWinners[1])));
+      }
+      slots.push(slot(code, played === 1 ? label : `${label} ${number}`, stage, home, away));
+      next.push(winner(code));
+      winners.push(code);
     }
-    previous = codes;
+    previousWinners = pairs.length === 2 && winners.length === 2 ? winners : [];
+    places = next;
   }
   return slots;
+}
+
+// The draw (team indexes in seed order) a knockout phase was built from:
+// the same bracket drawn over seed numbers, matched slot by slot.
+export function knockoutDraw(phase: CricketPhase): number[] {
+  const teams = phase.slots.flatMap((s) => [s.home, s.away]).filter((source) => source.from === "team");
+  if (teams.length < 2) return [];
+  const numbered = Array.from({ length: teams.length }, (_, i): CricketTeamSource => ({ from: "team", teamIndex: i }));
+  const plan = teams.length === 2 ? [slot("F", "Final", "final", numbered[0], numbered[1])] : bracket(numbered, false);
+  const draw: number[] = [];
+  const real = phase.slots.filter((s) => s.stage !== "third-place");
+  plan.forEach((planned, i) => {
+    const actual = real[i];
+    if (!actual) return;
+    for (const side of ["home", "away"] as const) {
+      const seed = planned[side];
+      const team = actual[side];
+      if (seed.from === "team" && team.from === "team") draw[seed.teamIndex] = team.teamIndex;
+    }
+  });
+  return draw.length === teams.length && draw.every((teamIndex) => teamIndex !== undefined) ? draw : teams.map((s) => (s as { teamIndex: number }).teamIndex);
 }
 
 // Crossover from groups, in bracket seed order: the group winners first,

@@ -607,3 +607,19 @@ button.cricket-bracket-card:hover {
 .cricket-fixture-regenerate:hover {
   background: color-mix(in srgb, var(--primary) 10%, transparent);
 }
+
+/* The next round, proposed for the organiser to schedule (AutoNextRounds). */
+.cricket-next-rounds {
+  flex-wrap: wrap;
+}
+.cricket-next-rounds-list {
+  margin: 4px 0 6px;
+  padding-left: 18px;
+  font-size: var(--fs-sm);
+}
+@media (max-width: 575.98px) {
+  .cricket-next-rounds > .btn,
+  .cricket-next-rounds > button {
+    width: 100%;
+  }
+}

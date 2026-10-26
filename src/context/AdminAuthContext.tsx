@@ -24,11 +24,12 @@ interface AdminAuthContextValue {
   admin: AdminIdentity | null;
   // `identifier` is a mobile number or an email address.
   login: (identifier: string, password: string) => Promise<void>;
-  register: (input: { name?: string; mobile: string; password: string }) => Promise<void>;
+  register: (input: { name?: string; mobile: string; password: string; inviteCode?: string }) => Promise<void>;
   // Signs in with a token the API just issued (e.g. after a profile edit,
   // which changes the name and mobile it carries).
   applyToken: (token: string) => void;
-  logout: () => void;
+  // `everywhere` also ends the account's sessions on every other device.
+  logout: (options?: { everywhere?: boolean }) => Promise<void>;
   // A user-selectable background tint for the shell (Layout reads it).
   mainBg: string;
   setMainBg: (bg: string) => void;
@@ -109,7 +110,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     signInWith(data.data.token, true);
   }
 
-  async function register(input: { name?: string; mobile: string; password: string }) {
+  async function register(input: { name?: string; mobile: string; password: string; inviteCode?: string }) {
     const { data } = await apiClient.post<ApiEnvelope<{ token: string }>>("/admin/cricket/register", input);
     signInWith(data.data.token, true);
   }
@@ -118,7 +119,8 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     signInWith(token, false);
   }
 
-  function logout() {
+  async function logout({ everywhere = false } = {}) {
+    if (everywhere) await apiClient.post("/admin/auth/logout", { everywhere: true });
     setAdminToken(null);
     queryClient.clear();
     setAdmin(null);

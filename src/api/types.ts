@@ -137,11 +137,24 @@ export interface CricketTournament {
   matchType: CricketMatchType | null;
   // Default overs per innings for its matches.
   overs: number | null;
+  // Default playing conditions for its matches (see CricketMatch); each
+  // match starts with these and can change its own.
+  ballsPerOver?: number | null;
+  bowlerOverLimit?: number | null;
+  lastManStands?: boolean | null;
+  freeHit?: boolean | null;
   // How it's played (league, groups, playoffs, series...); null = not set
   // up, and every match counts towards one points table. See format/.
   format?: CricketFormat | null;
   // Players who may score (and edit) its matches / it; see canManage.ts.
   scorerIds: number[];
+  // Co-organisers (players) who manage it like its creator; see canManage.ts.
+  organiserIds?: number[];
+  // When the organiser marked it finished; null/missing = still on (or
+  // decided by its dates).
+  finishedAt?: string | null;
+  // Anyone with the link can see it without signing in.
+  isPublic?: boolean | null;
   // The account that created it (null on older ones); see canManage.ts.
   createdById: number | null;
   createdAt: string;
@@ -230,7 +243,9 @@ export type CricketBallType = "tennis" | "leather" | "other";
 export type CricketPitchType = "rough" | "cement" | "turf" | "astroturf" | "matting";
 export type CricketMatchType = "limited-overs" | "box" | "pair" | "test" | "hundred";
 
-export type CricketExtraType = "wide" | "no-ball" | "bye" | "leg-bye";
+// "penalty": runs awarded to the batting side (5 for a fielding offence),
+// between deliveries.
+export type CricketExtraType = "wide" | "no-ball" | "bye" | "leg-bye" | "penalty";
 
 // How a batter left. "retired-hurt" and "retired" aren't wickets (the
 // batter can come back); "absent-hurt" isn't either, but they can't bat.
@@ -277,6 +292,15 @@ export interface CricketBall {
   shotZone?: string | null;
   // When it was recorded. Missing on older balls.
   at?: string | null;
+  // Runs the batters ran off a no-ball that weren't hit: byes or leg-byes
+  // (extras, not the batter's). Missing/null = off the bat.
+  byeType?: "bye" | "leg-bye" | null;
+  // Where a run-out happened (the survivor is at the other end). Missing on
+  // older balls.
+  outEnd?: "striker" | "non-striker" | null;
+  // A 4 or 6 that reached the boundary (false = all run). Missing/null on
+  // older balls: 4s and 6s count as boundaries then.
+  boundary?: boolean | null;
 }
 
 export interface CricketInnings {
@@ -355,6 +379,22 @@ export interface CricketMatch {
   // 0 or 1; null for a tie or no result.
   winner: number | null;
   resultText: string | null;
+  // How a result entered by hand was decided (null/missing = played out).
+  resultMethod?: CricketResultMethod | null;
+  // The chase's target after a rain cut (null = first innings + 1).
+  revisedTarget?: number | null;
+  // Balls an over (null = 6; The Hundred plays 5).
+  ballsPerOver?: number | null;
+  // Most overs one bowler may bowl (null = no limit).
+  bowlerOverLimit?: number | null;
+  // The last batter bats on alone.
+  lastManStands?: boolean | null;
+  // A no-ball gives a free hit (null = yes, false = off).
+  freeHit?: boolean | null;
+  // Anyone with the link can watch it without signing in.
+  isPublic?: boolean | null;
+  // Bumped on every score change (the API refuses writes from older copies).
+  version?: number | null;
   playerOfMatchId: number | null;
   // Players who may score (and edit) its matches / it; see canManage.ts.
   scorerIds: number[];
@@ -366,6 +406,11 @@ export interface CricketMatch {
   createdById: number | null;
   createdAt: string;
 }
+
+export type CricketResultMethod = "super-over" | "walkover" | "forfeit" | "concede" | "dls" | "bowl-out" | "other";
+
+// Balls in one of this match's overs.
+export const ballsPerOverOf = (match: { ballsPerOver?: number | null }) => match.ballsPerOver ?? 6;
 
 export interface PaginatedResponse<T> {
   items: T[];

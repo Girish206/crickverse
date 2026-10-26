@@ -3,6 +3,9 @@ import { MenuItem } from "./MenuItem";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { Link, useNavigate } from "react-router-dom";
 import { BrandSignature } from "../../components/BrandSignature";
+import { useCricketMe } from "../../../api/hooks/cricket/useCricketPlayers";
+import { formatMobile } from "../../cricket/mobile";
+import { PlayerAvatar } from "../../cricket/players/PlayerAvatar";
 
 const Sidebar = ({
     activeSubItem,
@@ -23,6 +26,8 @@ const Sidebar = ({
     showSignature?: boolean;
 }) => {
     const { logout, admin } = useAdminAuth();
+    const { data: me } = useCricketMe();
+    const profileName = admin?.name || me?.player?.name || admin?.email || "My account";
     const navigate = useNavigate();
 
     const sidebarRef = useRef<HTMLDivElement | null>(null);
@@ -187,6 +192,41 @@ const Sidebar = ({
                 </button>
             </div>
             <div className="sidebar-mobile-divider" aria-hidden="true"></div>
+
+            {/* Who's signed in — photo, name, mobile, email — opening My Profile. */}
+            <Link
+                to="/profile"
+                onClick={handleNavigate}
+                className={`sidebar-profile ${!isSidebarOpen ? "is-collapsed" : ""}`.trim()}
+                title={!isSidebarOpen ? profileName : "My Profile"}
+            >
+                <PlayerAvatar
+                    name={profileName}
+                    photoUrl={me?.player?.photoUrl}
+                    className="sidebar-profile-avatar"
+                    viewable={false}
+                />
+                {isSidebarOpen && (
+                    <>
+                        <span className="sidebar-profile-who">
+                            <strong>{profileName}</strong>
+                            {me?.accountMobile && (
+                                <small>
+                                    <i className="fa-solid fa-phone" aria-hidden="true"></i>
+                                    {formatMobile(me.accountMobile)}
+                                </small>
+                            )}
+                            {admin?.email && (
+                                <small>
+                                    <i className="fa-solid fa-envelope" aria-hidden="true"></i>
+                                    {admin.email}
+                                </small>
+                            )}
+                        </span>
+                        <i className="fa-solid fa-chevron-right sidebar-profile-chevron" aria-hidden="true"></i>
+                    </>
+                )}
+            </Link>
 
             <div className="scrollable-content pt-2">
                 <ul className="nav nav-pills flex-column mb-auto">

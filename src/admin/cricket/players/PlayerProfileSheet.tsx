@@ -1,5 +1,7 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
-import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
+import { useCricketMe, useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
+import { useAdminAuth } from "../../../context/AdminAuthContext";
+import { PlayerInvite } from "./PlayerInvite";
 import { BottomSheet } from "../BottomSheet";
 import { CricketPlayerProfileLoader } from "./CricketPlayerProfile";
 import "../cricket.css";
@@ -13,12 +15,29 @@ export function PlayerProfileProvider({ children }: { children: ReactNode }) {
   const { data: players } = useCricketPlayers();
   const player = playerId === null ? undefined : players?.find((p) => p.id === playerId);
   const close = useCallback(() => setPlayerId(null), []);
+  // Organisers and captains can invite the players they added (the API
+  // checks which); everyone else has no one to invite.
+  const { admin } = useAdminAuth();
+  const { data: me } = useCricketMe();
+  const myPlayerId = me?.player?.id;
+  const mayInvite =
+    admin?.isSuperAdmin ||
+    Boolean(me && (me.createdTournaments.length || me.createdMatches.length || me.savedTeams.length)) ||
+    Boolean(
+      myPlayerId !== undefined &&
+        [...(me?.tournaments ?? []), ...(me?.matches ?? [])].some((t) => t.teams.some((team) => team.captainId === myPlayerId)),
+    );
   return (
     <PlayerProfileContext.Provider value={setPlayerId}>
       {children}
       {player && (
         <BottomSheet title="Player Profile" onClose={close} wide>
           <CricketPlayerProfileLoader player={player} />
+          {mayInvite && player.id !== myPlayerId && (
+            <div className="cricket-invite-row">
+              <PlayerInvite key={player.id} playerId={player.id} mobile={player.mobile} />
+            </div>
+          )}
         </BottomSheet>
       )}
     </PlayerProfileContext.Provider>

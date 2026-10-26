@@ -9,6 +9,7 @@ import { BottomSheet } from "../BottomSheet";
 import { CricketPlayerForm, CricketPlayerLoginForm, CricketPlayersBulkForm } from "./CricketPlayerForm";
 import { formatMobile } from "../mobile";
 import { roleOf } from "../playerRoles";
+import { MergePlayerSheet } from "./MergePlayerSheet";
 import { PlayerAvatar } from "./PlayerAvatar";
 import { PlayerLink } from "./PlayerProfileSheet";
 import { useCricketTournaments } from "../../../api/hooks/cricket/useCricketTournaments";
@@ -26,6 +27,7 @@ type ModalState =
   | { mode: "edit"; id: number }
   | { mode: "view"; id: number }
   | { mode: "login"; id: number }
+  | { mode: "merge"; id: number }
   | null;
 
 export function CricketPlayersList() {
@@ -139,6 +141,15 @@ export function CricketPlayersList() {
                   >
                     <button
                       type="button"
+                      className="cricket-key-btn"
+                      title="Merge into another player"
+                      aria-label="Merge into another player"
+                      onClick={() => setModal({ mode: "merge", id: player.id })}
+                    >
+                      <i className="fa-solid fa-code-merge" aria-hidden="true"></i>
+                    </button>
+                    <button
+                      type="button"
                       className={`cricket-key-btn ${player.hasLogin ? "is-on" : ""}`}
                       title="App login"
                       aria-label="App login"
@@ -160,13 +171,15 @@ export function CricketPlayersList() {
         </BottomSheet>
       )}
 
+      {modal?.mode === "merge" && modalPlayer && <MergePlayerSheet player={modalPlayer} onClose={() => setModal(null)} />}
+
       {modal?.mode === "login" && modalPlayer && (
         <BottomSheet title="App Login" onClose={() => setModal(null)}>
           <CricketPlayerLoginForm player={modalPlayer} onDone={() => setModal(null)} />
         </BottomSheet>
       )}
 
-      {modal && modal.mode !== "view" && modal.mode !== "login" && (
+      {modal && modal.mode !== "view" && modal.mode !== "login" && modal.mode !== "merge" && (
         <BottomSheet
           title={modal.mode === "edit" ? "Edit Player" : modal.mode === "bulk" ? "Add Players List" : "New Player"}
           onClose={() => setModal(null)}

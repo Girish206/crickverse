@@ -30,6 +30,8 @@ export interface ShareSheetProps {
   // The preview's picture (a logo); its initial on a colour without one.
   image?: string;
   items?: ShareMenuItem[];
+  // A line under the preview, e.g. whether the link works signed out.
+  note?: string;
 }
 
 // The header's Share button, opening ShareSheet.
@@ -68,6 +70,7 @@ export function ShareSheet({
   text,
   image,
   items = [],
+  note,
   onClose,
 }: ShareSheetProps & { onClose: () => void }) {
   const url = new URL(path, window.location.origin).toString();
@@ -140,6 +143,8 @@ export function ShareSheet({
           <i className="fa-regular fa-copy" aria-hidden="true"></i>
         </button>
       </div>
+
+      {note && <p className="admin-hint cricket-share-note">{note}</p>}
 
       <h3 className="cricket-share-label">Send link</h3>
       <div className="cricket-share-tiles">

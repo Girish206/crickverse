@@ -1,0 +1,100 @@
+/* The scorer's own bits (LiveScorer and scorer/*). */
+
+/* "FREE HIT" over the pad while the next ball is one. */
+.cricket-free-hit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: #f59e0b;
+  color: #1f1300;
+  font-family: var(--cv-display, inherit);
+  font-size: var(--fs-sm);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  animation: cricket-free-hit-pulse 1.6s ease-in-out infinite;
+}
+.cricket-free-hit small {
+  font-family: inherit;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  opacity: 0.85;
+}
+@keyframes cricket-free-hit-pulse {
+  50% {
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.25);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cricket-free-hit {
+    animation: none;
+  }
+}
+.cricket-sheet-note {
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(245, 158, 11, 0.14);
+  color: var(--theme-text-dark);
+  font-size: var(--fs-sm);
+}
+
+/* A ball waiting to be sent (offline). */
+.cricket-pending-ball {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px dashed var(--border-color);
+  border-radius: 10px;
+  background: var(--adm-surface);
+  color: var(--theme-text-dark);
+  font-size: var(--fs-sm);
+}
+.cricket-pending-ball > span {
+  flex: 1;
+  min-width: 0;
+}
+.cricket-pending-ball > i {
+  color: var(--muted-color);
+}
+
+/* Ball chips that can be tapped (to correct the ball). */
+button.cricket-chip-btn {
+  background-color: transparent;
+  font-family: inherit;
+  cursor: pointer;
+}
+button.cricket-chip-btn:hover:not(:disabled) {
+  border-color: var(--primary);
+}
+button.cricket-chip-btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* Correct a ball: the innings over by over. */
+.cricket-correct-overs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cricket-correct-over > small {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted-color);
+  font-size: var(--fs-xs);
+}
+.cricket-correct-over .cricket-this-over {
+  margin: 0;
+}
+
+/* The small actions under the pad (Undo, penalty runs). */
+.cricket-scorer-actions .cricket-penalty-btn {
+  margin-left: auto;
+}

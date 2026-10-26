@@ -1,7 +1,20 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { isAxiosError } from "axios";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { useAddCricketTeams, useCricketTournament, useSetCricketTournamentScorers } from "../../../api/hooks/cricket/useCricketTournaments";
-import { isGeneratedTeam, type CricketMatch, type CricketTournament } from "../../../api/types";
+import { toast } from "sonner";
+import {
+  useAddCricketTeams,
+  useCricketTournament,
+  useCricketTournaments,
+  useDeleteCricketTournament,
+  useSetCricketTournamentScorers,
+  useUpdateCricketTournament,
+} from "../../../api/hooks/cricket/useCricketTournaments";
+import { sameTarget, useMyFollows } from "../../../api/hooks/cricket/useCricketFollows";
+import { useCricketMe } from "../../../api/hooks/cricket/useCricketPlayers";
+import { isGeneratedTeam, type CricketFollowTarget, type CricketMatch, type CricketTournament } from "../../../api/types";
+import { confirmAction } from "../../components/confirmDelete";
 import { avatarColorFor } from "../avatarColor";
 import { pointsTable } from "../stats";
 import { AutoNextRounds } from "../format/AutoNextRounds";
@@ -9,7 +22,9 @@ import { ListCard } from "../../components/ListCard";
 import { PageHeader } from "../../components/PageHeader";
 import { Button } from "../../components/Button";
 import { BottomSheet } from "../BottomSheet";
-import { CricketTournamentForm } from "./CricketTournamentForm";
+import { CricketTournamentForm, tournamentInputOf } from "./CricketTournamentForm";
+import { confirmTournamentDelete } from "./confirmTournamentDelete";
+import { OrganisersSheet } from "./OrganisersSheet";
 import { defaultTeamNames, ExistingTeamPicker, MAX_TEAMS, TeamForm } from "./CricketTeamTools";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { canManageTournament } from "../canManage";
@@ -22,10 +37,10 @@ import { TournamentBanner } from "./TournamentBanner";
 import { TournamentInfo } from "./TournamentInfo";
 import { TournamentStats } from "./TournamentStats";
 import { ShareFixturesSheet, upcomingFixtures } from "./ShareFixturesSheet";
-import { useFollowMenuItem } from "../follow/FollowButton";
+import { FollowButton, useFollowMenuItem } from "../follow/FollowButton";
 import { SettingsMenu } from "../SettingsMenu";
 import { ScorersSheet } from "../ScorersSheet";
-import { ShareMenu } from "../ShareMenu";
+import { ShareSheet } from "../ShareMenu";
 import { useTips, type TipStep } from "../TipsTour";
 import { logoFor } from "./tournamentArt";
 import "../../dms/css/adminDisplays.css";
@@ -110,26 +125,62 @@ const TOURNAMENT_TIPS: TipStep[] = [
     text: "Switch between Info, Matches, Teams, Standings, the Leaderboard and Stats. Swipe the tabs sideways to see them all.",
   },
   {
-    target: "share",
-    title: "Share it",
-    text: "Send the link on WhatsApp or Telegram, or share the fixtures as a picture once they're made.",
-  },
-  {
     target: "settings",
-    title: "Follow and settings",
-    text: "Follow the tournament to see its matches on your Home. Organisers pick scorers and edit it here too. Show tips again from here any time.",
+    title: "Share, follow and settings",
+    text: "Share the link (or the fixtures as a picture), and follow the tournament to see its matches on your Home. Organisers pick scorers and edit it here too. Show tips again from here any time.",
   },
 ];
+
+// A tournament the viewer can't open (403): they're not in it and don't
+// follow it. Its name comes from the open list, and following it opens it.
+function TournamentLocked({ id, backTo }: { id: number; backTo: string }) {
+  const queryClient = useQueryClient();
+  const { data: tournaments } = useCricketTournaments();
+  const { data: follows } = useMyFollows();
+  const name = tournaments?.find((t) => t.id === id)?.name;
+  const target: CricketFollowTarget = { kind: "tournament", targetId: id, teamIndex: null };
+  const following = Boolean(follows?.follows.some((f) => sameTarget(f, target)));
+
+  // Once followed, ask again — it opens now.
+  useEffect(() => {
+    if (!following) return;
+    queryClient.invalidateQueries({ queryKey: ["cricket-tournaments", id] });
+    queryClient.invalidateQueries({ queryKey: ["cricket-matches", "list", id] });
+  }, [following, id, queryClient]);
+
+  return (
+    <>
+      <PageHeader title={name ?? "Tournament"} subtitle="Tournament" back={backTo} />
+      <ListCard>
+        <div className="admin-empty-state cricket-tour-locked">
+          <i className="fa-solid fa-trophy" aria-hidden="true"></i>
+          {name && <strong>{name}</strong>}
+          <p>Follow this tournament to see its teams, matches and table.</p>
+          {follows?.playerId ? (
+            <FollowButton target={target} />
+          ) : (
+            <p className="admin-hint">Add your player profile to follow tournaments.</p>
+          )}
+        </div>
+      </ListCard>
+    </>
+  );
+}
 
 export function CricketTournamentPage() {
   const id = Number(useParams().id);
   const navigate = useNavigate();
-  const { data: tournament, isLoading } = useCricketTournament(id);
+  const { data: tournament, isLoading, error } = useCricketTournament(id);
   const setScorers = useSetCricketTournamentScorers();
+  const updateTournament = useUpdateCricketTournament();
+  const deleteTournament = useDeleteCricketTournament();
+  const [pickingOrganisers, setPickingOrganisers] = useState(false);
   const addTeams = useAddCricketTeams();
   const [teamModal, setTeamModal] = useState<TeamModal | null>(null);
 
   const [editing, setEditing] = useState(false);
+  // The share sheet, opened from the settings sheet's Share row.
+  const [sharing, setSharing] = useState(false);
   const [pickingScorers, setPickingScorers] = useState(false);
   const [schedulingMatch, setSchedulingMatch] = useState(false);
   const [sharingFixtures, setSharingFixtures] = useState(false);
@@ -138,14 +189,20 @@ export function CricketTournamentPage() {
   const requested = params.get("tab") as Tab | null;
   const tab: Tab = requested && TABS.some((t) => t.value === requested) ? requested : "info";
   const { data: matches } = useCricketMatches(id);
-  // Players see their tournament read-only; its creator and super admins
-  // manage it.
+  // Players see their tournament read-only; its creator, co-organisers and
+  // super admins manage it.
   const { admin } = useAdminAuth();
+  const { data: me } = useCricketMe();
   const followItem = useFollowMenuItem({ kind: "tournament", targetId: id, teamIndex: null });
-  const canManage = canManageTournament(admin, tournament);
+  const canManage = canManageTournament(admin, tournament, me?.player?.id);
   const tips = useTips("tournament", TOURNAMENT_TIPS, Boolean(tournament));
 
   const backTo = admin?.isSuperAdmin ? "/tournaments" : "/my-tournaments";
+
+  // Not theirs to see (not in it, not following it): offer to follow it.
+  if (!tournament && isAxiosError(error) && error.response?.status === 403) {
+    return <TournamentLocked id={id} backTo={backTo} />;
+  }
 
   if (isLoading || !tournament) {
     return (
@@ -179,6 +236,45 @@ export function CricketTournamentPage() {
   // Generating needs at least two generated teams (hand-built ones don't
   // count), so the builder starts with them (more can be added there) and
   // opens straight on the steps.
+  // Finished / reopened, and public or not: the update is a full PUT, so
+  // the tournament's other details go with it unchanged.
+  const finished = Boolean(tournament.finishedAt);
+  const isPublic = Boolean(tournament.isPublic);
+  async function toggleFinished() {
+    const ok = finished
+      ? await confirmAction("Reopen the tournament?", "It shows as ongoing again (or as its dates say).", "Reopen")
+      : await confirmAction(
+          "Mark the tournament finished?",
+          "It shows as completed everywhere. Matches can still be scored, and you can reopen it any time.",
+          "Mark finished",
+        );
+    if (!ok) return;
+    try {
+      await updateTournament.mutateAsync({ id: tournament!.id, ...tournamentInputOf(tournament!), finished: !finished });
+      toast.success(finished ? "Tournament reopened" : "Tournament marked finished");
+    } catch {
+      // Shown as a toast.
+    }
+  }
+  async function togglePublic() {
+    try {
+      await updateTournament.mutateAsync({ id: tournament!.id, ...tournamentInputOf(tournament!), isPublic: !isPublic });
+      toast.success(isPublic ? "Only signed-in people can see it now" : "Anyone with the link can see it now");
+    } catch {
+      // Shown as a toast.
+    }
+  }
+  async function removeTournament() {
+    if (!(await confirmTournamentDelete(tournament!.name))) return;
+    try {
+      await deleteTournament.mutateAsync(tournament!.id);
+      toast.success("Tournament deleted");
+      navigate(backTo, { replace: true });
+    } catch {
+      // Shown as a toast.
+    }
+  }
+
   async function openTeamBuilder() {
     const missing = 2 - generatedTeams.length;
     if (missing > 0) {
@@ -195,7 +291,6 @@ export function CricketTournamentPage() {
   return (
     <div className="cricket-page">
       {tips.element}
-      <AutoNextRounds tournamentId={tournament.id} />
       <PageHeader
         title={tournament.name}
         subtitle="Tournament"
@@ -203,26 +298,15 @@ export function CricketTournamentPage() {
         backLabel={admin?.isSuperAdmin ? "All tournaments" : "My tournaments"}
         actions={
           <>
-            <ShareMenu
-              heading="Share tournament"
-              path={`/tournaments/${tournament.id}`}
-              title={tournament.name}
-              text={`${tournament.name} on CricDesk`}
-              image={logoFor(tournament)}
-              items={
-                hasFixtures
-                  ? [{
-                      icon: "fa-solid fa-calendar-days",
-                      label: "Fixtures card",
-                      description: "Upcoming matches and playoffs as a picture",
-                      onClick: () => setSharingFixtures(true),
-                    }]
-                  : []
-              }
-            />
             <SettingsMenu
               title="Tournament settings"
               items={[
+                {
+                  icon: "fa-solid fa-share-nodes",
+                  label: "Share tournament",
+                  description: hasFixtures ? "WhatsApp, Telegram, the link or a fixtures card" : "WhatsApp, Telegram or copy the link",
+                  onClick: () => setSharing(true),
+                },
                 ...(followItem ? [followItem] : []),
                 { icon: "fa-solid fa-lightbulb", label: "Show tips", onClick: tips.start },
                 ...(canManage
@@ -233,7 +317,44 @@ export function CricketTournamentPage() {
                         description: "Who can score this tournament's matches",
                         onClick: () => setPickingScorers(true),
                       },
+                      {
+                        icon: "fa-solid fa-user-tie",
+                        label: "Co-organisers",
+                        description: "Who runs this tournament with you",
+                        onClick: () => setPickingOrganisers(true),
+                      },
                       { icon: "fa-solid fa-pen", label: "Edit tournament", onClick: () => setEditing(true) },
+                      {
+                        icon: isPublic ? "fa-solid fa-earth-asia" : "fa-solid fa-lock",
+                        label: isPublic ? "Anyone with the link can see it" : "Only signed-in people can see it",
+                        description: isPublic
+                          ? "Tap to need a sign-in again"
+                          : "Tap to let anyone with the link see it, no sign-in needed",
+                        disabled: updateTournament.isPending,
+                        onClick: togglePublic,
+                      },
+                      finished
+                        ? {
+                            icon: "fa-solid fa-rotate-left",
+                            label: "Reopen tournament",
+                            description: "It's marked finished",
+                            disabled: updateTournament.isPending,
+                            onClick: toggleFinished,
+                          }
+                        : {
+                            icon: "fa-solid fa-flag-checkered",
+                            label: "Mark tournament finished",
+                            description: "Shows it as completed",
+                            disabled: updateTournament.isPending,
+                            onClick: toggleFinished,
+                          },
+                      {
+                        icon: "fa-solid fa-trash",
+                        label: "Delete tournament",
+                        danger: true,
+                        disabled: deleteTournament.isPending,
+                        onClick: removeTournament,
+                      },
                     ]
                   : []),
               ]}
@@ -244,7 +365,7 @@ export function CricketTournamentPage() {
       {/* Banner + tabs: one header that stays pinned on phones. */}
       <div className="cricket-th-sticky">
         <div className="card cricket-th-card">
-          <TournamentBanner tournament={tournament} />
+          <TournamentBanner tournament={tournament} matches={matches} />
         </div>
   
         <div className="cricket-match-tabs" role="tablist" aria-label="Tournament sections" data-tour="tabs">
@@ -262,6 +383,10 @@ export function CricketTournamentPage() {
           ))}
         </div>
       </div>
+
+      {/* The next round, once its teams are known, for the organiser to
+          check and schedule. */}
+      <AutoNextRounds tournamentId={tournament.id} card />
 
       {tab === "info" && (
         <ListCard>
@@ -370,6 +495,33 @@ export function CricketTournamentPage() {
       {sharingFixtures && (
         <ShareFixturesSheet tournament={tournament} matches={matches ?? []} onClose={() => setSharingFixtures(false)} />
       )}
+      {sharing && (
+        <ShareSheet
+          heading="Share tournament"
+          path={`/tournaments/${tournament.id}`}
+          title={tournament.name}
+          text={`${tournament.name} on CricDesk`}
+          image={logoFor(tournament)}
+          note={
+            isPublic
+              ? "Anyone with the link can see it, even without signing in."
+              : "People need to sign in to CricDesk to open this link."
+          }
+          items={
+            hasFixtures
+              ? [
+                  {
+                    icon: "fa-solid fa-calendar-days",
+                    label: "Fixtures card",
+                    description: "Upcoming matches and playoffs as a picture",
+                    onClick: () => setSharingFixtures(true),
+                  },
+                ]
+              : []
+          }
+          onClose={() => setSharing(false)}
+        />
+      )}
 
       {teamModal && (
         <BottomSheet
@@ -390,6 +542,7 @@ export function CricketTournamentPage() {
           <CricketTournamentForm existing={tournament} onSaved={() => setEditing(false)} />
         </BottomSheet>
       )}
+      {pickingOrganisers && <OrganisersSheet tournament={tournament} onClose={() => setPickingOrganisers(false)} />}
       {pickingScorers && (
         <ScorersSheet
           title="Tournament Scorers"

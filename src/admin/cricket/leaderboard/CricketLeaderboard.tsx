@@ -10,6 +10,7 @@ import { AwardCard } from "../matches/AwardCard";
 import { PlayerAvatar } from "../players/PlayerAvatar";
 import { PlayerLink } from "../players/PlayerProfileSheet";
 import { PillSelect } from "../PillSelect";
+import { BALL_TYPES, MATCH_TYPES } from "../cricketOptions";
 import { avatarColorFor } from "../avatarColor";
 import {
   battingAverage,
@@ -518,17 +519,31 @@ function TeamResults({ teamIndex, matches }: { teamIndex: number; matches: Crick
   );
 }
 
+// The year a match was played (its start, else when it was made).
+const yearOf = (match: CricketMatch) => (match.scheduledAt ?? match.createdAt).slice(0, 4);
+
+// Open to every signed-in player: the API returns the matches each may view.
+// Narrowed by tournament (asked of the API) and by season, ball type and
+// match type (from the matches themselves).
 export function CricketLeaderboardPage() {
   const [tournamentId, setTournamentId] = useState<number | null>(null);
+  const [year, setYear] = useState("");
+  const [ballType, setBallType] = useState("");
+  const [matchType, setMatchType] = useState("");
   const { data: matches, isLoading } = useCricketMatches(tournamentId ?? undefined);
   const { data: tournaments } = useCricketTournaments();
+  const all = matches ?? [];
+  const years = [...new Set(all.map(yearOf))].sort().reverse();
+  const shown = all.filter(
+    (m) => (!year || yearOf(m) === year) && (!ballType || m.ballType === ballType) && (!matchType || m.matchType === matchType),
+  );
   return (
     <ListCard
       title="Leaderboard"
       icon="fa-solid fa-ranking-star"
       subtitle="Top run-scorers, wicket-takers and award winners"
     >
-      <div className="cricket-filter-select">
+      <div className="cricket-filter-select cricket-leaderboard-filters">
         <SelectInput
           label="Tournament (all if empty)"
           size="sm"
@@ -536,8 +551,29 @@ export function CricketLeaderboardPage() {
           value={tournamentId ?? ""}
           onChange={(value) => setTournamentId(value || null)}
         />
+        <SelectInput
+          label="Season"
+          size="sm"
+          options={years.map((y) => ({ value: y, label: y }))}
+          value={year}
+          onChange={(value) => setYear(value || "")}
+        />
+        <SelectInput
+          label="Ball type"
+          size="sm"
+          options={BALL_TYPES.map((b) => ({ value: b.value, label: b.label }))}
+          value={ballType}
+          onChange={(value) => setBallType(value || "")}
+        />
+        <SelectInput
+          label="Match type"
+          size="sm"
+          options={MATCH_TYPES.map((m) => ({ value: m.value, label: m.label }))}
+          value={matchType}
+          onChange={(value) => setMatchType(value || "")}
+        />
       </div>
-      {isLoading ? <Loader /> : <LeaderboardGrid matches={matches ?? []} />}
+      {isLoading ? <Loader /> : <LeaderboardGrid matches={shown} />}
     </ListCard>
   );
 }

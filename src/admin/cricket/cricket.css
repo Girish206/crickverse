@@ -2514,22 +2514,6 @@
   min-width: 0;
 }
 /* Match notes: each innings' times, under the bowling side's name. */
-.cricket-info-notes + .cricket-info-notes {
-  margin-top: 10px;
-}
-.cricket-info-notes-title {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  margin: 0 0 6px;
-  font-size: var(--fs-sm);
-  font-weight: 700;
-  color: var(--theme-text-dark);
-}
-.cricket-info-notes-title small {
-  font-weight: 500;
-  color: var(--muted-color);
-}
 .cricket-info-link {
   display: flex;
   justify-content: space-between;
@@ -2575,18 +2559,6 @@
   line-height: 1.7;
 }
 
-/* Live view */
-.cricket-recent-overs {
-  margin: 14px 0;
-}
-.cricket-recent-overs .cricket-this-over {
-  flex-wrap: wrap;
-  margin-bottom: 6px;
-}
-.cricket-over-runs {
-  margin-left: auto;
-  color: var(--theme-text-dark);
-}
 
 /* Insights */
 .cricket-insight-legend {
@@ -3141,19 +3113,6 @@
   gap: 8px;
   padding: 7px 0;
   font-size: var(--fs-sm);
-}
-.cricket-recent-overs {
-  margin: 8px 0;
-}
-.cricket-recent-overs .cricket-this-over {
-  gap: 4px;
-  margin-bottom: 4px;
-  font-size: var(--fs-xs);
-}
-.cricket-recent-overs .cricket-ball-chip {
-  min-width: 24px;
-  height: 24px;
-  font-size: var(--fs-2xs);
 }
 .cricket-overs-chart {
   height: 120px;
@@ -3987,7 +3946,23 @@
   color: var(--muted-color);
 }
 
-/* ===== App-style grouped form rows (match setup and new match) ===== */
+/* ===== App-style grouped form rows (match setup, new match, tournament) ===== */
+/* The tournament sheet: the media picker sits above, so the first group
+   title needs a little room; text fields keep their own spacing, so their
+   last one doesn't add to the group gap. */
+.cricket-tour-form {
+  margin-top: 14px;
+}
+.cricket-tour-fields > :last-child {
+  margin-bottom: 0 !important;
+}
+.cricket-tour-fields {
+  padding: 0 2px;
+}
+.cricket-tour-note {
+  display: block;
+  margin: 0 4px 4px;
+}
 .cricket-app-form {
   display: flex;
   flex-direction: column;
@@ -6185,4 +6160,65 @@ tbody tr:first-child .cricket-standings-rank {
 .cricket-share-row-go {
   flex: none;
   color: var(--muted-color);
+}
+
+/* ---------- Invite to CricDesk (player sheet, app login) ---------- */
+.cricket-invite-row {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-color);
+}
+.cricket-invite {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.cricket-invite-note {
+  color: var(--muted-color);
+}
+.cricket-invite-code {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+.cricket-invite-digits {
+  font-family: var(--cv-display);
+  font-size: var(--fs-xl, 1.5rem);
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  font-variant-numeric: tabular-nums;
+  color: var(--theme-text-dark);
+}
+.cricket-invite-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Leaderboard: tournament, season, ball and match type filters side by side. */
+.cricket-leaderboard-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+/* A tournament the viewer can't open yet: its name and a Follow button. */
+.cricket-tour-locked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+.cricket-tour-locked > i {
+  color: var(--primary);
+  font-size: 1.6rem;
+}
+.cricket-tour-locked p {
+  margin: 0;
+}
+.cricket-share-note {
+  margin: 0 0 12px;
 }

@@ -3,7 +3,9 @@ import { useBlocker, useLocation, useNavigate, useParams, useSearchParams } from
 import {
   useCricketMatch,
   useDeleteCricketMatch,
+  useReopenCricketMatch,
   useScoringSeat,
+  useUndoCricketBall,
   useSetCricketMatchScorers,
   useUpdateCricketMatch,
 } from "../../../api/hooks/cricket/useCricketMatches";
@@ -11,7 +13,7 @@ import { useCricketMe } from "../../../api/hooks/cricket/useCricketPlayers";
 import { useCricketTournament } from "../../../api/hooks/cricket/useCricketTournaments";
 import { ListCard } from "../../components/ListCard";
 import { PageHeader, PageHeaderAction } from "../../components/PageHeader";
-import { ShareMenu } from "../ShareMenu";
+import { ShareSheet } from "../ShareMenu";
 import { useTips, type TipStep } from "../TipsTour";
 import { logoFor } from "../tournaments/tournamentArt";
 import { Button } from "../../components/Button";
@@ -25,6 +27,7 @@ import { confirmAction, confirmDelete } from "../../components/confirmDelete";
 import { LiveScorer } from "./LiveScorer";
 import { BallByBall, Scorecard } from "./Scorecard";
 import { MatchHero } from "./MatchHero";
+import { BallBurst } from "./BallBurst";
 import { MatchStatusBadge } from "./matchUi";
 import { MatchAwards } from "./MatchAwards";
 import { PotmPicker } from "./PotmPicker";
@@ -34,7 +37,11 @@ import { LiveView } from "./LiveView";
 import { MatchMvp } from "./MatchMvp";
 import { MatchSquads } from "./MatchSquads";
 import { RescheduleSheet } from "./RescheduleSheet";
+import { existingInput } from "./CricketMatchForm";
 import { formatMatchDate, usePlayerNames } from "./matchUtils";
+import { ResultSheet, type ResultSheetStart } from "./result/ResultSheet";
+import { KnockoutPrompt, ResultBanner } from "./result/ResultNote";
+import { hasBalls, needsKnockoutWinner } from "./result/resultText";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
@@ -49,14 +56,9 @@ const MATCH_TIPS: TipStep[] = [
     text: "Live has the score ball by ball; Scorecard, Insights, Overs and MVP fill in as it's played. Swipe the tabs to see them all.",
   },
   {
-    target: "share",
-    title: "Share the match",
-    text: "Send the link so friends can follow the score live — on WhatsApp, Telegram or anywhere else.",
-  },
-  {
     target: "match-settings",
-    title: "Match settings",
-    text: "You can manage this match: edit it, pick scorers, change the squads and more. Open the Live tab to start scoring.",
+    title: "Share and settings",
+    text: "Share the link so friends can follow the score live. If you run the match, edit it, pick scorers and more here too — open the Live tab to start scoring.",
   },
 ];
 
@@ -72,10 +74,16 @@ export function CricketMatchPage() {
   const [pickingScorers, setPickingScorers] = useState(false);
   // The top bar's settings: changing players, details, scorers, ending...
   const [settingsOpen, setSettingsOpen] = useState(false);
+  // The share sheet, opened from the settings sheet's Share row.
+  const [sharing, setSharing] = useState(false);
   const [editingDetails, setEditingDetails] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
   const detailsForm = useRef<HTMLFormElement>(null);
   const updateMatch = useUpdateCricketMatch();
+  const reopenMatch = useReopenCricketMatch();
+  const undoBall = useUndoCricketBall();
+  // The "Enter result" sheet, and what it starts on (a knockout tie: a super over).
+  const [enteringResult, setEnteringResult] = useState<ResultSheetStart | null>(null);
   const nameOf = usePlayerNames();
   // Others follow along read-only (scorecard + ball by ball). Its
   // organisers, both captains and its scorers edit and score it; only the
@@ -84,6 +92,7 @@ export function CricketMatchPage() {
   const { data: me } = useCricketMe();
   const access = matchAccess(admin, match, tournament, me?.player?.id);
   const canManage = access !== null;
+  const organiser = access === "organise";
   // Several people may be allowed to score, but only one does at a time:
   // the first to open the Live tab, until they hand it over or stop. The
   // rest follow the live view. (A live match opens on Live.)
@@ -165,16 +174,58 @@ export function CricketMatchPage() {
     setSettingsOpen(true);
   }
   const closeSettings = () => setSettingsOpen(false);
+
+  // Back to live (or not started, if nothing was bowled). Fixtures already
+  // made from this result (the next round) stay as they are.
+  async function handleReopen() {
+    if (
+      await confirmAction(
+        "Reopen match?",
+        "Its result is cleared and you can score it again. Next-round fixtures already made from this result won't change by themselves — check them after.",
+        "Reopen",
+      )
+    ) {
+      await reopenMatch.mutateAsync(match!.id).catch(() => undefined);
+    }
+  }
+
+  // Takes back the ball that finished the match: it goes back to live.
+  async function handleUndoLast() {
+    if (await confirmAction("Undo last ball?", "The result is cleared and the match goes back to live.", "Undo")) {
+      await undoBall.mutateAsync(match!.id).catch(() => undefined);
+    }
+  }
+
+  // Lets anyone with the link watch (or only signed-in followers). The edit
+  // sends the match's own details back unchanged.
+  async function setPublic(isPublic: boolean) {
+    await updateMatch
+      .mutateAsync({ id: match!.id, ...existingInput(match!), scheduledAt: match!.scheduledAt, isPublic })
+      .catch(() => undefined);
+  }
+  // The API only edits a match that hasn't finished.
+  const editable = match.status === "scheduled" || match.status === "live";
+  const openResult = (start: ResultSheetStart = {}) => setEnteringResult(start);
   const settingsThen = (action: () => void) => () => {
     closeSettings();
     action();
   };
 
   // The match's own options, under the scorer's in the settings sheet.
+  // Sharing comes first and is there for everyone (for a spectator it's the
+  // only row).
   const matchSettings = (
     <>
       <h3 className="cricket-sheet-label">Match</h3>
       <div className="cricket-settings-list">
+        <button type="button" className="cricket-settings-item" onClick={settingsThen(() => setSharing(true))}>
+          <i className="fa-solid fa-share-nodes" aria-hidden="true"></i>
+          <span>
+            Share match
+            <small>WhatsApp, Telegram or copy the link</small>
+          </span>
+          <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
+        </button>
         {seat.mine && match.status === "live" && (
           <>
             <button type="button" className="cricket-settings-item" onClick={settingsThen(() => setHandingOver(true))}>
@@ -231,6 +282,47 @@ export function CricketMatchPage() {
               </small>
             </span>
             <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
+          </button>
+        )}
+        {organiser && (
+          <button type="button" className="cricket-settings-item" onClick={settingsThen(() => openResult())}>
+            <i className="fa-solid fa-flag-checkered" aria-hidden="true"></i>
+            <span>
+              Enter result
+              <small>Super over, walkover, forfeit, rain…</small>
+            </span>
+            <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
+          </button>
+        )}
+        {organiser && over && (
+          <button
+            type="button"
+            className="cricket-settings-item"
+            disabled={reopenMatch.isPending}
+            onClick={settingsThen(handleReopen)}
+          >
+            <i className="fa-solid fa-rotate-left" aria-hidden="true"></i>
+            <span>
+              Reopen match
+              <small>Clear the result and carry on scoring</small>
+            </span>
+          </button>
+        )}
+        {organiser && editable && (
+          <button
+            type="button"
+            className="cricket-settings-item"
+            role="switch"
+            aria-checked={Boolean(match.isPublic)}
+            disabled={updateMatch.isPending}
+            onClick={() => setPublic(!match.isPublic)}
+          >
+            <i className="fa-solid fa-globe" aria-hidden="true"></i>
+            <span>
+              Anyone with the link can watch
+              <small>{match.isPublic ? "No sign-in needed to follow the score" : "Only signed-in people who follow can open it"}</small>
+            </span>
+            <span className={`cricket-shot-toggle-knob ${match.isPublic ? "is-on" : ""}`.trim()} aria-hidden="true"></span>
           </button>
         )}
         {access === "organise" && (
@@ -297,24 +389,28 @@ export function CricketMatchPage() {
   return (
     <div className={`cricket-page ${canManage && upcoming ? "has-action-bar" : ""}`.trim()}>
       {tips.element}
+      {/* A four, six or wicket plays over the page on whichever tab, and the
+          match's last ball still plays as it turns to the result. */}
+      <BallBurst match={match} nameOf={nameOf} />
       {match.tournamentId !== null && <AutoNextRounds tournamentId={match.tournamentId} />}
+      {/* The card below already names both teams, so the header only names
+          them while it's live (when the card is left out). */}
       <PageHeader
-        title={`${match.teams[0].name} vs ${match.teams[1].name}`}
-        subtitle={tournament?.name ?? "Match"}
+        title={
+          match.status === "live" ? `${match.teams[0].name} vs ${match.teams[1].name}` : tournament?.name ?? "Match"
+        }
+        subtitle={match.status === "live" ? tournament?.name ?? "Match" : undefined}
         back={match.tournamentId === null ? matchesList : `/tournaments/${match.tournamentId}?tab=matches`}
         backLabel={match.tournamentId === null ? "Back to matches" : "Back to tournament"}
         actions={
           <>
-            <ShareMenu
-              heading="Share match"
-              path={`/matches/${match.id}`}
-              title={`${match.teams[0].name} vs ${match.teams[1].name}`}
-              text={`${match.status === "live" ? "LIVE: " : ""}${match.teams[0].name} vs ${match.teams[1].name}${tournament ? ` · ${tournament.name}` : ""}`}
-              image={tournament ? logoFor(tournament) : undefined}
+            <PageHeaderAction
+              icon="fa-solid fa-sliders"
+              label={canManage ? "Match settings" : "Share match"}
+              tour="match-settings"
+              active={settingsOpen}
+              onClick={openSettings}
             />
-            {canManage && (
-              <PageHeaderAction icon="fa-solid fa-sliders" label="Match settings" tour="match-settings" onClick={openSettings} />
-            )}
             <MatchStatusBadge status={match.status} />
           </>
         }
@@ -366,10 +462,30 @@ export function CricketMatchPage() {
               settingsOpen={settingsOpen}
               onCloseSettings={closeSettings}
               matchSettings={matchSettings}
+              onEnterResult={organiser ? () => openResult() : undefined}
             />
           ) : (
             <div className="cricket-summary">
-              {match.resultText && <div className="admin-banner admin-banner-success mb-3">{match.resultText}</div>}
+              {organiser && needsKnockoutWinner(match) && (
+                <KnockoutPrompt
+                  match={match}
+                  onEnter={() => openResult({ outcome: "win", method: match.status === "completed" ? "super-over" : "other" })}
+                />
+              )}
+              <ResultBanner match={match} />
+              {/* The ball that ended it can still be taken back by whoever
+                  scored it (or an organiser) — not a result entered by hand. */}
+              {match.status === "completed" &&
+                !match.resultMethod &&
+                hasBalls(match) &&
+                (organiser || (admin != null && String(match.scoringById) === admin.sub)) && (
+                  <div className="cricket-summary-undo mb-3">
+                    <Button variant="outline" onClick={handleUndoLast} disabled={undoBall.isPending}>
+                      <i className="fa-solid fa-rotate-left" aria-hidden="true"></i> Undo last ball
+                    </Button>
+                    <small>Made a mistake on the last ball? It goes back to live.</small>
+                  </div>
+                )}
               <MatchAwards match={match} nameOf={nameOf} />
               {match.status === "completed" && <PotmPicker match={match} nameOf={nameOf} />}
             </div>
@@ -382,9 +498,27 @@ export function CricketMatchPage() {
       </ListCard>
 
       {settingsOpen && !scoring && (
-        <BottomSheet title="Match settings" icon="fa-solid fa-sliders" onClose={closeSettings}>
+        <BottomSheet title={canManage ? "Match settings" : "Match"} icon="fa-solid fa-sliders" onClose={closeSettings}>
           {matchSettings}
         </BottomSheet>
+      )}
+
+      {sharing && (
+        <ShareSheet
+          heading="Share match"
+          path={`/matches/${match.id}`}
+          title={`${match.teams[0].name} vs ${match.teams[1].name}`}
+          text={`${match.status === "live" ? "LIVE: " : ""}${match.teams[0].name} vs ${match.teams[1].name}${tournament ? ` · ${tournament.name}` : ""}`}
+          image={tournament ? logoFor(tournament) : undefined}
+          note={
+            match.isPublic
+              ? "Anyone with the link can watch — no sign-in needed."
+              : organiser && editable
+                ? "Only signed-in people who follow can open it. Make it public in Match settings."
+                : "Only signed-in people who follow can open it."
+          }
+          onClose={() => setSharing(false)}
+        />
       )}
 
       {leaving.state === "blocked" && !handingOver && (
@@ -460,6 +594,8 @@ export function CricketMatchPage() {
           <CricketMatchForm existing={match} formRef={detailsForm} onSaved={() => setEditingDetails(false)} />
         </BottomSheet>
       )}
+
+      {enteringResult && <ResultSheet match={match} start={enteringResult} onClose={() => setEnteringResult(null)} />}
 
       {rescheduling && <RescheduleSheet match={match} onClose={() => setRescheduling(false)} />}
 

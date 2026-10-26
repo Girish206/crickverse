@@ -162,3 +162,41 @@
 .cv-profile-signout:hover {
   background: rgba(220, 38, 38, 0.08);
 }
+
+/* "Match notifications": a label row with a switch, between the buttons. */
+.cv-profile-switch {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  color: var(--theme-text-dark);
+  cursor: pointer;
+}
+.cv-profile-switch > i {
+  color: var(--primary);
+}
+.cv-profile-switch-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cv-profile-switch-text strong {
+  font-weight: 600;
+}
+.cv-profile-switch-text small {
+  font-size: var(--fs-xs);
+  color: var(--muted-color);
+  line-height: 1.35;
+}
+.cv-profile-switch .form-check-input {
+  width: 2.6em;
+  height: 1.4em;
+  cursor: pointer;
+}
+.cv-profile-switch.is-blocked {
+  cursor: default;
+}

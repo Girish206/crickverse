@@ -28,7 +28,7 @@ const COPY: Record<Step, { heading: string; subtitle: string; submit: string; lo
   },
   setPassword: {
     heading: "Set Password",
-    subtitle: "You've been added to a team. Set a password to sign in.",
+    subtitle: "You've been added to a team. Enter the invite code your organiser sent and set a password.",
     submit: "Set Password",
     loading: "Saving...",
   },
@@ -41,9 +41,11 @@ const COPY: Record<Step, { heading: string; subtitle: string; submit: string; lo
 };
 
 // CricDesk sign-in and sign-up on one screen: the mobile number first (the
-// field says so, but an organiser's email works there too), then a password for an existing account, a new
-// password for a team-added player who has none yet, or name and password
-// for a new number. Signing in once keeps them signed in on this device.
+// field says so, but an organiser's email works there too), then a password
+// for an existing account, the invite code and a new password for a
+// team-added player who has none yet (the code proves the number is theirs),
+// or name and password for a new number. Signing in once keeps them signed
+// in on this device.
 export function AdminLoginPage() {
   const { login, register } = useAdminAuth();
   const navigate = useNavigate();
@@ -53,8 +55,8 @@ export function AdminLoginPage() {
 
   const [step, setStep] = useState<Step>("identify");
   const [identifier, setIdentifier] = useState("");
-  // The player's name an organiser already entered (the set-password step).
-  const [knownName, setKnownName] = useState<string | null>(null);
+  // The six digits the organiser who added them shared (set-password step).
+  const [inviteCode, setInviteCode] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -80,6 +82,7 @@ export function AdminLoginPage() {
       next.identifier = "Enter a valid 10-digit mobile number";
     if (step === "password" && !password) next.password = "Enter your password";
     if (step === "register" && name.trim().length < 2) next.name = "Enter your name";
+    if (step === "setPassword" && !/^\d{6}$/.test(inviteCode.trim())) next.inviteCode = "Enter the 6-digit invite code";
     if (step === "setPassword" || step === "register") {
       if (password.length < 8) next.password = "Use at least 8 characters";
       if (confirm !== password) next.confirm = "The passwords don't match";
@@ -89,11 +92,10 @@ export function AdminLoginPage() {
   }
 
   async function lookup() {
-    const { data } = await apiClient.post<ApiEnvelope<{ step: Exclude<Step, "identify">; name: string | null }>>(
+    const { data } = await apiClient.post<ApiEnvelope<{ step: Exclude<Step, "identify"> }>>(
       "/admin/cricket/sign-in/lookup",
       { identifier: identifier.trim() },
     );
-    setKnownName(data.data.name);
     goTo(data.data.step);
   }
 
@@ -107,7 +109,8 @@ export function AdminLoginPage() {
         goTo("setPassword");
         return;
       }
-      setError(err instanceof NoCricketAccessError ? err.message : "That password isn't right.");
+      const tooMany = isAxiosError(err) && err.response?.status === 429;
+      setError(err instanceof NoCricketAccessError || tooMany ? messageFor(err) : "That password isn't right.");
     }
   }
 
@@ -124,6 +127,7 @@ export function AdminLoginPage() {
           name: step === "register" ? name.trim() : undefined,
           mobile: mobile!,
           password,
+          inviteCode: step === "setPassword" ? inviteCode.trim() : undefined,
         });
         navigate(backTo, { replace: true });
       }
@@ -138,7 +142,7 @@ export function AdminLoginPage() {
   const togglePassword = () => setShowPassword((prev) => !prev);
 
   return (
-    <AuthShell heading={copy.heading} subtitle={step === "setPassword" && knownName ? `Hi ${knownName}! ${copy.subtitle}` : copy.subtitle}>
+    <AuthShell heading={copy.heading} subtitle={copy.subtitle}>
       <form onSubmit={handleSubmit} noValidate className="admin-login-form">
         {error && <div className="alert alert-danger py-2 text-center">{error}</div>}
 
@@ -188,6 +192,25 @@ export function AdminLoginPage() {
           />
         )}
 
+        {step === "setPassword" && (
+          <InputComp
+            type="text"
+            name="inviteCode"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={6}
+            autoFocus
+            value={inviteCode}
+            onChange={(e) => setInviteCode(e.target.value.replace(/\D/g, ""))}
+            floating={true}
+            required
+            icon="fa-solid fa-key"
+            iconPosition="right"
+            label="Invite code"
+            error={errors.inviteCode}
+          />
+        )}
+
         {step !== "identify" && (
           <InputComp
             key={step}
@@ -195,7 +218,7 @@ export function AdminLoginPage() {
             name="password"
             label={step === "password" ? "Password" : "Create a password"}
             autoComplete={step === "password" ? "current-password" : "new-password"}
-            autoFocus={step !== "register"}
+            autoFocus={step === "password"}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             floating={true}
@@ -235,7 +258,10 @@ export function AdminLoginPage() {
         </CustomButton>
 
         {step === "password" && (
-          <p className="admin-login-hint">Forgot your password? Ask your organiser to reset it.</p>
+          <p className="admin-login-hint">Forgot your password? Ask your organiser to reset it — they'll send you a new invite code.</p>
+        )}
+        {step === "setPassword" && (
+          <p className="admin-login-hint">No code? Ask the organiser or captain who added you to send your invite.</p>
         )}
       </form>
     </AuthShell>

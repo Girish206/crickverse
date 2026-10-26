@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
-import type { CricketMatch, CricketMatchStage } from "../../../api/types";
+import { ballsPerOverOf, type CricketMatch, type CricketMatchStage } from "../../../api/types";
 import { inningsSummary } from "../stats";
 
 // Every round a match can be played in, in tournament order. `note` and
@@ -85,7 +85,7 @@ export function teamKeyOf(match: CricketMatch, slot: number) {
 export function teamScore(match: CricketMatch, teamSlot: number) {
   const innings = match.innings.find((inn) => inn.battingTeam === teamSlot);
   if (!innings) return null;
-  const summary = inningsSummary(innings);
+  const summary = inningsSummary(innings, ballsPerOverOf(match));
   return { runs: `${summary.runs}/${summary.wickets}`, overs: summary.overs };
 }
 

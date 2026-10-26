@@ -193,6 +193,7 @@ export function AddPlayersByMobileSheet({
                 {foundRole && ` · ${foundRole.label}`}
               </small>
               {found.blocked && <small className="cricket-add-player-blocked">{found.blocked}</small>}
+              {!found.blocked && <small>Already on CricDesk as {found.player.name} — added as them</small>}
             </span>
             {!found.blocked && (
               <button type="submit" className="cricket-add-player-btn">

@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import type { CricketTournament } from "../../../api/types";
+import type { CricketMatch, CricketTournament } from "../../../api/types";
 import { avatarColorFor } from "../avatarColor";
+import { championOf, makeResolver } from "../format/formatEngine";
 import { bannerFor } from "./tournamentArt";
 import { TournamentLogo } from "./TournamentLogo";
 
@@ -23,8 +24,25 @@ const todayIso = () => {
   return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 };
 
-// Setting up until the teams are ready, then from its dates.
-export function tournamentPhase(t: CricketTournament): TournamentPhase {
+// Whether its format has a champion yet, from whatever of its matches are
+// at hand (other tournaments' are left out). Unless they're all of them
+// (`every`, as on its own page), only a final or a series is trusted: a
+// league's table needs every match, and a list may hold just some.
+export function hasChampion(t: CricketTournament, matches: CricketMatch[], every = false) {
+  const format = t.format;
+  if (!format || format.phases.length === 0) return false;
+  if (!every && format.phases[format.phases.length - 1].kind === "round-robin") return false;
+  const own = matches.filter((m) => m.tournamentId === t.id);
+  if (own.length === 0) return false;
+  return championOf(format, own, makeResolver(t, format, own)) !== null;
+}
+
+// Completed once the organiser marks it finished or its champion is
+// decided; otherwise setting up until the teams are ready, then from its
+// dates.
+export function tournamentPhase(t: CricketTournament, matches?: CricketMatch[]): TournamentPhase {
+  if (t.finishedAt) return "completed";
+  if (matches && hasChampion(t, matches)) return "completed";
   if (!teamsReady(t)) return "setup";
   const today = todayIso();
   if (t.endDate && t.endDate.slice(0, 10) < today) return "completed";
@@ -83,9 +101,13 @@ export function TournamentCard({
   matchCount,
   actions,
   footnote,
+  matches,
 }: {
   tournament: CricketTournament;
   matchCount?: number;
+  // Its matches (others' are ignored), so a decided champion shows it as
+  // completed.
+  matches?: CricketMatch[];
   // Edit / delete buttons, top right of the banner.
   actions?: ReactNode;
   // An extra strip at the bottom, e.g. <TeamFootnote />.
@@ -93,7 +115,7 @@ export function TournamentCard({
 }) {
   const navigate = useNavigate();
   const open = () => navigate(`/tournaments/${tournament.id}`);
-  const phase = tournamentPhase(tournament);
+  const phase = tournamentPhase(tournament, matches);
   const place = placeOf(tournament);
   const stats = [
     { value: tournament.teams.length, label: "Teams" },
@@ -168,13 +190,16 @@ export function TournamentsBoard({
   tournaments,
   empty,
   renderCard,
+  matches,
 }: {
   tournaments: CricketTournament[];
   empty: ReactNode;
   renderCard: (tournament: CricketTournament) => ReactNode;
+  // The matches at hand, for tournamentPhase (see TournamentCard).
+  matches?: CricketMatch[];
 }) {
   const [filter, setFilter] = useState<Filter>("all");
-  const visible = tournaments.filter((t) => filter === "all" || tournamentPhase(t) === filter);
+  const visible = tournaments.filter((t) => filter === "all" || tournamentPhase(t, matches) === filter);
   return (
     <>
       <div className="cricket-squad-toolbar">

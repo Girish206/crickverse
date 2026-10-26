@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useCricketMatches } from "../../../api/hooks/cricket/useCricketMatches";
-import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
+import { useCricketMe, useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
 import {
   useCricketTournament,
   useGenerateCricketTeams,
@@ -45,7 +45,8 @@ export function CricketAutoTeamsPage() {
   const [picked, setPicked] = useState<number[]>([]);
   const [search, setSearch] = useState("");
   const { admin } = useAdminAuth();
-  const canManage = canManageTournament(admin, tournament);
+  const { data: me } = useCricketMe();
+  const canManage = canManageTournament(admin, tournament, me?.player?.id);
   const playerById = useMemo(() => new Map((players ?? []).map((player) => [player.id, player])), [players]);
   const backTo = `/tournaments/${id}?tab=teams`;
 

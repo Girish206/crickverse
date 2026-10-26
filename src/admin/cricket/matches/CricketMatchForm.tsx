@@ -12,21 +12,23 @@ import {
   lookupCricketPlayer,
 } from "../../../api/hooks/cricket/useCricketPlayers";
 import { useCricketTournaments } from "../../../api/hooks/cricket/useCricketTournaments";
-import type {
-  CricketBallType,
-  CricketMatch,
-  CricketMe,
-  CricketMatchStage,
-  CricketMatchType,
-  CricketPitchType,
-  CricketPlayer,
-  CricketTournament,
+import {
+  ballsPerOverOf,
+  type CricketBallType,
+  type CricketMatch,
+  type CricketMe,
+  type CricketMatchStage,
+  type CricketMatchType,
+  type CricketPitchType,
+  type CricketPlayer,
+  type CricketTournament,
 } from "../../../api/types";
 import { SubmitButton } from "../../components/SubmitButton";
 import { FormIdContext } from "../../dms/components/modalContext";
 import { avatarColorFor } from "../avatarColor";
 import { BottomSheet } from "../BottomSheet";
 import { BallTypeChoice, ChipChoice } from "../CricketChoices";
+import { SwitchRow } from "../SwitchRow";
 import { MATCH_TYPES, PITCH_TYPES } from "../cricketOptions";
 import { normalizeMobile } from "../mobile";
 import { STAGES, stageLabel, teamKeyOf, usePlayerNames } from "./matchUtils";
@@ -75,6 +77,11 @@ function knownTeams(tournaments: CricketTournament[] | undefined, me: CricketMe 
     }))
     .sort((a, b) => a.name.localeCompare(b.name) || a.note.localeCompare(b.note));
 }
+
+// Overs a match can have, and the most one bowler may bowl (the API's limits).
+const MAX_OVERS = 100;
+const MAX_BOWLER_OVERS = 50;
+
 
 type CaptainLookup =
   { status: "idle" | "looking" } | { status: "found"; player: CricketPlayer } | { status: "new"; mobile: string };
@@ -132,6 +139,17 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
   const [ballType, setBallType] = useState<CricketBallType | null>(existing?.ballType ?? null);
   const [pitchType, setPitchType] = useState<CricketPitchType | null>(existing?.pitchType ?? null);
   const [stage, setStage] = useState<CricketMatchStage>(existing?.stage ?? "league");
+  // Playing conditions. The Hundred bowls 5-ball overs; a live match keeps
+  // the length of its overs.
+  const [ballsPerOver, setBallsPerOver] = useState(existing ? ballsPerOverOf(existing) : 6);
+  const [bowlerLimit, setBowlerLimit] = useState(existing?.bowlerOverLimit ? String(existing.bowlerOverLimit) : "");
+  const [lastManStands, setLastManStands] = useState(Boolean(existing?.lastManStands));
+  const [freeHit, setFreeHit] = useState(existing?.freeHit !== false);
+  const [isPublic, setIsPublic] = useState(Boolean(existing?.isPublic));
+  // A rain-cut chase's new target (blank = first innings + 1).
+  const [revisedTarget, setRevisedTarget] = useState(existing?.revisedTarget ? String(existing.revisedTarget) : "");
+  const live = existing?.status === "live";
+  const chasing = live && (existing?.innings.length ?? 0) >= 2;
   const [error, setError] = useState<string | null>(null);
   // Set after a submit without match / ball type, to flag those fields.
   const [missingType, setMissingType] = useState(false);
@@ -193,9 +211,23 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
     if (t.overs) setOvers(String(t.overs));
     setVenue(t.ground ?? "");
     setCity(t.city ?? "");
-    setMatchType(t.matchType);
+    pickMatchType(t.matchType);
+    if (t.isPublic) setIsPublic(true);
     setBallType(t.ballType);
     setPitchType(t.pitchType);
+    // The tournament's playing conditions (after the match type, which may
+    // have set 5-ball overs for The Hundred).
+    if (t.ballsPerOver) setBallsPerOver(t.ballsPerOver);
+    setBowlerLimit(t.bowlerOverLimit ? String(t.bowlerOverLimit) : "");
+    setLastManStands(Boolean(t.lastManStands));
+    setFreeHit(t.freeHit !== false);
+  }
+  // The Hundred plays 5-ball overs; moving off it goes back to 6.
+  function pickMatchType(type: CricketMatchType | null) {
+    setMatchType(type);
+    if (live) return;
+    if (type === "hundred") setBallsPerOver(5);
+    else if (matchType === "hundred" && ballsPerOver === 5) setBallsPerOver(6);
   }
   const [filledFor, setFilledFor] = useState<number | null>(existing ? existing.tournamentId : null);
   if (tournament && filledFor !== tournament.id) {
@@ -309,8 +341,17 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
       if (tournament.teams.length < 2) return setError("Add at least two teams on the tournament's Teams tab first.");
       if (teamA === null || teamB === null || teamA === teamB) return setError("Choose two different teams.");
     }
-    if (!Number.isInteger(oversNumber) || oversNumber < 1 || oversNumber > 50) {
-      return setError("Overs must be a whole number from 1 to 50.");
+    if (!Number.isInteger(oversNumber) || oversNumber < 1 || oversNumber > MAX_OVERS) {
+      return setError(`Overs must be a whole number from 1 to ${MAX_OVERS}.`);
+    }
+    const limit = bowlerLimit.trim() ? Number(bowlerLimit) : null;
+    const maxLimit = Math.min(oversNumber, MAX_BOWLER_OVERS);
+    if (limit !== null && (!Number.isInteger(limit) || limit < 1 || limit > maxLimit)) {
+      return setError(`Overs per bowler must be from 1 to ${maxLimit}, or blank for no limit.`);
+    }
+    const target = revisedTarget.trim() ? Number(revisedTarget) : null;
+    if (target !== null && (!Number.isInteger(target) || target < 1)) {
+      return setError("The revised target must be a whole number of runs.");
     }
     if (!matchType || !ballType) {
       setMissingType(true);
@@ -329,17 +370,29 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
       ballType,
       pitchType,
       stage,
+      ballsPerOver,
+      bowlerOverLimit: limit,
+      lastManStands,
+      freeHit,
+      isPublic,
     };
     if (existing) {
       // The setup sheet submits on every "Start Scoring"; skip the request
       // when nothing was changed.
       const saved = existingInput(existing);
+      const targetChanged = chasing && target !== (existing.revisedTarget ?? null);
       const unchanged =
         scheduledAt === toLocalInput(existing.scheduledAt) &&
-        (Object.keys(saved) as (keyof typeof saved)[]).every((key) => input[key] === saved[key]);
+        (Object.keys(saved) as (keyof typeof saved)[]).every((key) => input[key] === saved[key]) &&
+        ballsPerOver === ballsPerOverOf(existing) &&
+        limit === (existing.bowlerOverLimit ?? null) &&
+        lastManStands === Boolean(existing.lastManStands) &&
+        freeHit === (existing.freeHit !== false) &&
+        isPublic === Boolean(existing.isPublic) &&
+        !targetChanged;
       if (!unchanged) {
         try {
-          await updateMatch.mutateAsync({ id: existing.id, ...input });
+          await updateMatch.mutateAsync({ id: existing.id, ...input, ...(chasing && { revisedTarget: target }) });
         } catch {
           return setError("Couldn't save the match details — try again.");
         }
@@ -357,6 +410,7 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
   }
 
   const oversNumber = Number(overs) || 0;
+  const suggestedLimit = Math.min(Math.ceil(oversNumber / 5), MAX_BOWLER_OVERS);
   const groundSuggest = useSuggestions({ value: venue, suggestions: places?.grounds ?? [], onPick: setVenue });
   const citySuggest = useSuggestions({
     value: city,
@@ -439,7 +493,7 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
                 type="number"
                 inputMode="numeric"
                 min={1}
-                max={50}
+                max={MAX_OVERS}
                 aria-label="Overs per innings"
                 value={overs}
                 onChange={(e) => setOvers(e.target.value)}
@@ -447,8 +501,8 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
               <button
                 type="button"
                 aria-label="More overs"
-                disabled={oversNumber >= 50}
-                onClick={() => setOvers(String(Math.min(50, oversNumber + 1)))}
+                disabled={oversNumber >= MAX_OVERS}
+                onClick={() => setOvers(String(Math.min(MAX_OVERS, oversNumber + 1)))}
               >
                 <i className="fa-solid fa-plus" aria-hidden="true"></i>
               </button>
@@ -501,7 +555,7 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
             required
             options={MATCH_TYPES}
             value={matchType}
-            onChange={setMatchType}
+            onChange={pickMatchType}
             error={missingType && !matchType ? "Choose a match type." : null}
           />
           <BallTypeChoice
@@ -512,6 +566,106 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
           />
           <ChipChoice label="Pitch type" options={PITCH_TYPES} value={pitchType} onChange={setPitchType} />
         </div>
+
+        <h2 className="cricket-app-group-title">Playing conditions</h2>
+        <div className="cricket-app-group">
+          <div className="cricket-app-row">
+            <span className="cricket-app-row-label">
+              <i className="fa-solid fa-baseball" aria-hidden="true"></i> Balls per over
+            </span>
+            <span className="cricket-app-stepper">
+              <button
+                type="button"
+                aria-label="Fewer balls an over"
+                disabled={live || ballsPerOver <= 4}
+                onClick={() => setBallsPerOver(ballsPerOver - 1)}
+              >
+                <i className="fa-solid fa-minus" aria-hidden="true"></i>
+              </button>
+              <input type="number" aria-label="Balls per over" value={ballsPerOver} readOnly />
+              <button
+                type="button"
+                aria-label="More balls an over"
+                disabled={live || ballsPerOver >= 10}
+                onClick={() => setBallsPerOver(ballsPerOver + 1)}
+              >
+                <i className="fa-solid fa-plus" aria-hidden="true"></i>
+              </button>
+            </span>
+          </div>
+          <label className="cricket-app-row">
+            <span className="cricket-app-row-label">
+              <i className="fa-solid fa-user-clock" aria-hidden="true"></i> Max overs per bowler
+            </span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={Math.min(oversNumber || MAX_BOWLER_OVERS, MAX_BOWLER_OVERS)}
+              placeholder="No limit"
+              value={bowlerLimit}
+              onChange={(e) => setBowlerLimit(e.target.value)}
+            />
+          </label>
+          {/* The usual split: a fifth of the overs each, so five bowlers bowl. */}
+          {!bowlerLimit && oversNumber >= 2 && (
+            <div className="cricket-app-row is-hint">
+              <small className="admin-hint">
+                Usually a fifth of the overs —{" "}
+                <button type="button" className="admin-link-btn" onClick={() => setBowlerLimit(String(suggestedLimit))}>
+                  use {suggestedLimit}
+                </button>
+              </small>
+            </div>
+          )}
+          <SwitchRow
+            icon="fa-solid fa-person"
+            label="Last man stands"
+            note="The last batter bats on alone"
+            on={lastManStands}
+            onChange={setLastManStands}
+          />
+          <SwitchRow
+            icon="fa-solid fa-bolt"
+            label="Free hit on a no-ball"
+            note="The next ball can only be out run out"
+            on={freeHit}
+            onChange={setFreeHit}
+          />
+          <SwitchRow
+            icon="fa-solid fa-globe"
+            label="Anyone with the link can watch"
+            note={isPublic ? "No sign-in needed to follow the score" : "Only signed-in people who follow can open it"}
+            on={isPublic}
+            onChange={setIsPublic}
+          />
+        </div>
+        {live && <small className="admin-hint d-block">The length of an over can&apos;t change once the match has started.</small>}
+
+        {chasing && (
+          <>
+            <h2 className="cricket-app-group-title">Rain</h2>
+            <div className="cricket-app-group">
+              <label className="cricket-app-row">
+                <span className="cricket-app-row-label">
+                  <i className="fa-solid fa-cloud-rain" aria-hidden="true"></i> Revised target
+                </span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  placeholder="Not revised"
+                  value={revisedTarget}
+                  onChange={(e) => setRevisedTarget(e.target.value)}
+                />
+              </label>
+            </div>
+            <small className="admin-hint d-block">
+              Rain cut the chase? Lower the overs above and set the runs they now need to win (e.g. by DLS). Leave it
+              blank for the first innings&apos; score + 1.
+            </small>
+          </>
+        )}
 
         {!existing && tournament && (
           <small className="admin-hint d-block">

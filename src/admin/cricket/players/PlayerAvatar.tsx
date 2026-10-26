@@ -4,12 +4,13 @@ import { ImageViewer, viewerTrigger } from "../ImageViewer";
 
 // A player's photo, or their initial on a colour of their own when there's
 // no photo (or it fails to load). Size comes from the `className`.
-// `viewable` opens the photo full size when tapped.
+// Tapping a photo opens it full size (the tap doesn't reach a card or button
+// it sits in); `viewable={false}` turns that off.
 export function PlayerAvatar({
   name,
   photoUrl,
   className = "",
-  viewable = false,
+  viewable = true,
 }: {
   name: string;
   photoUrl?: string | null;

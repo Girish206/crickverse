@@ -135,6 +135,7 @@ export function FollowingPage() {
   const canOpen = (t: CricketTournament) =>
     Boolean(admin?.isSuperAdmin) ||
     t.playerIds.includes(myId) ||
+    (t.organiserIds ?? []).includes(myId) ||
     follows.some((f) => f.kind !== "player" && f.targetId === t.id);
 
   const term = search.trim().toLowerCase();
@@ -150,6 +151,17 @@ export function FollowingPage() {
   const playerItems = (players ?? []).filter(
     (p) => p.id !== myId && shown(isFollowed("player", p.id)) && matches(p.name),
   );
+
+  // Names repeat, so each player also shows a team they're in (the
+  // tournament's newest first).
+  const teamOfPlayer = new Map<number, string>();
+  for (const tournament of [...(tournaments ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt))) {
+    for (const team of tournament.teams) {
+      for (const id of team.playerIds) {
+        if (!teamOfPlayer.has(id)) teamOfPlayer.set(id, `${team.name} · ${tournament.name}`);
+      }
+    }
+  }
 
   const empty =
     mode === "following"
@@ -212,6 +224,7 @@ export function FollowingPage() {
                     "Role not set"
                   )}
                 </small>
+                {teamOfPlayer.get(player.id) && <small>{teamOfPlayer.get(player.id)}</small>}
               </div>
               <FollowButton target={{ kind: "player", targetId: player.id, teamIndex: null }} />
             </div>

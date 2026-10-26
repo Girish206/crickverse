@@ -1,24 +1,23 @@
-import type { CricketMatch } from "../../../api/types";
+import { ballsPerOverOf, type CricketMatch } from "../../../api/types";
 import { PlayerLink } from "../players/PlayerProfileSheet";
 import {
-  ballChipClass,
-  ballLabel,
   battingCard,
   bowlingCard,
   chaseInfo,
   inningsSummary,
-  oversOf,
+  isFreeHitNext,
   oversText,
   rate,
   strikeRate,
   type NameOf,
 } from "../stats";
-import { BallBurst } from "./BallBurst";
 import { Commentary } from "./Commentary";
 import { MatchAwards } from "./MatchAwards";
+import { ResultBanner } from "./result/ResultNote";
 
-// The read-only "Live" tab for players: the score, commentary on the last
-// two overs, who's in, this over and the last few. Once it's over, the result and the awards.
+// The read-only "Live" tab for players: the score, who's in, then
+// commentary on the last two overs (the Overs tab has them all). The awards (top performers) wait
+// until it's over, with the result.
 export function LiveView({ match, nameOf }: { match: CricketMatch; nameOf: NameOf }) {
   const innings = match.innings[match.innings.length - 1];
   if (match.status === "scheduled" || !innings) {
@@ -27,22 +26,21 @@ export function LiveView({ match, nameOf }: { match: CricketMatch; nameOf: NameO
   if (match.status !== "live") {
     return (
       <>
-        {match.resultText && <div className="admin-banner admin-banner-success mb-3">{match.resultText}</div>}
+        <ResultBanner match={match} />
         <MatchAwards match={match} nameOf={nameOf} />
       </>
     );
   }
 
-  const summary = inningsSummary(innings);
+  const perOver = ballsPerOverOf(match);
+  const summary = inningsSummary(innings, perOver);
   const chase = innings === match.innings[1] ? chaseInfo(match) : null;
   const batting = battingCard(innings);
-  const bowlerRow = bowlingCard(innings).find((row) => row.playerId === innings.bowlerId);
-  const overs = oversOf(innings);
-  const recent = overs.slice(-4).reverse();
+  const freeHit = isFreeHitNext(match, innings);
+  const bowlerRow = bowlingCard(innings, perOver).find((row) => row.playerId === innings.bowlerId);
 
   return (
     <div className="cricket-scorer">
-      <BallBurst match={match} nameOf={nameOf} />
       <div className="cricket-scorer-head">
         <div>
           <span className="cricket-scorer-team">{match.teams[innings.battingTeam].name} batting</span>
@@ -51,15 +49,22 @@ export function LiveView({ match, nameOf }: { match: CricketMatch; nameOf: NameO
           </strong>
         </div>
         <div className="cricket-scorer-rates">
-          <span>CRR {rate(summary.runs, summary.legalBalls)}</span>
+          <span>CRR {rate(summary.runs, summary.legalBalls, perOver)}</span>
           {chase && (
             <>
-              <span>Target {chase.target}</span>
+              <span>Target {chase.target}{chase.revised && " (revised)"}</span>
               <span>RRR {chase.requiredRate}</span>
             </>
           )}
         </div>
       </div>
+      {/* The next ball can't get the batter out (bar a run-out): a no-ball
+          was just bowled. */}
+      {freeHit && (
+        <div className="cricket-free-hit" role="status">
+          <i className="fa-solid fa-bolt" aria-hidden="true"></i> FREE HIT
+        </div>
+      )}
       {chase && innings.balls.length > 0 && (
         <div className="cricket-chase-line">
           Need <strong>{Math.max(chase.need, 0)}</strong> run{chase.need === 1 ? "" : "s"} from{" "}
@@ -68,90 +73,63 @@ export function LiveView({ match, nameOf }: { match: CricketMatch; nameOf: NameO
       )}
       {chase && innings.balls.length === 0 && (
         <div className="admin-banner admin-banner-success">
-          Innings break — {match.teams[innings.battingTeam].name} need {chase.target} to win.
+          Innings break — {match.teams[innings.battingTeam].name} need {chase.target} to win{chase.revised && " (revised target)"}.
         </div>
       )}
 
-      <Commentary match={match} nameOf={nameOf} />
-
-      <div className="admin-table-wrap">
-        <table className="cricket-table">
-          <thead>
-            <tr>
-              <th>Batter</th>
-              <th>R</th>
-              <th>B</th>
-              <th>4s</th>
-              <th>6s</th>
-              <th>SR</th>
-            </tr>
-          </thead>
-          <tbody>
-            {[innings.strikerId, innings.nonStrikerId].map((playerId, i) => {
-              if (playerId === null) return null;
-              const row = batting.find((r) => r.playerId === playerId);
-              return (
-                <tr key={playerId}>
-                  <td className="fw-semibold">
-                    <PlayerLink playerId={playerId}>{nameOf(playerId)}</PlayerLink>
-                    {i === 0 && " *"}
-                  </td>
-                  <td className="fw-bold">{row?.runs ?? 0}</td>
-                  <td>{row?.balls ?? 0}</td>
-                  <td>{row?.fours ?? 0}</td>
-                  <td>{row?.sixes ?? 0}</td>
-                  <td>{strikeRate(row?.runs ?? 0, row?.balls ?? 0)}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-          <thead>
-            <tr>
-              <th>Bowler</th>
-              <th>O</th>
-              <th>M</th>
-              <th>R</th>
-              <th>W</th>
-              <th>Econ</th>
-            </tr>
-          </thead>
-          <tbody>
-            {innings.bowlerId !== null && (
-              <tr>
-                <td className="fw-semibold">
-                  <PlayerLink playerId={innings.bowlerId}>{nameOf(innings.bowlerId)}</PlayerLink>
-                </td>
-                <td>{oversText(bowlerRow?.legalBalls ?? 0)}</td>
-                <td>{bowlerRow?.maidens ?? 0}</td>
-                <td>{bowlerRow?.runs ?? 0}</td>
-                <td className="fw-bold">{bowlerRow?.wickets ?? 0}</td>
-                <td>{rate(bowlerRow?.runs ?? 0, bowlerRow?.legalBalls ?? 0)}</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {recent.length > 0 && (
-        <section className="cricket-recent-overs">
-          <h2 className="cricket-section-title">Recent overs</h2>
-          {recent.map((over) => (
-            <div key={over.number} className="cricket-this-over">
-              <span>
-                Ov {over.number + 1} · <PlayerLink playerId={over.bowlerId}>{nameOf(over.bowlerId)}</PlayerLink>
+      {/* Who's in, Cricbuzz style: Batter R B 4s 6s SR, then Bowler O M R W
+          ECO, on one grid so every column lines up. */}
+      <section className="cricket-crease">
+        <div className="cricket-crease-head">
+          <span>Batter</span>
+          <span>R</span>
+          <span>B</span>
+          <span>4s</span>
+          <span>6s</span>
+          <span>SR</span>
+        </div>
+        {[innings.strikerId, innings.nonStrikerId].map((playerId, i) => {
+          if (playerId === null) return null;
+          const row = batting.find((r) => r.playerId === playerId);
+          return (
+            <div key={playerId} className="cricket-crease-row">
+              <span className="cricket-crease-name">
+                <PlayerLink playerId={playerId}>{nameOf(playerId)}</PlayerLink>
+                {i === 0 && <span className="cricket-crease-strike" title="On strike" aria-label="On strike"> *</span>}
               </span>
-              {over.balls.map((ball, i) => (
-                <span key={i} className={ballChipClass(ball)}>
-                  {ballLabel(ball)}
-                </span>
-              ))}
-              <strong className="cricket-over-runs">= {over.runs}</strong>
+              <span className="cricket-crease-main">{row?.runs ?? 0}</span>
+              <span>{row?.balls ?? 0}</span>
+              <span>{row?.fours ?? 0}</span>
+              <span>{row?.sixes ?? 0}</span>
+              <span>{strikeRate(row?.runs ?? 0, row?.balls ?? 0)}</span>
             </div>
-          ))}
-        </section>
-      )}
+          );
+        })}
+        {innings.bowlerId !== null && (
+          <>
+            <div className="cricket-crease-head">
+              <span>Bowler</span>
+              <span>O</span>
+              <span>M</span>
+              <span>R</span>
+              <span>W</span>
+              <span>ECO</span>
+            </div>
+            <div className="cricket-crease-row">
+              <span className="cricket-crease-name">
+                <PlayerLink playerId={innings.bowlerId}>{nameOf(innings.bowlerId)}</PlayerLink>
+              </span>
+              <span>{oversText(bowlerRow?.legalBalls ?? 0, perOver)}</span>
+              <span>{bowlerRow?.maidens ?? 0}</span>
+              <span>{bowlerRow?.runs ?? 0}</span>
+              <span className="cricket-crease-main">{bowlerRow?.wickets ?? 0}</span>
+              <span>{rate(bowlerRow?.runs ?? 0, bowlerRow?.legalBalls ?? 0, perOver)}</span>
+            </div>
+          </>
+        )}
+      </section>
 
-      <MatchAwards match={match} nameOf={nameOf} />
+      <Commentary match={match} nameOf={nameOf} />
     </div>
   );
 }

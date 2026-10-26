@@ -100,8 +100,8 @@ export function CricketTeamPage() {
   const requested = params.get("tab") as Tab | null;
   const tab: Tab = requested && TABS.some((t) => t.value === requested) ? requested : "info";
   const { admin } = useAdminAuth();
-  const canManage = canManageTournament(admin, tournament);
   const { data: me } = useCricketMe();
+  const canManage = canManageTournament(admin, tournament, me?.player?.id);
   const followItem = useFollowMenuItem({ kind: "team", targetId: id, teamIndex });
   const tips = useTips("team", TEAM_TIPS, Boolean(tournament?.teams[teamIndex]));
   const playerById = useMemo(() => new Map((players ?? []).map((player) => [player.id, player])), [players]);

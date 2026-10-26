@@ -3,7 +3,7 @@ import { useCricketTournaments, useDeleteCricketTournament } from "../../../api/
 import { ListCard } from "../../components/ListCard";
 import { Button } from "../../components/Button";
 import { RowActions } from "../../components/RowActions";
-import { confirmDelete } from "../../components/confirmDelete";
+import { confirmTournamentDelete } from "./confirmTournamentDelete";
 import { BottomSheet } from "../BottomSheet";
 import { CricketTournamentForm } from "./CricketTournamentForm";
 import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
@@ -22,12 +22,12 @@ export function CricketTournamentsList() {
   const [modal, setModal] = useState<ModalState>(null);
   const { data: players } = useCricketPlayers();
   const editing = modal?.mode === "edit" ? tournaments?.find((t) => t.id === modal.id) : undefined;
-  const phases = (tournaments ?? []).map(tournamentPhase);
+  const phases = (tournaments ?? []).map((t) => tournamentPhase(t));
   const inPhase = (phase: TournamentPhase) => phases.filter((p) => p === phase).length;
   const pickedPlayers = new Set((tournaments ?? []).flatMap((t) => t.playerIds)).size;
 
   async function handleDelete(id: number, name: string) {
-    if (await confirmDelete("tournament", name)) {
+    if (await confirmTournamentDelete(name)) {
       deleteTournament.mutate(id);
     }
   }

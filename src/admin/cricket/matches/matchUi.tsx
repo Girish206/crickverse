@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import { useNavigate } from "react-router-dom";
 import type { CricketMatch, CricketMatchStatus } from "../../../api/types";
 import { avatarColorFor } from "../avatarColor";
+import { BALL_TYPES } from "../cricketOptions";
 import { formatMatchDate, battingOrder, matchStageLabel, teamInitials, teamScore } from "./matchUtils";
 
 const STATUS_LABELS: Record<CricketMatchStatus, string> = {
@@ -61,6 +62,9 @@ export function MatchCard({
   const navigate = useNavigate();
   const open = () => navigate(`/matches/${match.id}`);
   const decided = match.status === "completed" && match.winner !== null;
+  const ballType = BALL_TYPES.find((type) => type.value === match.ballType);
+  const ballColor = ballType?.color;
+  const ballLabel = ballType?.label;
   return (
     <div
       className={`cricket-match-card is-${match.status}${tag ? ` has-tag is-${tag.tone}` : ""}`}
@@ -121,9 +125,7 @@ export function MatchCard({
         })}
       </div>
 
-      {(match.resultText || match.status === "live") && (
-        <div className="cricket-match-card-result">{match.resultText ?? "In progress"}</div>
-      )}
+      {match.resultText && <div className="cricket-match-card-result">{match.resultText}</div>}
       <div className="cricket-match-card-when">
         {match.status !== "scheduled" && (
           <span>
@@ -138,8 +140,14 @@ export function MatchCard({
           </span>
         )}
         <span className="cricket-match-card-overs">
-          <i className="fa-solid fa-baseball" aria-hidden="true"></i>
-          {match.overs} overs
+          {/* The ball in its type's colour (tennis green, leather red…). */}
+          <i
+            className="fa-solid fa-baseball"
+            style={ballColor ? { color: ballColor } : undefined}
+            title={ballLabel ? `${ballLabel} ball` : undefined}
+            aria-hidden="true"
+          ></i>
+          {match.overs} {match.overs === 1 ? "over" : "overs"}
         </span>
       </div>
       {footnote && (

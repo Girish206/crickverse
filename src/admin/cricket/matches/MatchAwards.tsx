@@ -1,4 +1,4 @@
-import type { CricketMatch } from "../../../api/types";
+import { ballsPerOverOf, type CricketMatch } from "../../../api/types";
 import { impactLine, matchAwards, oversText, points, type ImpactRow, type NameOf } from "../stats";
 import { AwardCard } from "./AwardCard";
 import { usePlayerPhotos } from "./matchUtils";
@@ -14,7 +14,7 @@ interface Award {
 
 // The scorecard-style figures: 23(15) 2·4s 1·6s | 3.0-1-10-3, then any
 // fielding. Falls back to the plain impact line when the player did neither.
-function HeroFigures({ row }: { row: ImpactRow }) {
+function HeroFigures({ row, perOver }: { row: ImpactRow; perOver: number }) {
   const { bat, bowl } = row;
   const bowled = bowl && bowl.legalBalls > 0;
   const fielding = [
@@ -36,7 +36,7 @@ function HeroFigures({ row }: { row: ImpactRow }) {
       )}
       {bowled && (
         <span className="cricket-award-fig">
-          {oversText(bowl.legalBalls)}-{bowl.maidens}-{bowl.runs}-{bowl.wickets}
+          {oversText(bowl.legalBalls, perOver)}-{bowl.maidens}-{bowl.runs}-{bowl.wickets}
         </span>
       )}
       {fielding.length > 0 && <span className="cricket-award-fig">{fielding.join(" · ")}</span>}
@@ -89,7 +89,7 @@ export function MatchAwards({ match, nameOf }: { match: CricketMatch; nameOf: Na
               name={nameOf(card.row!.playerId)}
               photoUrl={photoOf(card.row!.playerId)}
               team={match.teams[card.row!.team]?.name}
-              line={<HeroFigures row={card.row!} />}
+              line={<HeroFigures row={card.row!} perOver={ballsPerOverOf(match)} />}
               pointsLabel={card.featured ? "MVP" : "Pts"}
               points={points(card.score(card.row!))}
               note={card.note}

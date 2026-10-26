@@ -245,7 +245,7 @@ export function FriendlyTeamPage() {
                 : null
           }
           saving={addPlayers.isPending}
-          onSave={(players) => addPlayers.mutateAsync({ teamName: displayName, players })}
+          onSave={(players) => addPlayers.mutateAsync({ teamName: displayName, teamKey: latest.teamKey ?? undefined, players })}
           onClose={() => setAdding(false)}
         />
       )}

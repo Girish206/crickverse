@@ -1,5 +1,5 @@
-import type { CricketInnings, CricketMatch } from "../../../api/types";
-import { inningsSummary, isLegal, isWicket, oversOf, type NameOf } from "../stats";
+import { ballsPerOverOf, type CricketInnings, type CricketMatch } from "../../../api/types";
+import { inningsSummary, isFour, isLegal, isSix, isWicket, oversOf, type NameOf } from "../stats";
 import { MatchAwards } from "./MatchAwards";
 import { MatchShotMap } from "./ShotMap";
 
@@ -15,9 +15,10 @@ function scoringBreakdown(innings: CricketInnings) {
     else if (ball.runs === 1) counts.ones += 1;
     else if (ball.runs === 2) counts.twos += 1;
     else if (ball.runs === 3) counts.threes += 1;
-    else if (ball.runs === 4) counts.fours += 1;
-    else if (ball.runs === 6) counts.sixes += 1;
-    if (ball.runs === 4 || ball.runs === 6) boundaryRuns += ball.runs;
+    // An all-run four counts as four runs, not a boundary.
+    else if (isFour(ball)) counts.fours += 1;
+    else if (isSix(ball)) counts.sixes += 1;
+    if (isFour(ball) || isSix(ball)) boundaryRuns += ball.runs;
   }
   return { ...counts, boundaryRuns, extras };
 }
@@ -31,8 +32,8 @@ export function MatchInsights({ match, nameOf }: { match: CricketMatch; nameOf: 
   const perInnings = match.innings.map((innings) => ({
     innings,
     name: match.teams[innings.battingTeam].name,
-    summary: inningsSummary(innings),
-    overs: oversOf(innings).map((over) => ({ ...over, wickets: over.balls.filter(isWicket).length })),
+    summary: inningsSummary(innings, ballsPerOverOf(match)),
+    overs: oversOf(innings, ballsPerOverOf(match)).map((over) => ({ ...over, wickets: over.balls.filter(isWicket).length })),
     breakdown: scoringBreakdown(innings),
   }));
   const overCount = Math.max(match.overs, ...perInnings.map((p) => p.overs.length));

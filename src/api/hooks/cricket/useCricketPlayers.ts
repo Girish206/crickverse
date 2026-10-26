@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "../../client";
+import { apiClient, getAdminToken } from "../../client";
 import type {
   ApiEnvelope,
   CricketMatch,
@@ -32,6 +32,9 @@ export function useCricketMe() {
 export function useCricketPlayers() {
   return useQuery({
     queryKey: ["cricket-players"],
+    // Signed out (a shared public match) it would answer 401 and send them
+    // to sign in; the public page puts the match's own players here instead.
+    enabled: getAdminToken() !== null,
     queryFn: async () => {
       const { data } = await apiClient.get<ApiEnvelope<CricketPlayer[]>>("/admin/cricket/players");
       return data.data;
@@ -141,6 +144,46 @@ export function useGrantCricketPlayerLogin() {
       invalidate(queryClient);
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     },
+  });
+}
+
+// One person added twice (super admins): everything of `id` moves to
+// `intoId`, and `id` is deleted.
+export function useMergeCricketPlayers() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, intoId }: { id: number; intoId: number }) =>
+      (await apiClient.post<ApiEnvelope<CricketPlayer>>(`/admin/cricket/players/${id}/merge`, { intoId })).data.data,
+    onSuccess: () => {
+      invalidate(queryClient);
+      queryClient.invalidateQueries({ queryKey: ["cricket-matches"] });
+      queryClient.invalidateQueries({ queryKey: ["cricket-tournaments"] });
+    },
+  });
+}
+
+// The six digits a player enters to claim the record someone added for
+// them (made on the first ask). Only whoever added them may get it.
+export interface PlayerInviteCode {
+  playerId: number;
+  name: string;
+  code: string;
+}
+
+export function usePlayerInvite() {
+  return useMutation({
+    mutationFn: async (id: number) =>
+      (await apiClient.get<ApiEnvelope<PlayerInviteCode>>(`/admin/cricket/players/${id}/invite`)).data.data,
+  });
+}
+
+// Forgot password (super admins): clears it and returns a fresh invite code.
+export function useResetPlayerLogin() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) =>
+      (await apiClient.post<ApiEnvelope<PlayerInviteCode>>(`/admin/cricket/players/${id}/login/reset`)).data.data,
+    onSuccess: () => invalidate(queryClient),
   });
 }
 

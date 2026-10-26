@@ -48,6 +48,16 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar, isDark, toggleTheme, onS
     }, [menuOpen]);
 
     const initial = (admin?.name || admin?.email || "U").charAt(0).toUpperCase();
+    // Their player photo when they have one (else, or if it fails, the initial).
+    const photoUrl = me?.player?.photoUrl ?? null;
+    const [photoBroken, setPhotoBroken] = useState(false);
+    useEffect(() => setPhotoBroken(false), [photoUrl]);
+    const avatar =
+        photoUrl && !photoBroken ? (
+            <img src={photoUrl} alt="" className="navbar-avatar-photo" onError={() => setPhotoBroken(true)} />
+        ) : (
+            initial
+        );
 
     const handleLogout = () => {
         setMenuOpen(false);
@@ -111,7 +121,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar, isDark, toggleTheme, onS
                                 className="user-avatar text-white rounded-circle d-flex align-items-center justify-content-center fw-bold"
                                 style={{ width: "36px", height: "36px", fontSize: "var(--fs-sm)", flexShrink: 0 }}
                             >
-                                {initial}
+                                {avatar}
                             </div>
                             <span className="navbar-user-email d-none d-sm-inline">{admin?.name || admin?.email}</span>
                             <i className={`fa-solid fa-chevron-${menuOpen ? "up" : "down"} navbar-user-caret d-none d-sm-inline`} aria-hidden="true"></i>
@@ -119,7 +129,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar, isDark, toggleTheme, onS
                         {menuOpen && (
                             <div className="navbar-user-dropdown" role="menu">
                                 <div className="navbar-user-dropdown-head">
-                                    <div className="navbar-user-dropdown-avatar">{initial}</div>
+                                    <div className="navbar-user-dropdown-avatar">{avatar}</div>
                                     <div className="navbar-user-dropdown-who">
                                         <strong>{admin?.name || admin?.email || "My account"}</strong>
                                         {me?.accountMobile && <small>{formatMobile(me.accountMobile)}</small>}

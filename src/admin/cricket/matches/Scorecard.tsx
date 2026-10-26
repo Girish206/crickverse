@@ -1,5 +1,5 @@
 import { Fragment, useState } from "react";
-import type { CricketMatch } from "../../../api/types";
+import { ballsPerOverOf, type CricketMatch } from "../../../api/types";
 import { PlayerLink } from "../players/PlayerProfileSheet";
 import {
   ballChipClass,
@@ -15,6 +15,7 @@ import {
   rate,
   type NameOf,
 } from "../stats";
+import { NoPlayNote } from "./result/ResultNote";
 
 // Per-innings scorecard in the CricHeroes style: a coloured bar with the
 // team and score (tap to collapse), batters with how they got out under
@@ -22,6 +23,11 @@ import {
 export function Scorecard({ match, nameOf }: { match: CricketMatch; nameOf: NameOf }) {
   // The innings in progress (or the last one) starts open.
   const [open, setOpen] = useState<Set<number>>(() => new Set([match.innings.length - 1]));
+  const perOver = ballsPerOverOf(match);
+  // A walkover (or a result entered before a ball) has no scorecard to show.
+  if (!match.innings.some((innings) => innings.balls.length > 0) && match.resultMethod) {
+    return <NoPlayNote match={match} />;
+  }
   if (match.innings.length === 0) return <div className="admin-empty-state">The match hasn't started yet.</div>;
   const toggle = (index: number) =>
     setOpen((current) => {
@@ -33,11 +39,11 @@ export function Scorecard({ match, nameOf }: { match: CricketMatch; nameOf: Name
   return (
     <div className="cricket-scorecard">
       {match.innings.map((innings, index) => {
-        const summary = inningsSummary(innings);
+        const summary = inningsSummary(innings, perOver);
         const batting = battingCard(innings);
         const batted = new Set(batting.map((row) => row.playerId));
         const didNotBat = match.teams[innings.battingTeam].playerIds.filter((id) => !batted.has(id));
-        const fow = fallOfWickets(innings);
+        const fow = fallOfWickets(innings, perOver);
         const isOpen = open.has(index);
         return (
           <section className="cricket-innings" key={index}>
@@ -96,7 +102,8 @@ export function Scorecard({ match, nameOf }: { match: CricketMatch; nameOf: Name
                     <strong>{summary.extras.total}</strong>{" "}
                     <small>
                       (wd {summary.extras.wides}, nb {summary.extras.noBalls}, b {summary.extras.byes}, lb{" "}
-                      {summary.extras.legByes})
+                      {summary.extras.legByes}
+                      {summary.extras.penalty > 0 && `, pen ${summary.extras.penalty}`})
                     </small>
                   </span>
                 </div>
@@ -107,7 +114,7 @@ export function Scorecard({ match, nameOf }: { match: CricketMatch; nameOf: Name
                       {summary.runs}/{summary.wickets}
                     </strong>{" "}
                     <small>
-                      ({summary.overs} Ov, RR {rate(summary.runs, summary.legalBalls)})
+                      ({summary.overs} Ov, RR {rate(summary.runs, summary.legalBalls, perOver)})
                     </small>
                   </span>
                 </div>
@@ -137,18 +144,18 @@ export function Scorecard({ match, nameOf }: { match: CricketMatch; nameOf: Name
                     </tr>
                   </thead>
                   <tbody>
-                    {bowlingCard(innings).map((row) => (
+                    {bowlingCard(innings, perOver).map((row) => (
                       <tr key={row.playerId}>
                         <td className="cricket-bat-cell">
                           <span className="cricket-bat-name">
                             <PlayerLink playerId={row.playerId}>{nameOf(row.playerId)}</PlayerLink>
                           </span>
                         </td>
-                        <td>{row.legalBalls % 6 === 0 ? row.legalBalls / 6 : oversText(row.legalBalls)}</td>
+                        <td>{row.legalBalls % perOver === 0 ? row.legalBalls / perOver : oversText(row.legalBalls, perOver)}</td>
                         <td>{row.maidens}</td>
                         <td>{row.runs}</td>
                         <td className="fw-bold">{row.wickets}</td>
-                        <td>{rate(row.runs, row.legalBalls)}</td>
+                        <td>{rate(row.runs, row.legalBalls, perOver)}</td>
                         <td>{row.dots}</td>
                         <td>{row.noBalls}</td>
                         <td>{row.wides}</td>
@@ -195,7 +202,7 @@ export function BallByBall({ match, nameOf }: { match: CricketMatch; nameOf: Nam
   const bowled = match.innings.filter((innings) => innings.balls.length > 0);
   const [picked, setPicked] = useState<number | null>(null);
   if (bowled.length === 0) {
-    return <div className="admin-empty-state">No balls bowled yet.</div>;
+    return match.resultMethod ? <NoPlayNote match={match} /> : <div className="admin-empty-state">No balls bowled yet.</div>;
   }
   const innings = bowled.find((inn) => inn.battingTeam === picked) ?? bowled[bowled.length - 1];
 
@@ -203,7 +210,7 @@ export function BallByBall({ match, nameOf }: { match: CricketMatch; nameOf: Nam
   const overs: (ReturnType<typeof oversOf>[number] & { score: string; batters: number[] })[] = [];
   let runs = 0;
   let wickets = 0;
-  for (const over of oversOf(innings)) {
+  for (const over of oversOf(innings, ballsPerOverOf(match))) {
     runs += over.runs;
     wickets += over.balls.filter(isWicket).length;
     overs.push({ ...over, score: `${runs}-${wickets}`, batters: [...new Set(over.balls.map((ball) => ball.batterId))] });

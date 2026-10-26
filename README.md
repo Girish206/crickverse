@@ -1,4 +1,4 @@
-# Namma Aaata (ನಮ್ಮ ಆಟ)
+# CricDesk
 
 Cricket tournaments, live scoring and stats. A Girish Creations project.
 
@@ -19,12 +19,14 @@ npm run dev        # http://localhost:5174 (proxies /api to :4000)
 
 ## Who sees what
 
-- **Organisers** (super admins on the Girish Creations account) see the
-  dashboard and manage players, tournaments, matches, live scoring and the
-  leaderboard.
-- **Players** sign in with the mobile number on their player profile (an
-  organiser turns on "App login" for them in Players) and see their own stats,
-  matches and tournaments.
+- **Players** sign themselves up with their mobile number. One sign-in screen
+  does both: a new number goes on to a short sign-up step. They see their own
+  stats, matches, tournaments and teams.
+- **Anyone** can create tournaments and matches, and then manages (and
+  scores) the ones they created.
+- **Organisers** are super admins on the Girish Creations account. On top of
+  that they see the dashboard and manage every player, tournament and match,
+  and the leaderboard.
 
 ## Deploy
 

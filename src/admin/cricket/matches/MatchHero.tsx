@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { CricketMatch } from "../../../api/types";
+import { ballsPerOverOf, type CricketMatch } from "../../../api/types";
 import { monogram } from "../../../utils/format";
 import { avatarColorFor } from "../avatarColor";
 import { chaseInfo, inningsSummary, rate } from "../stats";
@@ -86,12 +86,13 @@ export function MatchHero({ match }: MatchHeroProps) {
     const chase = match.innings.length === 2 ? chaseInfo(match) : null;
     const batting = match.teams[current.battingTeam].name;
     if (chase && current.balls.length === 0) {
-      headline = `Innings break — ${batting} need ${chase.target} to win`;
+      headline = `Innings break — ${batting} need ${chase.target} to win${chase.revised ? " (revised target)" : ""}`;
     } else if (chase) {
       headline = `${batting} need ${Math.max(chase.need, 0)} run${chase.need === 1 ? "" : "s"} from ${chase.ballsLeft} ball${chase.ballsLeft === 1 ? "" : "s"}`;
     } else {
-      const now = inningsSummary(current);
-      headline = `${batting} batting · CRR ${rate(now.runs, now.legalBalls)}`;
+      const perOver = ballsPerOverOf(match);
+      const now = inningsSummary(current, perOver);
+      headline = `${batting} batting · CRR ${rate(now.runs, now.legalBalls, perOver)}`;
     }
   }
 

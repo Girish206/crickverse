@@ -24,6 +24,7 @@ import { formatMobile, normalizeMobile } from "../mobile";
 import { PlayerAvatar } from "./PlayerAvatar";
 import { compressImage, MAX_UPLOAD_BYTES, PLAYER_PHOTO } from "../../../utils/compressImage";
 import { Loader } from "../../components/Loader";
+import { PlayerInvite, ResetPlayerLogin } from "./PlayerInvite";
 
 const schema = z.object({
   name: z.string().trim().min(1, "Required").max(100),
@@ -259,11 +260,17 @@ export function CricketPlayerLoginForm({ player, onDone }: { player: CricketPlay
           setError(null);
         }}
       />
-      {player.hasLogin && (
-        <div className="mt-2">
+      {player.hasLogin ? (
+        <div className="mt-2 d-flex flex-column align-items-start gap-1">
+          <ResetPlayerLogin playerId={player.id} name={player.name} mobile={player.mobile} />
           <Button variant="danger-text" onClick={handleRevoke} disabled={revoke.isPending}>
             Turn off app login
           </Button>
+        </div>
+      ) : (
+        <div className="mt-2">
+          <small className="admin-hint d-block mb-1">Or let them set their own password: send them their invite code.</small>
+          <PlayerInvite playerId={player.id} mobile={player.mobile} />
         </div>
       )}
       <SubmitButton loading={grant.isPending}>{player.hasLogin ? "Save" : "Give app login"}</SubmitButton>

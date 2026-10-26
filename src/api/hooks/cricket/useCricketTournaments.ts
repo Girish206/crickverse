@@ -28,6 +28,14 @@ export interface CricketTournamentInput {
   pitchType: CricketPitchType | null;
   matchType: CricketMatchType | null;
   overs: number | null;
+  // Default playing conditions for its matches; left out keeps them.
+  ballsPerOver?: number | null;
+  bowlerOverLimit?: number | null;
+  lastManStands?: boolean | null;
+  freeHit?: boolean | null;
+  // Left out keeps them as they are.
+  finished?: boolean;
+  isPublic?: boolean;
 }
 
 export interface CricketTournamentImages {
@@ -85,6 +93,13 @@ export function useCreateCricketTournament() {
 export function useSetCricketTournamentScorers() {
   return useTournamentMutation(({ id, playerIds }: { id: number; playerIds: number[] }) =>
     apiClient.put(`/admin/cricket/tournaments/${id}/scorers`, { playerIds }),
+  );
+}
+
+// Co-organisers: players who manage the tournament like its creator.
+export function useSetCricketTournamentOrganisers() {
+  return useTournamentMutation(({ id, playerIds }: { id: number; playerIds: number[] }) =>
+    apiClient.put(`/admin/cricket/tournaments/${id}/organisers`, { playerIds }),
   );
 }
 

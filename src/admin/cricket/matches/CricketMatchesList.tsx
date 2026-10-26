@@ -23,15 +23,6 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: "completed", label: "Completed" },
 ];
 
-// `panel`: the list sits in a Home-style coloured section (cricket-home-section)
-// whose colour, icon and title follow the chosen tab.
-const PANELS: Record<Filter, { tone: string; icon: string; title: string }> = {
-  all: { tone: "all", icon: "fa-solid fa-calendar-days", title: "All matches" },
-  live: { tone: "live", icon: "fa-solid fa-tower-broadcast", title: "Live now" },
-  scheduled: { tone: "next", icon: "fa-solid fa-clock", title: "Upcoming" },
-  completed: { tone: "last", icon: "fa-solid fa-flag-checkered", title: "Completed" },
-  abandoned: { tone: "last", icon: "fa-solid fa-flag-checkered", title: "Completed" },
-};
 
 // Status filter + card grid, shared by the Matches page and a tournament's
 // Matches tab.
@@ -40,13 +31,14 @@ export function MatchesBoard({
   tournamentNames,
   onNew,
   footnote,
-  panel = false,
+  counts = false,
 }: {
   matches: CricketMatch[];
   tournamentNames?: Map<number, string>;
   onNew?: () => void;
   footnote?: (match: CricketMatch) => string | null;
-  panel?: boolean;
+  // Show how many matches each tab holds (My Matches).
+  counts?: boolean;
 }) {
   const [filter, setFilter] = useState<Filter>("all");
   // Oldest first (by start time; undated ones by when they were made), so
@@ -54,6 +46,8 @@ export function MatchesBoard({
   const visible = matches
     .filter((match) => filter === "all" || match.status === filter || (filter === "completed" && match.status === "abandoned"))
     .sort((a, b) => (a.scheduledAt ?? a.createdAt).localeCompare(b.scheduledAt ?? b.createdAt));
+  const countOf = (value: Filter) =>
+    matches.filter((m) => value === "all" || m.status === value || (value === "completed" && m.status === "abandoned")).length;
   const list =
     visible.length === 0 ? (
       <div className="admin-empty-state">
@@ -92,26 +86,12 @@ export function MatchesBoard({
               onClick={() => setFilter(f.value)}
             >
               {f.label}
+              {counts && <span className="cricket-tab-count">{countOf(f.value)}</span>}
             </button>
           ))}
         </div>
       </div>
-      {panel ? (
-        <section className={`cricket-home-section is-${PANELS[filter].tone}`}>
-          <div className="cricket-home-head">
-            <h2 className="cricket-section-title cricket-home-heading">
-              <span className="cricket-home-icon" aria-hidden="true">
-                <i className={PANELS[filter].icon}></i>
-              </span>
-              {PANELS[filter].title}
-              <span className="cricket-home-count">{visible.length}</span>
-            </h2>
-          </div>
-          {list}
-        </section>
-      ) : (
-        list
-      )}
+      {list}
     </>
   );
 }

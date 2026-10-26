@@ -1,13 +1,16 @@
 import { useState } from "react";
-import type { CricketTournament } from "../../../api/types";
+import type { CricketMatch, CricketTournament } from "../../../api/types";
 import { ImageViewer, viewerTrigger } from "../ImageViewer";
 import { bannerFor, logoFor } from "./tournamentArt";
+import { hasChampion } from "./TournamentCard";
 
 const shortDate = (value: string) =>
   new Date(value).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 
-// Upcoming / live / completed from the tournament's dates (UTC days).
-function phaseOf(t: CricketTournament): { label: string; tone: string } | null {
+// Completed once marked finished or its champion is decided; otherwise
+// upcoming / live / completed from the tournament's dates (UTC days).
+function phaseOf(t: CricketTournament, matches: CricketMatch[] | undefined): { label: string; tone: string } | null {
+  if (t.finishedAt || (matches && hasChampion(t, matches, true))) return { label: "Completed", tone: "is-done" };
   if (!t.startDate) return null;
   const today = new Date().toISOString().slice(0, 10);
   const start = t.startDate.slice(0, 10);
@@ -22,12 +25,12 @@ function phaseOf(t: CricketTournament): { label: string; tone: string } | null {
 // place straddling its bottom edge. The rest of the details are on the
 // Info tab (TournamentInfo). Tournaments without a banner or logo get stock
 // art (tournamentArt.ts).
-export function TournamentBanner({ tournament: t }: { tournament: CricketTournament }) {
+export function TournamentBanner({ tournament: t, matches }: { tournament: CricketTournament; matches?: CricketMatch[] }) {
   const place = [t.ground, t.city].filter(Boolean).join(", ");
   const dates = t.startDate
     ? `${shortDate(t.startDate)}${t.endDate && t.endDate !== t.startDate ? ` – ${shortDate(t.endDate)}` : ""}`
     : null;
-  const phase = phaseOf(t);
+  const phase = phaseOf(t, matches);
   // The logo or the banner, opened full size.
   const [viewing, setViewing] = useState<{ src: string; alt: string; round?: boolean } | null>(null);
 

@@ -19,7 +19,7 @@
     <meta name="twitter:card" content="summary_large_image" />
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="CricDesk" />
@@ -30,7 +30,7 @@
     <!-- Loaded without holding up the first frame (the launch splash). -->
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Baloo+Tamma+2:wght@600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap"
       media="print"
       onload="this.media='all'"
     />
@@ -257,8 +257,7 @@
         }
       }
 
-      .cv-splash-name,
-      .cv-splash-kn {
+      .cv-splash-name {
         opacity: 0;
         animation: cvSplashRise 0.45s ease-out forwards;
       }
@@ -277,15 +276,6 @@
 
       .cv-splash .cv-splash-name em {
         color: #ffcd00;
-      }
-
-      .cv-splash .cv-splash-kn {
-        font-family: "Baloo Tamma 2", "Noto Sans Kannada", "Nirmala UI", system-ui, sans-serif;
-        font-weight: 700;
-        line-height: 1;
-        font-size: 1.25rem;
-        color: #ff5a4e;
-        animation-delay: 2.25s;
       }
 
       @keyframes cvSplashRise {
@@ -321,8 +311,7 @@
         }
 
         .cv-splash-logo,
-        .cv-splash-name,
-        .cv-splash-kn {
+        .cv-splash-name {
           opacity: 1;
         }
       }

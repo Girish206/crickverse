@@ -40,7 +40,8 @@ export function SubmitButton({
   return (
     <ModalActions>
       {modal && (
-        <CustomButton bg="custom-secondary" onClick={modal.close} disabled={loading}>
+        // Outlined in the brand colour, so Save stays the one solid button.
+        <CustomButton variant="outline" bg="custom-primary" onClick={modal.close} disabled={loading}>
           Cancel
         </CustomButton>
       )}

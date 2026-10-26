@@ -1,4 +1,5 @@
 import type { CricketBall, CricketInnings, CricketMatch, CricketMatchStage, CricketTournament } from "../../api/types";
+import { ballsPerOverOf } from "../../api/types";
 
 // Everything shown on scorecards, points tables and leaderboards is derived
 // here from the stored balls — the same rules the server scores with
@@ -16,49 +17,83 @@ export const isCatch = (ball: CricketBall) => ball.wicketType === "caught" || ba
 export const ballTotal = (ball: CricketBall) => ball.runs + ball.extras;
 const BOWLER_WICKETS = ["bowled", "caught", "caught-behind", "lbw", "stumped", "hit-wicket"];
 const creditsBowler = (ball: CricketBall) => ball.wicketType !== null && BOWLER_WICKETS.includes(ball.wicketType);
-// Byes and leg-byes aren't charged to the bowler.
+// Byes and leg-byes aren't charged to the bowler — nor are those run off a
+// no-ball (only its one-run penalty is), nor penalty runs.
 const conceded = (ball: CricketBall) =>
-  ball.runs + (ball.extraType === "wide" || ball.extraType === "no-ball" ? ball.extras : 0);
+  ball.runs +
+  (ball.extraType === "wide" ? ball.extras : ball.extraType === "no-ball" ? (ball.byeType ? 1 : ball.extras) : 0);
 
-export const oversText = (legalBalls: number) => `${Math.floor(legalBalls / 6)}.${legalBalls % 6}`;
+// A 4 or 6 off the bat that reached the boundary (all-run ones don't count;
+// older balls don't say, and count).
+export const isFour = (ball: CricketBall) => ball.runs === 4 && ball.boundary !== false;
+export const isSix = (ball: CricketBall) => ball.runs === 6 && ball.boundary !== false;
 
-export const rate = (runs: number, legalBalls: number) => (legalBalls ? ((runs * 6) / legalBalls).toFixed(2) : "0.00");
+// Overs as "4.3". perOver is the match's balls an over (ballsPerOverOf).
+export const oversText = (legalBalls: number, perOver = 6) =>
+  `${Math.floor(legalBalls / perOver)}.${legalBalls % perOver}`;
+
+// Runs per over.
+export const rate = (runs: number, legalBalls: number, perOver = 6) =>
+  legalBalls ? ((runs * perOver) / legalBalls).toFixed(2) : "0.00";
 
 export const strikeRate = (runs: number, balls: number) => (balls ? ((runs * 100) / balls).toFixed(1) : "–");
 
-export function inningsSummary(innings: CricketInnings | undefined) {
+export function inningsSummary(innings: CricketInnings | undefined, perOver = 6) {
   const balls = innings?.balls ?? [];
-  const extras = { wides: 0, noBalls: 0, byes: 0, legByes: 0, total: 0 };
+  const extras = { wides: 0, noBalls: 0, byes: 0, legByes: 0, penalty: 0, total: 0 };
   for (const ball of balls) {
     if (ball.extraType === "wide") extras.wides += ball.extras;
-    if (ball.extraType === "no-ball") extras.noBalls += ball.extras;
+    // Byes run off a no-ball are byes; the no-ball itself is its penalty.
+    if (ball.extraType === "no-ball") extras.noBalls += ball.byeType ? 1 : ball.extras;
+    if (ball.extraType === "no-ball" && ball.byeType === "bye") extras.byes += ball.extras - 1;
+    if (ball.extraType === "no-ball" && ball.byeType === "leg-bye") extras.legByes += ball.extras - 1;
     if (ball.extraType === "bye") extras.byes += ball.extras;
     if (ball.extraType === "leg-bye") extras.legByes += ball.extras;
+    if (ball.extraType === "penalty") extras.penalty += ball.extras;
     extras.total += ball.extras;
   }
   const runs = balls.reduce((sum, ball) => sum + ballTotal(ball), 0);
   const wickets = balls.filter(isWicket).length;
   const legalBalls = balls.filter(isLegal).length;
-  return { runs, wickets, legalBalls, overs: oversText(legalBalls), extras };
+  return { runs, wickets, legalBalls, overs: oversText(legalBalls, perOver), extras };
 }
+
+// Whether the next delivery is a free hit: after a no-ball, and still after
+// a wide or no-ball bowled on the free hit itself (as the server rules).
+export function isFreeHitNext(match: CricketMatch, innings: CricketInnings) {
+  if (match.freeHit === false) return false;
+  let freeHit = false;
+  for (const ball of innings.balls) {
+    if (ball.noDelivery) continue;
+    if (ball.extraType === "no-ball") freeHit = true;
+    else if (ball.extraType !== "wide") freeHit = false;
+  }
+  return freeHit;
+}
+
+// Wickets that end an innings: all but one of the side, or all of them when
+// the last batter bats on alone.
+export const wicketsToEnd = (match: CricketMatch, innings: CricketInnings) =>
+  match.teams[innings.battingTeam].playerIds.length - (match.lastManStands ? 0 : 1);
 
 export const scoreText = (innings: CricketInnings | undefined) => {
   const summary = inningsSummary(innings);
   return `${summary.runs}/${summary.wickets}`;
 };
 
-// Each ball's over number (0-based): legal balls bowled before it, / 6.
-function overIndexes(balls: CricketBall[]) {
+// Each ball's over number (0-based): legal balls bowled before it, / the
+// balls an over.
+function overIndexes(balls: CricketBall[], perOver = 6) {
   let legal = 0;
   return balls.map((ball) => {
-    const over = Math.floor(legal / 6);
+    const over = Math.floor(legal / perOver);
     if (isLegal(ball)) legal += 1;
     return over;
   });
 }
 
-export function oversOf(innings: CricketInnings) {
-  const indexes = overIndexes(innings.balls);
+export function oversOf(innings: CricketInnings, perOver = 6) {
+  const indexes = overIndexes(innings.balls, perOver);
   const overs: { number: number; bowlerId: number; balls: CricketBall[]; runs: number }[] = [];
   innings.balls.forEach((ball, i) => {
     let over = overs[overs.length - 1];
@@ -74,6 +109,7 @@ export function oversOf(innings: CricketInnings) {
 
 // Short label for a ball chip: "4", "W", "1wd", "nb", "2lb"…
 export function ballLabel(ball: CricketBall) {
+  if (ball.extraType === "penalty") return `${ball.extras}pen`;
   if (isWicket(ball)) return "W";
   if (ball.wicketType === "retired-hurt") return "RH";
   if (ball.wicketType === "retired") return "RT";
@@ -167,8 +203,8 @@ export function battingCard(innings: CricketInnings): BattingRow[] {
       playerId,
       runs: faced.reduce((sum, ball) => sum + ball.runs, 0),
       balls: faced.filter((ball) => ball.extraType !== "wide" && !ball.noDelivery).length,
-      fours: faced.filter((ball) => ball.runs === 4).length,
-      sixes: faced.filter((ball) => ball.runs === 6).length,
+      fours: faced.filter(isFour).length,
+      sixes: faced.filter(isSix).length,
       outBall: backIn ? null : lastOut,
     };
   });
@@ -186,9 +222,11 @@ export interface BowlingRow {
   noBalls: number;
 }
 
-export function bowlingCard(innings: CricketInnings): BowlingRow[] {
+export function bowlingCard(innings: CricketInnings, perOver = 6): BowlingRow[] {
   const rows = new Map<number, BowlingRow>();
   for (const ball of innings.balls) {
+    // Penalty runs are nobody's.
+    if (ball.extraType === "penalty") continue;
     const row = rows.get(ball.bowlerId) ?? {
       playerId: ball.bowlerId,
       legalBalls: 0,
@@ -207,14 +245,24 @@ export function bowlingCard(innings: CricketInnings): BowlingRow[] {
     if (ball.extraType === "no-ball") row.noBalls += 1;
     rows.set(ball.bowlerId, row);
   }
-  for (const over of oversOf(innings)) {
-    const complete = over.balls.filter(isLegal).length === 6;
-    if (complete && over.balls.every((ball) => conceded(ball) === 0)) rows.get(over.bowlerId)!.maidens += 1;
+  for (const over of oversOf(innings, perOver)) {
+    if (isMaiden(over, perOver)) rows.get(over.bowlerId)!.maidens += 1;
   }
   return [...rows.values()];
 }
 
-export function fallOfWickets(innings: CricketInnings) {
+// A full over with nothing conceded, bowled start to finish by one bowler
+// (an over finished by someone else is no one's maiden).
+function isMaiden(over: { bowlerId: number; balls: CricketBall[] }, perOver: number) {
+  const bowled = over.balls.filter((ball) => !ball.noDelivery);
+  return (
+    over.balls.filter(isLegal).length === perOver &&
+    bowled.every((ball) => ball.bowlerId === over.bowlerId) &&
+    over.balls.every((ball) => conceded(ball) === 0)
+  );
+}
+
+export function fallOfWickets(innings: CricketInnings, perOver = 6) {
   const result: { wicket: number; score: number; playerId: number; overs: string }[] = [];
   let runs = 0;
   let legal = 0;
@@ -222,21 +270,34 @@ export function fallOfWickets(innings: CricketInnings) {
     runs += ballTotal(ball);
     if (isLegal(ball)) legal += 1;
     if (isWicket(ball) && ball.dismissedId !== null) {
-      result.push({ wicket: result.length + 1, score: runs, playerId: ball.dismissedId, overs: oversText(legal) });
+      result.push({ wicket: result.length + 1, score: runs, playerId: ball.dismissedId, overs: oversText(legal, perOver) });
     }
   }
   return result;
 }
 
-// Live chase numbers for the second innings.
+// Live chase numbers for the second innings (a rain-revised target when
+// one is set).
 export function chaseInfo(match: CricketMatch) {
   if (match.innings.length < 2) return null;
-  const target = inningsSummary(match.innings[0]).runs + 1;
+  const perOver = ballsPerOverOf(match);
+  const target = match.revisedTarget ?? inningsSummary(match.innings[0]).runs + 1;
   const now = inningsSummary(match.innings[1]);
-  const ballsLeft = match.overs * 6 - now.legalBalls;
+  const ballsLeft = match.overs * perOver - now.legalBalls;
   const need = target - now.runs;
-  return { target, need, ballsLeft, requiredRate: rate(Math.max(need, 0), ballsLeft) };
+  return {
+    target,
+    revised: match.revisedTarget != null,
+    need,
+    ballsLeft,
+    requiredRate: rate(Math.max(need, 0), ballsLeft, perOver),
+  };
 }
+
+// A match that got under way: balls were bowled. A walkover, or a match
+// abandoned before the toss, isn't a game anyone played in.
+export const wasPlayed = (match: CricketMatch) =>
+  match.status !== "scheduled" && match.innings.some((innings) => innings.balls.length > 0);
 
 // ===== Aggregates across matches =====
 
@@ -320,7 +381,8 @@ export function playerStats(matches: CricketMatch[]): Map<number, PlayerStats> {
     return entry;
   };
   for (const match of matches) {
-    if (match.status === "scheduled") continue;
+    if (!wasPlayed(match)) continue;
+    const perOver = ballsPerOverOf(match);
     match.teams.forEach((team) => team.playerIds.forEach((playerId) => (of(playerId).matches += 1)));
     const potm = playerOfMatch(match);
     if (potm !== null) of(potm).playerOfMatch += 1;
@@ -351,7 +413,7 @@ export function playerStats(matches: CricketMatch[]): Map<number, PlayerStats> {
           entry.highestNotOut = notOut;
         }
       }
-      for (const row of bowlingCard(innings)) {
+      for (const row of bowlingCard(innings, perOver)) {
         const entry = of(row.playerId);
         entry.bowlingInnings += 1;
         entry.ballsBowled += row.legalBalls;
@@ -450,8 +512,8 @@ export function standings(teams: { teamIndex: number; name: string }[], matches:
     for (const innings of match.innings) {
       const summary = inningsSummary(innings);
       const batting = match.teams[innings.battingTeam];
-      const allOut = summary.wickets >= batting.playerIds.length - 1;
-      const balls = allOut ? match.overs * 6 : summary.legalBalls;
+      const allOut = summary.wickets >= wicketsToEnd(match, innings);
+      const balls = allOut ? match.overs * ballsPerOverOf(match) : summary.legalBalls;
       const bat = runFor.get(batting.teamIndex)!;
       const bowl = runFor.get(match.teams[1 - innings.battingTeam].teamIndex)!;
       bat.runs += summary.runs;
@@ -468,7 +530,18 @@ export function standings(teams: { teamIndex: number; name: string }[], matches:
     const againstRate = r.ballsAgainst ? (r.against * 6) / r.ballsAgainst : 0;
     row.nrr = forRate - againstRate;
   });
-  return result.sort((x, y) => y.points - x.points || y.nrr - x.nrr || y.won - x.won);
+  // Level on points, net run rate and wins: their results against each other.
+  const headToHead = (x: PointsRow, y: PointsRow) => {
+    let score = 0;
+    for (const match of matches) {
+      if (match.status !== "completed" || match.winner === null) continue;
+      const sides = match.teams.map((team) => team.teamIndex);
+      if (!sides.includes(x.teamIndex) || !sides.includes(y.teamIndex)) continue;
+      score += match.teams[match.winner].teamIndex === y.teamIndex ? 1 : -1;
+    }
+    return score;
+  };
+  return result.sort((x, y) => y.points - x.points || y.nrr - x.nrr || y.won - x.won || headToHead(x, y));
 }
 
 // Every team over the tournament's league / group matches.
@@ -541,8 +614,8 @@ export function teamStats(matches: CricketMatch[], teamIndex: number): TeamStats
         t.ballsFaced += summary.legalBalls;
         t.extrasReceived += summary.extras.total;
         for (const ball of innings.balls) {
-          if (ball.runs === 4) t.fours += 1;
-          if (ball.runs === 6) t.sixes += 1;
+          if (isFour(ball)) t.fours += 1;
+          if (isSix(ball)) t.sixes += 1;
           if (dot(ball)) t.dotsFaced += 1;
         }
         if (innings.closed) {
@@ -556,15 +629,15 @@ export function teamStats(matches: CricketMatch[], teamIndex: number): TeamStats
         t.wides += summary.extras.wides;
         t.noBalls += summary.extras.noBalls;
         for (const ball of innings.balls) {
-          if (ball.runs === 4) t.foursConceded += 1;
-          if (ball.runs === 6) t.sixesConceded += 1;
+          if (isFour(ball)) t.foursConceded += 1;
+          if (isSix(ball)) t.sixesConceded += 1;
           if (dot(ball)) t.dotsBowled += 1;
           if (isCatch(ball)) t.catches += 1;
           if (ball.wicketType === "run-out") t.runOuts += 1;
           if (ball.wicketType === "stumped") t.stumpings += 1;
         }
-        for (const over of oversOf(innings)) {
-          if (over.balls.filter(isLegal).length === 6 && over.balls.every((ball) => conceded(ball) === 0)) t.maidens += 1;
+        for (const over of oversOf(innings, ballsPerOverOf(match))) {
+          if (isMaiden(over, ballsPerOverOf(match))) t.maidens += 1;
         }
       }
     }
@@ -638,8 +711,8 @@ export function tournamentStats(matches: CricketMatch[]): TournamentStats {
       t.wides += summary.extras.wides;
       t.noBalls += summary.extras.noBalls;
       for (const ball of innings.balls) {
-        if (ball.runs === 4) t.fours += 1;
-        if (ball.runs === 6) t.sixes += 1;
+        if (isFour(ball)) t.fours += 1;
+        if (isSix(ball)) t.sixes += 1;
         if (isLegal(ball) && ballTotal(ball) === 0) t.dots += 1;
         if (ball.wicketType === "bowled") t.bowled += 1;
         if (isCatch(ball)) t.caught += 1;

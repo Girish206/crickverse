@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { CricketBall, CricketInnings, CricketMatch } from "../../../api/types";
+import { ballsPerOverOf, type CricketBall, type CricketInnings, type CricketMatch } from "../../../api/types";
 import {
   ballChipClass,
   ballLabel,
@@ -25,7 +25,11 @@ const pick = <T,>(seed: number, lines: T[]) => lines[seed % lines.length];
 // a new sentence, otherwise carrying on after a comma), from what
 // was recorded (runs, extras, how out, where it went). And how its row is
 // styled.
-function describe(ball: CricketBall, nameOf: NameOf, seed: number): { lead: string; line: string; kind: string } {
+function describe(ball: CricketBall, nameOf: NameOf, seed: number, team: string): { lead: string; line: string; kind: string } {
+  // Penalty runs are given between deliveries, to the batting side.
+  if (ball.extraType === "penalty") {
+    return { lead: plural(ball.extras, "penalty run"), line: `to ${team}`, kind: "extra" };
+  }
   const batter = nameOf(ball.batterId);
   const zone = ball.shotZone?.toLowerCase() ?? null;
   const fielder = ball.fielderId === null ? null : nameOf(ball.fielderId);
@@ -81,10 +85,16 @@ function describe(ball: CricketBall, nameOf: NameOf, seed: number): { lead: stri
   }
 
   const where = zone ? ` to ${zone}` : "";
+  // A four or six run all the way, not a boundary.
+  const allRun = (ball.runs === 4 || ball.runs === 6) && ball.boundary === false;
   let lead: string;
   let line: string;
   let kind: string;
-  if (ball.runs === 6) {
+  if (allRun) {
+    lead = `${ball.runs} runs (all run)`;
+    kind = "run";
+    line = pick(seed, [`placed${where} and they keep running`, `great running, ${ball.runs} without a boundary`]);
+  } else if (ball.runs === 6) {
     lead = "SIX!";
     kind = "six";
     line = zone
@@ -110,11 +120,20 @@ function describe(ball: CricketBall, nameOf: NameOf, seed: number): { lead: stri
           ? pick(seed, [`placed${where} and they come back for two`, `good running, two${where}`])
           : `played${where}, they run hard for three`;
   }
+  // Byes or leg byes run off a no-ball (nothing off the bat).
+  if (ball.extraType === "no-ball" && ball.byeType && ball.extras > 1) {
+    const ran = plural(ball.extras - 1, ball.byeType === "bye" ? "bye" : "leg bye");
+    return {
+      lead: `No ball + ${ran}`,
+      line: ball.byeType === "bye" ? "the ball beats the keeper and they run" : "off the pads and they scamper through",
+      kind: "no-ball",
+    };
+  }
   if (ball.extraType === "no-ball") {
     return {
       lead: "No ball!",
       line: ball.runs > 0 ? `And ${lead === "SIX!" ? "a six" : lead === "FOUR!" ? "a four" : lead} off the bat${where}` : "An extra run",
-      kind: ball.runs >= 4 ? kind : "no-ball",
+      kind: ball.runs >= 4 && !allRun ? kind : "no-ball",
     };
   }
   return { lead, line, kind };
@@ -129,7 +148,13 @@ type Note = ReactNode;
 // bowled (the next batter or bowler, just picked; or, before the first
 // ball, the openers and opening bowler). `opening` starts the innings (the
 // chase's target).
-function arrivals(innings: CricketInnings, nameOf: NameOf, live: boolean, opening: Note | null): { byBall: Note[][]; pending: Note[] } {
+function arrivals(
+  innings: CricketInnings,
+  nameOf: NameOf,
+  live: boolean,
+  opening: Note | null,
+  perOver: number,
+): { byBall: Note[][]; pending: Note[] } {
   const batted = new Set<number>();
   const bowled = new Set<number>();
   let crease: number[] = [];
@@ -144,13 +169,13 @@ function arrivals(innings: CricketInnings, nameOf: NameOf, live: boolean, openin
   const bowlerNote = (id: number, upTo: number): Note => {
     const wasIn = bowled.has(id);
     bowled.add(id);
-    if (legal % 6 !== 0) return <>{name(id)} takes over to finish the over</>;
+    if (legal % perOver !== 0) return <>{name(id)} takes over to finish the over</>;
     if (!wasIn) return <>{name(id)} comes into the attack</>;
-    const row = bowlingCard({ ...innings, balls: innings.balls.slice(0, upTo) }).find((r) => r.playerId === id);
+    const row = bowlingCard({ ...innings, balls: innings.balls.slice(0, upTo) }, perOver).find((r) => r.playerId === id);
     return (
       <>
         {name(id)} is back into the attack
-        {row && ` (${oversText(row.legalBalls).replace(/\.0$/, "")}-${row.maidens}-${row.runs}-${row.wickets})`}
+        {row && ` (${oversText(row.legalBalls, perOver).replace(/\.0$/, "")}-${row.maidens}-${row.runs}-${row.wickets})`}
       </>
     );
   };
@@ -270,7 +295,7 @@ export function Commentary({ match, nameOf, legalBalls = 9 }: { match: CricketMa
         {only && only !== current && <small> · {match.teams[only.battingTeam].name}&apos;s innings</small>}
       </h2>
       {blocks.map(({ innings, block }, i) => {
-        const summary = inningsSummary(innings);
+        const summary = inningsSummary(innings, ballsPerOverOf(match));
         return (
           <div key={innings.battingTeam} className="cricket-commentary-innings">
             {i > 0 && (
@@ -296,21 +321,24 @@ export function Commentary({ match, nameOf, legalBalls = 9 }: { match: CricketMa
 // `legalBalls` legal deliveries by over. Null when there's nothing to say.
 function inningsCommentary(match: CricketMatch, innings: CricketInnings, nameOf: NameOf, legalBalls: number, live: boolean) {
   const team = match.teams[innings.battingTeam].name;
-  // The chase opens with what it needs.
-  const target = innings === match.innings[1] ? inningsSummary(match.innings[0]).runs + 1 : null;
+  const perOver = ballsPerOverOf(match);
+  // The chase opens with what it needs (a rain-revised target if set).
+  const target =
+    innings === match.innings[1] ? (match.revisedTarget ?? inningsSummary(match.innings[0], perOver).runs + 1) : null;
   const opening =
     target === null ? null : (
       <>
-        <strong>{team}</strong> need <strong>{target}</strong> run{target === 1 ? "" : "s"} from {match.overs * 6} balls to win
+        <strong>{team}</strong> need <strong>{target}</strong> run{target === 1 ? "" : "s"} from {match.overs * perOver} balls to win
+        {match.revisedTarget != null && " (revised target)"}
       </>
     );
-  const notes = arrivals(innings, nameOf, live, opening);
+  const notes = arrivals(innings, nameOf, live, opening, perOver);
   if (innings.balls.length === 0 && notes.pending.length === 0) return null;
 
   // The score at the end of each over (so far, for the one in play), its
   // bowler's figures by then (overs-maidens-runs-wickets) and the batters
   // left at the crease, with their scores.
-  const all = oversOf(innings);
+  const all = oversOf(innings, perOver);
   let runs = 0;
   let wickets = 0;
   let ballsSoFar = 0;
@@ -322,7 +350,7 @@ function inningsCommentary(match: CricketMatch, innings: CricketInnings, nameOf:
   const afterOver = all.map((over) => {
     ballsSoFar += over.balls.length;
     const sofar = { ...innings, balls: innings.balls.slice(0, ballsSoFar) };
-    const row = bowlingCard(sofar).find((r) => r.playerId === over.bowlerId);
+    const row = bowlingCard(sofar, perOver).find((r) => r.playerId === over.bowlerId);
     const last = over.balls[over.balls.length - 1];
     const batting = battingCard(sofar);
     const batters = [...new Set([last.batterId, last.nonStrikerId])]
@@ -330,7 +358,7 @@ function inningsCommentary(match: CricketMatch, innings: CricketInnings, nameOf:
       .flatMap((id) => batting.filter((r) => r.playerId === id));
     return {
       // Whole overs as scorecards write them: "4", not "4.0".
-      spell: row ? `${oversText(row.legalBalls).replace(/\.0$/, "")}-${row.maidens}-${row.runs}-${row.wickets}` : null,
+      spell: row ? `${oversText(row.legalBalls, perOver).replace(/\.0$/, "")}-${row.maidens}-${row.runs}-${row.wickets}` : null,
       batters,
     };
   });
@@ -362,12 +390,12 @@ function inningsCommentary(match: CricketMatch, innings: CricketInnings, nameOf:
         const start = startOf[all.indexOf(over)];
         const numbered = over.balls
           .map((ball, i) => {
-            const number = Math.min(legal + 1, 6);
+            const number = Math.min(legal + 1, perOver);
             if (isLegal(ball)) legal += 1;
             return { ball, number: `${over.number}.${number}`, at: start + i };
           })
           .filter(({ at }) => at >= from);
-        const complete = legal >= 6;
+        const complete = legal >= perOver;
         return (
           <div key={over.number} className="cricket-commentary-over">
             <header className="cricket-commentary-head">
@@ -412,7 +440,7 @@ function inningsCommentary(match: CricketMatch, innings: CricketInnings, nameOf:
             </header>
             <ol className="cricket-commentary-balls">
               {numbered.reverse().flatMap(({ ball, number, at }, i) => {
-                const { lead, line, kind } = describe(ball, nameOf, over.number * 7 + i);
+                const { lead, line, kind } = describe(ball, nameOf, over.number * 7 + i, team);
                 return [
                   <li key={at} className={`is-${kind}`}>
                     <div className="cricket-commentary-ball">
@@ -420,9 +448,18 @@ function inningsCommentary(match: CricketMatch, innings: CricketInnings, nameOf:
                       <span className="cricket-commentary-no">{number}</span>
                     </div>
                     <p className="cricket-commentary-text">
-                      {nameOf(ball.bowlerId)} to {nameOf(ball.batterId)}, <strong>{lead}</strong>
-                      {lead.endsWith("!") ? " " : ", "}
-                      {line}
+                      {/* Penalty runs aren't off a delivery: no "bowler to batter". */}
+                      {ball.extraType === "penalty" ? (
+                        <>
+                          <strong>{lead}</strong> {line}
+                        </>
+                      ) : (
+                        <>
+                          {nameOf(ball.bowlerId)} to {nameOf(ball.batterId)}, <strong>{lead}</strong>
+                          {lead.endsWith("!") ? " " : ", "}
+                          {line}
+                        </>
+                      )}
                     </p>
                   </li>,
                   ...noteRows(notes.byBall[at], `n${at}`),

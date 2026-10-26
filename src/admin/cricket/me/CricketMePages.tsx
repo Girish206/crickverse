@@ -1,4 +1,4 @@
-import { useState, type ReactElement, type ReactNode } from "react";
+import { useState, type CSSProperties, type ReactElement, type ReactNode } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useMyFollows } from "../../../api/hooks/cricket/useCricketFollows";
 import { useCricketMe } from "../../../api/hooks/cricket/useCricketPlayers";
@@ -6,7 +6,6 @@ import { useCricketTournaments } from "../../../api/hooks/cricket/useCricketTour
 import type { CricketMatch, CricketMe, CricketTournament } from "../../../api/types";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { ListCard } from "../../components/ListCard";
-import { CricketKpis } from "../CricketKpis";
 import { PillSelect } from "../PillSelect";
 import { useTips, type TipStep } from "../TipsTour";
 import { MatchesBoard } from "../matches/CricketMatchesList";
@@ -302,7 +301,7 @@ function HomeFeed({ me }: { me: CricketMe }) {
     .sort((a, b) => playedAt(b) - playedAt(a))[0];
   // The latest two (by start date) of my ongoing or upcoming tournaments.
   const runningTournaments = me.tournaments
-    .filter((t) => ["ongoing", "upcoming"].includes(tournamentPhase(t)))
+    .filter((t) => ["ongoing", "upcoming"].includes(tournamentPhase(t, [...mine, ...following])))
     .sort((a, b) => (b.startDate ?? b.createdAt).localeCompare(a.startDate ?? a.createdAt))
     .slice(0, 2);
 
@@ -347,6 +346,7 @@ function HomeFeed({ me }: { me: CricketMe }) {
                 key={t.id}
                 tournament={t}
                 matchCount={me.matches.filter((m) => m.tournamentId === t.id).length}
+                matches={[...mine, ...following]}
                 footnote={<TeamFootnote teamName={t.teams.find((team) => team.playerIds.includes(playerId))?.name ?? null} />}
               />
             ))}
@@ -424,6 +424,70 @@ function followingMatches(me: CricketMe) {
   return [...byId.values()].sort((a, b) => when(b).localeCompare(when(a)));
 }
 
+// My Matches' banner, in the Home hero's colours: the win rate as a ring and
+// four small tiles (won, lost, tied, Player of the Match) on one row, then
+// the last five results (newest first) in a small line below. The match
+// count is on the All tab just under it.
+type FormResult = "W" | "L" | "T";
+function RecordHero({
+  played,
+  won,
+  lost,
+  potm,
+  form,
+}: {
+  played: number;
+  won: number;
+  lost: number;
+  potm: number;
+  form: FormResult[];
+}) {
+  const winRate = played > 0 ? Math.round((won / played) * 100) : null;
+  const tiles = [
+    { label: "Won", title: "Won", value: won },
+    { label: "Lost", title: "Lost", value: lost },
+    { label: "Tied", title: "Tied or no result", value: played - won - lost },
+    { label: "POTM", title: "Player of the Match", value: potm },
+  ];
+  return (
+    <section className="cricket-home-hero cricket-record-hero">
+      <div className="cricket-record-top">
+        <span
+          className="cricket-record-ring"
+          style={{ "--win": `${winRate ?? 0}%` } as CSSProperties}
+          role="img"
+          aria-label={winRate === null ? "No completed matches yet" : `Won ${winRate}% of completed matches`}
+        >
+          <strong>{winRate === null ? "–" : `${winRate}%`}</strong>
+          <small>won</small>
+        </span>
+        <div className="cricket-record-tiles">
+          {tiles.map((tile) => (
+            <div key={tile.label} title={tile.title}>
+              <strong>{tile.value}</strong>
+              <small>{tile.label}</small>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="cricket-record-form-line">
+        <small>Recent form</small>
+        {form.length === 0 ? (
+          <span className="cricket-record-empty">No results yet</span>
+        ) : (
+          <span className="cricket-record-form" aria-label={`Last ${form.length} results, newest first: ${form.join(" ")}`}>
+            {form.map((result, i) => (
+              <span key={i} className={`cricket-record-form-chip is-${result}`} aria-hidden="true">
+                {result}
+              </span>
+            ))}
+          </span>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export function MyCricketMatches() {
   const [show, setShow] = useState<Show>("mine");
   const { me, fallback } = useMyCricket(TITLES.matches);
@@ -457,17 +521,19 @@ export function MyCricketMatches() {
       {show === "mine" ? (
         <>
           {/* Your own record, so only on the Playing side. */}
-          <CricketKpis
-            items={[
-              { label: "Matches", value: me.matches.length, icon: "fa-calendar-days", tone: "total" },
-              { label: "Won", value: won, icon: "fa-trophy", tone: "active" },
-              { label: "Lost / tied", value: played.length - won, icon: "fa-scale-balanced", tone: "login" },
-              { label: "Player of the match", value: potm, icon: "fa-medal", tone: "guest" },
-            ]}
+          <RecordHero
+            played={played.length}
+            won={won}
+            lost={played.filter((m) => m.winner !== null && !m.teams[m.winner].playerIds.includes(playerId)).length}
+            potm={potm}
+            form={[...played]
+              .sort((a, b) => playedAt(b) - playedAt(a))
+              .slice(0, 5)
+              .map((m): FormResult => (m.winner === null ? "T" : m.teams[m.winner].playerIds.includes(playerId) ? "W" : "L"))}
           />
           <MatchesBoard
             key="mine"
-            panel
+            counts
             matches={me.matches}
             tournamentNames={tournamentNames}
             footnote={(match) => {
@@ -477,11 +543,11 @@ export function MyCricketMatches() {
           />
         </>
       ) : show === "organising" ? (
-        <MatchesBoard key="organising" panel matches={organisingMatches(me)} tournamentNames={tournamentNames} />
+        <MatchesBoard key="organising" counts matches={organisingMatches(me)} tournamentNames={tournamentNames} />
       ) : me.followedTournaments.length === 0 && followedIds.length === 0 ? (
         nothingFollowed("tournaments, teams or players")
       ) : (
-        <MatchesBoard key="following" panel matches={following} tournamentNames={tournamentNames} footnote={footnote} />
+        <MatchesBoard key="following" counts matches={following} tournamentNames={tournamentNames} footnote={footnote} />
       )}
     </ListCard>
   );
@@ -500,6 +566,7 @@ export function MyCricketTournaments() {
       key={tournament.id}
       tournament={tournament}
       matchCount={allMatches.filter((m) => m.tournamentId === tournament.id).length}
+      matches={allMatches}
       footnote={footnote(tournament)}
     />
   );
@@ -520,6 +587,7 @@ export function MyCricketTournaments() {
       {show === "mine" ? (
         <TournamentsBoard
           key="mine"
+          matches={allMatches}
           tournaments={me.tournaments}
           empty="You haven't been picked for a tournament yet."
           renderCard={card((tournament) => {
@@ -530,6 +598,7 @@ export function MyCricketTournaments() {
       ) : show === "organising" ? (
         <TournamentsBoard
           key="organising"
+          matches={allMatches}
           tournaments={organisingTournaments(me)}
           empty="You haven't created or been made a scorer of a tournament yet."
           renderCard={card(() => null)}
@@ -537,7 +606,13 @@ export function MyCricketTournaments() {
       ) : me.followedTournaments.length === 0 ? (
         nothingFollowed("tournaments")
       ) : (
-        <TournamentsBoard key="following" tournaments={me.followedTournaments} empty={null} renderCard={card(() => null)} />
+        <TournamentsBoard
+          key="following"
+          matches={allMatches}
+          tournaments={me.followedTournaments}
+          empty={null}
+          renderCard={card(() => null)}
+        />
       )}
     </ListCard>
   );
@@ -635,10 +710,74 @@ function myTeams(me: CricketMe, playerId: number, tournamentsById: Map<number, C
   return [...all.filter((t) => t.tournamentName !== null), ...all.filter((t) => t.tournamentName === null)];
 }
 
-function TeamCard({ team, playerId }: { team: MyTeam; playerId: number }) {
+// The other side in every match I played, once each by teamKeyOf, newest
+// first — with those matches, for my head-to-head against them.
+function opponentTeams(me: CricketMe, playerId: number, tournamentsById: Map<number, CricketTournament>, mine: Set<string>) {
+  const teams = new Map<string, MyTeam>();
+  const when = (m: CricketMatch) => m.scheduledAt ?? m.createdAt;
+  for (const match of [...me.matches].sort((a, b) => when(b).localeCompare(when(a)))) {
+    const slot = match.teams.findIndex((team) => team.playerIds.includes(playerId));
+    if (slot === -1) continue;
+    const key = teamKeyOf(match, 1 - slot);
+    if (mine.has(key)) continue;
+    let team = teams.get(key);
+    if (!team) {
+      const side = match.teams[1 - slot];
+      const tournament = match.tournamentId === null ? undefined : tournamentsById.get(match.tournamentId);
+      team = {
+        key,
+        name: side.name,
+        tournamentName: match.tournamentId === null ? null : (tournament?.name ?? "Tournament"),
+        role: "Opponent",
+        playerCount: tournament?.teams[side.teamIndex]?.playerIds.length ?? side.playerIds.length,
+        matches: [],
+        link:
+          match.tournamentId === null
+            ? `/teams/friendly/${encodeURIComponent(side.name.trim())}`
+            : `/tournaments/${match.tournamentId}/teams/${side.teamIndex}`,
+      };
+      teams.set(key, team);
+    }
+    team.matches.push(match);
+  }
+  return [...teams.values()];
+}
+
+// The tournament teams I follow, with their matches (from the tournaments
+// and teams I follow, and the ones I play in).
+function followedTeams(
+  me: CricketMe,
+  follows: { kind: string; targetId: number; teamIndex: number | null }[],
+  tournamentsById: Map<number, CricketTournament>,
+) {
+  const pool = [...new Map([...me.followedMatches, ...me.matches].map((m) => [m.id, m])).values()];
+  return follows.flatMap((follow): MyTeam[] => {
+    if (follow.kind !== "team" || follow.teamIndex === null) return [];
+    const tournament = tournamentsById.get(follow.targetId);
+    const team = tournament?.teams[follow.teamIndex];
+    if (!tournament || !team) return [];
+    return [
+      {
+        key: `t:${tournament.id}:${follow.teamIndex}`,
+        name: team.name,
+        tournamentName: tournament.name,
+        role: "Following",
+        playerCount: team.playerIds.length,
+        matches: pool.filter((m) => m.tournamentId === tournament.id && m.teams.some((t) => t.teamIndex === follow.teamIndex)),
+        link: `/tournaments/${tournament.id}/teams/${follow.teamIndex}`,
+      },
+    ];
+  });
+}
+
+// A team's card. Its record counts the completed matches this team won (by
+// teamKeyOf); an opponent's shows my head-to-head against it instead.
+function TeamCard({ team }: { team: MyTeam }) {
   const navigate = useNavigate();
   const played = team.matches.filter((m) => m.status === "completed");
-  const won = played.filter((m) => m.winner !== null && m.teams[m.winner].playerIds.includes(playerId)).length;
+  const won = played.filter((m) => m.winner !== null && teamKeyOf(m, m.winner) === team.key).length;
+  const lost = played.filter((m) => m.winner !== null && teamKeyOf(m, m.winner) !== team.key).length;
+  const opponent = team.role === "Opponent";
   // Back on the team / match page returns here.
   const open = () => team.link && navigate(team.link, { state: { from: "/my-teams" } });
   return (
@@ -659,44 +798,67 @@ function TeamCard({ team, playerId }: { team: MyTeam; playerId: number }) {
         </span>
       </div>
       <div className="cricket-chip-row">
-        <span className={`cricket-status ${team.role === "Player" ? "" : "is-ready"}`}>{team.role}</span>
+        <span className={`cricket-status ${["Player", "Opponent", "Following"].includes(team.role) ? "" : "is-ready"}`}>
+          {team.role}
+        </span>
         <span className="cricket-chip">
           <i className="fa-solid fa-users" aria-hidden="true"></i> {team.playerCount}
         </span>
         <span className="cricket-chip">
           <i className="fa-solid fa-calendar-days" aria-hidden="true"></i> {team.matches.length} matches
         </span>
-        {played.length > 0 && (
-          <span className="cricket-chip">
-            <i className="fa-solid fa-trophy" aria-hidden="true"></i> {won}/{played.length} won
-          </span>
-        )}
+        {played.length > 0 &&
+          (opponent ? (
+            <span className="cricket-chip" title="Your wins – their wins">
+              <i className="fa-solid fa-scale-balanced" aria-hidden="true"></i> You {lost}–{won}
+            </span>
+          ) : (
+            <span className="cricket-chip">
+              <i className="fa-solid fa-trophy" aria-hidden="true"></i> {won}/{played.length} won
+            </span>
+          ))}
       </div>
     </div>
   );
 }
 
-type TeamFilter = "all" | "tournament" | "friendly";
+type TeamFilter = "mine" | "opponents" | "following";
 
 const TEAM_FILTERS: { value: TeamFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "tournament", label: "Tournament" },
-  { value: "friendly", label: "Friendly" },
+  { value: "mine", label: "My Teams" },
+  { value: "opponents", label: "Opponents" },
+  { value: "following", label: "Following" },
 ];
 
+const NO_TEAMS: Record<TeamFilter, ReactNode> = {
+  mine: "You're not on a team yet — create one with Create Team.",
+  opponents: "Teams you play against show here.",
+  following: (
+    <>
+      You don't follow any teams yet — follow one from its ⚙ menu, or <Link to="/following">find some to follow</Link>.
+    </>
+  ),
+};
+
 export function MyCricketTeams() {
-  const [filter, setFilter] = useState<TeamFilter>("all");
+  const [filter, setFilter] = useState<TeamFilter>("mine");
   const [creating, setCreating] = useState(false);
   const { me, fallback } = useMyCricket(TITLES.teams);
   const { data: tournaments } = useCricketTournaments();
+  const { data: follows } = useMyFollows();
   if (!me) return fallback;
   const playerId = me.player!.id;
   // Tournaments I played a match in without being on its roster may only be in the full list.
   const tournamentsById = new Map(
     [...(tournaments ?? []), ...me.followedTournaments, ...organisingTournaments(me), ...me.tournaments].map((t) => [t.id, t]),
   );
-  const teams = myTeams(me, playerId, tournamentsById);
-  const visible = teams.filter((team) => filter === "all" || (filter === "tournament") === (team.tournamentName !== null));
+  const mine = myTeams(me, playerId, tournamentsById);
+  const lists: Record<TeamFilter, MyTeam[]> = {
+    mine,
+    opponents: opponentTeams(me, playerId, tournamentsById, new Set(mine.map((team) => team.key))),
+    following: followedTeams(me, follows?.follows ?? [], tournamentsById),
+  };
+  const visible = lists[filter];
   return (
     <ListCard
       {...TITLES.teams}
@@ -713,7 +875,7 @@ export function MyCricketTeams() {
         </BottomSheet>
       )}
       <div className="cricket-squad-toolbar">
-        <div className="admin-segmented cricket-tabs cricket-text-tabs" role="tablist" aria-label="Team kind">
+        <div className="admin-segmented cricket-tabs cricket-text-tabs" role="tablist" aria-label="Teams">
           {TEAM_FILTERS.map((f) => (
             <button
               key={f.value}
@@ -724,18 +886,17 @@ export function MyCricketTeams() {
               onClick={() => setFilter(f.value)}
             >
               {f.label}
+              <span className="cricket-tab-count">{lists[f.value].length}</span>
             </button>
           ))}
         </div>
       </div>
       {visible.length === 0 ? (
-        <div className="admin-empty-state">
-          {teams.length === 0 ? "You're not on a team yet — create one with Create Team." : "No teams here."}
-        </div>
+        <div className="admin-empty-state">{NO_TEAMS[filter]}</div>
       ) : (
         <div className="admin-card-grid">
           {visible.map((team) => (
-            <TeamCard key={team.key} team={team} playerId={playerId} />
+            <TeamCard key={team.key} team={team} />
           ))}
         </div>
       )}

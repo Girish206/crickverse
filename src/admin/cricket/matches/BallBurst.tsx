@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import type { CricketBall, CricketMatch } from "../../../api/types";
-import { battingCard, dismissalText, isWicket, type NameOf } from "../stats";
+import { battingCard, dismissalText, isFour, isSix, isWicket, type NameOf } from "../stats";
 import { playBurstSound } from "./burstSounds";
 
 type Kind = "four" | "six" | "out";
@@ -34,9 +35,13 @@ function outLabel(ball: CricketBall) {
 // (bowled), the word, and who. Out for nought, a duck walks in.
 // Only for a ball just added (scored here, or arriving on the live view),
 // not on load or after an undo. Animated with SMIL, so each one plays from
-// the start as it's mounted.
+// the start as it's mounted. Mounted once on the match page (so the last
+// ball of the match still plays as the page turns to the result) and drawn
+// over everything, above the next-bowler / next-batter sheets.
 export function BallBurst({ match, nameOf }: { match: CricketMatch; nameOf: NameOf }) {
-  const innings = match.innings[match.innings.length - 1];
+  // The innings the newest ball is in: after an innings' last ball the next
+  // one has started empty, so it's the latest one with balls.
+  const innings = match.innings.findLast((inn) => inn.balls.length > 0);
   const count = match.innings.reduce((n, inn) => n + inn.balls.length, 0);
   const seen = useRef(count);
   const [burst, setBurst] = useState<Burst | null>(null);
@@ -45,8 +50,9 @@ export function BallBurst({ match, nameOf }: { match: CricketMatch; nameOf: Name
     const added = count > seen.current;
     seen.current = count;
     const ball = innings?.balls.at(-1);
-    if (!added || !ball) return;
-    const kind: Kind | null = isWicket(ball) ? "out" : ball.runs === 6 ? "six" : ball.runs === 4 ? "four" : null;
+    if (!added || !innings || !ball) return;
+    // An all-run four or six is no boundary: no burst.
+    const kind: Kind | null = isWicket(ball) ? "out" : isSix(ball) ? "six" : isFour(ball) ? "four" : null;
     if (!kind) return;
     const who = kind === "out" ? ball.dismissedId : ball.batterId;
     const row = battingCard(innings).find((r) => r.playerId === who);
@@ -65,7 +71,7 @@ export function BallBurst({ match, nameOf }: { match: CricketMatch; nameOf: Name
 
   if (!burst) return null;
   const { kind, ball, duck } = burst;
-  return (
+  return createPortal(
     <div
       key={burst.key}
       className={`cricket-burst is-${kind}`}
@@ -91,7 +97,8 @@ export function BallBurst({ match, nameOf }: { match: CricketMatch; nameOf: Name
         <span className="cricket-burst-who">{burst.line}</span>
         {duck && <Duck golden={duck === "golden"} />}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

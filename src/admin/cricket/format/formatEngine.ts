@@ -96,11 +96,15 @@ export function groupTableMatches(
 }
 
 // Every match of the group played (or washed out), so its places are final.
+// A group's fixtures are all made at once (with the format, or when its
+// phase starts), so it's done once every match it still has is finished —
+// counting what's there rather than what was planned, so a group whose
+// organiser deleted a match can still finish and the playoffs start.
 export function isGroupDone(phase: CricketPhase, group: CricketPhaseGroup, matches: CricketMatch[]) {
   if (group.teamIndexes.length < 2) return false;
   const own = groupMatches(phase, group, matches);
   if (phase.kind === "series") return seriesScore(phase, group, matches).decided;
-  return own.length >= expectedMatches(phase, group) && own.every(isFinished);
+  return own.length > 0 && own.every(isFinished);
 }
 
 export interface SeriesScore {
@@ -139,7 +143,9 @@ function rankGroup(format: CricketFormat, source: Extract<CricketTeamSource, { f
 }
 
 // Works out who a source is, once it's settled: a group place when the
-// group is done, a winner / loser when the match has a result. A tied
+// group is done, a winner / loser when the match has a result — any
+// completed match with a winner, played out or entered by hand (walkover,
+// super over, DLS...: resultMethod and innings don't matter). A tied
 // knockout (no winner) waits for the organiser to replay or decide it.
 export function makeResolver(tournament: CricketTournament, format: CricketFormat, matches: CricketMatch[]) {
   const tables = new Map<string, PointsRow[] | null>();

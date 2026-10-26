@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  type CricketTournamentInput,
   useCreateCricketTournament,
   useCricketTournaments,
   useSetCricketTournamentImages,
@@ -20,6 +21,7 @@ import InputComp from "../../dms/components/InputComp";
 import { useCricketPlaces } from "../../../api/hooks/cricket/useCricketMatches";
 import { useSuggestions } from "../useSuggestions";
 import { BallTypeChoice, ChipChoice } from "../CricketChoices";
+import { SwitchRow } from "../SwitchRow";
 import { CATEGORIES, MATCH_TYPES, PITCH_TYPES } from "../cricketOptions";
 import {
   compressImage,
@@ -37,7 +39,7 @@ const today = () => {
   return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 };
 
-type Errors = Partial<Record<"name" | "city" | "ground" | "organiserName" | "organiserMobile" | "organiserEmail" | "startDate" | "endDate" | "category" | "ballType" | "matchType" | "overs" | "image", string>>;
+type Errors = Partial<Record<"name" | "city" | "ground" | "organiserName" | "organiserMobile" | "organiserEmail" | "startDate" | "endDate" | "category" | "ballType" | "matchType" | "overs" | "bowlerOverLimit" | "image", string>>;
 
 // A picked image: a new file (with a preview URL), the current one, or none.
 function useImagePick(current: string | null | undefined) {
@@ -48,6 +50,30 @@ function useImagePick(current: string | null | undefined) {
   }, [preview]);
   const shown = file === undefined ? (current ?? null) : preview;
   return { file, setFile, shown };
+}
+
+// The tournament's current details as an update input: the update is a
+// full PUT, so a one-field change (finished, public) sends the rest as is.
+export function tournamentInputOf(t: CricketTournament): CricketTournamentInput {
+  return {
+    name: t.name,
+    city: t.city,
+    ground: t.ground,
+    organiserName: t.organiserName,
+    organiserMobile: t.organiserMobile,
+    organiserEmail: t.organiserEmail,
+    startDate: t.startDate,
+    endDate: t.endDate,
+    category: t.category,
+    ballType: t.ballType,
+    pitchType: t.pitchType,
+    matchType: t.matchType,
+    overs: t.overs,
+    ballsPerOver: t.ballsPerOver ?? null,
+    bowlerOverLimit: t.bowlerOverLimit ?? null,
+    lastManStands: t.lastManStands ?? null,
+    freeHit: t.freeHit ?? null,
+  };
 }
 
 export interface CricketTournamentFormProps {
@@ -80,6 +106,12 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
   const [pitchType, setPitchType] = useState<CricketPitchType | null>(start?.pitchType ?? null);
   const [matchType, setMatchType] = useState<CricketMatchType | null>(start?.matchType ?? "limited-overs");
   const [overs, setOvers] = useState(start?.overs ? String(start.overs) : "6");
+  // Playing conditions every match starts with. The Hundred bowls 5-ball
+  // overs; a free hit is on unless turned off.
+  const [ballsPerOver, setBallsPerOver] = useState(start?.ballsPerOver ?? (start?.matchType === "hundred" ? 5 : 6));
+  const [bowlerLimit, setBowlerLimit] = useState(start?.bowlerOverLimit ? String(start.bowlerOverLimit) : "");
+  const [lastManStands, setLastManStands] = useState(Boolean(start?.lastManStands));
+  const [freeHit, setFreeHit] = useState(start?.freeHit !== false);
   const logo = useImagePick(existing?.logoUrl);
   const banner = useImagePick(existing?.bannerUrl);
   const [errors, setErrors] = useState<Errors>({});
@@ -100,6 +132,10 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
       if (!pitchType) setPitchType(previous.pitchType);
       if (previous.matchType) setMatchType(previous.matchType);
       if (previous.overs) setOvers(String(previous.overs));
+      if (previous.ballsPerOver) setBallsPerOver(previous.ballsPerOver);
+      if (previous.bowlerOverLimit) setBowlerLimit(String(previous.bowlerOverLimit));
+      setLastManStands(Boolean(previous.lastManStands));
+      setFreeHit(previous.freeHit !== false);
     }
   }
 
@@ -142,7 +178,12 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
     if (!ballType) found.ballType = "Choose a ball type";
     if (!matchType) found.matchType = "Choose a match type";
     const oversNumber = Number(overs);
-    if (!Number.isInteger(oversNumber) || oversNumber < 1 || oversNumber > 50) found.overs = "1 to 50";
+    if (!Number.isInteger(oversNumber) || oversNumber < 1 || oversNumber > 100) found.overs = "1 to 100";
+    if (bowlerLimit) {
+      const limit = Number(bowlerLimit);
+      if (!Number.isInteger(limit) || limit < 1 || limit > 50) found.bowlerOverLimit = "1 to 50, or leave blank";
+      else if (Number.isInteger(oversNumber) && limit > oversNumber) found.bowlerOverLimit = "Can't be more than the overs";
+    }
     return found;
   }
 
@@ -165,6 +206,10 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
       pitchType,
       matchType,
       overs: Number(overs),
+      ballsPerOver,
+      bowlerOverLimit: bowlerLimit ? Number(bowlerLimit) : null,
+      lastManStands,
+      freeHit,
     };
     const saved = existing
       ? await updateTournament.mutateAsync({ id: existing.id, ...input })
@@ -239,121 +284,259 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
       </div>
       {errors.image && <div className="admin-banner admin-banner-error mt-2">{errors.image}</div>}
 
-      <InputComp label="Tournament / series name" required value={name} error={errors.name} maxLength={150} onChange={text(setName, "name")} />
-      <div className="cricket-form-row">
-        <InputComp
-          label="City"
-          required
-          value={city}
-          error={errors.city}
-          maxLength={100}
-          {...citySuggest.inputProps}
-          onChange={text(setCity, "city")}
-        />
-        {citySuggest.menu}
-        <InputComp
-          label="Ground"
-          required
-          value={ground}
-          error={errors.ground}
-          maxLength={150}
-          {...groundSuggest.inputProps}
-          onChange={text(setGround, "ground")}
-        />
-        {groundSuggest.menu}
-      </div>
-      <div className="cricket-form-row">
-        <InputComp
-          label="Organiser name"
-          required
-          value={organiserName}
-          error={errors.organiserName}
-          maxLength={100}
-          onChange={text(setOrganiserName, "organiserName")}
-        />
-        <InputComp
-          label="Organiser number"
-          required
-          type="tel"
-          inputMode="tel"
-          value={organiserMobile}
-          error={errors.organiserMobile}
-          maxLength={20}
-          onChange={text(setOrganiserMobile, "organiserMobile")}
-        />
-      </div>
-      <InputComp
-        label="Organiser email"
-        type="email"
-        value={organiserEmail}
-        error={errors.organiserEmail}
-        maxLength={150}
-        onChange={text(setOrganiserEmail, "organiserEmail")}
-      />
+      {/* Laid out like the match form: titled groups, evenly spaced; the
+          text fields keep their floating-label inputs. */}
+      <div className="cricket-app-form cricket-tour-form">
+        <h2 className="cricket-app-group-title">Tournament</h2>
+        <div className="cricket-tour-fields">
+          <InputComp label="Tournament / series name" required value={name} error={errors.name} maxLength={150} onChange={text(setName, "name")} />
+          <div className="cricket-form-row">
+            <InputComp
+              label="City"
+              required
+              value={city}
+              error={errors.city}
+              maxLength={100}
+              {...citySuggest.inputProps}
+              onChange={text(setCity, "city")}
+            />
+            {citySuggest.menu}
+            <InputComp
+              label="Ground"
+              required
+              value={ground}
+              error={errors.ground}
+              maxLength={150}
+              {...groundSuggest.inputProps}
+              onChange={text(setGround, "ground")}
+            />
+            {groundSuggest.menu}
+          </div>
+        </div>
 
-      <h3 className="cricket-form-section">Tournament dates</h3>
-      <div className="cricket-form-row">
-        <InputComp label="Start date" type="date" required value={startDate} error={errors.startDate} onChange={text(setStartDate, "startDate")} />
-        <InputComp
-          label="End date"
-          type="date"
-          min={startDate || undefined}
-          value={endDate}
-          error={errors.endDate}
-          onChange={text(setEndDate, "endDate")}
-        />
-      </div>
-      <small className="admin-hint d-block mb-2">
-        Leave the end date empty if it isn't fixed yet. The same start and end date makes it a one-day tournament.
-      </small>
+        <h2 className="cricket-app-group-title">Organiser</h2>
+        <div className="cricket-tour-fields">
+          <div className="cricket-form-row">
+            <InputComp
+              label="Organiser name"
+              required
+              value={organiserName}
+              error={errors.organiserName}
+              maxLength={100}
+              onChange={text(setOrganiserName, "organiserName")}
+            />
+            <InputComp
+              label="Organiser number"
+              required
+              type="tel"
+              inputMode="tel"
+              value={organiserMobile}
+              error={errors.organiserMobile}
+              maxLength={20}
+              onChange={text(setOrganiserMobile, "organiserMobile")}
+            />
+          </div>
+          <InputComp
+            label="Organiser email"
+            type="email"
+            value={organiserEmail}
+            error={errors.organiserEmail}
+            maxLength={150}
+            onChange={text(setOrganiserEmail, "organiserEmail")}
+          />
+        </div>
 
-      <ChipChoice
-        label="Tournament category"
-        required
-        options={CATEGORIES}
-        value={category}
-        error={errors.category}
-        onChange={(value) => {
-          setCategory(value);
-          clear("category");
-        }}
-      />
-      <BallTypeChoice
-        required
-        value={ballType}
-        error={errors.ballType}
-        onChange={(value) => {
-          setBallType(value);
-          clear("ballType");
-        }}
-      />
-      <ChipChoice label="Pitch type" options={PITCH_TYPES} value={pitchType} onChange={setPitchType} />
-      <ChipChoice
-        label="Match type"
-        required
-        options={MATCH_TYPES}
-        value={matchType}
-        error={errors.matchType}
-        onChange={(value) => {
-          setMatchType(value);
-          clear("matchType");
-        }}
-      />
-      <div className="cricket-form-row">
-        <InputComp
-          label="Overs per innings"
-          type="number"
-          min={1}
-          max={50}
-          required
-          value={overs}
-          error={errors.overs}
-          onChange={text(setOvers, "overs")}
-        />
+        {/* Rows like a match's date & time. */}
+        <h2 className="cricket-app-group-title">Tournament dates</h2>
+        <div className="cricket-app-group">
+          <label className="cricket-app-row">
+            <span className="cricket-app-row-label">
+              <i className="fa-regular fa-calendar" aria-hidden="true"></i> Start date
+            </span>
+            <input type="date" required value={startDate} onChange={text(setStartDate, "startDate")} />
+          </label>
+          {errors.startDate && (
+            <div className="cricket-app-row is-hint">
+              <small className="text-danger">{errors.startDate}</small>
+            </div>
+          )}
+          <label className="cricket-app-row">
+            <span className="cricket-app-row-label">
+              <i className="fa-regular fa-calendar-check" aria-hidden="true"></i> End date
+            </span>
+            <input type="date" min={startDate || undefined} value={endDate} onChange={text(setEndDate, "endDate")} />
+          </label>
+          {errors.endDate && (
+            <div className="cricket-app-row is-hint">
+              <small className="text-danger">{errors.endDate}</small>
+            </div>
+          )}
+          <div className="cricket-app-row is-hint">
+            <small className="admin-hint">
+              Leave the end date empty if it isn't fixed yet. The same start and end date makes it a one-day tournament.
+            </small>
+          </div>
+        </div>
+
+        {/* Chips in a padded group, as on the match form. */}
+        <h2 className="cricket-app-group-title">Tournament type</h2>
+        <div className="cricket-app-group is-padded">
+          <ChipChoice
+            label="Tournament category"
+            required
+            options={CATEGORIES}
+            value={category}
+            error={errors.category}
+            onChange={(value) => {
+              setCategory(value);
+              clear("category");
+            }}
+          />
+          <BallTypeChoice
+            required
+            value={ballType}
+            error={errors.ballType}
+            onChange={(value) => {
+              setBallType(value);
+              clear("ballType");
+            }}
+          />
+          <ChipChoice label="Pitch type" options={PITCH_TYPES} value={pitchType} onChange={setPitchType} />
+          <ChipChoice
+            label="Match type"
+            required
+            options={MATCH_TYPES}
+            value={matchType}
+            error={errors.matchType}
+            onChange={(value) => {
+              setMatchType(value);
+              clear("matchType");
+              // The Hundred's sets are 5 balls; moving off it goes back to 6.
+              if (value === "hundred") setBallsPerOver(5);
+              else if (matchType === "hundred" && ballsPerOver === 5) setBallsPerOver(6);
+            }}
+          />
+        </div>
+
+        {/* The same rows as a match's overs and playing conditions, which they
+            fill in. */}
+        <h2 className="cricket-app-group-title">Playing conditions</h2>
+        <div className="cricket-app-group">
+          <div className="cricket-app-row">
+            <span className="cricket-app-row-label">
+              <i className="fa-solid fa-stopwatch" aria-hidden="true"></i> Overs per innings
+            </span>
+            <span className="cricket-app-stepper">
+              <button
+                type="button"
+                aria-label="Fewer overs"
+                disabled={Number(overs) <= 1}
+                onClick={() => setOvers(String(Math.max(1, (Number(overs) || 1) - 1)))}
+              >
+                <i className="fa-solid fa-minus" aria-hidden="true"></i>
+              </button>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={100}
+                aria-label="Overs per innings"
+                value={overs}
+                onChange={text(setOvers, "overs")}
+              />
+              <button
+                type="button"
+                aria-label="More overs"
+                disabled={Number(overs) >= 100}
+                onClick={() => setOvers(String(Math.min(100, (Number(overs) || 0) + 1)))}
+              >
+                <i className="fa-solid fa-plus" aria-hidden="true"></i>
+              </button>
+            </span>
+          </div>
+          {errors.overs && (
+            <div className="cricket-app-row is-hint">
+              <small className="text-danger">Overs: {errors.overs}</small>
+            </div>
+          )}
+          <div className="cricket-app-row">
+            <span className="cricket-app-row-label">
+              <i className="fa-solid fa-baseball" aria-hidden="true"></i> Balls per over
+            </span>
+            <span className="cricket-app-stepper">
+              <button
+                type="button"
+                aria-label="Fewer balls an over"
+                disabled={ballsPerOver <= 4}
+                onClick={() => setBallsPerOver(ballsPerOver - 1)}
+              >
+                <i className="fa-solid fa-minus" aria-hidden="true"></i>
+              </button>
+              <input type="number" aria-label="Balls per over" value={ballsPerOver} readOnly />
+              <button
+                type="button"
+                aria-label="More balls an over"
+                disabled={ballsPerOver >= 10}
+                onClick={() => setBallsPerOver(ballsPerOver + 1)}
+              >
+                <i className="fa-solid fa-plus" aria-hidden="true"></i>
+              </button>
+            </span>
+          </div>
+          <label className="cricket-app-row">
+            <span className="cricket-app-row-label">
+              <i className="fa-solid fa-user-clock" aria-hidden="true"></i> Max overs per bowler
+            </span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={50}
+              placeholder="No limit"
+              value={bowlerLimit}
+              onChange={text(setBowlerLimit, "bowlerOverLimit")}
+            />
+          </label>
+          {errors.bowlerOverLimit && (
+            <div className="cricket-app-row is-hint">
+              <small className="text-danger">{errors.bowlerOverLimit}</small>
+            </div>
+          )}
+          {/* The usual split: a fifth of the overs each, so five bowlers bowl. */}
+          {!bowlerLimit && Number(overs) >= 2 && (
+            <div className="cricket-app-row is-hint">
+              <small className="admin-hint">
+                Usually a fifth of the overs —{" "}
+                <button
+                  type="button"
+                  className="admin-link-btn"
+                  onClick={() => setBowlerLimit(String(Math.max(1, Math.ceil(Number(overs) / 5))))}
+                >
+                  use {Math.max(1, Math.ceil(Number(overs) / 5))}
+                </button>
+              </small>
+            </div>
+          )}
+          <SwitchRow
+            icon="fa-solid fa-person"
+            label="Last man stands"
+            note="The last batter bats on alone"
+            on={lastManStands}
+            onChange={setLastManStands}
+          />
+          <SwitchRow
+            icon="fa-solid fa-bolt"
+            label="Free hit on a no-ball"
+            note="The next ball can only be out run out"
+            on={freeHit}
+            onChange={setFreeHit}
+          />
+        </div>
+        <small className="admin-hint cricket-tour-note">
+          Ground, city, match type, ball type, pitch, overs and these playing conditions are filled in on every match you
+          schedule (each match can change its own). Changing them here also updates fixtures not played yet.
+        </small>
       </div>
-      <small className="admin-hint d-block mb-2">
-        Ground, city, match type, ball type, pitch and overs are filled in on every match you schedule.
-      </small>
 
       <SubmitButton loading={saving}>{existing ? "Save" : "Create"}</SubmitButton>
     </ModalForm>

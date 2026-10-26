@@ -1,4 +1,5 @@
 import { useState, type ChangeEvent, type KeyboardEvent } from "react";
+import { toast } from "sonner";
 import { lookupCricketPlayer, useCreateCricketPlayer } from "../../../api/hooks/cricket/useCricketPlayers";
 import { messageFor } from "../../../api/mutationErrors";
 import type { CricketPlayer } from "../../../api/types";
@@ -60,7 +61,12 @@ export function AddPlayerByMobile({
     const trimmed = name.trim();
     if (!trimmed) return setError("Enter the player's name");
     try {
-      add(await createPlayer.mutateAsync({ name: trimmed, role: null, mobile: lookup.mobile }));
+      const created = await createPlayer.mutateAsync({ name: trimmed, role: null, mobile: lookup.mobile });
+      // A number that's already on CricDesk keeps its own name.
+      if (created.name.trim().toLowerCase() !== trimmed.toLowerCase()) {
+        toast.info(`Already on CricDesk as ${created.name} — added as them`);
+      }
+      add(created);
     } catch {
       // Shown as a toast.
     }
@@ -118,6 +124,7 @@ export function AddPlayerByMobile({
               {foundRole && ` · ${foundRole.label}`}
             </small>
             {blocked && <small className="cricket-add-player-blocked">{blocked}</small>}
+            {!blocked && <small>Already on CricDesk as {found.name} — added as them</small>}
           </span>
           {!blocked && (
             <button type="button" className="cricket-add-player-btn" onClick={() => add(found)}>

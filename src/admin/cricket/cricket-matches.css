@@ -189,8 +189,8 @@
   gap: 14px;
 }
 /* Match card (MatchCard): stage and tournament with the status pill, the
-   two teams facing off around the start time or "vs", a tinted result
-   strip, then venue and overs. Live cards glow crimson. */
+   two teams facing off around the start time or "vs", the result once
+   there is one, then venue and overs. Live cards glow crimson. */
 .cricket-match-card {
   position: relative;
   display: flex;
@@ -262,9 +262,6 @@
   background: rgba(var(--brand-amber-rgb), 0.14);
   color: rgb(var(--brand-amber-rgb));
 }
-:root[data-bs-theme="dark"] .cricket-match-card.is-live .cricket-match-card-result {
-  color: rgb(232, 104, 94);
-}
 
 .cricket-match-card-teams {
   display: grid;
@@ -309,10 +306,11 @@
   font-size: var(--fs-xs);
   color: var(--brand-amber-deep, #a16207);
 }
+/* The name's size, so a result card keeps an upcoming card's proportions. */
 .cricket-match-card-score {
-  font-size: var(--fs-lg);
-  font-weight: 800;
-  line-height: 1.1;
+  font-size: var(--fs-base);
+  font-weight: 700;
+  line-height: 1.25;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
@@ -372,19 +370,13 @@
   letter-spacing: 0.04em;
 }
 
+/* The result as plain text, centred under the two teams. */
 .cricket-match-card-result {
-  padding: 7px 10px;
-  border-left: 3px solid var(--primary);
-  border-radius: 8px;
-  background: rgba(var(--primary-rgb), 0.07);
+  margin-top: -4px;
   font-size: var(--fs-sm);
   font-weight: 700;
-  color: var(--theme-text-dark);
-}
-.cricket-match-card.is-live .cricket-match-card-result {
-  border-left-color: rgb(var(--brand-crimson-rgb));
-  background: rgba(var(--brand-crimson-rgb), 0.08);
-  color: rgb(var(--brand-crimson-rgb));
+  color: var(--primary);
+  text-align: center;
 }
 .cricket-match-card-when {
   display: flex;
@@ -408,8 +400,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Overs sit at the right end of the line. */
 .cricket-match-card-overs {
   flex: none;
+  margin-left: auto;
   white-space: nowrap;
 }
 .cricket-match-card-when i {
@@ -2680,8 +2674,7 @@
 .cricket-home-section.is-last {
   --section-rgb: var(--brand-maroon-rgb);
 }
-.cricket-home-section.is-tournaments,
-.cricket-home-section.is-all {
+.cricket-home-section.is-tournaments {
   --section-rgb: var(--brand-orange-deep-rgb);
 }
 .cricket-home-section.is-following {
@@ -2715,20 +2708,418 @@
 :root[data-bs-theme="dark"] .cricket-home-section.is-last {
   --section-rgb: var(--brand-maroon-bright-rgb);
 }
-:root[data-bs-theme="dark"] .cricket-home-section.is-tournaments,
-:root[data-bs-theme="dark"] .cricket-home-section.is-all {
+:root[data-bs-theme="dark"] .cricket-home-section.is-tournaments {
   --section-rgb: 245, 140, 80;
 }
 :root[data-bs-theme="dark"] .cricket-home-section.is-following {
   --section-rgb: 214, 190, 160;
 }
-/* A section's count next to its heading (My Matches' panel). */
-.cricket-home-count {
-  margin-left: 4px;
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: rgba(var(--section-rgb), 0.14);
-  color: rgb(var(--section-rgb));
+
+/* Live view: who's in (LiveView), laid out like Cricbuzz's mini scorecard
+   — Batter R B 4s 6s SR, Bowler O M R W ECO — on one grid, every row the
+   same column widths so the numbers line up under their headings. */
+.cricket-crease {
+  --crease-cols: minmax(0, 1fr) 34px 30px 26px 26px 48px;
+  margin: 12px 0;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--adm-surface, #fff);
+}
+.cricket-crease-head,
+.cricket-crease-row {
+  display: grid;
+  grid-template-columns: var(--crease-cols);
+  align-items: center;
+  column-gap: 4px;
+  padding: 7px 12px;
+  font-variant-numeric: tabular-nums;
+}
+.cricket-crease-head > span:not(:first-child),
+.cricket-crease-row > span:not(:first-child) {
+  text-align: right;
+  white-space: nowrap;
+}
+.cricket-crease-head {
+  padding-top: 6px;
+  padding-bottom: 6px;
+  background: rgba(var(--primary-rgb), 0.06);
+  color: var(--muted-color);
   font-size: var(--fs-2xs);
   font-weight: 700;
+}
+.cricket-crease-row {
+  border-top: 1px solid var(--border-color);
+  font-size: var(--fs-sm);
+  color: var(--theme-text-dark);
+}
+.cricket-crease-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.cricket-crease-name .cricket-player-link {
+  color: var(--primary);
+  font-weight: 600;
+}
+.cricket-crease-strike {
+  font-weight: 800;
+}
+/* A batter's runs and a bowler's wickets stand out. */
+.cricket-crease-main {
+  font-weight: 800;
+}
+
+/* Match notes (MatchInfo): one card, a row per innings — who bowled, to
+   whom and start → end on the left; minutes taken and overs on the right. */
+.cricket-notes {
+  margin-top: 0;
+}
+.cricket-notes-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+}
+.cricket-notes-row + .cricket-notes-row {
+  border-top: 1px solid var(--border-color);
+}
+.cricket-notes-side {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.cricket-notes-side strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--theme-text-dark);
+}
+.cricket-notes-side small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-2xs);
+  color: var(--muted-color);
+}
+.cricket-notes-when {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--theme-text-dark);
+  font-variant-numeric: tabular-nums;
+}
+.cricket-notes-when i {
+  font-size: var(--fs-2xs);
+  color: var(--muted-color);
+}
+/* A fixed width, so every row's divider lines up one below the other. */
+.cricket-notes-time {
+  flex: none;
+  width: 84px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding-left: 12px;
+  border-left: 1px solid var(--border-color);
+  text-align: right;
+}
+.cricket-notes-time strong {
+  font-size: var(--fs-md);
+  font-weight: 800;
+  color: var(--theme-text-dark);
+  white-space: nowrap;
+}
+.cricket-notes-time small {
+  font-size: var(--fs-2xs);
+  color: var(--muted-color);
+}
+.cricket-notes-live {
+  font-style: normal;
+  font-weight: 700;
+  color: rgb(var(--brand-crimson-rgb));
+}
+
+/* My Matches' record banner (RecordHero): the Home hero card, compact —
+   the win-rate ring and four small tiles on one row, recent form below. */
+.cricket-record-hero {
+  margin-bottom: 14px;
+  padding: 14px 16px;
+}
+.cricket-record-top,
+.cricket-record-form-line {
+  position: relative;
+  z-index: 1;
+}
+.cricket-record-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cricket-record-ring {
+  flex: none;
+  position: relative;
+  width: 58px;
+  height: 58px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: conic-gradient(rgb(var(--brand-amber-rgb)) var(--win), rgba(255, 255, 255, 0.22) 0);
+  line-height: 1.05;
+}
+/* The hole in the ring, in the hero's own colours. */
+.cricket-record-ring::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: var(--hero-gradient);
+}
+.cricket-record-ring strong,
+.cricket-record-ring small {
+  position: relative;
+  color: #fff;
+}
+.cricket-record-ring strong {
+  font-size: var(--fs-sm);
+  font-weight: 800;
+}
+.cricket-record-ring small {
+  font-size: var(--fs-3xs);
+  opacity: 0.85;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.cricket-record-tiles {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.cricket-record-tiles div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  padding: 6px 2px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+.cricket-record-tiles strong {
+  font-size: var(--fs-md);
+  font-weight: 800;
+  line-height: 1.15;
+}
+.cricket-record-tiles small {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-3xs);
+  font-weight: 600;
+  opacity: 0.85;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+/* Recent form: a small line of result chips, newest first. */
+.cricket-record-form-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  color: #fff;
+}
+.cricket-record-form-line > small {
+  font-size: var(--fs-2xs);
+  opacity: 0.8;
+}
+.cricket-record-form {
+  display: flex;
+  gap: 4px;
+}
+.cricket-record-form-chip {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  font-size: var(--fs-3xs);
+  font-weight: 800;
+  color: #fff;
+}
+.cricket-record-form-chip.is-W {
+  background: #16a34a;
+}
+.cricket-record-form-chip.is-L {
+  background: rgb(var(--brand-crimson-rgb));
+}
+.cricket-record-form-chip.is-T {
+  background: rgba(255, 255, 255, 0.28);
+}
+.cricket-record-empty {
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+}
+
+/* A tab's count (My Matches, My Teams), close after its name. */
+.admin-segmented.cricket-text-tabs button:has(> .cricket-tab-count) {
+  gap: 3px;
+}
+.cricket-tab-count {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.1);
+  color: inherit;
+  font-size: var(--fs-3xs);
+  font-weight: 800;
+  line-height: 16px;
+  text-align: center;
+}
+
+/* The live view's free hit flag: the next ball can't get the batter out
+   (bar a run-out). */
+.cricket-free-hit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 4px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #f79009;
+  color: #fff;
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+/* Match form: on/off rows, and the "use 4" hint under the bowler limit. */
+.cricket-app-switch .cricket-app-row-label {
+  flex: 1;
+  min-width: 0;
+}
+.cricket-app-switch-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.cricket-app-switch-text small {
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--muted-color);
+}
+.cricket-app-switch .cricket-shot-toggle-knob {
+  flex: none;
+  margin-left: auto;
+}
+.cricket-app-row.is-hint {
+  min-height: 0;
+  padding-top: 0;
+  cursor: default;
+  justify-content: flex-end;
+}
+.cricket-app-row + .cricket-app-row.is-hint {
+  border-top: 0;
+}
+
+/* A result entered before a ball (walkover…), in place of a scorecard. */
+.cricket-noplay {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border: 1px dashed var(--border-color);
+  border-radius: 12px;
+  color: var(--theme-text-dark);
+}
+.cricket-noplay > i {
+  color: var(--primary);
+  font-size: var(--fs-lg);
+}
+.cricket-noplay span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cricket-noplay small,
+.cricket-result-by-hand {
+  font-size: var(--fs-xs);
+  color: var(--muted-color);
+}
+.cricket-result-by-hand {
+  display: block;
+  margin-top: 2px;
+}
+
+/* A tied or abandoned knockout's call to enter who goes through. */
+.cricket-knockout-prompt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, #f79009 45%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, #f79009 10%, transparent);
+  color: var(--theme-text-dark);
+}
+.cricket-knockout-prompt > i {
+  color: #f79009;
+  font-size: var(--fs-lg);
+}
+.cricket-knockout-prompt > span {
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+}
+.cricket-knockout-prompt small {
+  font-size: var(--fs-xs);
+  color: var(--muted-color);
+}
+
+/* The Enter result sheet. */
+.cricket-result-form .cricket-field {
+  margin-bottom: 14px;
+}
+.cricket-result-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 4px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--adm-surface);
+}
+.cricket-result-preview small {
+  font-size: var(--fs-xs);
+  color: var(--muted-color);
+}
+
+/* A finished match's "Undo last ball". */
+.cricket-summary-undo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.cricket-summary-undo small {
+  font-size: var(--fs-xs);
+  color: var(--muted-color);
 }

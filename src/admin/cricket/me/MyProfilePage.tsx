@@ -2,6 +2,7 @@ import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useCricketMe, useSetMyPhoto, useUpdateMyProfile } from "../../../api/hooks/cricket/useCricketPlayers";
+import { PUSH_BLOCKER_TEXT, PushSetupError, useCricketPush } from "../../../api/hooks/cricket/useCricketPush";
 import type { CricketMe, CricketPlayerRole } from "../../../api/types";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { compressImage, MAX_UPLOAD_BYTES, PLAYER_PHOTO } from "../../../utils/compressImage";
@@ -19,6 +20,7 @@ import "../../admin.css";
 import "../cricket.css";
 import "./MyProfilePage.css";
 import { Loader } from "../../components/Loader";
+import { confirmAction } from "../../components/confirmDelete";
 
 // /profile — the signed-in user's own details: photo, name, mobile number
 // (also their sign-in), playing role and password, plus signing out.
@@ -109,6 +111,22 @@ function ProfileForm({ me }: { me: CricketMe }) {
   function handleLogout() {
     logout();
     navigate("/login", { replace: true });
+  }
+
+  // A lost phone, or a shared one: ends every session of the account.
+  async function handleLogoutEverywhere() {
+    const confirmed = await confirmAction(
+      "Sign out of all devices?",
+      "You'll need your password to sign in again on every phone and computer, including this one.",
+      "Sign out everywhere",
+    );
+    if (!confirmed) return;
+    try {
+      await logout({ everywhere: true });
+      navigate("/login", { replace: true });
+    } catch {
+      toast.error("Couldn't sign out everywhere. Check your connection and try again.");
+    }
   }
 
   return (
@@ -231,6 +249,7 @@ function ProfileForm({ me }: { me: CricketMe }) {
           <i className="fa-solid fa-share-nodes" aria-hidden="true"></i> Share CricDesk
         </button>
         {sharingApp && <ShareAppSheet onClose={() => setSharingApp(false)} />}
+        <NotificationsRow />
         <button
           type="button"
           className="cv-profile-tips"
@@ -245,7 +264,60 @@ function ProfileForm({ me }: { me: CricketMe }) {
         <button type="button" className="cv-profile-signout" onClick={handleLogout}>
           <i className="fa-solid fa-right-from-bracket" aria-hidden="true"></i> Sign out
         </button>
+        <button type="button" className="cv-profile-tips" onClick={handleLogoutEverywhere}>
+          <i className="fa-solid fa-shield-halved" aria-hidden="true"></i> Sign out of all devices
+        </button>
       </div>
     </form>
+  );
+}
+
+// "Match notifications": this browser's push switch. When it can't work
+// here (no service worker in dev, no server key, blocked) the line under it
+// says why instead.
+function NotificationsRow() {
+  const push = useCricketPush();
+  const blocked = push.blocker !== null && !push.on;
+  const note = blocked
+    ? PUSH_BLOCKER_TEXT[push.blocker!]
+    : push.onElsewhere
+      ? "On for another of your devices — turn it on here too."
+      : "Hear when your matches — and the ones you follow — start and finish.";
+
+  function toggle() {
+    if (push.busy) return;
+    if (push.on) {
+      push.disable.mutate(undefined, {
+        onSuccess: () => toast.success("Match notifications off on this device"),
+        onError: () => toast.error("Turned off here, but couldn't tell the server. It'll stop sending soon."),
+      });
+    } else {
+      push.enable.mutate(undefined, {
+        onSuccess: () => toast.success("Match notifications on — we've sent you a test one"),
+        onError: (error) =>
+          toast.error(error instanceof PushSetupError ? error.message : "Couldn't turn notifications on. Try again."),
+      });
+    }
+  }
+
+  return (
+    <label className={`cv-profile-switch${blocked ? " is-blocked" : ""}`}>
+      <i className="fa-solid fa-bell" aria-hidden="true"></i>
+      <span className="cv-profile-switch-text">
+        <strong>Match notifications</strong>
+        <small>{note}</small>
+      </span>
+      <span className="form-check form-switch m-0">
+        <input
+          type="checkbox"
+          role="switch"
+          className="form-check-input"
+          checked={push.on}
+          disabled={!push.ready || push.busy || blocked}
+          onChange={toggle}
+          aria-label="Match notifications"
+        />
+      </span>
+    </label>
   );
 }

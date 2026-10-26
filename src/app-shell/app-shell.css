@@ -1,0 +1,113 @@
+/* The error and "page not found" screens. They can show before the admin
+   styles have loaded (a crash in the layout itself), so every admin
+   variable has a brand.css fallback. Light by default; dark when the admin
+   theme is on, or when it hasn't been set yet and the device is dark. */
+
+.cv-shell-msg {
+  --cv-shell-bg: var(--adm-bg, #f6f3ef);
+  --cv-shell-text: var(--theme-text-dark, #1f1d1d);
+  --cv-shell-muted: var(--muted-color, #6b6b76);
+  --cv-shell-accent: var(--primary, var(--brand-maroon));
+
+  min-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 32px 16px;
+  text-align: center;
+  font-family: var(--cv-font, system-ui, sans-serif);
+  color: var(--cv-shell-text);
+}
+
+/* Shown on its own (outside the app's layout): fill the screen. */
+.cv-shell-msg.is-full {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--cv-shell-bg);
+}
+
+:root[data-bs-theme="dark"] .cv-shell-msg {
+  --cv-shell-bg: var(--adm-bg, var(--brand-navy-night));
+  --cv-shell-text: var(--theme-text-dark, #f3f4f6);
+  --cv-shell-muted: var(--muted-color, #a3a2bf);
+  --cv-shell-accent: var(--primary, var(--brand-maroon-bright));
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-bs-theme]) .cv-shell-msg {
+    --cv-shell-bg: var(--brand-navy-night);
+    --cv-shell-text: #f3f4f6;
+    --cv-shell-muted: #a3a2bf;
+    --cv-shell-accent: var(--brand-maroon-bright);
+  }
+}
+
+.cv-shell-msg-logo {
+  width: 88px;
+  height: 88px;
+  margin-bottom: 6px;
+}
+
+.cv-shell-msg-code {
+  font-size: var(--fs-2xl, 2rem);
+  font-weight: 800;
+  line-height: 1;
+  background: var(--brand-gradient-vivid);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.cv-shell-msg h1 {
+  margin: 0;
+  font-size: var(--fs-lg, 1.25rem);
+  font-weight: 700;
+  color: var(--cv-shell-text);
+}
+
+.cv-shell-msg p {
+  max-width: 360px;
+  margin: 0;
+  font-size: var(--fs-base, 0.875rem);
+  color: var(--cv-shell-muted);
+}
+
+.cv-shell-msg-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.cv-shell-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 20px;
+  border-radius: 999px;
+  border: 1px solid var(--cv-shell-accent);
+  background: transparent;
+  color: var(--cv-shell-accent);
+  font: inherit;
+  font-size: var(--fs-base, 0.875rem);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.cv-shell-btn.is-primary {
+  background: var(--cv-shell-accent);
+  color: #fff;
+}
+
+.cv-shell-btn:hover {
+  filter: brightness(1.08);
+}
+
+.cv-shell-btn:focus-visible {
+  outline: 2px solid var(--cv-shell-accent);
+  outline-offset: 2px;
+}

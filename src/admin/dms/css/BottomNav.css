@@ -18,12 +18,17 @@
     background: rgba(255, 255, 255, 0.94);
     backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
-    border-top: 1px solid var(--border-color);
-    box-shadow: 0 -6px 20px rgba(var(--brand-navy-rgb), 0.06);
+    /* A thin line up the sides and round the rounded top corners, matching
+       the navbar's bottom. */
+    border: 1px solid rgba(var(--primary-rgb), 0.22);
+    border-bottom: 0;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    box-shadow: 0 -10px 28px -6px rgba(var(--primary-rgb), 0.3), 0 -4px 12px rgba(0, 0, 0, 0.12);
   }
   :root[data-bs-theme="dark"] .cv-bottom-nav {
     background: rgba(15, 16, 18, 0.94);
-    box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 -10px 28px -6px rgba(0, 0, 0, 0.85), 0 -4px 12px rgba(0, 0, 0, 0.55);
   }
 
   /* Room for the bar under the last card. */

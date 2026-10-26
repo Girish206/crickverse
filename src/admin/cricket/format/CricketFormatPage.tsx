@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useCricketMatches } from "../../../api/hooks/cricket/useCricketMatches";
+import { useCricketMe } from "../../../api/hooks/cricket/useCricketPlayers";
 import { useClearCricketFormat, useCricketTournament, useSetCricketFormat } from "../../../api/hooks/cricket/useCricketTournaments";
 import type { CricketTournament } from "../../../api/types";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
@@ -22,7 +23,7 @@ import {
   planSchedule,
   type ScheduleOptions,
 } from "./formatEngine";
-import { buildFormat, GROUP_NAMES, PRESETS, presetOf, snakeGroups, type PresetId, type PresetOptions } from "./formatPresets";
+import { buildFormat, GROUP_NAMES, knockoutDraw, PRESETS, presetOf, snakeGroups, type PresetId, type PresetOptions } from "./formatPresets";
 import { defaultSchedule, prefsOf, ScheduleFields } from "./ScheduleFields";
 import "./format.css";
 import "../../dms/css/adminDisplays.css";
@@ -91,7 +92,8 @@ export function CricketFormatPage() {
   const { data: tournament, isLoading } = useCricketTournament(id);
   const { data: matches, isLoading: loadingMatches } = useCricketMatches(id);
   const { admin } = useAdminAuth();
-  const canManage = canManageTournament(admin, tournament);
+  const { data: me } = useCricketMe();
+  const canManage = canManageTournament(admin, tournament, me?.player?.id);
   const backTo = `/tournaments/${id}?tab=points`;
 
   const played = (matches ?? []).some((match) => match.phaseId && match.status !== "scheduled");
@@ -138,7 +140,10 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
   const [lineUp, setLineUp] = useState<number[][]>(() => {
     const existing = tournament.format?.preset === firstFit.id ? tournament.format.phases[0] : null;
     if (existing?.kind === "knockout") {
-      return [existing.slots.flatMap((slot) => [slot.home, slot.away]).flatMap((s) => (s.from === "team" ? [s.teamIndex] : []))];
+      // Back in seed order (byes included), as long as it's still every team.
+      const draw = knockoutDraw(existing);
+      if (draw.length === teamCount && teamIndexes.every((index) => draw.includes(index))) return [draw];
+      return [teamIndexes];
     }
     if (existing && existing.groups.every((g) => g.teamIndexes.length > 0)) return existing.groups.map((g) => g.teamIndexes);
     return lineUpFor(firstFit.id, firstFit.defaults(teamCount), teamIndexes);
@@ -436,7 +441,11 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
       {presetId === "knockout" && (
         <ListCard
           title="3. Draw"
-          subtitle="Seed 1 and seed 2 can only meet in the final"
+          subtitle={
+            Number.isInteger(Math.log2(teamCount))
+              ? "Seed 1 and seed 2 can only meet in the final"
+              : `Seed 1 and seed 2 can only meet in the final. The top ${2 ** Math.ceil(Math.log2(teamCount)) - teamCount} seed${2 ** Math.ceil(Math.log2(teamCount)) - teamCount === 1 ? "" : "s"} get a bye into the next round.`
+          }
           action={
             <Button variant="outline" onClick={() => setLineUp([shuffled(teamIndexes)])}>
               <i className="fa-solid fa-shuffle" aria-hidden="true"></i> Random draw

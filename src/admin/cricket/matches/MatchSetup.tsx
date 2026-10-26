@@ -1,5 +1,8 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { isAxiosError } from "axios";
+import { apiClient } from "../../../api/client";
 import {
   useCricketMatch,
   useSetCricketCurrentPlayers,
@@ -8,7 +11,7 @@ import {
 } from "../../../api/hooks/cricket/useCricketMatches";
 import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
 import { useCricketTournament } from "../../../api/hooks/cricket/useCricketTournaments";
-import type { CricketMatch, CricketPlayer, CricketTeamRoles } from "../../../api/types";
+import type { ApiEnvelope, CricketMatch, CricketPlayer, CricketTeamRoles } from "../../../api/types";
 import { ListCard } from "../../components/ListCard";
 import { PageHeader } from "../../components/PageHeader";
 import { avatarColorFor } from "../avatarColor";
@@ -33,6 +36,29 @@ const SLOTS: { slot: Slot; label: string; icon: string }[] = [
   { slot: "nonStrikerId", label: "Non-striker", icon: "fa-user" },
   { slot: "bowlerId", label: "Bowler", icon: "fa-baseball" },
 ];
+
+// The first start can go through with its answer lost (a dropped
+// connection); the retry is then told the match has already started —
+// which is a success, not an error.
+const alreadyStarted = (error: unknown) =>
+  isAxiosError(error) && error.response?.status === 409 && error.response.data?.error?.code === "ALREADY_STARTED";
+
+type StartInput = Parameters<ReturnType<typeof useStartCricketMatch>["mutateAsync"]>[0];
+
+// useStartCricketMatch, without the error toast for that retry.
+function useStartMatch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    meta: { skipGlobalErrorFor: alreadyStarted },
+    mutationFn: async ({ id, ...input }: StartInput) =>
+      (await apiClient.post<ApiEnvelope<CricketMatch>>(`/admin/cricket/matches/${id}/start`, input)).data.data,
+    onSuccess: (match) => {
+      queryClient.setQueryData(["cricket-matches", match.id], match);
+      queryClient.invalidateQueries({ queryKey: ["cricket-matches", "list"] });
+      queryClient.invalidateQueries({ queryKey: ["cricket-me"] });
+    },
+  });
+}
 
 // /matches/:id/setup — a page of its own rather than a sheet, so a stray tap
 // outside can't throw away the squads and toss picked so far.
@@ -78,7 +104,8 @@ interface MatchSetupProps {
 // standalone match picks both squads from every player.
 function MatchSetup({ match, nameOf, onExit, onStarted }: MatchSetupProps) {
   const { data: tournament } = useCricketTournament(match.tournamentId ?? 0, match.tournamentId !== null);
-  const startMatch = useStartCricketMatch();
+  const queryClient = useQueryClient();
+  const startMatch = useStartMatch();
   const setPlayers = useSetCricketCurrentPlayers();
   const busy = startMatch.isPending || setPlayers.isPending;
 
@@ -204,8 +231,11 @@ function MatchSetup({ match, nameOf, onExit, onStarted }: MatchSetupProps) {
     setError(null);
     try {
       await startMatch.mutateAsync({ id: match.id, tossWinner, tossDecision: decision, playerIds: xi, roles });
-    } catch {
-      return setError("Couldn't start the match — try again.");
+    } catch (err) {
+      if (!alreadyStarted(err)) return setError("Couldn't start the match — try again.");
+      // It started the first time: catch up and carry on.
+      await queryClient.invalidateQueries({ queryKey: ["cricket-matches", match.id] });
+      queryClient.invalidateQueries({ queryKey: ["cricket-matches", "list"] });
     }
     // Once started, the scorer asks for any player this didn't manage to save.
     await setPlayers.mutateAsync({ id: match.id, strikerId, nonStrikerId, bowlerId }).catch(() => undefined);
