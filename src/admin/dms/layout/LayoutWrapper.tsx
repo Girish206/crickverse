@@ -33,16 +33,17 @@ const LayoutWrapper = () => {
 
     const isMainScreen = MAIN_SCREENS.includes(path.replace(/\/+$/, "") || "/");
 
+    // The profile provider wraps the navbar too, so its search can open one.
     return (
-        <Layout activeItem={getActiveItem()} activeSubItem="" isMainScreen={isMainScreen}>
-            {navigating && <div className="cv-route-progress" role="progressbar" aria-label="Loading page" />}
-            {/* .cricket-module scopes the cricket pages' compact phone layout. */}
-            <div className="cricket-module">
-                <PlayerProfileProvider>
+        <PlayerProfileProvider>
+            <Layout activeItem={getActiveItem()} activeSubItem="" isMainScreen={isMainScreen}>
+                {navigating && <div className="cv-route-progress" role="progressbar" aria-label="Loading page" />}
+                {/* .cricket-module scopes the cricket pages' compact phone layout. */}
+                <div className="cricket-module">
                     <Outlet />
-                </PlayerProfileProvider>
-            </div>
-        </Layout>
+                </div>
+            </Layout>
+        </PlayerProfileProvider>
     );
 };
 

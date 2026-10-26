@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { QuickCreate } from "../../cricket/QuickCreate";
+import { GlobalSearch } from "../../cricket/GlobalSearch";
 import { formatMobile } from "../../cricket/mobile";
 import { useCricketMe } from "../../../api/hooks/cricket/useCricketPlayers";
 import "../css/Navbar.css";
@@ -97,6 +98,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar, isDark, toggleTheme, onS
                     {/* Right side: quick create, theme, and the account menu
                         (profile + sign out) */}
                     <div className="d-flex align-items-center gap-2">
+                    <GlobalSearch />
                     {/* Anyone can create a match or tournament (and then manage it). */}
                     <QuickCreate />
                     <button

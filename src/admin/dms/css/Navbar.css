@@ -792,3 +792,46 @@
   border-radius: 50%;
   object-fit: cover;
 }
+
+/* Search (cricket/GlobalSearch): a pill with its label on wider screens,
+   a round icon button like the others on phones. */
+.navbar-search-btn {
+  height: 36px;
+  min-width: 36px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--primary-rgb), 0.25);
+  background: transparent;
+  color: var(--primary);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.navbar-search-btn:hover {
+  background: rgba(var(--primary-rgb), 0.1);
+}
+.navbar-search-label {
+  color: var(--muted-color);
+  padding-right: 24px;
+}
+@media (max-width: 767.98px) {
+  .navbar-search-btn {
+    width: 36px;
+    padding: 0;
+  }
+  .navbar-search-label {
+    display: none;
+  }
+}
+@media (max-width: 575.98px) {
+  .navbar-search-btn {
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+  }
+}
