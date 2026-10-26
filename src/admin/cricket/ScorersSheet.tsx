@@ -7,11 +7,13 @@ import { BottomSheet } from "./BottomSheet";
 import { normalizeMobile } from "./mobile";
 import { roleOf } from "./playerRoles";
 import { PlayerAvatar } from "./players/PlayerAvatar";
+import { QrScannerSheet, type ScanReply } from "./qr/QrScannerSheet";
+import type { QrTarget } from "./qr/qrLinks";
 
 // Who else may score (and edit) a match, or every match of a tournament.
 // Scorers are players, found by mobile number (names repeat) or picked
-// from the sides' squads; they score from their own account. Nothing is
-// saved until "Save". With `handOver` it picks just one person — the next
+// from the sides' squads, or scanned from their QR code; they score from
+// their own account. Nothing is saved until "Save". With `handOver` it picks just one person — the next
 // scorer — straight from the same squads / mobile number.
 export function ScorersSheet({
   title,
@@ -56,6 +58,7 @@ export function ScorersSheet({
   const [found, setFound] = useState<CricketPlayer | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [looking, setLooking] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const playerById = new Map((players ?? []).map((p) => [p.id, p]));
 
   function reset() {
@@ -96,6 +99,21 @@ export function ScorersSheet({
   }
 
   const foundRole = found && roleOf(found.role);
+
+  function onScan(target: QrTarget): ScanReply {
+    if (target.kind !== "player") return;
+    const player = playerById.get(target.playerId);
+    if (!player) return { tone: "error", text: "No player has this QR code" };
+    if (handOver) {
+      if (handOver.excludeIds.includes(player.id)) return { tone: "error", text: "That's you" };
+      setScanning(false);
+      toggle(player.id);
+      return;
+    }
+    if (ids.includes(player.id)) return { tone: "info", text: `${player.name} is already a scorer` };
+    toggle(player.id);
+    return { tone: "success", text: `${player.name} added — scan another, or close and Save` };
+  }
 
   return (
     <BottomSheet
@@ -141,6 +159,9 @@ export function ScorersSheet({
           )}
         </section>
       )}
+      <button type="button" className="cricket-qr-scan-btn" onClick={() => setScanning(true)}>
+        <i className="fa-solid fa-qrcode" aria-hidden="true"></i> Scan a player's QR code
+      </button>
       {modes.length > 1 && (
         <div className="admin-segmented cricket-tabs cricket-scorer-mode" role="tablist" aria-label="Add a scorer by">
           {modes.map((m) => (
@@ -249,6 +270,16 @@ export function ScorersSheet({
             </div>
           )}
         </form>
+      )}
+
+      {scanning && (
+        <QrScannerSheet
+          title={handOver ? "Scan Next Scorer" : "Scan Scorers"}
+          hint="Point the camera at the player's QR code (their My Profile → My QR code)"
+          accept={["player"]}
+          onScan={onScan}
+          onClose={() => setScanning(false)}
+        />
       )}
     </BottomSheet>
   );

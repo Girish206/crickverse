@@ -12,6 +12,7 @@ import type {
   CricketPlayer,
   CricketTeamRoles,
   CricketTournament,
+  NewTeamPlayer,
 } from "../../types";
 
 export interface CricketTournamentInput {
@@ -184,12 +185,13 @@ export async function lookupCricketTeamPlayer(id: number, index: number, mobile:
   return data.data;
 }
 
-// Adds players to a team by mobile; new numbers (with a name) become new
-// players. Open to the team's captain as well as super admins.
+// Adds players to a team by mobile (or a known player by id, from their QR
+// code); new numbers (with a name) become new players. Open to the team's
+// captain as well as super admins.
 export function useAddCricketTeamPlayers() {
   const queryClient = useQueryClient();
   return useTournamentMutation(
-    async ({ id, index, players }: { id: number; index: number; players: { mobile: string; name?: string }[] }) => {
+    async ({ id, index, players }: { id: number; index: number; players: NewTeamPlayer[] }) => {
       const response = await apiClient.post(`/admin/cricket/tournaments/${id}/teams/${index}/players`, { players });
       queryClient.invalidateQueries({ queryKey: ["cricket-players"] });
       return response;

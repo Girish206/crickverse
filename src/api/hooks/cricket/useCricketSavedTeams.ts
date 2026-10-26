@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../../client";
-import type { ApiEnvelope, CricketSavedTeam, CricketTeamRoles } from "../../types";
+import type { ApiEnvelope, CricketSavedTeam, CricketTeamRoles, NewTeamPlayer } from "../../types";
 
 // Teams made outside any tournament (CricketSavedTeam). The signed-in
 // player's own come with /me (savedTeams); one opened by link loads here.
@@ -41,10 +41,11 @@ export function useSetCricketSavedTeamRoles() {
   return useSavedTeamMutation(({ id, ...roles }: CricketTeamRoles & { id: number }) => apiClient.put(url(id, "/roles"), roles));
 }
 
-// New numbers (with a name) become new players.
+// New numbers (with a name) become new players; a player picked from their
+// QR code comes by id.
 export function useAddCricketSavedTeamPlayers() {
   const queryClient = useQueryClient();
-  return useSavedTeamMutation(async ({ id, players }: { id: number; players: { mobile: string; name?: string }[] }) => {
+  return useSavedTeamMutation(async ({ id, players }: { id: number; players: NewTeamPlayer[] }) => {
     const response = await apiClient.post(url(id, "/players"), { players });
     queryClient.invalidateQueries({ queryKey: ["cricket-players"] });
     return response;

@@ -54,6 +54,35 @@ export interface CricketSavedTeam {
   createdAt: string;
 }
 
+// One player to add to a team: a mobile number (with a name when it's a new
+// one), or a known player by the signed token in their scanned QR code.
+export type NewTeamPlayer = { mobile: string; name?: string } | { playerQr: string };
+
+// A team's join link, as its page shows it (GET /join/:code): which team,
+// and whether the viewer already plays for it. teamKey picks it as a side
+// of a one-off match.
+interface CricketTeamInviteBase {
+  code: string;
+  name: string;
+  playerIds: number[];
+  captainId: number | null;
+  viceCaptainId: number | null;
+  keeperId: number | null;
+  joined: boolean;
+  teamKey: string;
+}
+
+export type CricketTeamInvite =
+  | (CricketTeamInviteBase & { kind: "saved"; savedTeamId: number })
+  | (CricketTeamInviteBase & {
+      kind: "tournament";
+      tournamentId: number;
+      tournamentName: string;
+      teamIndex: number;
+      // The tournament team they already play for, if another one.
+      otherTeam: string | null;
+    });
+
 export type CricketFollowKind = "player" | "team" | "tournament";
 
 // What's followed: a player or tournament by id, or a team by its

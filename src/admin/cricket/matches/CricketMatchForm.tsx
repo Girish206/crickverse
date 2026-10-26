@@ -35,6 +35,10 @@ import { STAGES, stageLabel, teamKeyOf, usePlayerNames } from "./matchUtils";
 import { useSuggestions } from "../useSuggestions";
 import { PlayerAvatar } from "../players/PlayerAvatar";
 import { PlayerPicker } from "./PlayerPicker";
+import { fetchTeamInvite } from "../../../api/hooks/cricket/useCricketTeamInvites";
+import { messageFor } from "../../../api/mutationErrors";
+import { QrScannerSheet, type ScanReply } from "../qr/QrScannerSheet";
+import type { QrTarget } from "../qr/qrLinks";
 
 // <input type="datetime-local"> wants local "YYYY-MM-DDTHH:mm".
 export function toLocalInput(value: string | null) {
@@ -160,6 +164,9 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
   // A one-off match's team sheet: pick a known team, or name a new one.
   const [teamTab, setTeamTab] = useState<"existing" | "new">("existing");
   const [teamSearch, setTeamSearch] = useState("");
+  // The side whose team is being scanned from its invite QR code — any
+  // team, even one you don't follow (its captain shows you the code).
+  const [scanningTeam, setScanningTeam] = useState<0 | 1 | null>(null);
   // A new team's captain, by mobile: a known number shows who it is, a new
   // one asks for their name.
   const [captainMobile, setCaptainMobile] = useState("");
@@ -272,6 +279,20 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
     setNewTeamError(null);
     setChoosingTeam(null);
     setError(null);
+  }
+  async function onTeamScan(slot: 0 | 1, target: QrTarget): Promise<ScanReply> {
+    if (target.kind !== "team") return;
+    try {
+      const team = await fetchTeamInvite(target.code);
+      if (team.teamKey === teamKeys[slot === 0 ? 1 : 0]) return { tone: "error", text: `${team.name} is already the other side` };
+      if (team.name.trim().toLowerCase() === sideName(slot === 0 ? 1 : 0).toLowerCase()) {
+        return { tone: "error", text: "The other side already has this name" };
+      }
+      setScanningTeam(null);
+      pickTeam(slot, team.name, null, null, team.teamKey);
+    } catch (err) {
+      return { tone: "error", text: messageFor(err) };
+    }
   }
   async function addNewTeam(slot: 0 | 1) {
     const trimmed = newTeam.trim();
@@ -751,6 +772,11 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
                   )}
                 </div>
               )}
+              {standalone && teamTab === "existing" && (
+                <button type="button" className="cricket-qr-scan-btn" onClick={() => setScanningTeam(choosingTeam)}>
+                  <i className="fa-solid fa-qrcode" aria-hidden="true"></i> Scan a team's QR code
+                </button>
+              )}
               {/* Not a nested <form>: its submit would bubble to the match form. */}
               {standalone && teamTab === "new" ? (
                 <div className="cricket-newteam">
@@ -898,6 +924,15 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
               )}
             </div>
           </BottomSheet>
+        )}
+        {scanningTeam !== null && (
+          <QrScannerSheet
+            title={`Scan Team ${scanningTeam + 1}`}
+            hint="Point the camera at the team's invite QR code (its page → Players → Invite link)"
+            accept={["team"]}
+            onScan={(target) => onTeamScan(scanningTeam, target)}
+            onClose={() => setScanningTeam(null)}
+          />
         )}
         {choosingCaptain !== null && (
           <PlayerPicker

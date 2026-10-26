@@ -5,6 +5,8 @@ import BottomNav from "./BottomNav";
 import CricketBackdrop from "./CricketBackdrop";
 import { BrandSignature } from "../../components/BrandSignature";
 import { ShareAppSheet } from "../../cricket/ShareMenu";
+import { PlayerQrSheet } from "../../cricket/qr/ShowQrSheets";
+import { useCricketMe } from "../../../api/hooks/cricket/useCricketPlayers";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { useAdminBodyClass } from "../../useAdminBodyClass";
 import { useAdminTheme } from "../../useAdminTheme";
@@ -29,6 +31,8 @@ const Layout = ({
     const [isSidebarOpen, setisSidebarOpen] = useState(false);
     const [closing, setClosing] = useState(false);
     const [sharingApp, setSharingApp] = useState(false);
+    const [showingQr, setShowingQr] = useState(false);
+    const { data: me } = useCricketMe();
     const { mainBg } = useAdminAuth();
 
     const toggleSidebar = () => {
@@ -77,6 +81,12 @@ const Layout = ({
         setSharingApp(true);
     };
 
+    // The sidebar's "My QR Code": on phones the drawer closes first, as above.
+    const showQr = () => {
+        if (window.innerWidth < 768) setSidebarOpen(false);
+        setShowingQr(true);
+    };
+
     return (
         <div
             className={`layout-wrapper ${mainBg} ${isSidebarOpen ? "sidebar-open" : "sidebar-closed"} ${
@@ -117,6 +127,7 @@ const Layout = ({
                             toggleSidebar={toggleSidebar}
                             setSidebarOpen={setSidebarOpen}
                             onShareApp={shareApp}
+                            onShowQr={showQr}
                             showSignature
                         />
                     </div>
@@ -132,11 +143,13 @@ const Layout = ({
                         toggleSidebar={toggleSidebar}
                         setSidebarOpen={setSidebarOpen}
                         onShareApp={shareApp}
+                        onShowQr={showQr}
                     />
                 </div>
             )}
 
             {sharingApp && <ShareAppSheet onClose={() => setSharingApp(false)} />}
+            {showingQr && me?.player && <PlayerQrSheet player={me.player} onClose={() => setShowingQr(false)} />}
 
             {isMainScreen && <BottomNav onMore={() => setSidebarOpen(true)} />}
 

@@ -9,7 +9,7 @@ export default defineConfig({
   optimizeDeps: {
     // Only imported by lazily-loaded routes; pre-bundle them so Vite doesn't
     // re-optimise mid-session ("504 Outdated Optimize Dep").
-    include: ['sweetalert2', 'react-select', 'react-select/creatable'],
+    include: ['sweetalert2', 'react-select', 'react-select/creatable', 'qrcode', 'qr-scanner'],
   },
   server: {
     port: 5174,

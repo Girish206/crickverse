@@ -25,7 +25,7 @@ import { BottomSheet } from "../BottomSheet";
 import { CricketTournamentForm, tournamentInputOf } from "./CricketTournamentForm";
 import { confirmTournamentDelete } from "./confirmTournamentDelete";
 import { OrganisersSheet } from "./OrganisersSheet";
-import { defaultTeamNames, ExistingTeamPicker, MAX_TEAMS, TeamForm } from "./CricketTeamTools";
+import { defaultTeamNames, ExistingTeamPicker, MAX_TEAMS, ScanTeamSheet, TeamForm } from "./CricketTeamTools";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { canManageTournament } from "../canManage";
 import { useCricketMatches } from "../../../api/hooks/cricket/useCricketMatches";
@@ -53,7 +53,7 @@ type Tab = "info" | "teams" | "matches" | "points" | "stats" | "totals";
 // How the teams are filled: generated from matched sets, or built by hand
 // (new teams or copies of other tournaments' teams).
 
-type TeamModal = { kind: "new" } | { kind: "existing" };
+type TeamModal = { kind: "new" } | { kind: "existing" } | { kind: "scan" };
 
 // Same underlined, sticky tabs as the match page.
 const TABS: { value: Tab; label: string }[] = [
@@ -424,7 +424,7 @@ export function CricketTournamentPage() {
         <ListCard title="Add Teams">
           <p className="admin-hint">
             {canAutoBuild ? "Build balanced teams from matched players, make" : "Make"} a new team and pick its players, or
-            bring in a team from another tournament.
+            bring in a team from another tournament — or scan a team's QR code.
           </p>
           <div className="cricket-add-team-actions">
             {canAutoBuild && (
@@ -441,6 +441,9 @@ export function CricketTournamentPage() {
             </Button>
             <Button variant="outline" disabled={teamCount >= MAX_TEAMS} onClick={() => setTeamModal({ kind: "existing" })}>
               <i className="fa-solid fa-people-group" aria-hidden="true"></i> Existing team
+            </Button>
+            <Button variant="outline" disabled={teamCount >= MAX_TEAMS} onClick={() => setTeamModal({ kind: "scan" })}>
+              <i className="fa-solid fa-qrcode" aria-hidden="true"></i> Scan team QR
             </Button>
           </div>
         </ListCard>
@@ -523,7 +526,9 @@ export function CricketTournamentPage() {
         />
       )}
 
-      {teamModal && (
+      {teamModal?.kind === "scan" && <ScanTeamSheet tournament={tournament} onClose={() => setTeamModal(null)} />}
+
+      {teamModal && teamModal.kind !== "scan" && (
         <BottomSheet
           title={teamModal.kind === "new" ? "New Team" : "Choose From Existing Teams"}
           onClose={() => setTeamModal(null)}

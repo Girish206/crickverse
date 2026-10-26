@@ -1,5 +1,8 @@
 import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import { toast } from "sonner";
 import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
+import { fetchTeamInvite } from "../../../api/hooks/cricket/useCricketTeamInvites";
+import { messageFor } from "../../../api/mutationErrors";
 import {
   useAddCricketTeams,
   useCricketTournaments,
@@ -12,6 +15,8 @@ import { SubmitButton } from "../../components/SubmitButton";
 import InputComp from "../../dms/components/InputComp";
 import { AddPlayerByMobile } from "../players/AddPlayerByMobile";
 import { PlayerCard } from "../players/PlayerCard";
+import { QrScannerSheet, type ScanReply } from "../qr/QrScannerSheet";
+import type { QrTarget } from "../qr/qrLinks";
 import { NO_ROLES, rolesOf, rolesWithout, TeamRoleChips, type TeamRoles } from "./TeamRoleChips";
 
 export const MAX_TEAMS = 16;
@@ -217,12 +222,77 @@ export function TeamForm({
   );
 }
 
+// Scan a team's invite QR code (its page → Players → Invite link) to copy
+// it in: its name, players and leaders — any team, even one from someone
+// else's tournament or a saved team you don't follow (the code is their
+// say-so). Players already on a team here are left out. Closes once added.
+export function ScanTeamSheet({
+  tournament,
+  onClose,
+  onAdded = onClose,
+}: {
+  tournament: CricketTournament;
+  onClose: () => void;
+  onAdded?: () => void;
+}) {
+  const addTeams = useAddCricketTeams();
+
+  async function onScan(target: QrTarget): Promise<ScanReply> {
+    if (target.kind !== "team") return;
+    if (tournament.teams.length >= MAX_TEAMS) return { tone: "error", text: `This tournament already has ${MAX_TEAMS} teams` };
+    try {
+      const team = await fetchTeamInvite(target.code);
+      if (team.kind === "tournament" && team.tournamentId === tournament.id) {
+        return { tone: "info", text: `${team.name} is already in this tournament` };
+      }
+      if (tournament.teams.some((t) => nameKey(t.name) === nameKey(team.name))) {
+        return { tone: "error", text: `There's already a team called "${team.name}" here` };
+      }
+      const onTeam = teamOfPlayer(tournament);
+      const playerIds = team.playerIds.filter((id) => !onTeam.has(id));
+      await addTeams.mutateAsync({
+        id: tournament.id,
+        teams: [
+          {
+            name: team.name,
+            playerIds,
+            captainId: team.captainId,
+            viceCaptainId: team.viceCaptainId,
+            keeperId: team.keeperId,
+            manual: true,
+          },
+        ],
+      });
+      const left = team.playerIds.length - playerIds.length;
+      toast.success(
+        `${team.name} added with ${playerIds.length} player${playerIds.length === 1 ? "" : "s"}` +
+          (left ? ` (${left} already on a team here, left out)` : ""),
+      );
+      onAdded();
+    } catch (err) {
+      return { tone: "error", text: messageFor(err) };
+    }
+  }
+
+  return (
+    <QrScannerSheet
+      title="Scan Team QR"
+      hint="Point the camera at the team's invite QR code (its page → Players → Invite link)"
+      accept={["team"]}
+      onScan={onScan}
+      onClose={onClose}
+    />
+  );
+}
+
 // "Choose from existing teams": every team in every other tournament,
 // copied in (name and players). Players already on a team here are left out.
+// Or scan a team's QR code to bring in one that isn't listed.
 export function ExistingTeamPicker({ tournament, onSaved }: { tournament: CricketTournament; onSaved: () => void }) {
   const { data: tournaments } = useCricketTournaments();
   const addTeams = useAddCricketTeams();
   const [search, setSearch] = useState("");
+  const [scanning, setScanning] = useState(false);
 
   // The same team (name + players) in several tournaments shows once, from
   // its newest one (the list comes newest first).
@@ -255,6 +325,10 @@ export function ExistingTeamPicker({ tournament, onSaved }: { tournament: Cricke
 
   return (
     <div>
+      <button type="button" className="cricket-qr-scan-btn" disabled={full} onClick={() => setScanning(true)}>
+        <i className="fa-solid fa-qrcode" aria-hidden="true"></i> Scan a team's QR code
+      </button>
+      {scanning && <ScanTeamSheet tournament={tournament} onClose={() => setScanning(false)} onAdded={onSaved} />}
       <input
         type="search"
         className="form-control shadow-none mb-2"

@@ -15,6 +15,7 @@ import type {
   CricketResultMethod,
   CricketTeamRoles,
   CricketWicketType,
+  NewTeamPlayer,
 } from "../../types";
 
 export interface CricketMatchInput {
@@ -405,12 +406,12 @@ export function useDeleteCricketMatch() {
   });
 }
 
-// A friendly team's captain adds players (by mobile; new numbers with a
-// name) to the team's side in all its upcoming matches.
+// A friendly team's captain adds players (by mobile, new numbers with a
+// name; or scanned, by id) to the team's side in all its upcoming matches.
 export function useAddFriendlyTeamPlayers() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { teamName: string; teamKey?: string; players: { mobile: string; name?: string }[] }) => {
+    mutationFn: async (input: { teamName: string; teamKey?: string; players: NewTeamPlayer[] }) => {
       const { data } = await apiClient.post<ApiEnvelope<{ matches: number; playerIds: number[] }>>(
         "/admin/cricket/friendly-teams/players",
         input,

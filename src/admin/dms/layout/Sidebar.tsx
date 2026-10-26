@@ -14,6 +14,7 @@ const Sidebar = ({
     toggleSidebar,
     setSidebarOpen,
     onShareApp,
+    onShowQr,
     showSignature = false,
 }: {
     activeSubItem: string;
@@ -22,6 +23,8 @@ const Sidebar = ({
     toggleSidebar: () => void;
     setSidebarOpen: (open: boolean) => void;
     onShareApp: () => void;
+    // The player's own QR code (also under My Profile → settings).
+    onShowQr: () => void;
     // The phone menu drawer ends with the Girish Creations signature.
     showSignature?: boolean;
 }) => {
@@ -200,12 +203,11 @@ const Sidebar = ({
             </div>
             <div className="sidebar-mobile-divider" aria-hidden="true"></div>
 
-            {/* Who's signed in — photo, name, mobile, email — opening My Profile. */}
-            <Link
-                to="/profile"
-                onClick={handleNavigate}
+            {/* Who's signed in — photo, name, mobile, email — with their QR
+                code on the right (My Profile is in the navbar's user menu). */}
+            <div
                 className={`sidebar-profile ${!isSidebarOpen ? "is-collapsed" : ""}`.trim()}
-                title={!isSidebarOpen ? profileName : "My Profile"}
+                title={!isSidebarOpen ? profileName : undefined}
             >
                 <PlayerAvatar
                     name={profileName}
@@ -230,10 +232,20 @@ const Sidebar = ({
                                 </small>
                             )}
                         </span>
-                        <i className="fa-solid fa-chevron-right sidebar-profile-chevron" aria-hidden="true"></i>
+                        {me?.player && (
+                            <button
+                                type="button"
+                                className="sidebar-profile-qr"
+                                onClick={onShowQr}
+                                aria-label="My QR code"
+                                title="My QR code"
+                            >
+                                <i className="fa-solid fa-qrcode" aria-hidden="true"></i>
+                            </button>
+                        )}
                     </>
                 )}
-            </Link>
+            </div>
 
             <div className="scrollable-content pt-2">
                 <ul className="nav nav-pills flex-column mb-auto">

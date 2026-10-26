@@ -1,11 +1,13 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { BottomSheet } from "./BottomSheet";
 import { CricketMatchForm } from "./matches/CricketMatchForm";
 import { CricketTournamentForm } from "./tournaments/CricketTournamentForm";
+import { QrScannerSheet } from "./qr/QrScannerSheet";
 import { CreateSavedTeamForm } from "./teams/SavedTeamPage";
 import "./cricket.css";
 
-type Step = "choose" | "match" | "tournament" | "team" | null;
+type Step = "choose" | "match" | "tournament" | "team" | "scan" | null;
 
 const CHOICES = [
   {
@@ -26,11 +28,19 @@ const CHOICES = [
     label: "Create Team",
     note: "Your own team and players, to pick for matches",
   },
+  {
+    step: "scan",
+    icon: "fa-qrcode",
+    label: "Scan QR Code",
+    note: "Join a team from its code, or open a player's profile",
+  },
 ] as const;
 
 // The navbar's "+": pick a match, a tournament or a team, then fill in its
-// form. Each opens what it made once saved.
+// form. Each opens what it made once saved. Or scan a team's or player's QR
+// code, which opens its page.
 export function QuickCreate() {
+  const navigate = useNavigate();
   const [step, setStep] = useState<Step>(null);
   const close = () => setStep(null);
 
@@ -76,6 +86,18 @@ export function QuickCreate() {
         <BottomSheet title="New Tournament" onClose={close} wide>
           <CricketTournamentForm onSaved={close} />
         </BottomSheet>
+      )}
+      {step === "scan" && (
+        <QrScannerSheet
+          title="Scan QR Code"
+          hint="Point the camera at a team's invite code or a player's QR code"
+          accept={["team", "player"]}
+          onScan={(target) => {
+            close();
+            navigate(target.kind === "team" ? `/join/${target.code}` : `/p/${target.playerId}`);
+          }}
+          onClose={close}
+        />
       )}
       {step === "team" && (
         <BottomSheet title="New Team" icon="fa-solid fa-people-group" onClose={close}>

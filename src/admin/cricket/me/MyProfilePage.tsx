@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useCricketMe, useSetMyPhoto, useUpdateMyProfile } from "../../../api/hooks/cricket/useCricketPlayers";
 import { PUSH_BLOCKER_TEXT, PushSetupError, useCricketPush } from "../../../api/hooks/cricket/useCricketPush";
-import type { CricketMe, CricketPlayerRole } from "../../../api/types";
+import type { CricketMe, CricketPlayer, CricketPlayerRole } from "../../../api/types";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { compressImage, MAX_UPLOAD_BYTES, PLAYER_PHOTO } from "../../../utils/compressImage";
 import { PageHeader } from "../../components/PageHeader";
@@ -16,6 +16,7 @@ import { setTipsOff, tipsOff } from "../TipsTour";
 import { ShareAppSheet } from "../ShareMenu";
 import { SettingsMenu } from "../SettingsMenu";
 import { PlayerAvatar } from "../players/PlayerAvatar";
+import { PlayerQrSheet } from "../qr/ShowQrSheets";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
@@ -31,7 +32,7 @@ export function MyProfilePage() {
 
   return (
     <div className="cricket-page cv-profile">
-      <PageHeader title="My Profile" subtitle="Account" actions={<ProfileSettings />} />
+      <PageHeader title="My Profile" subtitle="Account" actions={<ProfileSettings player={me?.player ?? null} />} />
       {me ? (
         <ProfileForm me={me} />
       ) : (
@@ -238,12 +239,14 @@ function ProfileForm({ me }: { me: CricketMe }) {
   );
 }
 
-// The header's ⚙: sharing the app, this device's notifications, tips and
-// signing out — everything on the page but the form and its Save.
-function ProfileSettings() {
+// The header's ⚙: their QR code, sharing the app, this device's
+// notifications, tips and signing out — everything on the page but the form
+// and its Save.
+function ProfileSettings({ player }: { player: CricketPlayer | null }) {
   const { logout } = useAdminAuth();
   const navigate = useNavigate();
   const [sharingApp, setSharingApp] = useState(false);
+  const [showingQr, setShowingQr] = useState(false);
   const [noTips, setNoTips] = useState(tipsOff);
 
   function handleLogout() {
@@ -271,6 +274,16 @@ function ProfileSettings() {
     <>
       <SettingsMenu
         items={[
+          ...(player
+            ? [
+                {
+                  icon: "fa-solid fa-qrcode",
+                  label: "My QR code",
+                  description: "Organisers scan it to add you to a team or as a scorer",
+                  onClick: () => setShowingQr(true),
+                },
+              ]
+            : []),
           {
             icon: "fa-solid fa-share-nodes",
             label: "Share CricDesk",
@@ -299,6 +312,7 @@ function ProfileSettings() {
         <NotificationsRow />
       </SettingsMenu>
       {sharingApp && <ShareAppSheet onClose={() => setSharingApp(false)} />}
+      {showingQr && player && <PlayerQrSheet player={player} onClose={() => setShowingQr(false)} />}
     </>
   );
 }

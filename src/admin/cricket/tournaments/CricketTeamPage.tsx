@@ -16,8 +16,9 @@ import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { canManageTournament } from "../canManage";
 import { Button } from "../../components/Button";
 import { ListCard } from "../../components/ListCard";
-import { PageHeader } from "../../components/PageHeader";
+import { PageHeader, PageHeaderAction } from "../../components/PageHeader";
 import { useFollowMenuItem } from "../follow/FollowButton";
+import { TeamInviteSheet } from "../qr/ShowQrSheets";
 import { SettingsMenu } from "../SettingsMenu";
 import { confirmAction } from "../../components/confirmDelete";
 import { BottomSheet } from "../BottomSheet";
@@ -87,6 +88,8 @@ export function CricketTeamPage() {
   const setSquad = useSetCricketSquad();
   const [editing, setEditing] = useState(false);
   const [adding, setAdding] = useState(false);
+  // The team's join link and QR code, for players to add themselves.
+  const [inviting, setInviting] = useState(false);
   const [sharing, setSharing] = useState(false);
   // Player whose "Move / swap" sheet is open.
   const [moving, setMoving] = useState<number | null>(null);
@@ -193,6 +196,15 @@ export function CricketTeamPage() {
                   : []
               }
             />
+            {/* The team's join QR code and link, for players to add themselves. */}
+            {canAddPlayers && (
+              <PageHeaderAction
+                icon="fa-solid fa-qrcode"
+                label="Team QR code"
+                active={inviting}
+                onClick={() => setInviting(true)}
+              />
+            )}
             <SettingsMenu
               title="Team settings"
               items={[
@@ -357,6 +369,10 @@ export function CricketTeamPage() {
 
       {sharing && (
         <ShareSquadSheet tournament={tournament} team={team} playerById={playerById} onClose={() => setSharing(false)} />
+      )}
+
+      {inviting && (
+        <TeamInviteSheet team={{ tournamentId: id, teamIndex }} name={team.name} onClose={() => setInviting(false)} />
       )}
 
       {adding && <AddTeamPlayersSheet tournament={tournament} teamIndex={teamIndex} onClose={() => setAdding(false)} />}

@@ -98,6 +98,16 @@ export const router = createBrowserRouter([
                     path: "teams/saved/:id",
                     lazy: page(() => import("../admin/cricket/teams/SavedTeamPage"), (m) => m.SavedTeamPage),
                   },
+                  // A team's join link, and a player's QR code opened by a
+                  // phone's camera (see qr/qrLinks.ts).
+                  {
+                    path: "join/:code",
+                    lazy: page(() => import("../admin/cricket/qr/QrPages"), (m) => m.JoinTeamPage),
+                  },
+                  {
+                    path: "p/:id",
+                    lazy: page(() => import("../admin/cricket/qr/QrPages"), (m) => m.PlayerQrPage),
+                  },
                   {
                     path: "matches/:id",
                     lazy: page(() => import("../admin/cricket/matches/CricketMatchPage"), (m) => m.CricketMatchPage),

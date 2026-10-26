@@ -44,6 +44,12 @@ export function PlayerProfileProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// Opens a player's profile sheet (null outside the provider), e.g. for a
+// scanned player QR code.
+export function useOpenPlayerProfile() {
+  return useContext(PlayerProfileContext);
+}
+
 // A player's name that opens their profile when tapped. Plain text outside
 // the provider, or for a missing player.
 export function PlayerLink({

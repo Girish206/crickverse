@@ -17,7 +17,7 @@ import { confirmAction } from "../../components/confirmDelete";
 import { ListCard } from "../../components/ListCard";
 import { Loader } from "../../components/Loader";
 import { ModalForm } from "../../components/ModalForm";
-import { PageHeader } from "../../components/PageHeader";
+import { PageHeader, PageHeaderAction } from "../../components/PageHeader";
 import { SubmitButton } from "../../components/SubmitButton";
 import InputComp from "../../dms/components/InputComp";
 import { avatarColorFor } from "../avatarColor";
@@ -25,6 +25,7 @@ import { BottomSheet } from "../BottomSheet";
 import { LeaderboardGrid } from "../leaderboard/CricketLeaderboard";
 import { MatchesBoard } from "../matches/CricketMatchesList";
 import { teamKeyOf } from "../matches/matchUtils";
+import { TeamInviteSheet } from "../qr/ShowQrSheets";
 import { SettingsMenu } from "../SettingsMenu";
 import { teamStats } from "../stats";
 import { AddPlayersByMobileSheet } from "../tournaments/AddTeamPlayersSheet";
@@ -127,6 +128,8 @@ export function SavedTeamPage() {
   const setRoles = useSetCricketSavedTeamRoles();
   const deleteTeam = useDeleteCricketSavedTeam();
   const [adding, setAdding] = useState(false);
+  // The team's join link and QR code, for players to add themselves.
+  const [inviting, setInviting] = useState(false);
   const [renaming, setRenaming] = useState(false);
   // Player whose "⋮" sheet is open.
   const [actionsFor, setActionsFor] = useState<number | null>(null);
@@ -204,24 +207,33 @@ export function SavedTeamPage() {
         back={backTo}
         actions={
           canManage ? (
-            <SettingsMenu
-              title="Team settings"
-              items={[
-                { icon: "fa-solid fa-pen", label: "Rename team", onClick: () => setRenaming(true) },
-                ...(canDelete
-                  ? [
-                      {
-                        icon: "fa-solid fa-trash",
-                        label: "Delete team",
-                        description: "Its matches stay, as a friendly team",
-                        danger: true,
-                        disabled: deleteTeam.isPending,
-                        onClick: handleDelete,
-                      },
-                    ]
-                  : []),
-              ]}
-            />
+            <>
+              {/* The team's join QR code and link, for players to add themselves. */}
+              <PageHeaderAction
+                icon="fa-solid fa-qrcode"
+                label="Team QR code"
+                active={inviting}
+                onClick={() => setInviting(true)}
+              />
+              <SettingsMenu
+                title="Team settings"
+                items={[
+                  { icon: "fa-solid fa-pen", label: "Rename team", onClick: () => setRenaming(true) },
+                  ...(canDelete
+                    ? [
+                        {
+                          icon: "fa-solid fa-trash",
+                          label: "Delete team",
+                          description: "Its matches stay, as a friendly team",
+                          danger: true,
+                          disabled: deleteTeam.isPending,
+                          onClick: handleDelete,
+                        },
+                      ]
+                    : []),
+                ]}
+              />
+            </>
           ) : undefined
         }
       />
@@ -291,7 +303,7 @@ export function SavedTeamPage() {
         <ListCard>
           {team.playerIds.length === 0 ? (
             <div className="admin-empty-state">
-              No players yet{canManage ? " — add them by mobile number." : "."}
+              No players yet{canManage ? " — add them by mobile number or QR code, or send them the invite link." : "."}
             </div>
           ) : (
             <ul className="cricket-roster">
@@ -360,6 +372,10 @@ export function SavedTeamPage() {
           onSave={(rows) => addPlayers.mutateAsync({ id: team.id, players: rows })}
           onClose={() => setAdding(false)}
         />
+      )}
+
+      {inviting && (
+        <TeamInviteSheet team={{ savedTeamId: team.id }} name={team.name} onClose={() => setInviting(false)} />
       )}
 
       {renaming && (
