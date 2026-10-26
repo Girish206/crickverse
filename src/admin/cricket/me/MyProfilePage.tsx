@@ -14,6 +14,7 @@ import { formatMobile, normalizeMobile } from "../mobile";
 import { PLAYER_ROLES } from "../playerRoles";
 import { setTipsOff, tipsOff } from "../TipsTour";
 import { ShareAppSheet } from "../ShareMenu";
+import { SettingsMenu } from "../SettingsMenu";
 import { PlayerAvatar } from "../players/PlayerAvatar";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
@@ -23,13 +24,14 @@ import { Loader } from "../../components/Loader";
 import { confirmAction } from "../../components/confirmDelete";
 
 // /profile — the signed-in user's own details: photo, name, mobile number
-// (also their sign-in), playing role and password, plus signing out.
+// (also their sign-in), playing role and password; sharing, notifications,
+// tips and signing out are under the header's ⚙.
 export function MyProfilePage() {
   const { data: me } = useCricketMe();
 
   return (
     <div className="cricket-page cv-profile">
-      <PageHeader title="My Profile" subtitle="Account" />
+      <PageHeader title="My Profile" subtitle="Account" actions={<ProfileSettings />} />
       {me ? (
         <ProfileForm me={me} />
       ) : (
@@ -42,13 +44,10 @@ export function MyProfilePage() {
 }
 
 function ProfileForm({ me }: { me: CricketMe }) {
-  const { admin, applyToken, logout } = useAdminAuth();
-  const navigate = useNavigate();
+  const { admin, applyToken } = useAdminAuth();
   const updateProfile = useUpdateMyProfile();
   const setPhoto = useSetMyPhoto();
   const player = me.player;
-  const [sharingApp, setSharingApp] = useState(false);
-  const [noTips, setNoTips] = useState(tipsOff);
 
   const [name, setName] = useState(player?.name ?? admin?.name ?? "");
   const [mobile, setMobile] = useState(me.accountMobile ? formatMobile(me.accountMobile) : "");
@@ -106,27 +105,6 @@ function ProfileForm({ me }: { me: CricketMe }) {
     setNewPassword("");
     setConfirmPassword("");
     toast.success(newPassword ? "Profile and password updated" : "Profile updated");
-  }
-
-  function handleLogout() {
-    logout();
-    navigate("/login", { replace: true });
-  }
-
-  // A lost phone, or a shared one: ends every session of the account.
-  async function handleLogoutEverywhere() {
-    const confirmed = await confirmAction(
-      "Sign out of all devices?",
-      "You'll need your password to sign in again on every phone and computer, including this one.",
-      "Sign out everywhere",
-    );
-    if (!confirmed) return;
-    try {
-      await logout({ everywhere: true });
-      navigate("/login", { replace: true });
-    } catch {
-      toast.error("Couldn't sign out everywhere. Check your connection and try again.");
-    }
   }
 
   return (
@@ -245,30 +223,73 @@ function ProfileForm({ me }: { me: CricketMe }) {
         >
           <i className="fa-solid fa-check me-2" aria-hidden="true"></i>Save changes
         </CustomButton>
-        <button type="button" className="cv-profile-tips" onClick={() => setSharingApp(true)}>
-          <i className="fa-solid fa-share-nodes" aria-hidden="true"></i> Share CricDesk
-        </button>
-        {sharingApp && <ShareAppSheet onClose={() => setSharingApp(false)} />}
-        <NotificationsRow />
-        <button
-          type="button"
-          className="cv-profile-tips"
-          onClick={() => {
-            setTipsOff(!noTips);
-            setNoTips(!noTips);
-            toast.success(noTips ? "Tips will show again on each screen" : "Tips turned off");
-          }}
-        >
-          <i className="fa-solid fa-lightbulb" aria-hidden="true"></i> {noTips ? "Turn tips on" : "Turn tips off"}
-        </button>
-        <button type="button" className="cv-profile-signout" onClick={handleLogout}>
-          <i className="fa-solid fa-right-from-bracket" aria-hidden="true"></i> Sign out
-        </button>
-        <button type="button" className="cv-profile-tips" onClick={handleLogoutEverywhere}>
-          <i className="fa-solid fa-shield-halved" aria-hidden="true"></i> Sign out of all devices
-        </button>
       </div>
     </form>
+  );
+}
+
+// The header's ⚙: sharing the app, this device's notifications, tips and
+// signing out — everything on the page but the form and its Save.
+function ProfileSettings() {
+  const { logout } = useAdminAuth();
+  const navigate = useNavigate();
+  const [sharingApp, setSharingApp] = useState(false);
+  const [noTips, setNoTips] = useState(tipsOff);
+
+  function handleLogout() {
+    logout();
+    navigate("/login", { replace: true });
+  }
+
+  // A lost phone, or a shared one: ends every session of the account.
+  async function handleLogoutEverywhere() {
+    const confirmed = await confirmAction(
+      "Sign out of all devices?",
+      "You'll need your password to sign in again on every phone and computer, including this one.",
+      "Sign out everywhere",
+    );
+    if (!confirmed) return;
+    try {
+      await logout({ everywhere: true });
+      navigate("/login", { replace: true });
+    } catch {
+      toast.error("Couldn't sign out everywhere. Check your connection and try again.");
+    }
+  }
+
+  return (
+    <>
+      <SettingsMenu
+        items={[
+          {
+            icon: "fa-solid fa-share-nodes",
+            label: "Share CricDesk",
+            description: "Send the app to friends",
+            onClick: () => setSharingApp(true),
+          },
+          {
+            icon: "fa-solid fa-lightbulb",
+            label: noTips ? "Turn tips on" : "Turn tips off",
+            description: noTips ? "Show the tips on each screen again" : "Stop showing tips on each screen",
+            onClick: () => {
+              setTipsOff(!noTips);
+              setNoTips(!noTips);
+              toast.success(noTips ? "Tips will show again on each screen" : "Tips turned off");
+            },
+          },
+          {
+            icon: "fa-solid fa-shield-halved",
+            label: "Sign out of all devices",
+            description: "Every phone and computer, including this one",
+            onClick: handleLogoutEverywhere,
+          },
+          { icon: "fa-solid fa-right-from-bracket", label: "Sign out", onClick: handleLogout, danger: true },
+        ]}
+      >
+        <NotificationsRow />
+      </SettingsMenu>
+      {sharingApp && <ShareAppSheet onClose={() => setSharingApp(false)} />}
+    </>
   );
 }
 

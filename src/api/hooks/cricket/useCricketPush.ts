@@ -42,10 +42,17 @@ function urlBase64ToUint8Array(base64: string) {
 }
 
 // The worker main.tsx registers (production builds only). Not there = dev,
-// or a browser that refused it.
+// or a browser that refused it. main.tsx registers it once the page has
+// loaded, so on a first visit it may still be on its way: a production
+// build waits a few seconds for it before giving up.
 async function workerRegistration() {
   if (!pushSupported()) return null;
-  return (await navigator.serviceWorker.getRegistration()) ?? null;
+  const now = await navigator.serviceWorker.getRegistration();
+  if (now || !import.meta.env.PROD) return now ?? null;
+  return Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), 5_000)),
+  ]);
 }
 
 export function useCricketPush() {

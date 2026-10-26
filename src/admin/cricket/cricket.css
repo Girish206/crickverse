@@ -984,14 +984,6 @@
   .cricket-board-value {
     font-size: var(--fs-base);
   }
-  .cricket-profile-head {
-    margin-bottom: 10px;
-  }
-  .cricket-player-avatar.is-large {
-    width: 40px;
-    height: 40px;
-    font-size: var(--fs-md);
-  }
   .cricket-profile-stats {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 5px;
@@ -4823,10 +4815,6 @@ span.cricket-pick-tile-photo {
 .cricket-follow-btn:disabled {
   opacity: 0.6;
   cursor: default;
-}
-.cricket-profile-name {
-  flex: 1;
-  min-width: 0;
 }
 .cricket-follow-toolbar {
   display: flex;

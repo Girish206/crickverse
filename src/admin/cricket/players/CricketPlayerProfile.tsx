@@ -1,7 +1,6 @@
 import { useFollowCounts } from "../../../api/hooks/cricket/useCricketFollows";
 import { useCricketPlayerCareer } from "../../../api/hooks/cricket/useCricketPlayers";
 import type { CricketMatch, CricketPlayer, CricketTournament } from "../../../api/types";
-import { CricketKpis } from "../CricketKpis";
 import { roleOf } from "../playerRoles";
 import { PlayerAvatar } from "./PlayerAvatar";
 import { FollowButton } from "../follow/FollowButton";
@@ -71,16 +70,37 @@ export function CricketPlayerProfile({
 
   return (
     <div className={`cricket-profile ${cards ? "is-cards" : ""}`.trim()}>
-      <div className={`cricket-profile-head ${cards ? "cricket-stat-card" : ""}`.trim()}>
-        <div className="cricket-profile-top">
-          <PlayerAvatar name={player.name} photoUrl={player.photoUrl} className="cricket-player-avatar is-large" />
-          <div className="cricket-profile-name">
-            <h3>{player.name}</h3>
-            <span className="cricket-profile-role">{role ? role.label : "Role not set"}</span>
+      {/* The Home hero: who they are, their career in four numbers, and
+          their tournaments, friendlies and follows in a line below. */}
+      <section className="cricket-home-hero cricket-profile-hero">
+        <div className="cricket-home-hero-top">
+          <PlayerAvatar
+            name={player.name}
+            photoUrl={player.photoUrl}
+            className="cricket-player-avatar cricket-home-hero-avatar"
+          />
+          <div className="cricket-home-hero-name">
+            <h2>{player.name}</h2>
+            <span className="cricket-home-hero-role">
+              {role && <i className={`fa-solid ${role.icon}`} aria-hidden="true"></i>} {role ? role.label : "Role not set"}
+            </span>
           </div>
           <FollowButton target={{ kind: "player", targetId: player.id, teamIndex: null }} />
         </div>
-        <dl className="cricket-profile-counts">
+        <div className="cricket-home-hero-stats">
+          {[
+            { label: "Matches", value: s?.matches ?? 0 },
+            { label: "Runs", value: s?.runs ?? 0 },
+            { label: "Wickets", value: s?.wickets ?? 0 },
+            { label: "POTM", value: s?.playerOfMatch ?? 0, title: "Player of the Match" },
+          ].map((n) => (
+            <div key={n.label} title={n.title}>
+              <strong>{n.value}</strong>
+              <small>{n.label}</small>
+            </div>
+          ))}
+        </div>
+        <dl className="cricket-profile-hero-counts">
           {counts.map(([label, value]) => (
             <div key={label}>
               <dd>{value}</dd>
@@ -88,20 +108,12 @@ export function CricketPlayerProfile({
             </div>
           ))}
         </dl>
-      </div>
+      </section>
 
       {!s || s.matches === 0 ? (
         <div className="admin-empty-state">No matches played yet.</div>
       ) : (
         <>
-          <CricketKpis
-            items={[
-              { label: "Matches", value: s.matches, icon: "fa-calendar-days", tone: "total" },
-              { label: "Runs", value: s.runs, icon: "fa-baseball-bat-ball", tone: "active" },
-              { label: "Wickets", value: s.wickets, icon: "fa-baseball", tone: "login" },
-              { label: "Player of the match", value: s.playerOfMatch, icon: "fa-medal", tone: "guest" },
-            ]}
-          />
           <div className={cards ? "cricket-stat-cards" : undefined}>
             {section("Batting", "fa-baseball-bat-ball", [
               ["Innings", s.innings],

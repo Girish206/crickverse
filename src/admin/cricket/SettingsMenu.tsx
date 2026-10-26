@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { PageHeaderAction } from "../components/PageHeader";
 import { BottomSheet } from "./BottomSheet";
 
@@ -14,15 +14,25 @@ export interface SettingsMenuItem {
 
 // The header's settings (gear) button, opening its items in a sheet from the
 // bottom. Picking one closes the sheet first (it may open its own); hidden
-// when there's nothing to show.
-export function SettingsMenu({ title = "Settings", items }: { title?: string; items: SettingsMenuItem[] }) {
+// when there's nothing to show. `children` go above the items and leave the
+// sheet open (a switch, e.g. My Profile's notifications).
+export function SettingsMenu({
+  title = "Settings",
+  items,
+  children,
+}: {
+  title?: string;
+  items: SettingsMenuItem[];
+  children?: ReactNode;
+}) {
   const [open, setOpen] = useState(false);
-  if (items.length === 0) return null;
+  if (items.length === 0 && !children) return null;
   return (
     <>
       <PageHeaderAction icon="fa-solid fa-gear" label={title} tour="settings" active={open} onClick={() => setOpen(true)} />
       {open && (
         <BottomSheet title={title} icon="fa-solid fa-gear" onClose={() => setOpen(false)}>
+          {children}
           <div className="cricket-settings-list">
             {items.map((item) => (
               <button

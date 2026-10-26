@@ -137,40 +137,18 @@
   gap: 10px;
   padding-bottom: 12px;
 }
-.cv-profile-tips,
-.cv-profile-signout {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: 44px;
-  border: 1px solid rgba(220, 38, 38, 0.35);
-  border-radius: 999px;
-  background: transparent;
-  color: #dc2626;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-.cv-profile-tips {
-  border-color: var(--border-color);
-  color: var(--theme-text-dark);
-}
-.cv-profile-tips:hover {
-  background: rgba(var(--primary-rgb), 0.05);
-}
-.cv-profile-signout:hover {
-  background: rgba(220, 38, 38, 0.08);
-}
-
-/* "Match notifications": a label row with a switch, between the buttons. */
+/* "Match notifications": a label row with a switch, at the top of the
+   header's ⚙ sheet. */
 .cv-profile-switch {
   display: flex;
+  margin-bottom: 12px;
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
   border: 1px solid var(--border-color);
   border-radius: 18px;
+  background: var(--adm-surface, #fff);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
   color: var(--theme-text-dark);
   cursor: pointer;
 }
