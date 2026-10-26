@@ -6,6 +6,7 @@ import { useCricketTournaments } from "../../../api/hooks/cricket/useCricketTour
 import type { CricketMatch, CricketMe, CricketTournament } from "../../../api/types";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { ListCard } from "../../components/ListCard";
+import { HomeRail, HomeSection, LiveCount } from "../HomeSection";
 import { PillSelect } from "../PillSelect";
 import { useTips, type TipStep } from "../TipsTour";
 import { MatchesBoard } from "../matches/CricketMatchesList";
@@ -170,55 +171,6 @@ function HomeHero({ me }: { me: CricketMe }) {
   );
 }
 
-// Each home section's own colour (tinted panel and icon badge), so they're
-// easy to tell apart at a glance.
-type SectionTone = "live" | "next" | "last" | "tournaments" | "following";
-
-function HomeSection({
-  title,
-  icon,
-  tone,
-  badge,
-  link,
-  tour,
-  children,
-}: {
-  title: string;
-  icon: string;
-  tone: SectionTone;
-  badge?: ReactNode;
-  link?: { to: string; label: string };
-  // What the tips point at (TipsTour).
-  tour?: string;
-  children: ReactNode;
-}) {
-  return (
-    <section className={`cricket-home-section is-${tone}`} data-tour={tour}>
-      <div className="cricket-home-head">
-        <h2 className="cricket-section-title cricket-home-heading">
-          <span className="cricket-home-icon" aria-hidden="true">
-            <i className={icon}></i>
-          </span>
-          {title}
-          {badge}
-        </h2>
-        {link && (
-          <Link to={link.to} className="admin-link">
-            {link.label}
-          </Link>
-        )}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-// A row of cards to swipe through sideways. With more than one, each card is
-// a little narrower than the row so the next one peeks in on the right.
-function HomeRail({ children }: { children: ReactNode[] }) {
-  return <div className={`cricket-home-rail ${children.length > 1 ? "is-peek" : ""}`.trim()}>{children}</div>;
-}
-
 const HOME_TIPS: TipStep[] = [
   {
     target: "hero",
@@ -315,12 +267,7 @@ function HomeFeed({ me }: { me: CricketMe }) {
           title="Live now"
           icon="fa-solid fa-tower-broadcast"
           tone="live"
-          badge={
-            <span className="cricket-home-live">
-              <span className="cricket-live-dot" aria-hidden="true"></span>
-              {live.length}
-            </span>
-          }
+          badge={<LiveCount count={live.length} />}
         >
           <HomeRail>{live.map((m) => card(m))}</HomeRail>
         </HomeSection>

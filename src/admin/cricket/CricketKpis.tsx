@@ -10,8 +10,30 @@ export interface CricketKpi {
 }
 
 // A row of stat tiles at the top of a cricket page. "strip" packs them into
-// one slim bar of columns, for headers that are already busy.
-export function CricketKpis({ items, variant = "tiles" }: { items: CricketKpi[]; variant?: "tiles" | "strip" }) {
+// one slim bar of columns, for headers that are already busy; "hero" puts
+// them on the player Home's gradient banner (the admin pages).
+export function CricketKpis({
+  items,
+  variant = "tiles",
+}: {
+  items: CricketKpi[];
+  variant?: "tiles" | "strip" | "hero";
+}) {
+  if (variant === "hero") {
+    return (
+      <section className="cricket-home-hero cricket-kpi-hero">
+        <div className="cricket-home-hero-stats">
+          {items.map((item) => (
+            <div key={item.label} title={item.hint}>
+              <i className={`fa-solid ${item.icon}`} aria-hidden="true"></i>
+              <strong>{item.value}</strong>
+              <small>{item.label}</small>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
   if (variant === "strip") {
     return (
       <div className="cricket-kpi-strip">

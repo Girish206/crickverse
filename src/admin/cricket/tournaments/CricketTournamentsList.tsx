@@ -46,16 +46,17 @@ export function CricketTournamentsList() {
     >
       {tournaments && (
         <CricketKpis
+          variant="hero"
           items={[
             { label: "Tournaments", value: tournaments.length, icon: "fa-trophy", tone: "total" },
             { label: "Ongoing", value: inPhase("ongoing"), icon: "fa-tower-broadcast", tone: "active" },
             { label: "Upcoming", value: inPhase("upcoming"), icon: "fa-clock", tone: "login" },
             {
-              label: `Players picked of ${players?.length ?? 0}`,
+              label: `Picked of ${players?.length ?? 0}`,
               value: pickedPlayers,
               icon: "fa-users",
               tone: "guest",
-              hint: "Different players in at least one tournament's squad",
+              hint: `Players in at least one tournament's squad, of ${players?.length ?? 0}`,
             },
           ]}
         />

@@ -111,6 +111,13 @@ const Sidebar = ({
                               link: "/leaderboard",
                               submenu: [],
                           },
+                          {
+                              id: "cricket-database",
+                              label: "Database",
+                              icon: "fa-solid fa-database",
+                              link: "/database",
+                              submenu: [],
+                          },
                       ],
                   },
               ]

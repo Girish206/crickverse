@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 
 // A compact pill-shaped dropdown in the app's own colours — a native
 // <select> opens the OS's list (blue highlight, light even in dark mode).
@@ -19,6 +19,10 @@ export function PillSelect<T extends string>({
 }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
+  // The menu hangs from the pill's right edge; a pill near the left of the
+  // screen flips it to hang from the left so it isn't cut off.
+  const [alignLeft, setAlignLeft] = useState(false);
+  const menu = useRef<HTMLUListElement>(null);
   const root = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
   const listId = useId();
@@ -32,6 +36,14 @@ export function PillSelect<T extends string>({
     document.addEventListener("pointerdown", onDown);
     return () => document.removeEventListener("pointerdown", onDown);
   }, [open]);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setAlignLeft(false);
+      return;
+    }
+    if (!alignLeft && (menu.current?.getBoundingClientRect().left ?? 0) < 8) setAlignLeft(true);
+  }, [open, alignLeft]);
 
   function show() {
     setActive(selectedIndex);
@@ -88,7 +100,13 @@ export function PillSelect<T extends string>({
         <i className="fa-solid fa-chevron-down" aria-hidden="true"></i>
       </button>
       {open && (
-        <ul id={listId} role="listbox" aria-label={label} className="cricket-pill-select-menu">
+        <ul
+          ref={menu}
+          id={listId}
+          role="listbox"
+          aria-label={label}
+          className={`cricket-pill-select-menu ${alignLeft ? "is-left" : ""}`.trim()}
+        >
           {options.map((option, index) => (
             <li
               key={option.value}
@@ -99,7 +117,7 @@ export function PillSelect<T extends string>({
               onPointerEnter={() => setActive(index)}
               onClick={() => pick(index)}
             >
-              <span>{option.label}</span>
+              <span title={option.label}>{option.label}</span>
               {index === selectedIndex && <i className="fa-solid fa-check" aria-hidden="true"></i>}
             </li>
           ))}

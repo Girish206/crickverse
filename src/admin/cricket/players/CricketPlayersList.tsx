@@ -15,6 +15,7 @@ import { PlayerLink } from "./PlayerProfileSheet";
 import { useCricketTournaments } from "../../../api/hooks/cricket/useCricketTournaments";
 import { useCricketMatches } from "../../../api/hooks/cricket/useCricketMatches";
 import { CricketKpis } from "../CricketKpis";
+import { HomeSection } from "../HomeSection";
 import { CricketPlayerProfileLoader } from "./CricketPlayerProfile";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
@@ -62,6 +63,7 @@ export function CricketPlayersList() {
       title="Players"
       icon="fa-solid fa-users"
       subtitle="Everyone on the roster, and who can sign in"
+      plain
       action={
         <div className="d-flex gap-2 flex-wrap">
           <Button variant="outline" onClick={() => setModal({ mode: "bulk" })}>
@@ -80,6 +82,7 @@ export function CricketPlayersList() {
       ) : (
         <>
           <CricketKpis
+            variant="hero"
             items={[
               { label: "Players", value: players.length, icon: "fa-users", tone: "total" },
               { label: "In a tournament", value: pickedCount, icon: "fa-trophy", tone: "active" },
@@ -97,71 +100,73 @@ export function CricketPlayersList() {
               {missingMobile} player{missingMobile === 1 ? " has" : "s have"} no mobile number yet — edit them to add one.
             </div>
           )}
-          <div className="cricket-toolbar">
-            <input
-              type="search"
-              className="form-control shadow-none"
-              placeholder="Search by name or mobile"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <span className="admin-filter-count">{players.length} players</span>
-          </div>
-          <div className="cricket-player-grid">
-            {visible.map((player) => {
-              const role = roleOf(player.role);
-              return (
-                <div className="cricket-player-row" key={player.id}>
-                  <PlayerAvatar name={player.name} photoUrl={player.photoUrl} className="cricket-player-avatar" />
-                  <div className="cricket-player-info">
-                    <strong>
-                      <PlayerLink playerId={player.id}>{player.name}</PlayerLink>
-                      {player.hasLogin && (
-                        <i className="fa-solid fa-key cricket-login-icon" title="Can sign in" aria-label="Can sign in"></i>
-                      )}
-                    </strong>
-                    <small>
-                      {player.mobile ? (
-                        formatMobile(player.mobile)
-                      ) : (
-                        <span className="text-danger">No mobile</span>
-                      )}
-                      {role && (
-                        <>
-                          {" · "}
-                          {role.label}
-                        </>
-                      )}
-                    </small>
+          <HomeSection title="Roster" icon="fa-solid fa-users" tone="following">
+            <div className="cricket-toolbar">
+              <input
+                type="search"
+                className="form-control shadow-none"
+                placeholder="Search by name or mobile"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <span className="admin-filter-count">{players.length} players</span>
+            </div>
+            <div className="cricket-player-grid">
+              {visible.map((player) => {
+                const role = roleOf(player.role);
+                return (
+                  <div className="cricket-player-row" key={player.id}>
+                    <PlayerAvatar name={player.name} photoUrl={player.photoUrl} className="cricket-player-avatar" />
+                    <div className="cricket-player-info">
+                      <strong>
+                        <PlayerLink playerId={player.id}>{player.name}</PlayerLink>
+                        {player.hasLogin && (
+                          <i className="fa-solid fa-key cricket-login-icon" title="Can sign in" aria-label="Can sign in"></i>
+                        )}
+                      </strong>
+                      <small>
+                        {player.mobile ? (
+                          formatMobile(player.mobile)
+                        ) : (
+                          <span className="text-danger">No mobile</span>
+                        )}
+                        {role && (
+                          <>
+                            {" · "}
+                            {role.label}
+                          </>
+                        )}
+                      </small>
+                    </div>
+                    <RowActions
+                      onView={() => setModal({ mode: "view", id: player.id })}
+                      onEdit={() => setModal({ mode: "edit", id: player.id })}
+                      onDelete={matches && !played.has(player.id) ? () => handleDelete(player.id, player.name) : undefined}
+                    >
+                      <button
+                        type="button"
+                        className="cricket-key-btn"
+                        title="Merge into another player"
+                        aria-label="Merge into another player"
+                        onClick={() => setModal({ mode: "merge", id: player.id })}
+                      >
+                        <i className="fa-solid fa-code-merge" aria-hidden="true"></i>
+                      </button>
+                      <button
+                        type="button"
+                        className={`cricket-key-btn ${player.hasLogin ? "is-on" : ""}`}
+                        title="App login"
+                        aria-label="App login"
+                        onClick={() => setModal({ mode: "login", id: player.id })}
+                      >
+                        <i className="fa-solid fa-key" aria-hidden="true"></i>
+                      </button>
+                    </RowActions>
                   </div>
-                  <RowActions
-                    onView={() => setModal({ mode: "view", id: player.id })}
-                    onEdit={() => setModal({ mode: "edit", id: player.id })}
-                    onDelete={matches && !played.has(player.id) ? () => handleDelete(player.id, player.name) : undefined}
-                  >
-                    <button
-                      type="button"
-                      className="cricket-key-btn"
-                      title="Merge into another player"
-                      aria-label="Merge into another player"
-                      onClick={() => setModal({ mode: "merge", id: player.id })}
-                    >
-                      <i className="fa-solid fa-code-merge" aria-hidden="true"></i>
-                    </button>
-                    <button
-                      type="button"
-                      className={`cricket-key-btn ${player.hasLogin ? "is-on" : ""}`}
-                      title="App login"
-                      aria-label="App login"
-                      onClick={() => setModal({ mode: "login", id: player.id })}
-                    >
-                      <i className="fa-solid fa-key" aria-hidden="true"></i>
-                    </button>
-                  </RowActions>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          </HomeSection>
         </>
       )}
 

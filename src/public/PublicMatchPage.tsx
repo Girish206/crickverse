@@ -7,13 +7,10 @@ import { ListCard } from "../admin/components/ListCard";
 import { ShareSheet } from "../admin/cricket/ShareMenu";
 import { logoFor } from "../admin/cricket/tournaments/tournamentArt";
 import { BallBurst } from "../admin/cricket/matches/BallBurst";
-import { BallByBall, Scorecard } from "../admin/cricket/matches/Scorecard";
+import { Scorecard } from "../admin/cricket/matches/Scorecard";
 import { LiveView } from "../admin/cricket/matches/LiveView";
 import { MatchHero } from "../admin/cricket/matches/MatchHero";
 import { MatchInfo } from "../admin/cricket/matches/MatchInfo";
-import { MatchInsights } from "../admin/cricket/matches/MatchInsights";
-import { MatchMvp } from "../admin/cricket/matches/MatchMvp";
-import { MatchSquads } from "../admin/cricket/matches/MatchSquads";
 import { MatchStatusBadge } from "../admin/cricket/matches/matchUi";
 import { PublicShell, PublicState } from "./PublicShell";
 import "../admin/dms/css/adminDisplays.css";
@@ -22,11 +19,14 @@ import "../admin/cricket/cricket.css";
 
 type Tab = "info" | "live" | "scorecard" | "insights" | "overs" | "squads" | "mvp";
 
+// What a signed-out visitor sees is the score; the rest is a reason to sign in.
+const LOCKED_TABS: ReadonlySet<Tab> = new Set(["insights", "overs", "squads", "mvp"]);
+
 // /matches/:id for someone signed out (a shared link to a public match):
-// the same tabs a signed-in follower sees on CricketMatchPage — Live,
-// Scorecard, Insights, Overs, Squads, MVP — read-only, without the scorer
-// or the match settings. While live it follows along every few seconds
-// (usePublicMatch).
+// the same tabs a signed-in follower sees on CricketMatchPage, read-only.
+// Info, Live and Scorecard are open; Insights, Overs, Squads and MVP ask
+// them to sign in (LOCKED_TABS). While live it follows along every few
+// seconds (usePublicMatch).
 export function PublicMatchPage({ id }: { id: number }) {
   const { data, isLoading, error, refetch } = usePublicMatch(id);
   const queryClient = useQueryClient();
@@ -95,7 +95,8 @@ function MatchView({ data: { match, tournament, players } }: { data: PublicMatch
 
       {/* Tournament logo, the match's status over its title, and Share. The
           card below names both teams, so the title is the tournament's
-          name, except while live, when the card is left out. */}
+          name, except while live (when the card is left out) or for a
+          standalone match, which has no other name. */}
       <header className="cv-pm-head">
         {/* The match's status rides on the logo as a small tag. */}
         <div className="cv-pm-logo-wrap">
@@ -110,16 +111,8 @@ function MatchView({ data: { match, tournament, players } }: { data: PublicMatch
         </div>
         <div className="cv-pm-head-title">
           {/* A small caps label over the title, as in the app's page headers. */}
-          {(live || tournament) && (
-            <small className="cv-pm-eyebrow">{live ? tournament?.name ?? "Match" : "Tournament"}</small>
-          )}
-          <h1>
-            {live ? (
-              `${match.teams[0].name} vs ${match.teams[1].name}`
-            ) : (
-              tournament?.name ?? "Match"
-            )}
-          </h1>
+          <small className="cv-pm-eyebrow">{live ? tournament?.name ?? "Match" : tournament ? "Tournament" : "Match"}</small>
+          <h1>{live || !tournament ? `${match.teams[0].name} vs ${match.teams[1].name}` : tournament.name}</h1>
           {tournament?.isPublic && (
             <Link to={`/tournaments/${tournament.id}`} className="cv-pm-head-link">
               View tournament <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
@@ -145,6 +138,7 @@ function MatchView({ data: { match, tournament, players } }: { data: PublicMatch
             onClick={() => setParams({ tab: t.value }, { replace: true, state: location.state })}
           >
             {t.label}
+            {LOCKED_TABS.has(t.value) && <i className="fa-solid fa-lock cv-pm-tab-lock" aria-label="Sign in to see"></i>}
           </button>
         ))}
       </div>
@@ -153,10 +147,7 @@ function MatchView({ data: { match, tournament, players } }: { data: PublicMatch
         {tab === "info" && <MatchInfo match={match} tournament={tournament ?? undefined} />}
         {tab === "live" && <LiveView match={match} nameOf={nameOf} />}
         {tab === "scorecard" && <Scorecard match={match} nameOf={nameOf} />}
-        {tab === "insights" && <MatchInsights match={match} nameOf={nameOf} />}
-        {tab === "overs" && <BallByBall match={match} nameOf={nameOf} />}
-        {tab === "squads" && <MatchSquads match={match} nameOf={nameOf} />}
-        {tab === "mvp" && <MatchMvp match={match} nameOf={nameOf} />}
+        {LOCKED_TABS.has(tab) && <SignInToSee label={tabs.find((t) => t.value === tab)!.label} tab={tab} />}
       </ListCard>
 
       {sharing && (
@@ -170,6 +161,21 @@ function MatchView({ data: { match, tournament, players } }: { data: PublicMatch
           onClose={() => setSharing(false)}
         />
       )}
+    </div>
+  );
+}
+
+// In place of a locked tab: sign in, and come straight back to this tab.
+function SignInToSee({ label, tab }: { label: string; tab: Tab }) {
+  const from = `${useLocation().pathname}?tab=${tab}`;
+  return (
+    <div className="cv-pm-locked">
+      <i className="fa-solid fa-lock cv-public-lock" aria-hidden="true"></i>
+      <h2>Sign in to see {label}</h2>
+      <p>Insights, ball-by-ball overs, squads and the MVP are for signed-in fans. It's free, and you'll come straight back here.</p>
+      <Link to="/login" state={{ from }} className="cv-shell-btn is-primary">
+        <i className="fa-solid fa-right-to-bracket" aria-hidden="true"></i> Sign in
+      </Link>
     </div>
   );
 }

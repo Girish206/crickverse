@@ -1701,17 +1701,6 @@
   margin-bottom: 0;
 }
 
-/* Dashboard */
-.cricket-dash-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px;
-}
-@media (max-width: 1100px) {
-  .cricket-dash-grid {
-    grid-template-columns: 1fr;
-  }
-}
 @media (max-width: 576px) {
   .cricket-scoreboard {
     grid-template-columns: 1fr;
@@ -2661,7 +2650,11 @@
   border: 1px solid rgba(var(--section-rgb), 0.18);
   border-top: 3px solid rgb(var(--section-rgb));
   border-radius: 18px;
-  background: linear-gradient(180deg, rgba(var(--section-rgb), 0.08) 0%, rgba(var(--section-rgb), 0.02) 120px);
+  /* The tint over a solid surface, so the page's backdrop art doesn't show
+     through and grey it out. */
+  background: linear-gradient(180deg, rgba(var(--section-rgb), 0.1) 0%, rgba(var(--section-rgb), 0.03) 120px),
+    var(--adm-surface, #fff);
+  box-shadow: 0 6px 20px -12px rgba(var(--section-rgb), 0.45);
 }
 /* Crimson, gold (the amber deepened to read on light), maroon, orange and
    the logo's dark navy. */
@@ -3122,4 +3115,57 @@
 .cricket-summary-undo small {
   font-size: var(--fs-xs);
   color: var(--muted-color);
+}
+
+/* Admin pages' numbers (CricketKpis variant="hero"): the Home hero's stat
+   tiles on its gradient, without the player row above them. */
+.cricket-kpi-hero {
+  margin-bottom: 16px;
+  padding: 14px;
+}
+.cricket-kpi-hero .cricket-home-hero-stats {
+  margin-top: 0;
+}
+.cricket-kpi-hero .cricket-home-hero-stats i {
+  font-size: var(--fs-sm);
+  color: rgb(var(--brand-amber-rgb));
+}
+.cricket-kpi-hero .cricket-home-hero-stats small {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 576px) {
+  .cricket-kpi-hero {
+    margin-bottom: 12px;
+    padding: 10px;
+  }
+  .cricket-kpi-hero .cricket-home-hero-stats {
+    margin-top: 0;
+  }
+  .cricket-kpi-hero .cricket-home-hero-stats i {
+    font-size: var(--fs-2xs);
+  }
+}
+/* In a Home stack its gap spaces it. */
+.cricket-home > .cricket-kpi-hero {
+  margin-bottom: 0;
+}
+/* What sits on a tinted Home section (admin Players and Database) gets the
+   match cards' solid surface. */
+.cricket-home-section .cricket-player-row,
+.cricket-home-section .cricket-db-facts > div,
+.cricket-home-section .cricket-db-table-wrap {
+  background: var(--adm-surface, #fff);
+}
+.cricket-home-section .cricket-db-table-wrap {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+.cricket-home-section .cricket-db-facts {
+  margin-top: 0;
+}
+.cricket-home-section .cricket-toolbar input {
+  background: var(--adm-surface, #fff);
 }

@@ -405,6 +405,9 @@ export interface CricketMatch {
   // The account that created it (null on older ones); see canManage.ts.
   createdById: number | null;
   createdAt: string;
+  // Changes on every write; the live check sends it back to hear "nothing
+  // new" cheaply (null on a match not written since it was added).
+  updatedAt?: string | null;
 }
 
 export type CricketResultMethod = "super-over" | "walkover" | "forfeit" | "concede" | "dls" | "bowl-out" | "other";
@@ -422,4 +425,41 @@ export interface PaginatedResponse<T> {
 
 export interface ApiEnvelope<T> {
   data: T;
+}
+
+// GET /admin/cricket/db-stats (super admins): the shared MongoDB database.
+// Sizes are bytes. A part the database user may not read comes back null.
+export interface DbCollectionStats {
+  name: string;
+  count: number;
+  size: number | null;
+  avgObjSize: number | null;
+  storageSize: number | null;
+  indexes: number | null;
+  indexSize: number | null;
+}
+
+export interface DbStats {
+  database: string | null;
+  version: string | null;
+  pingMs: number;
+  totals: {
+    collections: number;
+    views: number;
+    objects: number;
+    avgObjSize: number;
+    dataSize: number;
+    storageSize: number;
+    indexes: number;
+    indexSize: number;
+    totalSize: number;
+    fsUsedSize: number | null;
+    fsTotalSize: number | null;
+  } | null;
+  server: {
+    uptimeSeconds: number;
+    connections: { current: number; available: number } | null;
+  } | null;
+  collections: DbCollectionStats[];
+  checkedAt: string;
 }

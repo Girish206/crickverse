@@ -146,6 +146,13 @@ export const router = createBrowserRouter([
                           (m) => m.CricketMatchesList,
                         ),
                       },
+                      {
+                        path: "database",
+                        lazy: page(
+                          () => import("../admin/cricket/database/DatabaseStatsPage"),
+                          (m) => m.DatabaseStatsPage,
+                        ),
+                      },
                     ],
                   },
                   // Any other address: a "page not found" screen, in the layout.

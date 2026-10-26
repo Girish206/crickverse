@@ -768,9 +768,6 @@
     padding: 7px 14px;
     font-size: var(--fs-xs);
   }
-  .cricket-dash-grid {
-    gap: 12px;
-  }
 
   /* Match header: one row per side */
   .cricket-match-meta {
@@ -2753,6 +2750,7 @@
   right: 0;
   z-index: 30;
   min-width: max(100%, 190px);
+  max-width: calc(100vw - 24px);
   max-height: 280px;
   margin: 0;
   padding: 6px;
@@ -2763,6 +2761,10 @@
   background: var(--bs-body-bg);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14);
   animation: cricket-pill-menu-in 0.14s ease-out;
+}
+.cricket-pill-select-menu.is-left {
+  right: auto;
+  left: 0;
 }
 @keyframes cricket-pill-menu-in {
   from {
@@ -2789,6 +2791,12 @@
 .cricket-pill-select-menu li.is-selected {
   color: var(--primary);
   font-weight: 700;
+}
+/* A long name (a tournament) ends in "…" rather than widening the menu. */
+.cricket-pill-select-menu li span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .cricket-pill-select-menu li i {
   font-size: 0.75rem;
@@ -6199,9 +6207,13 @@ tbody tr:first-child .cricket-standings-rank {
 
 /* Leaderboard: tournament, season, ball and match type filters side by side. */
 .cricket-leaderboard-filters {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+  margin-bottom: 16px;
+}
+.cricket-leaderboard-filters .cricket-pill-select {
+  max-width: 100%;
 }
 
 /* A tournament the viewer can't open yet: its name and a Follow button. */
@@ -6221,4 +6233,79 @@ tbody tr:first-child .cricket-standings-rank {
 }
 .cricket-share-note {
   margin: 0 0 12px;
+}
+
+/* ===== Database (super admins) ===== */
+.cricket-db-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+  margin: 14px 0 6px;
+}
+.cricket-db-facts > div {
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+.cricket-db-facts dt {
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted-color);
+}
+.cricket-db-facts dd {
+  margin: 2px 0 0;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--theme-text-dark);
+}
+.cricket-db-facts dd small {
+  font-weight: 500;
+  color: var(--muted-color);
+}
+.cricket-db-table-wrap {
+  overflow-x: auto;
+}
+.cricket-db-name {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight: 600;
+}
+/* How much room the collection takes, next to the largest one. */
+.cricket-db-bar {
+  display: block;
+  height: 4px;
+  margin-top: 5px;
+  border-radius: 4px;
+  background: var(--border-color);
+  overflow: hidden;
+}
+.cricket-db-bar > span {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: inherit;
+  background: var(--primary-gradient);
+}
+.cricket-db-note {
+  padding: 12px 14px;
+  border: 1px dashed var(--border-color);
+  border-radius: 12px;
+  font-size: var(--fs-sm);
+  color: var(--muted-color);
+}
+.cricket-db-note strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--theme-text-dark);
+}
+.cricket-db-note ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.cricket-db-note li + li {
+  margin-top: 4px;
+}
+.cricket-db-note b {
+  color: var(--theme-text-dark);
 }

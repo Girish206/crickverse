@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../../client";
 import { isAxiosError } from "axios";
+import { followLive } from "./followLive";
 import type {
   ApiEnvelope,
   CricketBall,
@@ -61,18 +62,15 @@ export function useCricketMatches(tournamentId?: number | "none", { enabled = tr
   });
 }
 
-// How often an open live match checks for new balls (paused while the tab
-// is hidden).
-const LIVE_REFRESH = 4_000;
-
 type CricketInningsData = CricketMatch["innings"][number];
 // GET /matches/:id/live: the match with only the balls from `fromBall` on.
 type LiveMatch = Omit<CricketMatch, "innings"> & { innings: (CricketInningsData & { fromBall: number })[] };
 
 // The match, loaded in full once (and again on coming back to the app).
-// While it's live, every 3s it asks only for what's new — the details plus
-// the balls after the ones it has — and adds them to what it holds, so
-// viewers follow along ball by ball without re-downloading the match.
+// While it's live it follows along (followLive): each change arrives within
+// about a second as the details plus the balls after the ones it has, added
+// to what it holds, so viewers see every ball without re-downloading the
+// match.
 export function useCricketMatch(id: number) {
   const queryClient = useQueryClient();
   const key = ["cricket-matches", id];
@@ -89,25 +87,24 @@ export function useCricketMatch(id: number) {
   useEffect(() => {
     if (!live) return;
     const matchKey = ["cricket-matches", id];
-    let busy = false;
-    const timer = window.setInterval(async () => {
-      // Skip while hidden, still waiting on the last ask, or while the scorer
-      // is saving a ball (their own save brings the new state).
-      if (busy || document.hidden || queryClient.isMutating() > 0) return;
-      const held = queryClient.getQueryData<CricketMatch>(matchKey);
-      if (!held) return;
-      busy = true;
-      try {
-        const { data } = await apiClient.get<ApiEnvelope<LiveMatch>>(`/admin/cricket/matches/${id}/live`, {
-          params: { known: held.innings.map((inn) => inn.balls.length).join(",") },
-        });
+    let held: CricketMatch | undefined;
+    return followLive<LiveMatch>({
+      url: `/admin/cricket/matches/${id}/live`,
+      ask: () => {
+        // Not while the scorer is saving a ball (their own save brings the
+        // new state).
+        held = queryClient.isMutating() > 0 ? undefined : queryClient.getQueryData<CricketMatch>(matchKey);
+        return held && { known: held.innings.map((inn) => inn.balls.length).join(","), since: held.updatedAt };
+      },
+      apply: (data) => {
         // Something newer arrived meanwhile (a save): keep that.
-        if (queryClient.getQueryData(matchKey) !== held || queryClient.isMutating() > 0) return;
+        if (!held || queryClient.getQueryData(matchKey) !== held || queryClient.isMutating() > 0) return;
+        const asked = held;
         const next: CricketMatch = {
-          ...data.data,
-          innings: data.data.innings.map(({ fromBall, balls, ...inn }, i) => ({
+          ...data,
+          innings: data.innings.map(({ fromBall, balls, ...inn }, i) => ({
             ...inn,
-            balls: [...(held.innings[i]?.balls ?? []).slice(0, fromBall), ...balls],
+            balls: [...(asked.innings[i]?.balls ?? []).slice(0, fromBall), ...balls],
           })),
         };
         queryClient.setQueryData(matchKey, next);
@@ -116,13 +113,8 @@ export function useCricketMatch(id: number) {
           queryClient.invalidateQueries({ queryKey: ["cricket-matches", "list"] });
           queryClient.invalidateQueries({ queryKey: ["cricket-me"] });
         }
-      } catch {
-        // Try again on the next tick.
-      } finally {
-        busy = false;
-      }
-    }, LIVE_REFRESH);
-    return () => window.clearInterval(timer);
+      },
+    });
   }, [id, live, queryClient]);
 
   return query;

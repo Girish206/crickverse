@@ -7,7 +7,7 @@ import "../../components/Loader.css";
 // The menu's own screens get the navbar and sidebar; every other screen
 // (a tournament, team, match or match setup) brings its own header with a
 // back button instead.
-const MAIN_SCREENS = ["/", "/me", "/my-matches", "/my-tournaments", "/my-teams", "/following", "/dashboard", "/tournaments", "/matches", "/players", "/leaderboard"];
+const MAIN_SCREENS = ["/", "/me", "/my-matches", "/my-tournaments", "/my-teams", "/following", "/dashboard", "/tournaments", "/matches", "/players", "/leaderboard", "/database"];
 
 const LayoutWrapper = () => {
     const { admin } = useAdminAuth();
@@ -23,6 +23,7 @@ const LayoutWrapper = () => {
         if (path.startsWith("/players")) return "cricket-players";
         if (path.startsWith("/leaderboard")) return "cricket-leaderboard";
         if (path.startsWith("/dashboard")) return "cricket-dashboard";
+        if (path.startsWith("/database")) return "cricket-database";
         // A player opening one of their tournaments/matches stays under "My …".
         if (path.startsWith("/tournaments")) return admin?.isSuperAdmin ? "cricket-tournaments" : "cricket-my-tournaments";
         if (path.startsWith("/matches")) return admin?.isSuperAdmin ? "cricket-matches" : "cricket-my-matches";

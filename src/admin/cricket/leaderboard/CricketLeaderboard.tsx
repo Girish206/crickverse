@@ -4,7 +4,6 @@ import { useCricketMatches } from "../../../api/hooks/cricket/useCricketMatches"
 import { useCricketTournaments } from "../../../api/hooks/cricket/useCricketTournaments";
 import type { CricketMatch, CricketTournament } from "../../../api/types";
 import { ListCard } from "../../components/ListCard";
-import SelectInput from "../../dms/components/SelectInput";
 import { usePlayerNames, usePlayerPhotos } from "../matches/matchUtils";
 import { AwardCard } from "../matches/AwardCard";
 import { PlayerAvatar } from "../players/PlayerAvatar";
@@ -543,34 +542,34 @@ export function CricketLeaderboardPage() {
       icon="fa-solid fa-ranking-star"
       subtitle="Top run-scorers, wicket-takers and award winners"
     >
-      <div className="cricket-filter-select cricket-leaderboard-filters">
-        <SelectInput
-          label="Tournament (all if empty)"
-          size="sm"
-          options={(tournaments ?? []).map((t) => ({ value: t.id, label: t.name }))}
-          value={tournamentId ?? ""}
-          onChange={(value) => setTournamentId(value || null)}
+      {/* Pills, as on My Matches; each one's first option clears it. */}
+      <div className="cricket-leaderboard-filters">
+        <PillSelect
+          label="Tournament"
+          value={tournamentId === null ? "" : String(tournamentId)}
+          options={[
+            { value: "", label: "All tournaments" },
+            ...(tournaments ?? []).map((t) => ({ value: String(t.id), label: t.name })),
+          ]}
+          onChange={(value) => setTournamentId(value ? Number(value) : null)}
         />
-        <SelectInput
+        <PillSelect
           label="Season"
-          size="sm"
-          options={years.map((y) => ({ value: y, label: y }))}
           value={year}
-          onChange={(value) => setYear(value || "")}
+          options={[{ value: "", label: "All seasons" }, ...years.map((y) => ({ value: y, label: y }))]}
+          onChange={setYear}
         />
-        <SelectInput
+        <PillSelect
           label="Ball type"
-          size="sm"
-          options={BALL_TYPES.map((b) => ({ value: b.value, label: b.label }))}
           value={ballType}
-          onChange={(value) => setBallType(value || "")}
+          options={[{ value: "", label: "Any ball" }, ...BALL_TYPES.map((b) => ({ value: b.value, label: `${b.label} ball` }))]}
+          onChange={setBallType}
         />
-        <SelectInput
+        <PillSelect
           label="Match type"
-          size="sm"
-          options={MATCH_TYPES.map((m) => ({ value: m.value, label: m.label }))}
           value={matchType}
-          onChange={(value) => setMatchType(value || "")}
+          options={[{ value: "", label: "All formats" }, ...MATCH_TYPES.map((m) => ({ value: m.value, label: m.label }))]}
+          onChange={setMatchType}
         />
       </div>
       {isLoading ? <Loader /> : <LeaderboardGrid matches={shown} />}

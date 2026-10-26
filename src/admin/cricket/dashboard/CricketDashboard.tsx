@@ -1,10 +1,11 @@
-import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useCricketMatches } from "../../../api/hooks/cricket/useCricketMatches";
 import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
 import { useCricketTournaments } from "../../../api/hooks/cricket/useCricketTournaments";
+import type { CricketMatch } from "../../../api/types";
 import { ListCard } from "../../components/ListCard";
 import { CricketKpis } from "../CricketKpis";
+import { HomeRail, HomeSection, LiveCount } from "../HomeSection";
 import { LeaderboardGrid } from "../leaderboard/CricketLeaderboard";
 import { MatchCard } from "../matches/matchUi";
 import "../../dms/css/adminDisplays.css";
@@ -33,36 +34,28 @@ export function CricketDashboard() {
     0,
   );
 
-  const section = (title: string, link: string, content: ReactNode) => (
-    <section className="cricket-dash-section">
-      <div className="cricket-panel-head">
-        <h2>{title}</h2>
-        <Link to={link} className="admin-link">
-          View all
-        </Link>
-      </div>
-      {content}
-    </section>
+  const card = (m: CricketMatch) => (
+    <MatchCard key={m.id} match={m} tournamentName={m.tournamentId === null ? undefined : tournamentNames.get(m.tournamentId)} />
   );
 
+  // Laid out like the player Home: the numbers on its gradient banner, then
+  // live, upcoming, results and the top players in its tinted sections.
   return (
-    <div className="cricket-page">
-      <ListCard
-        title="Cricket Dashboard"
-        icon="fa-solid fa-chart-pie"
-        subtitle="Players, tournaments and matches at a glance"
-      >
+    <ListCard title="Dashboard" icon="fa-solid fa-chart-pie" subtitle="Players, tournaments and matches at a glance" plain>
+      <div className="cricket-home">
         <CricketKpis
+          variant="hero"
           items={[
             { label: "Players", value: players?.length ?? 0, icon: "fa-users", tone: "total" },
             { label: "Tournaments", value: tournaments?.length ?? 0, icon: "fa-trophy", tone: "active" },
             {
-              label: "Matches played",
+              label: "Played",
               value: all.filter((m) => m.status === "completed").length,
               icon: "fa-flag-checkered",
               tone: "login",
+              hint: "Matches played",
             },
-            { label: "Runs scored", value: totalRuns, icon: "fa-baseball-bat-ball", tone: "guest" },
+            { label: "Runs", value: totalRuns, icon: "fa-baseball-bat-ball", tone: "guest", hint: "Runs scored" },
           ]}
         />
         {isLoading ? (
@@ -73,49 +66,43 @@ export function CricketDashboard() {
             <Link to="/tournaments">tournament</Link> and its teams, then schedule matches.
           </div>
         ) : (
-          <div className="cricket-dash-grid">
-            {section(
-              live.length ? `Live now (${live.length})` : "Upcoming",
-              "/matches",
-              (live.length ? live : upcoming).length === 0 ? (
-                <p className="admin-hint">Nothing scheduled.</p>
-              ) : (
-                <div className="cricket-match-grid">
-                  {[...live, ...upcoming].slice(0, 4).map((m) => (
-                    <MatchCard key={m.id} match={m} tournamentName={tournamentNames.get(m.tournamentId ?? 0)} />
-                  ))}
-                </div>
-              ),
+          <>
+            {live.length > 0 && (
+              <HomeSection
+                title="Live now"
+                icon="fa-solid fa-tower-broadcast"
+                tone="live"
+                badge={<LiveCount count={live.length} />}
+                link={{ to: "/matches", label: "All matches" }}
+              >
+                <HomeRail>{live.map(card)}</HomeRail>
+              </HomeSection>
             )}
-            {section(
-              "Recent results",
-              "/matches",
-              results.length === 0 ? (
-                <p className="admin-hint">No completed matches yet.</p>
+            <HomeSection title="Up next" icon="fa-solid fa-clock" tone="next" link={{ to: "/matches", label: "All matches" }}>
+              {upcoming.length === 0 ? (
+                <p className="admin-hint mb-0">Nothing scheduled.</p>
               ) : (
-                <div className="cricket-match-grid">
-                  {results.map((m) => (
-                    <MatchCard key={m.id} match={m} tournamentName={tournamentNames.get(m.tournamentId ?? 0)} />
-                  ))}
-                </div>
-              ),
-            )}
-          </div>
+                <HomeRail>{upcoming.slice(0, 4).map(card)}</HomeRail>
+              )}
+            </HomeSection>
+            <HomeSection title="Recent results" icon="fa-solid fa-flag-checkered" tone="last" link={{ to: "/matches", label: "History" }}>
+              {results.length === 0 ? (
+                <p className="admin-hint mb-0">No completed matches yet.</p>
+              ) : (
+                <HomeRail>{results.map(card)}</HomeRail>
+              )}
+            </HomeSection>
+            <HomeSection
+              title="Top performers"
+              icon="fa-solid fa-ranking-star"
+              tone="tournaments"
+              link={{ to: "/leaderboard", label: "Leaderboard" }}
+            >
+              <LeaderboardGrid matches={all} only={["MVP", "Most Runs", "Most Wickets"]} />
+            </HomeSection>
+          </>
         )}
-      </ListCard>
-
-      {all.length > 0 && (
-        <ListCard
-          title="Top Performers"
-          action={
-            <Link to="/leaderboard" className="admin-link">
-              Full leaderboard
-            </Link>
-          }
-        >
-          <LeaderboardGrid matches={all} only={["MVP", "Most Runs", "Most Wickets"]} />
-        </ListCard>
-      )}
-    </div>
+      </div>
+    </ListCard>
   );
 }
