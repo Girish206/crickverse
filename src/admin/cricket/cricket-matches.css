@@ -1801,21 +1801,29 @@
 }
 
 /* ==========================================================================
-   Cricket Crease Card (Redesigned)
+   Cricket Crease Card (Redesigned & Highlighted)
    ========================================================================== */
 .cricket-crease-card {
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
-  border-radius: 14px;
+  border: 1.5px solid rgba(var(--primary-rgb), 0.32);
+  border-top: 2.5px solid var(--primary);
+  border-bottom: 3px solid rgba(var(--brand-amber-rgb), 0.85);
+  border-radius: 16px;
   background: var(--adm-surface, #fff);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0 6px 20px -4px rgba(126, 29, 35, 0.18),
+    0 2px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
 :root[data-bs-theme="dark"] .cricket-crease-card {
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1.5px solid rgba(255, 255, 255, 0.18);
+  border-top: 2.5px solid var(--brand-crimson-bright, #f2756b);
+  border-bottom: 3px solid rgba(var(--brand-amber-rgb), 0.9);
   background: var(--adm-surface);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 8px 24px -4px rgba(0, 0, 0, 0.5),
+    0 3px 10px rgba(0, 0, 0, 0.35);
 }
 
 .cricket-crease-section {
@@ -1827,27 +1835,27 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 5px 12px;
-  background: rgba(var(--primary-rgb), 0.035);
-  border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+  padding: 6px 12px;
+  background: linear-gradient(90deg, rgba(var(--primary-rgb), 0.12) 0%, rgba(var(--primary-rgb), 0.04) 100%);
+  border-bottom: 1px solid rgba(var(--primary-rgb), 0.16);
 }
 :root[data-bs-theme="dark"] .cricket-crease-section-header {
-  background: rgba(255, 255, 255, 0.025);
-  border-bottom-color: rgba(255, 255, 255, 0.06);
+  background: linear-gradient(90deg, rgba(var(--primary-rgb), 0.22) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border-bottom-color: rgba(255, 255, 255, 0.1);
 }
 
 .cricket-crease-section-tag {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 0.62rem;
+  font-size: 0.64rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--muted-color);
+  color: var(--primary);
 }
 .cricket-crease-section-tag i {
-  font-size: 0.65rem;
+  font-size: 0.68rem;
   color: var(--primary);
 }
 .cricket-crease-section-tag.is-bowler-tag i {
@@ -1858,19 +1866,20 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 2px 8px;
+  padding: 3px 10px;
   border-radius: 999px;
   font-size: 0.65rem;
   font-weight: 700;
-  color: var(--primary);
-  background: rgba(var(--primary-rgb), 0.08);
-  border: 1px solid rgba(var(--primary-rgb), 0.22);
+  color: #fff;
+  background: var(--primary-gradient);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 2px 6px rgba(var(--primary-rgb), 0.28);
   cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  transition: filter 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
 }
 .cricket-crease-swap-btn:hover:not(:disabled) {
-  border-color: var(--primary);
-  background: rgba(var(--primary-rgb), 0.16);
+  filter: brightness(1.08);
+  box-shadow: 0 3px 8px rgba(var(--primary-rgb), 0.38);
 }
 .cricket-crease-swap-btn:active:not(:disabled) {
   transform: scale(0.96);
@@ -1882,14 +1891,16 @@
 
 .cricket-crease-econ-badge {
   font-size: 0.62rem;
-  font-weight: 700;
-  color: var(--muted-color);
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.04);
+  font-weight: 800;
+  color: var(--primary);
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.1);
+  border: 1px solid rgba(var(--primary-rgb), 0.22);
 }
 :root[data-bs-theme="dark"] .cricket-crease-econ-badge {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(var(--primary-rgb), 0.2);
+  border-color: rgba(var(--primary-rgb), 0.35);
 }
 
 .cricket-crease-players {
@@ -1902,7 +1913,7 @@
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 7px 12px;
+  padding: 8px 12px;
   border: 0;
   background: transparent;
   color: var(--theme-text-dark);
@@ -1916,31 +1927,33 @@
   transition: background-color 0.12s ease;
 }
 .cricket-crease-player-row:hover:not(:disabled) {
-  background: rgba(var(--primary-rgb), 0.04);
+  background: rgba(var(--primary-rgb), 0.05);
 }
 .cricket-crease-player-row:disabled {
   cursor: default;
 }
 .cricket-crease-player-row + .cricket-crease-player-row {
-  border-top: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+  border-top: 1px solid rgba(var(--primary-rgb), 0.14);
 }
 :root[data-bs-theme="dark"] .cricket-crease-player-row + .cricket-crease-player-row {
-  border-top-color: rgba(255, 255, 255, 0.06);
+  border-top-color: rgba(255, 255, 255, 0.1);
 }
 
 .cricket-crease-player-row.is-striker {
-  background: rgba(var(--brand-crimson-rgb, 201, 68, 59), 0.05);
-  border-left: 3.5px solid var(--brand-crimson, #c9443b);
+  background: linear-gradient(90deg, rgba(var(--brand-crimson-rgb, 201, 68, 59), 0.11) 0%, rgba(var(--brand-crimson-rgb, 201, 68, 59), 0.02) 100%);
+  border-left: 4px solid var(--brand-crimson, #c9443b);
 }
 :root[data-bs-theme="dark"] .cricket-crease-player-row.is-striker {
-  background: rgba(var(--brand-crimson-rgb, 201, 68, 59), 0.12);
+  background: linear-gradient(90deg, rgba(var(--brand-crimson-rgb, 201, 68, 59), 0.2) 0%, rgba(var(--brand-crimson-rgb, 201, 68, 59), 0.04) 100%);
   border-left-color: var(--brand-crimson-bright, #f2756b);
 }
 
 .cricket-crease-player-row.is-bowler-row {
-  border-left: 3.5px solid #ea580c;
+  background: linear-gradient(90deg, rgba(234, 88, 12, 0.06) 0%, transparent 100%);
+  border-left: 4px solid #ea580c;
 }
 :root[data-bs-theme="dark"] .cricket-crease-player-row.is-bowler-row {
+  background: linear-gradient(90deg, rgba(251, 146, 60, 0.12) 0%, transparent 100%);
   border-left-color: #fb923c;
 }
 
@@ -2033,11 +2046,11 @@
 }
 
 .cricket-crease-divider {
-  height: 1px;
-  background: var(--border-color, rgba(0, 0, 0, 0.08));
+  height: 1.5px;
+  background: rgba(var(--primary-rgb), 0.18);
 }
 :root[data-bs-theme="dark"] .cricket-crease-divider {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 /* ==========================================================================
@@ -2045,16 +2058,24 @@
    ========================================================================== */
 .cricket-prev-overs-card {
   margin-top: 8px;
-  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
-  border-radius: 14px;
+  border: 1.5px solid rgba(var(--primary-rgb), 0.32);
+  border-top: 2.5px solid var(--primary);
+  border-bottom: 3px solid rgba(var(--brand-amber-rgb), 0.85);
+  border-radius: 16px;
   background: var(--adm-surface, #fff);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 6px 20px -4px rgba(126, 29, 35, 0.18),
+    0 2px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
 :root[data-bs-theme="dark"] .cricket-prev-overs-card {
-  border-color: rgba(255, 255, 255, 0.12);
+  border: 1.5px solid rgba(255, 255, 255, 0.18);
+  border-top: 2.5px solid var(--brand-crimson-bright, #f2756b);
+  border-bottom: 3px solid rgba(var(--brand-amber-rgb), 0.9);
   background: var(--adm-surface);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  box-shadow:
+    0 8px 24px -4px rgba(0, 0, 0, 0.5),
+    0 3px 10px rgba(0, 0, 0, 0.35);
 }
 
 .cricket-prev-overs-header {
@@ -2062,23 +2083,23 @@
   align-items: center;
   justify-content: space-between;
   padding: 6px 12px;
-  background: rgba(var(--primary-rgb), 0.035);
-  border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+  background: linear-gradient(90deg, rgba(var(--primary-rgb), 0.12) 0%, rgba(var(--primary-rgb), 0.04) 100%);
+  border-bottom: 1px solid rgba(var(--primary-rgb), 0.16);
 }
 :root[data-bs-theme="dark"] .cricket-prev-overs-header {
-  background: rgba(255, 255, 255, 0.025);
-  border-bottom-color: rgba(255, 255, 255, 0.06);
+  background: linear-gradient(90deg, rgba(var(--primary-rgb), 0.22) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border-bottom-color: rgba(255, 255, 255, 0.1);
 }
 
 .cricket-prev-overs-title {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.62rem;
+  font-size: 0.64rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--muted-color);
+  color: var(--primary);
 }
 .cricket-prev-overs-title i {
   font-size: 0.65rem;
