@@ -433,19 +433,36 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   // its balls); once the next bowler is in, it starts empty for the new one.
   const showOver = !overJustEnded || (overEndPending && overPromptSeen === overKey) ? thisOver : undefined;
   const [showAllPrevOvers, setShowAllPrevOvers] = useState(false);
+  const [ballsOverflow, setBallsOverflow] = useState({ left: false, right: false });
+
+  function updateBallsOverflow() {
+    const el = ballsScrollRef.current;
+    if (!el) return;
+    const isScrollable = el.scrollWidth > el.clientWidth + 2;
+    const left = isScrollable && el.scrollLeft > 2;
+    const right = isScrollable && el.scrollLeft + el.clientWidth < el.scrollWidth - 2;
+    setBallsOverflow((prev) => (prev.left === left && prev.right === right ? prev : { left, right }));
+  }
 
   useEffect(() => {
-    if (ballsScrollRef.current) {
-      const el = ballsScrollRef.current;
-      if (el.scrollWidth > el.clientWidth + 4) {
-        el.scrollTo({
-          left: el.scrollWidth,
-          behavior: "smooth",
-        });
-      } else {
-        el.scrollTo({ left: 0, behavior: "smooth" });
-      }
+    const el = ballsScrollRef.current;
+    if (!el) return;
+    if (el.scrollWidth > el.clientWidth + 4) {
+      el.scrollTo({
+        left: el.scrollWidth,
+        behavior: "smooth",
+      });
+    } else {
+      el.scrollTo({ left: 0, behavior: "smooth" });
     }
+    updateBallsOverflow();
+    const timer = setTimeout(updateBallsOverflow, 350);
+    const observer = new ResizeObserver(updateBallsOverflow);
+    observer.observe(el);
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
   }, [showOver?.balls.length]);
 
   // The pad stays live between overs — tapping it brings the prompt back.
@@ -1065,8 +1082,10 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
       <div className="cricket-scorer-dock" ref={dockRef}>
       <div className="cricket-this-over">
         <span className="cricket-this-over-label">{overEndPending ? "Last over" : "This over"}</span>
-        <div className="cricket-this-over-balls-wrap">
-          <div className="cricket-this-over-balls" ref={ballsScrollRef}>
+        <div
+          className={`cricket-this-over-balls-wrap${ballsOverflow.left ? " has-left-shadow" : ""}${ballsOverflow.right ? " has-right-shadow" : ""}`}
+        >
+          <div className="cricket-this-over-balls" ref={ballsScrollRef} onScroll={updateBallsOverflow}>
           {showOver?.balls.map((ball, i) => (
             // Tap a ball to correct it.
             <button

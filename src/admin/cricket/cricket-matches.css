@@ -1784,20 +1784,37 @@
   align-items: center;
   overflow: hidden;
 }
-.cricket-this-over-balls-wrap::before {
+.cricket-this-over-balls-wrap::before,
+.cricket-this-over-balls-wrap::after {
   content: "";
   position: absolute;
-  left: 0;
   top: 0;
   bottom: 0;
-  width: 14px;
-  background: linear-gradient(to right, rgba(0, 0, 0, 0.22), transparent);
+  width: 10px;
   pointer-events: none;
   z-index: 3;
-  border-radius: 4px 0 0 4px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.cricket-this-over-balls-wrap::before {
+  left: 0;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.12), transparent);
+}
+.cricket-this-over-balls-wrap::after {
+  right: 0;
+  background: linear-gradient(to left, rgba(0, 0, 0, 0.12), transparent);
+}
+.cricket-this-over-balls-wrap.has-left-shadow::before {
+  opacity: 1;
+}
+.cricket-this-over-balls-wrap.has-right-shadow::after {
+  opacity: 1;
 }
 :root[data-bs-theme="dark"] .cricket-this-over-balls-wrap::before {
-  background: linear-gradient(to right, rgba(0, 0, 0, 0.55), transparent);
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.35), transparent);
+}
+:root[data-bs-theme="dark"] .cricket-this-over-balls-wrap::after {
+  background: linear-gradient(to left, rgba(0, 0, 0, 0.35), transparent);
 }
 
 /* ==========================================================================
