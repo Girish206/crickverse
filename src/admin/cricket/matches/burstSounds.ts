@@ -74,17 +74,25 @@ function ring(ac: AudioContext, at: number, freq: number, len: number, peak: num
   osc.stop(at + len + 0.02);
 }
 
-// A real bat hit: a match ball struck on an English willow bat (Freesound
-// 594342 by GH0STY_XD, CC0), cut to one strike. Fetched and decoded as the
-// page loads, so it's ready by the first boundary; batCrack stands in until
-// then, or if it can't be loaded.
+// A real bat hit: a match ball struck on an English willow bat
 let batHit: AudioBuffer | null = null;
-if (typeof window !== "undefined" && window.OfflineAudioContext) {
-  fetch("/assets/sounds/bat-hit.wav")
-    .then((r) => r.arrayBuffer())
-    .then((data) => new OfflineAudioContext(1, 1, 48000).decodeAudioData(data))
-    .then((buf) => (batHit = buf))
-    .catch(() => {});
+let batHitLoading = false;
+
+async function ensureBatHit(ac: AudioContext) {
+  if (batHit || batHitLoading) return batHit;
+  batHitLoading = true;
+  try {
+    const res = await fetch("/assets/sounds/bat-hit.wav");
+    if (res.ok) {
+      const data = await res.arrayBuffer();
+      batHit = await ac.decodeAudioData(data);
+    }
+  } catch {
+    // fallback to synthetic batCrack
+  } finally {
+    batHitLoading = false;
+  }
+  return batHit;
 }
 
 // The recorded hit; a six a touch deeper and louder than a four.
@@ -93,20 +101,68 @@ function playBatHit(ac: AudioContext, at: number, buf: AudioBuffer, power: numbe
   src.buffer = buf;
   src.playbackRate.value = 1 - power * 0.08;
   const g = ac.createGain();
-  g.gain.value = 0.7 + power * 0.3;
+  g.gain.value = 0.85 + power * 0.4;
   src.connect(g).connect(ac.destination);
   src.start(at);
 }
 
-// Bat on ball, made up: the hollow "tock" of willow. A hard click of leather on wood,
-// then the blade ringing at a few uneven pitches, gone in a tenth of a
-// second, over a dull knock of the bat's body. `power` (0 to 1) hits harder.
+// Bat on ball: willow crack + hollow body thump.
 function batCrack(ac: AudioContext, at: number, power: number) {
-  hiss(ac, at, "bandpass", 3500, 0.9, 0.0008, 0.7 + power * 0.3, 0.012);
-  const len = 0.07 + power * 0.04;
-  [[1180, 0.32], [1870, 0.16], [2760, 0.08], [3900, 0.04]].forEach(([f, a], i) =>
-    ring(ac, at, f, len / (1 + i * 0.4), a * (0.8 + power * 0.4)));
-  ring(ac, at, 320, 0.045, 0.25 + power * 0.1);
+  // Initial sharp click of leather meeting wood
+  hiss(ac, at, "bandpass", 3200, 1.2, 0.001, 0.85 + power * 0.35, 0.025);
+  // Deeper wooden bat resonance
+  hiss(ac, at, "lowpass", 600, 1.5, 0.002, 0.6 + power * 0.4, 0.06);
+  // Bat blade harmonics
+  const len = 0.09 + power * 0.05;
+  [[1180, 0.38], [1870, 0.22], [2760, 0.12]].forEach(([f, a], i) =>
+    ring(ac, at, f, len / (1 + i * 0.3), a * (0.9 + power * 0.5)));
+  // Deep body thump
+  ring(ac, at, 180, 0.07, 0.5 + power * 0.3);
+  if (power >= 0.8) {
+    // Sub-bass punch for a monster six
+    tone(ac, at, "sine", 110, 0.12, 0.6, 45);
+  }
+}
+
+// Celebratory fanfare for a FOUR: sharp bat hit + cheerful rising 4-note arpeggio
+function playFourCelebration(ac: AudioContext, at: number) {
+  if (batHit) playBatHit(ac, at, batHit, 0.6);
+  else batCrack(ac, at, 0.6);
+
+  // Joyful rising celebration fanfare: C5 (523Hz) -> E5 (659Hz) -> G5 (784Hz) -> C6 (1046Hz)
+  const notes = [
+    { freq: 523.25, time: 0.14, len: 0.18, peak: 0.14 },
+    { freq: 659.25, time: 0.28, len: 0.18, peak: 0.16 },
+    { freq: 783.99, time: 0.42, len: 0.20, peak: 0.18 },
+    { freq: 1046.5, time: 0.58, len: 0.45, peak: 0.22 },
+  ];
+  notes.forEach((n) => {
+    tone(ac, at + n.time, "triangle", n.freq, n.len, n.peak);
+    ring(ac, at + n.time, n.freq * 2, n.len * 0.6, n.peak * 0.3);
+  });
+}
+
+// Celebratory fanfare for a SIX: thunderous bat smash + triumphant stadium fanfare chords
+function playSixCelebration(ac: AudioContext, at: number) {
+  if (batHit) playBatHit(ac, at, batHit, 1.2);
+  batCrack(ac, at, 1.0);
+
+  // Stadium celebration shimmer
+  hiss(ac, at + 0.15, "bandpass", 1600, 1.5, 0.04, 0.22, 0.85);
+
+  // Triumphant dual-harmony brass chords:
+  // Chord 1: C5 + G5
+  tone(ac, at + 0.16, "triangle", 523.25, 0.24, 0.22);
+  tone(ac, at + 0.16, "sine", 783.99, 0.24, 0.18);
+
+  // Chord 2: E5 + C6
+  tone(ac, at + 0.38, "triangle", 659.25, 0.24, 0.24);
+  tone(ac, at + 0.38, "sine", 1046.5, 0.24, 0.20);
+
+  // Chord 3: Grand triumphant crescendo G5 + E6
+  tone(ac, at + 0.60, "triangle", 783.99, 0.65, 0.28);
+  tone(ac, at + 0.60, "sine", 1318.51, 0.65, 0.24);
+  ring(ac, at + 0.60, 2093.0, 0.55, 0.16);
 }
 
 // The stumps going: a few quick wooden knocks.
@@ -135,16 +191,26 @@ export type BurstSound = "four" | "six" | "out" | "duck";
 
 export function playBurstSound(kind: BurstSound) {
   const ac = audio();
-  if (!ac || ac.state !== "running") return;
+  if (!ac) return;
+  if (ac.state === "suspended") {
+    void ac.resume();
+  }
+  // Try preloading the hit buffer for next time if not loaded
+  void ensureBatHit(ac);
+
   const t = ac.currentTime + 0.02;
-  if (kind === "four" || kind === "six") {
-    const power = kind === "six" ? 1 : 0.5;
-    if (batHit) playBatHit(ac, t, batHit, power);
-    else batCrack(ac, t, power);
+  if (kind === "four") {
+    playFourCelebration(ac, t);
+    return;
+  }
+  if (kind === "six") {
+    playSixCelebration(ac, t);
     return;
   }
   // Out: timed with the stumps going on the burst, then the "wah-wah".
   stumps(ac, t + 0.4);
-  [392, 370, 349, 330].forEach((f, i) => tone(ac, t + 0.7 + i * 0.28, "sawtooth", f, i === 3 ? 0.7 : 0.26, 0.07, i === 3 ? 260 : undefined));
+  [392, 370, 349, 330].forEach((f, i) =>
+    tone(ac, t + 0.7 + i * 0.28, "sawtooth", f, i === 3 ? 0.7 : 0.26, 0.07, i === 3 ? 260 : undefined),
+  );
   if (kind === "duck") [0, 0.3, 0.55].forEach((dt) => quack(ac, t + 2 + dt));
 }

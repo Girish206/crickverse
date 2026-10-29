@@ -1,6 +1,7 @@
 import { useState, type CSSProperties, type ReactElement, type ReactNode } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useMyFollows } from "../../../api/hooks/cricket/useCricketFollows";
+import { useTournamentsMatches } from "../../../api/hooks/cricket/useCricketMatches";
 import { useCricketMe } from "../../../api/hooks/cricket/useCricketPlayers";
 import { useCricketTournaments } from "../../../api/hooks/cricket/useCricketTournaments";
 import type { CricketMatch, CricketMe, CricketTournament } from "../../../api/types";
@@ -214,19 +215,46 @@ function HomeFeed({ me }: { me: CricketMe }) {
   const mineIds = new Set(mine.map((m) => m.id));
   const following = followingMatches(me).filter((m) => !mineIds.has(m.id));
 
-  // Why a match is on the page: the side I play for, what I do in it, or a follow.
+  // Tournaments the player is in (from me.tournaments or teams roster)
+  const myTournaments = [
+    ...new Map(
+      [
+        ...me.tournaments,
+        ...(tournaments ?? []).filter((t) => t.teams.some((team) => team.playerIds.includes(playerId))),
+      ].map((t) => [t.id, t]),
+    ).values(),
+  ];
+  const myTournamentIds = new Set(myTournaments.map((t) => t.id));
+  const tournamentMatchesQueries = useTournamentsMatches(myTournaments.map((t) => t.id));
+  const tournamentMatches = tournamentMatchesQueries.flatMap((q) => q.data ?? []);
+  const tournamentLive = tournamentMatches.filter((m) => m.status === "live");
+
+  // Why a match is on the page: the side I play for, what I do in it, his tournament, or a follow.
   const tagOf = (m: CricketMatch): MatchTag => {
-    if (!mineIds.has(m.id)) return { tone: "following", icon: "fa-solid fa-star", label: "Following" };
     const team = m.teams.find((t) => t.playerIds.includes(playerId));
     if (team) return { tone: "mine", icon: "fa-solid fa-user", label: `Playing · ${team.name}` };
-    return me.createdMatches.some((c) => c.id === m.id)
-      ? { tone: "organising", icon: "fa-solid fa-clipboard-list", label: "You're organising" }
-      : { tone: "organising", icon: "fa-solid fa-pen", label: "You're scoring" };
+    if (me.createdMatches.some((c) => c.id === m.id)) {
+      return { tone: "organising", icon: "fa-solid fa-clipboard-list", label: "You're organising" };
+    }
+    if (me.scoringMatches.some((s) => s.id === m.id)) {
+      return { tone: "organising", icon: "fa-solid fa-pen", label: "You're scoring" };
+    }
+    if (m.tournamentId !== null && myTournamentIds.has(m.tournamentId)) {
+      return {
+        tone: "mine",
+        icon: "fa-solid fa-trophy",
+        label: tournamentNames.get(m.tournamentId) ?? "Your tournament",
+      };
+    }
+    return { tone: "following", icon: "fa-solid fa-star", label: "Following" };
   };
   const noteOf = (m: CricketMatch) => {
-    if (!mineIds.has(m.id)) return footnote(m);
     const line = myLine(m, playerId);
-    return line ? `You: ${line}` : null;
+    if (line) return `You: ${line}`;
+    if (mineIds.has(m.id) || (m.tournamentId !== null && myTournamentIds.has(m.tournamentId))) {
+      return null;
+    }
+    return footnote(m);
   };
   const card = (m: CricketMatch, aside?: string) => (
     <MatchCard
@@ -238,7 +266,9 @@ function HomeFeed({ me }: { me: CricketMe }) {
     />
   );
 
-  const live = [...mine, ...following].filter((m) => m.status === "live");
+  const live = [
+    ...new Map([...mine, ...tournamentLive, ...following].map((m) => [m.id, m])).values(),
+  ].filter((m) => m.status === "live");
   // Up next: two scheduled matches — ones I play in first, then ones I
   // organise or score, then followed ones, soonest first within each — so
   // the fixtures I organise don't push out the ones I'm playing.
@@ -253,7 +283,7 @@ function HomeFeed({ me }: { me: CricketMe }) {
     .sort((a, b) => playedAt(b) - playedAt(a))[0];
   // The latest two (by start date) of my ongoing or upcoming tournaments.
   const runningTournaments = me.tournaments
-    .filter((t) => ["ongoing", "upcoming"].includes(tournamentPhase(t, [...mine, ...following])))
+    .filter((t) => ["ongoing", "upcoming"].includes(tournamentPhase(t, [...mine, ...tournamentMatches, ...following])))
     .sort((a, b) => (b.startDate ?? b.createdAt).localeCompare(a.startDate ?? a.createdAt))
     .slice(0, 2);
 
@@ -292,8 +322,8 @@ function HomeFeed({ me }: { me: CricketMe }) {
               <TournamentCard
                 key={t.id}
                 tournament={t}
-                matchCount={me.matches.filter((m) => m.tournamentId === t.id).length}
-                matches={[...mine, ...following]}
+                matchCount={[...me.matches, ...tournamentMatches].filter((m) => m.tournamentId === t.id).length}
+                matches={[...mine, ...tournamentMatches, ...following]}
                 footnote={<TeamFootnote team={t.teams.find((team) => team.playerIds.includes(playerId)) ?? null} />}
               />
             ))}

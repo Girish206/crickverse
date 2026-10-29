@@ -65,8 +65,11 @@ export function isFreeHitNext(match: CricketMatch, innings: CricketInnings) {
   let freeHit = false;
   for (const ball of innings.balls) {
     if (ball.noDelivery) continue;
-    if (ball.extraType === "no-ball") freeHit = true;
-    else if (ball.extraType !== "wide") freeHit = false;
+    if (ball.extraType === "no-ball") {
+      freeHit = ball.freeHit !== false;
+    } else if (ball.extraType !== "wide") {
+      freeHit = false;
+    }
   }
   return freeHit;
 }
@@ -461,6 +464,10 @@ export interface PointsRow {
   noResult: number;
   points: number;
   nrr: number;
+  runsFor: number;
+  ballsFor: number;
+  runsAgainst: number;
+  ballsAgainst: number;
 }
 
 const KNOCKOUT_STAGES = new Set<CricketMatchStage>([
@@ -486,7 +493,21 @@ export function standings(teams: { teamIndex: number; name: string }[], matches:
   const rows = new Map<number, PointsRow>(
     teams.map(({ teamIndex, name }) => [
       teamIndex,
-      { teamIndex, name, played: 0, won: 0, lost: 0, tied: 0, noResult: 0, points: 0, nrr: 0 },
+      {
+        teamIndex,
+        name,
+        played: 0,
+        won: 0,
+        lost: 0,
+        tied: 0,
+        noResult: 0,
+        points: 0,
+        nrr: 0,
+        runsFor: 0,
+        ballsFor: 0,
+        runsAgainst: 0,
+        ballsAgainst: 0,
+      },
     ]),
   );
   const runFor = new Map(teams.map(({ teamIndex }) => [teamIndex, { runs: 0, balls: 0, against: 0, ballsAgainst: 0 }]));
@@ -526,6 +547,10 @@ export function standings(teams: { teamIndex: number; name: string }[], matches:
   result.forEach((row) => {
     row.points = row.won * 2 + row.tied + row.noResult;
     const r = runFor.get(row.teamIndex)!;
+    row.runsFor = r.runs;
+    row.ballsFor = r.balls;
+    row.runsAgainst = r.against;
+    row.ballsAgainst = r.ballsAgainst;
     const forRate = r.balls ? (r.runs * 6) / r.balls : 0;
     const againstRate = r.ballsAgainst ? (r.against * 6) / r.ballsAgainst : 0;
     row.nrr = forRate - againstRate;
@@ -930,11 +955,22 @@ function topBy(rows: ImpactRow[], score: (row: ImpactRow) => number, tie: (row: 
   return best;
 }
 
+// Automatic Player of the Match: top impact score from the winning team (or top overall if tied / no result).
+export function autoPlayerOfMatch(match: CricketMatch, rows?: ImpactRow[]): ImpactRow | null {
+  if (match.status !== "completed") return null;
+  const list = (rows ?? matchImpact(match)).filter(tookPart);
+  if (match.winner !== null) {
+    const winning = list.find((row) => row.team === match.winner);
+    if (winning) return winning;
+  }
+  return list[0] ?? null;
+}
+
 export function matchAwards(match: CricketMatch): MatchAwards {
   const everyone = matchImpact(match);
   const rows = everyone.filter(tookPart);
   const picked = everyone.find((row) => row.playerId === match.playerOfMatchId);
-  const auto = match.status === "completed" ? (rows[0] ?? null) : null;
+  const auto = autoPlayerOfMatch(match, rows);
   return {
     rows,
     playerOfMatch: picked ?? auto,
@@ -957,11 +993,10 @@ export function matchAwards(match: CricketMatch): MatchAwards {
   };
 }
 
-// The admin's pick, else (once the match is over) the top impact score.
+// The admin's pick, else (once the match is over) the top impact score from the winning team.
 export function playerOfMatch(match: CricketMatch): number | null {
   if (match.playerOfMatchId !== null) return match.playerOfMatchId;
-  if (match.status !== "completed") return null;
-  return matchImpact(match).find(tookPart)?.playerId ?? null;
+  return autoPlayerOfMatch(match)?.playerId ?? null;
 }
 
 // When a match is (or was) on, for ordering them.

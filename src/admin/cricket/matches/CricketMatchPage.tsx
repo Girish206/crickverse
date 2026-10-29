@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useBlocker, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Navigate, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   useCricketMatch,
   useDeleteCricketMatch,
@@ -96,23 +96,35 @@ export function CricketMatchPage() {
   // Several people may be allowed to score, but only one does at a time:
   // the first to open the Live tab, until they hand it over or stop. The
   // rest follow the live view. (A live match opens on Live.)
+  const onScoreScreen = location.pathname.endsWith("/score") || params.get("score") === "1";
   const onLiveTab = (params.get("tab") ?? "live") === "live";
-  const seat = useScoringSeat(match, canManage && onLiveTab, admin?.sub);
+  const seat = useScoringSeat(match, canManage && (onScoreScreen || onLiveTab), admin?.sub);
   const [handingOver, setHandingOver] = useState(false);
+  const [leavingScoreOpen, setLeavingScoreOpen] = useState(false);
   // Not while they're scoring — the tips would sit over the buttons.
-  const tips = useTips("match", MATCH_TIPS, Boolean(match) && !seat.mine);
-  // The scorer can't just walk away: leaving the match asks them to hand
-  // scoring over (or stop) first. Tab changes stay on the page, so they pass.
+  const tips = useTips("match", MATCH_TIPS, Boolean(match) && !seat.mine && !onScoreScreen);
+  // Active live scorer holds the seat until transferred via Change Scorer or released via Stop Scoring.
   const guarding = match?.status === "live" && seat.mine;
-  const leaving = useBlocker(
-    ({ currentLocation, nextLocation }) => guarding && currentLocation.pathname !== nextLocation.pathname,
-  );
   useEffect(() => {
     if (!guarding) return;
     const warn = (event: BeforeUnloadEvent) => event.preventDefault();
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [guarding]);
+
+  const isViewingMatch =
+    params.has("view") ||
+    (params.has("tab") && params.get("tab") !== "live") ||
+    Boolean(sessionStorage.getItem(`view_match_${id}`));
+
+  // If you are the active scorer for this live match, open directly into the scoring screen!
+  // If you click back from the scoring screen, isViewingMatch is true so you can view the match without looping.
+  useEffect(() => {
+    if (!onScoreScreen && !isViewingMatch && match?.status === "live" && canManage && seat.mine) {
+      navigate(`/matches/${match.id}/score`, { replace: true });
+    }
+  }, [onScoreScreen, isViewingMatch, match?.status, canManage, seat.mine, match?.id, navigate]);
+
   // /matches is super admin only; players have their own list.
   const matchesList = admin?.isSuperAdmin ? "/matches" : "/my-matches";
 
@@ -139,18 +151,18 @@ export function CricketMatchPage() {
   const over = match.status === "completed" || match.status === "abandoned";
   const tabs: { value: Tab; label: string }[] = upcoming
     ? [
-        { value: "info", label: "Info" },
-        { value: "squads", label: "Squads" },
-      ]
+      { value: "info", label: "Info" },
+      { value: "squads", label: "Squads" },
+    ]
     : [
-        { value: "info", label: "Info" },
-        { value: "live", label: over ? "Summary" : "Live" },
-        { value: "scorecard", label: "Scorecard" },
-        { value: "insights", label: "Insights" },
-        { value: "overs", label: "Overs" },
-        { value: "squads", label: "Squads" },
-        { value: "mvp", label: "MVP" },
-      ];
+      { value: "info", label: "Info" },
+      { value: "live", label: over ? "Summary" : "Live" },
+      { value: "scorecard", label: "Scorecard" },
+      { value: "insights", label: "Insights" },
+      { value: "overs", label: "Overs" },
+      { value: "squads", label: "Squads" },
+      { value: "mvp", label: "MVP" },
+    ];
   // Opens on Live / Summary; an upcoming match has only Info and Squads.
   const fallback: Tab = upcoming ? "info" : "live";
   const requested = params.get("tab") as Tab | null;
@@ -163,14 +175,10 @@ export function CricketMatchPage() {
     }
   }
 
-  // The scorer is open: its own options (players, end innings, abandon)
-  // join the settings sheet, which it renders.
-  const scoring = tab === "live" && canManage && match.status === "live" && seat.mine;
-  // While they're scoring the settings are mostly about that, so they open on Live.
+  // The scorer is open on its dedicated screen: its own options (players,
+  // end innings, abandon) join the settings sheet, which it renders.
+  const scoring = onScoreScreen && canManage && match.status === "live" && seat.mine;
   function openSettings() {
-    if (match!.status === "live" && tab !== "live" && seat.mine) {
-      setParams({ tab: "live" }, { replace: true, state: location.state });
-    }
     setSettingsOpen(true);
   }
   const closeSettings = () => setSettingsOpen(false);
@@ -185,14 +193,20 @@ export function CricketMatchPage() {
         "Reopen",
       )
     ) {
-      await reopenMatch.mutateAsync(match!.id).catch(() => undefined);
+      const updated = await reopenMatch.mutateAsync(match!.id).catch(() => undefined);
+      if (updated?.status === "live") {
+        navigate(`/matches/${match!.id}/score`);
+      }
     }
   }
 
   // Takes back the ball that finished the match: it goes back to live.
   async function handleUndoLast() {
     if (await confirmAction("Undo last ball?", "The result is cleared and the match goes back to live.", "Undo")) {
-      await undoBall.mutateAsync(match!.id).catch(() => undefined);
+      const updated = await undoBall.mutateAsync(match!.id).catch(() => undefined);
+      if (updated?.status === "live") {
+        navigate(`/matches/${match!.id}/score`);
+      }
     }
   }
 
@@ -226,13 +240,36 @@ export function CricketMatchPage() {
           </span>
           <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
         </button>
+        {canManage && match.status === "live" && (
+          <button
+            type="button"
+            className="cricket-settings-item"
+            onClick={settingsThen(() =>
+              navigate(onScoreScreen ? `/matches/${match.id}` : `/matches/${match.id}/score`),
+            )}
+          >
+            <i
+              className={`fa-solid ${onScoreScreen ? "fa-table-list" : "fa-baseball-bat-ball"}`}
+              aria-hidden="true"
+            ></i>
+            <span>
+              {onScoreScreen ? "Match view & scorecard" : "Open live scorer"}
+              <small>
+                {onScoreScreen
+                  ? "View full scorecard, commentary, overs and insights"
+                  : "Dedicated ball-by-ball scoring console"}
+              </small>
+            </span>
+            <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
+          </button>
+        )}
         {seat.mine && match.status === "live" && (
           <>
             <button type="button" className="cricket-settings-item" onClick={settingsThen(() => setHandingOver(true))}>
               <i className="fa-solid fa-people-arrows" aria-hidden="true"></i>
               <span>
-                Hand over scoring
-                <small>Pass it to someone from either squad, or by mobile number</small>
+                Change scorer
+                <small>Pass live scoring to someone from either squad, or by mobile number</small>
               </span>
               <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
             </button>
@@ -246,20 +283,34 @@ export function CricketMatchPage() {
           </>
         )}
         {upcoming && (
-          <button type="button" className="cricket-settings-item" onClick={settingsThen(() => setRescheduling(true))}>
-            <i className="fa-regular fa-calendar" aria-hidden="true"></i>
-            <span>
-              Reschedule match
-              <small>{match.scheduledAt ? `Now ${formatMatchDate(match.scheduledAt)}` : "Set a date and time"}</small>
-            </span>
-            <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
-          </button>
+          <>
+            <button
+              type="button"
+              className="cricket-settings-item"
+              onClick={settingsThen(() => navigate(`/matches/${match.id}/setup`))}
+            >
+              <i className="fa-solid fa-play text-danger" aria-hidden="true"></i>
+              <span>
+                Start match now
+                <small>Proceed to squads, toss and live scoring</small>
+              </span>
+              <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
+            </button>
+            <button type="button" className="cricket-settings-item" onClick={settingsThen(() => setRescheduling(true))}>
+              <i className="fa-regular fa-calendar" aria-hidden="true"></i>
+              <span>
+                Reschedule match
+                <small>{match.scheduledAt ? `Now ${formatMatchDate(match.scheduledAt)}` : "Set a date and time"}</small>
+              </span>
+              <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
+            </button>
+          </>
         )}
         {(upcoming || match.status === "live") && (
           <button
             type="button"
             className="cricket-settings-item"
-            onClick={settingsThen(() => (upcoming ? navigate(`/matches/${match.id}/setup`) : setEditingDetails(true)))}
+            onClick={settingsThen(() => setEditingDetails(true))}
           >
             <i className="fa-solid fa-pen" aria-hidden="true"></i>
             <span>
@@ -269,21 +320,7 @@ export function CricketMatchPage() {
             <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
           </button>
         )}
-        {/* Scorers can only be changed while the match is being played. */}
-        {(access === "organise" || access === "captain") && match.status === "live" && (
-          <button type="button" className="cricket-settings-item" onClick={settingsThen(() => setPickingScorers(true))}>
-            <i className="fa-solid fa-clipboard-user" aria-hidden="true"></i>
-            <span>
-              Change scorers
-              <small>
-                {match.scorerIds.length === 0
-                  ? "Only the organisers and captains so far"
-                  : `${match.scorerIds.length} scorer${match.scorerIds.length === 1 ? "" : "s"} added`}
-              </small>
-            </span>
-            <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
-          </button>
-        )}
+
         {organiser && (
           <button type="button" className="cricket-settings-item" onClick={settingsThen(() => openResult())}>
             <i className="fa-solid fa-flag-checkered" aria-hidden="true"></i>
@@ -306,6 +343,30 @@ export function CricketMatchPage() {
               Reopen match
               <small>Clear the result and carry on scoring</small>
             </span>
+          </button>
+        )}
+        {canManage && (match.status === "live" || upcoming) && (
+          <button
+            type="button"
+            className="cricket-settings-item"
+            role="switch"
+            aria-checked={match.freeHit !== false}
+            disabled={updateMatch.isPending}
+            onClick={() =>
+              updateMatch.mutate({
+                id: match.id,
+                ...existingInput(match),
+                scheduledAt: match.scheduledAt,
+                freeHit: match.freeHit === false,
+              })
+            }
+          >
+            <i className="fa-solid fa-bolt text-warning" aria-hidden="true"></i>
+            <span>
+              Free hit on no-ball
+              <small>{match.freeHit === false ? "Free hit is disabled for this match" : "Next ball after a no-ball is a free hit"}</small>
+            </span>
+            <span className={`cricket-shot-toggle-knob ${match.freeHit !== false ? "is-on" : ""}`.trim()} aria-hidden="true"></span>
           </button>
         )}
         {organiser && editable && (
@@ -349,12 +410,15 @@ export function CricketMatchPage() {
     if (
       await confirmAction(
         "Take over scoring?",
-        `${seat.holder} will stop scoring and see the live view instead.`,
+        `${seat.holder ?? "Another device"} will stop scoring and see the live view instead.`,
         "Take over",
       )
     ) {
       // Lost a race: the banner shows whoever has it now.
-      await seat.takeOver().catch(() => undefined);
+      const updated = await seat.takeOver().catch(() => undefined);
+      if (updated) {
+        navigate(`/matches/${match!.id}/score`);
+      }
     }
   }
 
@@ -362,13 +426,18 @@ export function CricketMatchPage() {
     if (
       await confirmAction(
         "Stop scoring?",
-        "Any of the match's scorers can then pick it up from the Live tab.",
+        "Any of the match's scorers can then pick it up from the match page.",
         "Stop scoring",
       )
     ) {
       // A failure shows its own toast; stay put.
       return seat.release().then(
-        () => true,
+        () => {
+          if (onScoreScreen) {
+            navigate(`/matches/${match!.id}`, { replace: true });
+          }
+          return true;
+        },
         () => false,
       );
     }
@@ -383,79 +452,58 @@ export function CricketMatchPage() {
       return;
     }
     setHandingOver(false);
-    if (leaving.state === "blocked") leaving.proceed();
+    if (onScoreScreen) navigate(`/matches/${match!.id}`, { replace: true });
   }
 
+  if (onScoreScreen && (!canManage || match.status !== "live")) {
+    return <Navigate to={`/matches/${match.id}`} replace />;
+  }
+
+  const hasLiveActionBar = !onScoreScreen && canManage && match.status === "live" && (seat.mine || !seat.holder || access === "organise");
+
   return (
-    <div className={`cricket-page ${canManage && upcoming ? "has-action-bar" : ""}`.trim()}>
+    <div
+      className={`cricket-page ${onScoreScreen ? "cricket-scorer-page" : ""} ${(!onScoreScreen && canManage && upcoming) || hasLiveActionBar ? "has-action-bar" : ""
+        }`.trim()}
+    >
       {tips.element}
       {/* A four, six or wicket plays over the page on whichever tab, and the
           match's last ball still plays as it turns to the result. */}
       <BallBurst match={match} nameOf={nameOf} />
       {match.tournamentId !== null && <AutoNextRounds tournamentId={match.tournamentId} />}
-      {/* The card below already names both teams, so the header only names
-          them while it's live (when the card is left out). */}
-      <PageHeader
-        title={
-          match.status === "live" ? `${match.teams[0].name} vs ${match.teams[1].name}` : tournament?.name ?? "Match"
-        }
-        subtitle={match.status === "live" ? tournament?.name ?? "Match" : undefined}
-        back={match.tournamentId === null ? matchesList : `/tournaments/${match.tournamentId}?tab=matches`}
-        backLabel={match.tournamentId === null ? "Back to matches" : "Back to tournament"}
-        actions={
-          <>
-            <PageHeaderAction
-              icon="fa-solid fa-sliders"
-              label={canManage ? "Match settings" : "Share match"}
-              tour="match-settings"
-              active={settingsOpen}
-              onClick={openSettings}
-            />
-            <MatchStatusBadge status={match.status} />
-          </>
-        }
-      />
-      {/* While it's live the Live tab shows the score, so the card is left out. */}
-      {match.status !== "live" && <MatchHero match={match} />}
-
-      <div className="cricket-match-tabs" role="tablist" aria-label="Match sections" data-tour="tabs">
-        {tabs.map((t) => (
-          <button
-            key={t.value}
-            type="button"
-            role="tab"
-            aria-selected={tab === t.value}
-            className={tab === t.value ? "active" : ""}
-            onClick={() => setParams({ tab: t.value }, { replace: true, state: location.state })}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      <ListCard title="" bodyClassName={tab === "live" ? "cricket-live-body" : undefined}>
-        {tab === "info" && <MatchInfo match={match} tournament={tournament} />}
-        {tab === "live" &&
-          (!canManage ? (
-            <LiveView match={match} nameOf={nameOf} />
-          ) : match.status === "live" && !seat.mine ? (
-            <>
-              {seat.holder && (
-                <div className="admin-banner cricket-seat-banner mb-3">
-                  <span>
-                    <i className="fa-solid fa-user-lock" aria-hidden="true"></i> <strong>{seat.holder}</strong> is scoring
-                    this match. Only one person scores at a time — they can hand it over to you.
-                  </span>
-                  {access === "organise" && (
-                    <Button variant="outline" onClick={handleTakeOver} disabled={seat.busy}>
-                      <i className="fa-solid fa-hand" aria-hidden="true"></i> Take over scoring
-                    </Button>
-                  )}
-                </div>
-              )}
-              <LiveView match={match} nameOf={nameOf} />
-            </>
-          ) : match.status === "live" ? (
+      {onScoreScreen ? (
+        <>
+          <PageHeader
+            title="Live Scoring"
+            subtitle={`${match.teams[0].name} vs ${match.teams[1].name}`}
+            back={() => {
+              if (seat.mine) {
+                setLeavingScoreOpen(true);
+              } else {
+                sessionStorage.setItem(`view_match_${match.id}`, "1");
+                navigate(`/matches/${match.id}?view=1`);
+              }
+            }}
+            backLabel="Back to match view"
+            actions={
+              <>
+                <PageHeaderAction
+                  icon="fa-solid fa-table-list"
+                  label="View scorecard & match tabs"
+                  onClick={() => navigate(`/matches/${match.id}?tab=scorecard`)}
+                />
+                <PageHeaderAction
+                  icon="fa-solid fa-sliders"
+                  label="Match settings"
+                  tour="match-settings"
+                  active={settingsOpen}
+                  onClick={openSettings}
+                />
+                <MatchStatusBadge status={match.status} />
+              </>
+            }
+          />
+          {seat.mine ? (
             <LiveScorer
               match={match}
               nameOf={nameOf}
@@ -464,38 +512,128 @@ export function CricketMatchPage() {
               matchSettings={matchSettings}
               onEnterResult={organiser ? () => openResult() : undefined}
             />
+          ) : seat.busy ? (
+            <Loader />
           ) : (
-            <div className="cricket-summary">
-              {organiser && needsKnockoutWinner(match) && (
-                <KnockoutPrompt
-                  match={match}
-                  onEnter={() => openResult({ outcome: "win", method: match.status === "completed" ? "super-over" : "other" })}
+            <ListCard title="">
+              <div className="admin-banner cricket-seat-banner mb-3">
+                <i className="fa-solid fa-user-lock me-2" aria-hidden="true"></i>
+                <span>
+                  {seat.holder
+                    ? `${seat.holder} is currently scoring this match. To score, they can pass it to you using "Change Scorer".`
+                    : "Scoring is currently not active for this match."}
+                </span>
+              </div>
+              <Button variant="outline" onClick={() => navigate(`/matches/${match.id}`)}>
+                <i className="fa-solid fa-arrow-left me-1" aria-hidden="true"></i> Back to match view
+              </Button>
+            </ListCard>
+          )}
+        </>
+      ) : (
+        <>
+          {/* The card below already names both teams, so the header only names
+              them while it's live (when the card is left out). */}
+          <PageHeader
+            title={
+              match.status === "live" ? `${match.teams[0].name} vs ${match.teams[1].name}` : tournament?.name ?? "Match"
+            }
+            subtitle={match.status === "live" ? tournament?.name ?? "Match" : undefined}
+            back={() => {
+              try {
+                sessionStorage.removeItem(`view_match_${match.id}`);
+              } catch {
+                // ignore
+              }
+              const target = match.tournamentId === null ? matchesList : `/tournaments/${match.tournamentId}?tab=matches`;
+              navigate(target);
+            }}
+            backLabel={match.tournamentId === null ? "Back to matches" : "Back to tournament"}
+            actions={
+              <>
+                <PageHeaderAction
+                  icon="fa-solid fa-sliders"
+                  label={canManage ? "Match settings" : "Share match"}
+                  tour="match-settings"
+                  active={settingsOpen}
+                  onClick={openSettings}
                 />
-              )}
-              <ResultBanner match={match} />
-              {/* The ball that ended it can still be taken back by whoever
-                  scored it (or an organiser) — not a result entered by hand. */}
-              {match.status === "completed" &&
-                !match.resultMethod &&
-                hasBalls(match) &&
-                (organiser || (admin != null && String(match.scoringById) === admin.sub)) && (
-                  <div className="cricket-summary-undo mb-3">
-                    <Button variant="outline" onClick={handleUndoLast} disabled={undoBall.isPending}>
-                      <i className="fa-solid fa-rotate-left" aria-hidden="true"></i> Undo last ball
-                    </Button>
-                    <small>Made a mistake on the last ball? It goes back to live.</small>
-                  </div>
-                )}
-              <MatchAwards match={match} nameOf={nameOf} />
-              {match.status === "completed" && <PotmPicker match={match} nameOf={nameOf} />}
-            </div>
-          ))}
-        {tab === "scorecard" && <Scorecard match={match} nameOf={nameOf} />}
-        {tab === "insights" && <MatchInsights match={match} nameOf={nameOf} />}
-        {tab === "overs" && <BallByBall match={match} nameOf={nameOf} />}
-        {tab === "squads" && <MatchSquads match={match} tournament={tournament} nameOf={nameOf} />}
-        {tab === "mvp" && <MatchMvp match={match} nameOf={nameOf} />}
-      </ListCard>
+                <MatchStatusBadge status={match.status} />
+              </>
+            }
+          />
+          {/* While it's live the Live tab shows the score, so the card is left out. */}
+          {match.status !== "live" && <MatchHero match={match} />}
+
+          <div className="cricket-match-tabs" role="tablist" aria-label="Match sections" data-tour="tabs">
+            {tabs.map((t) => (
+              <button
+                key={t.value}
+                type="button"
+                role="tab"
+                aria-selected={tab === t.value}
+                className={tab === t.value ? "active" : ""}
+                onClick={() => setParams({ tab: t.value }, { replace: true, state: location.state })}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          <ListCard title="" bodyClassName={tab === "live" ? "cricket-live-body" : undefined}>
+            {tab === "info" && <MatchInfo match={match} tournament={tournament} />}
+            {tab === "live" &&
+              (match.status === "live" ? (
+                <>
+                  {canManage && seat.holder && !seat.mine && (
+                    <div className="admin-banner cricket-seat-banner mb-3">
+                      <span>
+                        <i className="fa-solid fa-user-lock" aria-hidden="true"></i> <strong>{seat.holder}</strong> is scoring
+                        this match. Only one person scores at a time — they can hand it over to you.
+                      </span>
+                      {access === "organise" && (
+                        <Button variant="outline" onClick={handleTakeOver} disabled={seat.busy}>
+                          <i className="fa-solid fa-hand" aria-hidden="true"></i> Take over scoring
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                  <LiveView match={match} nameOf={nameOf} />
+                </>
+              ) : (
+                <div className="cricket-summary">
+                  {organiser && needsKnockoutWinner(match) && (
+                    <KnockoutPrompt
+                      match={match}
+                      onEnter={() => openResult({ outcome: "win", method: match.status === "completed" ? "super-over" : "other" })}
+                    />
+                  )}
+                  <ResultBanner match={match} />
+                  {/* The ball that ended it can still be taken back by whoever
+                      scored it (or an organiser) — not a result entered by hand. */}
+                  {match.status === "completed" &&
+                    !match.resultMethod &&
+                    hasBalls(match) &&
+                    (organiser || (admin != null && String(match.scoringById) === admin.sub)) && (
+                      <div className="cricket-summary-undo mb-3">
+                        <Button variant="outline" onClick={handleUndoLast} disabled={undoBall.isPending}>
+                          <i className="fa-solid fa-rotate-left" aria-hidden="true"></i> Undo last ball
+                        </Button>
+                        <small>Made a mistake on the last ball? It goes back to live.</small>
+                      </div>
+                    )}
+                  <MatchAwards match={match} nameOf={nameOf} />
+                  {match.status === "completed" && <PotmPicker match={match} nameOf={nameOf} />}
+                </div>
+              ))}
+            {tab === "scorecard" && <Scorecard match={match} nameOf={nameOf} />}
+            {tab === "insights" && <MatchInsights match={match} nameOf={nameOf} />}
+            {tab === "overs" && <BallByBall match={match} nameOf={nameOf} />}
+            {tab === "squads" && <MatchSquads match={match} tournament={tournament} nameOf={nameOf} />}
+            {tab === "mvp" && <MatchMvp match={match} nameOf={nameOf} />}
+          </ListCard>
+        </>
+      )}
 
       {settingsOpen && !scoring && (
         <BottomSheet title={canManage ? "Match settings" : "Match"} icon="fa-solid fa-sliders" onClose={closeSettings}>
@@ -521,18 +659,28 @@ export function CricketMatchPage() {
         />
       )}
 
-      {leaving.state === "blocked" && !handingOver && (
-        <BottomSheet title="You're scoring this match" icon="fa-solid fa-user-lock" onClose={() => leaving.reset()}>
+      {leavingScoreOpen && (
+        <BottomSheet
+          title="You're scoring this match"
+          icon="fa-solid fa-user-lock"
+          onClose={() => setLeavingScoreOpen(false)}
+        >
           <p className="cricket-sheet-context">
-            No one else can score while you have it. Hand it over before you leave, or stop scoring so another scorer
-            can pick it up.
+            No one else can score while you have it. Choose what to do before leaving the scoring console:
           </p>
           <div className="cricket-settings-list">
-            <button type="button" className="cricket-settings-item" onClick={() => setHandingOver(true)}>
+            <button
+              type="button"
+              className="cricket-settings-item"
+              onClick={() => {
+                setLeavingScoreOpen(false);
+                setHandingOver(true);
+              }}
+            >
               <i className="fa-solid fa-people-arrows" aria-hidden="true"></i>
               <span>
-                Hand over and leave
-                <small>Choose who scores next</small>
+                Change scorer and leave
+                <small>Pass live scoring to someone from either squad, or by mobile number</small>
               </span>
               <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
             </button>
@@ -541,20 +689,40 @@ export function CricketMatchPage() {
               className="cricket-settings-item"
               disabled={seat.busy}
               onClick={async () => {
-                if (await handleStopScoring()) leaving.proceed();
+                setLeavingScoreOpen(false);
+                await handleStopScoring();
               }}
             >
               <i className="fa-solid fa-circle-stop" aria-hidden="true"></i>
               <span>
                 Stop scoring and leave
-                <small>Any of the match's scorers can pick it up</small>
+                <small>Leave it free for any of the match's scorers to pick up</small>
               </span>
             </button>
-            <button type="button" className="cricket-settings-item" onClick={() => leaving.reset()}>
+            <button
+              type="button"
+              className="cricket-settings-item"
+              onClick={() => {
+                sessionStorage.setItem(`view_match_${match.id}`, "1");
+                setLeavingScoreOpen(false);
+                navigate(`/matches/${match.id}?view=1`);
+              }}
+            >
+              <i className="fa-solid fa-table-list" aria-hidden="true"></i>
+              <span>
+                View match & scorecard
+                <small>Browse scorecard tabs while staying the active scorer</small>
+              </span>
+            </button>
+            <button
+              type="button"
+              className="cricket-settings-item"
+              onClick={() => setLeavingScoreOpen(false)}
+            >
               <i className="fa-solid fa-baseball-bat-ball" aria-hidden="true"></i>
               <span>
                 Keep scoring
-                <small>Stay on this match</small>
+                <small>Stay on this scoring console</small>
               </span>
             </button>
           </div>
@@ -563,7 +731,7 @@ export function CricketMatchPage() {
 
       {handingOver && (
         <ScorersSheet
-          title="Hand over scoring"
+          title="Change scorer"
           note="Pick who scores next — from either squad, or by mobile number. They need to have signed in to CrickVerse; you'll follow the live view."
           scorerIds={match.scorerIds}
           squads={match.teams}
@@ -611,11 +779,47 @@ export function CricketMatchPage() {
         />
       )}
 
-      {canManage && upcoming && (
+      {!onScoreScreen && canManage && upcoming && (
         <div className="cricket-action-bar">
-          <Button variant="primary" onClick={() => navigate(`/matches/${match.id}/setup`)}>
-            <i className="fa-solid fa-pen" aria-hidden="true"></i> Edit / Start Scoring
+          <Button variant="outline" onClick={() => setEditingDetails(true)}>
+            Edit
           </Button>
+          <Button variant="primary" onClick={() => navigate(`/matches/${match.id}/setup`)}>
+            Start Match
+          </Button>
+        </div>
+      )}
+
+      {hasLiveActionBar && (
+        <div className="cricket-action-bar">
+          {seat.mine ? (
+            <>
+              <Button variant="outline" size="sm" onClick={() => setHandingOver(true)}>
+                <i className="fa-solid fa-people-arrows" aria-hidden="true"></i> Change Scorer
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  sessionStorage.removeItem(`view_match_${match.id}`);
+                  navigate(`/matches/${match.id}/score`);
+                }}
+              >
+                <i className="fa-solid fa-baseball-bat-ball" aria-hidden="true"></i> Resume Scoring
+              </Button>
+            </>
+          ) : !seat.holder && canManage ? (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => {
+                sessionStorage.removeItem(`view_match_${match.id}`);
+                navigate(`/matches/${match.id}/score`);
+              }}
+            >
+              <i className="fa-solid fa-baseball-bat-ball" aria-hidden="true"></i> Score Match
+            </Button>
+          ) : null}
         </div>
       )}
     </div>

@@ -2,6 +2,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
+import { toast } from "sonner";
 import { apiClient } from "../../../api/client";
 import {
   useCricketMatch,
@@ -87,7 +88,9 @@ export function CricketMatchSetupPage() {
       match={match}
       nameOf={nameOf}
       onExit={() => navigate(`/matches/${id}`)}
-      onStarted={() => navigate(`/matches/${id}?tab=live`, { replace: true })}
+      onStarted={() => {
+        navigate(`/matches/${id}/score`, { replace: true });
+      }}
     />
   );
 }
@@ -122,7 +125,12 @@ function MatchSetup({ match, nameOf, onExit, onStarted }: MatchSetupProps) {
   const [decision, setDecision] = useState<"bat" | "bowl" | null>(null);
   const [picks, setPicks] = useState(NO_PICKS);
   const [pickerFor, setPickerFor] = useState<Slot | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setInlineError] = useState<string | null>(null);
+  // Errors show inline and as a toast, so they're seen when scrolled away.
+  const setError = (message: string | null) => {
+    setInlineError(message);
+    if (message) toast.error(message, { duration: 5000 });
+  };
   const detailsForm = useRef<HTMLFormElement>(null);
   const [call, setCall] = useState<Face>("heads");
   const [face, setFace] = useState<Face | null>(null);
@@ -233,7 +241,7 @@ function MatchSetup({ match, nameOf, onExit, onStarted }: MatchSetupProps) {
     try {
       await startMatch.mutateAsync({ id: match.id, tossWinner, tossDecision: decision, playerIds: xi, roles });
     } catch (err) {
-      if (!alreadyStarted(err)) return setError("Couldn't start the match — try again.");
+      if (!alreadyStarted(err)) return setInlineError("Couldn't start the match — try again.");
       // It started the first time: catch up and carry on.
       await queryClient.invalidateQueries({ queryKey: ["cricket-matches", match.id] });
       queryClient.invalidateQueries({ queryKey: ["cricket-matches", "list"] });
@@ -311,47 +319,102 @@ function MatchSetup({ match, nameOf, onExit, onStarted }: MatchSetupProps) {
         </div>
       ) : (
         <div className="cricket-setup">
-          <section className="cricket-coin-card">
-            <button
-              type="button"
-              className={`cricket-coin ${flipping ? "is-flipping" : ""}`}
-              onClick={flipCoin}
-              aria-label="Flip the coin"
-            >
-              {flipping ? "" : face === "tails" ? "T" : "H"}
-            </button>
-            <div className="cricket-coin-body">
-              <span className="cricket-coin-caller">{match.teams[1].name} calls</span>
-              <div className="admin-segmented cricket-coin-call" role="radiogroup" aria-label="Call">
-                {(["heads", "tails"] as const).map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    role="radio"
-                    aria-checked={call === option}
-                    className={call === option ? "active" : ""}
-                    disabled={flipping}
-                    onClick={() => setCall(option)}
-                  >
-                    {option === "heads" ? "Heads" : "Tails"}
-                  </button>
-                ))}
+          <section className="cricket-toss-section">
+            <h2 className="cricket-toss-heading">
+              <span className={`cricket-toss-step ${tossWinner !== null ? "is-done" : ""}`}>
+                {tossWinner !== null ? <i className="fa-solid fa-check" aria-hidden="true"></i> : 1}
+              </span>
+              <span>Toss</span>
+              <span className="cricket-toss-badge">
+                <i className="fa-solid fa-coins" aria-hidden="true"></i> Virtual Toss
+              </span>
+            </h2>
+            <div className={`cricket-coin-card ${face && !flipping ? "has-result" : ""}`}>
+              <div className="cricket-coin-top">
+                <div className="cricket-coin-caller-row">
+                  <TeamMark
+                    className="cricket-coin-caller-logo"
+                    name={match.teams[1].name}
+                    logoUrl={match.teams[1].logoUrl}
+                    color={teamColors[1]}
+                  />
+                  <span className="cricket-coin-caller">
+                    <strong>{match.teams[1].name}</strong> calls
+                  </span>
+                </div>
+                <div className="cricket-coin-call-pills" role="radiogroup" aria-label="Call">
+                  {(["heads", "tails"] as const).map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      role="radio"
+                      aria-checked={call === option}
+                      className={`cricket-coin-call-pill ${call === option ? "active" : ""}`}
+                      disabled={flipping}
+                      onClick={() => setCall(option)}
+                    >
+                      <span className="cricket-coin-call-dot">{option === "heads" ? "H" : "T"}</span>
+                      {option === "heads" ? "Heads" : "Tails"}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <button type="button" className="cricket-coin-flip" onClick={flipCoin} disabled={flipping}>
-                <i className="fa-solid fa-coins" aria-hidden="true"></i> {flipping ? "Flipping..." : "Flip Coin"}
-              </button>
+              <div className="cricket-coin-bottom">
+                <div className="cricket-coin-stage">
+                  <button
+                    type="button"
+                    className={`cricket-coin ${flipping ? "is-flipping" : ""} ${face ? `is-${face}` : ""}`}
+                    onClick={flipCoin}
+                    aria-label="Flip the coin"
+                  >
+                    <span className="cricket-coin-inner">
+                      {flipping ? (
+                        <i className="fa-solid fa-rotate cricket-coin-spin-icon" aria-hidden="true"></i>
+                      ) : (
+                        <>
+                          <span className="cricket-coin-letter">{(face ?? call) === "tails" ? "T" : "H"}</span>
+                          <small className="cricket-coin-face-label">
+                            {(face ?? call) === "tails" ? "TAILS" : "HEADS"}
+                          </small>
+                        </>
+                      )}
+                    </span>
+                  </button>
+                </div>
+                <div className="cricket-coin-status" role="status">
+                  {flipping ? (
+                    <>
+                      <strong>Flipping coin...</strong>
+                      <small>
+                        {match.teams[1].name} called {call === "heads" ? "Heads" : "Tails"}
+                      </small>
+                    </>
+                  ) : face && tossWinner !== null ? (
+                    <>
+                      <strong>
+                        It's {face === "heads" ? "Heads" : "Tails"}!
+                      </strong>
+                      <small>{match.teams[tossWinner].name} won the toss</small>
+                    </>
+                  ) : (
+                    <>
+                      <strong>Ready to toss</strong>
+                      <small>
+                        Calling {call === "heads" ? "Heads" : "Tails"} · Tap to flip
+                      </small>
+                    </>
+                  )}
+                </div>
+                <button type="button" className="cricket-coin-flip" onClick={flipCoin} disabled={flipping}>
+                  <i className={`fa-solid ${flipping ? "fa-spinner fa-spin" : "fa-coins"}`} aria-hidden="true"></i>
+                  <span>{flipping ? "Flipping" : face ? "Retoss" : "Flip Coin"}</span>
+                </button>
+              </div>
             </div>
-            {face && !flipping && tossWinner !== null && (
-              <p className="cricket-coin-result" role="status">
-                It's <strong>{face === "heads" ? "Heads" : "Tails"}</strong> — {match.teams[tossWinner].name} won the
-                toss
-              </p>
-            )}
-          </section>
-
-          <section>
-            <h2 className="cricket-section-title">Toss won by</h2>
-            <div className="cricket-tile-grid" role="radiogroup" aria-label="Toss won by">
+            <div className="cricket-toss-divider">
+              <span>or select toss winner</span>
+            </div>
+            <div className="cricket-tile-grid is-compact" role="radiogroup" aria-label="Toss won by">
               {match.teams.map((team, index) => (
                 <button
                   key={index}
@@ -366,7 +429,10 @@ function MatchSetup({ match, nameOf, onExit, onStarted }: MatchSetupProps) {
                   }}
                 >
                   <TeamMark className="cricket-pick-tile-logo" name={team.name} logoUrl={team.logoUrl} color={teamColors[index]} />
-                  <strong>{team.name}</strong>
+                  <span className="cricket-pick-tile-text">
+                    <strong>{team.name}</strong>
+                    <small>{tossWinner === index ? "Won toss" : "Tap to pick"}</small>
+                  </span>
                   {tossWinner === index && (
                     <i className="fa-solid fa-check cricket-pick-tile-check" aria-hidden="true"></i>
                   )}
@@ -375,22 +441,31 @@ function MatchSetup({ match, nameOf, onExit, onStarted }: MatchSetupProps) {
             </div>
           </section>
 
-          <section>
-            <h2 className="cricket-section-title">Elected to</h2>
-            <div className="cricket-tile-grid" role="radiogroup" aria-label="Elected to">
+          <section className={`cricket-toss-section ${tossWinner === null ? "is-locked" : ""}`}>
+            <h2 className="cricket-toss-heading">
+              <span className={`cricket-toss-step ${decision !== null ? "is-done" : ""}`}>
+                {decision !== null ? <i className="fa-solid fa-check" aria-hidden="true"></i> : 2}
+              </span>
+              <span>{tossWinner !== null ? `${match.teams[tossWinner].name} elected to` : "Elected to"}</span>
+            </h2>
+            <div className="cricket-tile-grid is-compact" role="radiogroup" aria-label="Elected to">
               {(["bat", "bowl"] as const).map((choice) => (
                 <button
                   key={choice}
                   type="button"
                   role="radio"
                   aria-checked={decision === choice}
+                  disabled={tossWinner === null}
                   className={`cricket-pick-tile ${decision === choice ? "active" : ""}`}
                   onClick={() => recordToss(tossWinner, choice)}
                 >
                   <span className="cricket-pick-tile-icon" aria-hidden="true">
                     <i className={`fa-solid ${choice === "bat" ? "fa-baseball-bat-ball" : "fa-baseball"}`}></i>
                   </span>
-                  <strong>{choice === "bat" ? "Bat" : "Bowl"}</strong>
+                  <span className="cricket-pick-tile-text">
+                    <strong>{choice === "bat" ? "Bat first" : "Bowl first"}</strong>
+                    <small>{choice === "bat" ? "Set target" : "Chase target"}</small>
+                  </span>
                   {decision === choice && (
                     <i className="fa-solid fa-check cricket-pick-tile-check" aria-hidden="true"></i>
                   )}
@@ -399,36 +474,51 @@ function MatchSetup({ match, nameOf, onExit, onStarted }: MatchSetupProps) {
             </div>
           </section>
 
-          {battingSlot !== null && (
-            <section>
-              <h2 className="cricket-section-title">
-                Openers ({match.teams[battingSlot].name}) and opening bowler ({match.teams[1 - battingSlot].name})
-              </h2>
-              <div className="cricket-tile-grid is-three">
+          <section className={`cricket-toss-section ${battingSlot === null ? "is-locked" : ""}`}>
+            <h2 className="cricket-toss-heading">
+              <span className={`cricket-toss-step ${picks.strikerId !== null && picks.nonStrikerId !== null && picks.bowlerId !== null ? "is-done" : ""}`}>
+                {picks.strikerId !== null && picks.nonStrikerId !== null && picks.bowlerId !== null ? (
+                  <i className="fa-solid fa-check" aria-hidden="true"></i>
+                ) : (
+                  3
+                )}
+              </span>
+              Openers &amp; opening bowler
+            </h2>
+            {battingSlot === null ? (
+              <p className="cricket-toss-hint">Record the toss and the decision to choose the openers.</p>
+            ) : (
+              <div className="cricket-slot-list">
                 {SLOTS.map(({ slot, label, icon }) => {
                   const chosen = picks[slot];
+                  const side = slot === "bowlerId" ? 1 - battingSlot : battingSlot;
                   return (
                     <button
                       key={slot}
                       type="button"
-                      className={`cricket-pick-tile ${chosen !== null ? "is-chosen" : "is-empty"}`}
+                      className={`cricket-slot-row ${chosen !== null ? "is-chosen" : "is-empty"}`}
                       onClick={() => setPickerFor(slot)}
                     >
-                      <small>{label}</small>
                       {chosen !== null ? (
-                        <PlayerAvatar name={nameOf(chosen)} photoUrl={photoOf(chosen)} className="cricket-pick-tile-photo" />
+                        <PlayerAvatar name={nameOf(chosen)} photoUrl={photoOf(chosen)} className="cricket-slot-photo" />
                       ) : (
-                        <span className="cricket-pick-tile-icon" aria-hidden="true">
+                        <span className="cricket-slot-icon" aria-hidden="true">
                           <i className={`fa-solid ${icon}`}></i>
                         </span>
                       )}
-                      <strong>{chosen !== null ? nameOf(chosen) : "Choose"}</strong>
+                      <span className="cricket-slot-text">
+                        <small>
+                          {label} · {match.teams[side].name}
+                        </small>
+                        <strong>{chosen !== null ? nameOf(chosen) : "Tap to choose"}</strong>
+                      </span>
+                      <i className="fa-solid fa-chevron-right cricket-slot-chevron" aria-hidden="true"></i>
                     </button>
                   );
                 })}
               </div>
-            </section>
-          )}
+            )}
+          </section>
           {error && <div className="admin-banner admin-banner-error">{error}</div>}
         </div>
       )}

@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useId, useState, type FormEvent, type Ref } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import {
   useCreateCricketMatch,
   useCricketPlaces,
@@ -125,12 +126,19 @@ export interface CricketMatchFormProps {
   // a standalone one.
   tournamentId?: number;
   // Editing has no save button: the setup page submits it through
-  // `formRef` when moving on. A new match gets a Schedule Match button.
+  // `formRef` when moving on. A new match gets a Schedule / Start Match button.
   formRef?: Ref<HTMLFormElement>;
+  initialStartMode?: "immediate" | "scheduled";
   onSaved: () => void;
 }
 
-export function CricketMatchForm({ existing, tournamentId: fixedTournament, formRef, onSaved }: CricketMatchFormProps) {
+export function CricketMatchForm({
+  existing,
+  tournamentId: fixedTournament,
+  formRef,
+  initialStartMode,
+  onSaved,
+}: CricketMatchFormProps) {
   const navigate = useNavigate();
   const { data: tournaments } = useCricketTournaments();
   const { data: me } = useCricketMe();
@@ -142,6 +150,7 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
   const updateMatch = useUpdateCricketMatch();
 
   const tournamentId = existing?.tournamentId ?? fixedTournament ?? null;
+  const [startMode, setStartMode] = useState<"immediate" | "scheduled">(initialStartMode ?? "immediate");
   const [teamA, setTeamA] = useState<number | null>(existing?.teams[0].teamIndex ?? 0);
   const [teamB, setTeamB] = useState<number | null>(existing?.teams[1].teamIndex ?? 1);
   // A standalone match names its own sides.
@@ -150,7 +159,7 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
   // Which known team each one-off side was picked from (null = a new team).
   const [teamKeys, setTeamKeys] = useState<[string | null, string | null]>([null, null]);
   const [overs, setOvers] = useState(String(existing?.overs ?? 6));
-  const [scheduledAt, setScheduledAt] = useState(toLocalInput(existing?.scheduledAt ?? null));
+  const [scheduledAt, setScheduledAt] = useState(toLocalInput(existing?.scheduledAt ?? new Date().toISOString()));
   const [venue, setVenue] = useState(existing?.venue ?? "");
   const [city, setCity] = useState(existing?.city ?? "");
   const [matchType, setMatchType] = useState<CricketMatchType | null>(existing?.matchType ?? null);
@@ -168,7 +177,13 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
   const [revisedTarget, setRevisedTarget] = useState(existing?.revisedTarget ? String(existing.revisedTarget) : "");
   const live = existing?.status === "live";
   const chasing = live && (existing?.innings.length ?? 0) >= 2;
-  const [error, setError] = useState<string | null>(null);
+  // Form errors show inline and as a toast, so they're seen even when the
+  // inline message is scrolled out of view.
+  const [error, setInlineError] = useState<string | null>(null);
+  const setError = (message: string | null) => {
+    setInlineError(message);
+    if (message) toast.error(message, { duration: 5000 });
+  };
   // Set after a submit without match / ball type, to flag those fields.
   const [missingType, setMissingType] = useState(false);
   const [choosingStage, setChoosingStage] = useState(false);
@@ -186,7 +201,11 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
   const [captainMobile, setCaptainMobile] = useState("");
   const [captainName, setCaptainName] = useState("");
   const [captainLookup, setCaptainLookup] = useState<CaptainLookup>({ status: "idle" });
-  const [newTeamError, setNewTeamError] = useState<string | null>(null);
+  const [newTeamError, setInlineTeamError] = useState<string | null>(null);
+  const setNewTeamError = (message: string | null) => {
+    setInlineTeamError(message);
+    if (message) toast.error(message, { duration: 5000 });
+  };
   // A one-off match's captains (each joins their side's squad), and the
   // side whose captain picker is open, with a new player typed into it.
   // Only a newly named side picks a captain; a known team doesn't.
@@ -383,9 +402,9 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
     const oversNumber = Number(overs);
     const names: [string, string] = [teamAName.trim(), teamBName.trim()];
     if (standalone) {
-      if (!existing && (!names[0] || !names[1])) return setError("Name both teams.");
+      if (!existing && (!names[0] || !names[1])) return setError("Select both teams.");
       if (!existing && names[0].toLowerCase() === names[1].toLowerCase()) {
-        return setError("The two teams need different names.");
+        return setError("Select two different teams.");
       }
       const missing = ([0, 1] as const).find((slot) => newSides[slot] && captains[slot] === null);
       if (!existing && missing !== undefined) {
@@ -415,11 +434,14 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
     }
     setMissingType(false);
     setError(null);
+    const matchScheduledAt = !existing && startMode === "immediate"
+      ? new Date().toISOString()
+      : (scheduledAt ? new Date(scheduledAt).toISOString() : null);
     const input = {
       teamAIndex: teamA ?? 0,
       teamBIndex: teamB ?? 1,
       overs: oversNumber,
-      scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+      scheduledAt: matchScheduledAt,
       venue: venue.trim() || null,
       city: city.trim() || null,
       matchType,
@@ -450,18 +472,29 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
         try {
           await updateMatch.mutateAsync({ id: existing.id, ...input, ...(chasing && { revisedTarget: target }) });
         } catch {
-          return setError("Couldn't save the match details — try again.");
+          // The global handler already toasted the server's reason.
+          return setInlineError("Couldn't save the match details — try again.");
         }
       }
       onSaved();
     } else {
-      const created = await createMatch.mutateAsync({
-        tournamentId: tournament?.id ?? null,
-        ...input,
-        ...(standalone && { teamNames: names, teamKeys, captainIds: captains }),
-      });
+      let created;
+      try {
+        created = await createMatch.mutateAsync({
+          tournamentId: tournament?.id ?? null,
+          ...input,
+          ...(standalone && { teamNames: names, teamKeys, captainIds: captains }),
+        });
+      } catch (err) {
+        // The global handler already toasted it; keep it inline too.
+        return setInlineError(messageFor(err));
+      }
       onSaved();
-      navigate(`/matches/${created.id}`);
+      if (startMode === "immediate") {
+        navigate(`/matches/${created.id}/setup`);
+      } else {
+        navigate(`/matches/${created.id}`);
+      }
     }
   }
 
@@ -530,6 +563,57 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
           </>
         )}
 
+        {!existing && (
+          <div className="cricket-start-mode-section">
+            <span className="cricket-app-group-title">
+              <i className="fa-solid fa-clock-rotate-left" aria-hidden="true" style={{ marginRight: 6 }}></i>
+              Match Timing
+            </span>
+            <div className="cricket-start-mode-grid" role="radiogroup" aria-label="Match timing">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={startMode === "immediate"}
+                className={`cricket-start-card is-immediate ${startMode === "immediate" ? "is-selected" : ""}`}
+                onClick={() => {
+                  setStartMode("immediate");
+                  setScheduledAt(toLocalInput(new Date().toISOString()));
+                }}
+              >
+                <span className="cricket-start-pill is-live">
+                  <span className="cricket-live-dot" aria-hidden="true"></span> LIVE
+                </span>
+                <span className="cricket-start-card-check" aria-hidden="true">
+                  <i className={startMode === "immediate" ? "fa-solid fa-circle-check" : "fa-regular fa-circle"}></i>
+                </span>
+                <span className="cricket-start-card-icon" aria-hidden="true">
+                  <i className="fa-solid fa-bolt"></i>
+                </span>
+                <strong className="cricket-start-card-title">Start now</strong>
+                <span className="cricket-start-card-hint">Toss & live score</span>
+              </button>
+
+              <button
+                type="button"
+                role="radio"
+                aria-checked={startMode === "scheduled"}
+                className={`cricket-start-card is-scheduled ${startMode === "scheduled" ? "is-selected" : ""}`}
+                onClick={() => setStartMode("scheduled")}
+              >
+                <span className="cricket-start-pill is-scheduled">FIXTURE</span>
+                <span className="cricket-start-card-check" aria-hidden="true">
+                  <i className={startMode === "scheduled" ? "fa-solid fa-circle-check" : "fa-regular fa-circle"}></i>
+                </span>
+                <span className="cricket-start-card-icon" aria-hidden="true">
+                  <i className="fa-solid fa-calendar-days"></i>
+                </span>
+                <strong className="cricket-start-card-title">Schedule</strong>
+                <span className="cricket-start-card-hint">Pick date & time</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         <h2 className="cricket-app-group-title">Match details</h2>
         <div className="cricket-app-group">
           <div className="cricket-app-row">
@@ -571,12 +655,24 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
             <span className="cricket-app-row-value">{stageLabel(stage)}</span>
             <i className="fa-solid fa-chevron-right cricket-app-row-chevron" aria-hidden="true"></i>
           </button>
-          <label className="cricket-app-row">
-            <span className="cricket-app-row-label">
-              <i className="fa-regular fa-calendar" aria-hidden="true"></i> Date & time
-            </span>
-            <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
-          </label>
+          {startMode === "immediate" && !existing ? (
+            <div className="cricket-app-row is-static">
+              <span className="cricket-app-row-label">
+                <i className="fa-solid fa-bolt text-danger" aria-hidden="true"></i> Timing
+              </span>
+              <span className="cricket-app-row-value cricket-timing-now">
+                <span className="cricket-live-dot" aria-hidden="true"></span>
+                Starting now
+              </span>
+            </div>
+          ) : (
+            <label className="cricket-app-row">
+              <span className="cricket-app-row-label">
+                <i className="fa-regular fa-calendar" aria-hidden="true"></i> Date & time
+              </span>
+              <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
+            </label>
+          )}
           <label className="cricket-app-row">
             <span className="cricket-app-row-label">
               <i className="fa-solid fa-location-dot" aria-hidden="true"></i> Ground
@@ -734,7 +830,11 @@ export function CricketMatchForm({ existing, tournamentId: fixedTournament, form
           </small>
         )}
         {error && <div className="admin-banner admin-banner-error">{error}</div>}
-        {!existing && <SubmitButton loading={createMatch.isPending}>Schedule Match</SubmitButton>}
+        {!existing && (
+          <SubmitButton loading={createMatch.isPending}>
+            {startMode === "immediate" ? "Start Match" : "Schedule Match"}
+          </SubmitButton>
+        )}
 
         {choosingStage && (
           <BottomSheet title="Stage" icon="fa-solid fa-trophy" onClose={() => setChoosingStage(false)} fullScreen>

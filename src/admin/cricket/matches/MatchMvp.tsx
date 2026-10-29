@@ -75,8 +75,8 @@ export function MatchMvp({ match, nameOf }: { match: CricketMatch; nameOf: NameO
         <p className="admin-hint mb-0">
           Batting: runs, boundaries, milestones (25 / 50 / 100) and strike rate against the match's par. Bowling: 20 per
           wicket (more for top-order and set batters), hauls, dots, maidens and economy against par. Fielding: 8 per catch,
-          10 per stumping or run-out. The winning side gets +10%. The top scorer is player of the match unless the
-          organiser picks someone else.
+          10 per stumping or run-out. The winning side gets +10%. The top performer from the winning side is player of the
+          match unless the organiser picks someone else.
         </p>
       </details>
     </div>

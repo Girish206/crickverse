@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import type { CricketMatch, CricketTournament } from "../../../api/types";
 import { championOf, makeResolver } from "../format/formatEngine";
@@ -183,6 +183,67 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: "setup", label: "Setting up" },
 ];
 
+// Parses a tournament name to check if it belongs to a recurring series (e.g. "KPL Season 1", "KPL Season 2")
+export function parseTournamentSeries(name: string): { seriesName: string; seasonLabel: string | null } {
+  const trimmed = name.trim();
+  const seasonMatch = /^(.*?)(?:\s*[-–—:]\s*|\s+)(?:season|edition|s)\s*(\d+|\b20\d\d\b)\s*$/i.exec(trimmed);
+  if (seasonMatch) {
+    return {
+      seriesName: seasonMatch[1].trim(),
+      seasonLabel: `Season ${seasonMatch[2]}`,
+    };
+  }
+  const parenMatch = /^(.*?)\s*\((?:season|edition|s)\s*(\d+|\b20\d\d\b)\)\s*$/i.exec(trimmed);
+  if (parenMatch) {
+    return {
+      seriesName: parenMatch[1].trim(),
+      seasonLabel: `Season ${parenMatch[2]}`,
+    };
+  }
+  return { seriesName: trimmed, seasonLabel: null };
+}
+
+function TournamentSeriesGroup({
+  group,
+  renderCard,
+}: {
+  group: { seriesName: string; items: { tournament: CricketTournament; seasonLabel: string | null }[] };
+  renderCard: (t: CricketTournament) => ReactNode;
+}) {
+  const sorted = useMemo(() => {
+    return [...group.items].sort((a, b) => b.tournament.id - a.tournament.id);
+  }, [group.items]);
+
+  const [activeId, setActiveId] = useState<number>(sorted[0].tournament.id);
+  const activeTournament = sorted.find((item) => item.tournament.id === activeId)?.tournament ?? sorted[0].tournament;
+
+  return (
+    <div className="cricket-tour-series-group">
+      <div className="cricket-tour-series-bar">
+        <span className="cricket-tour-series-title">
+          <i className="fa-solid fa-layer-group me-1" aria-hidden="true"></i> {group.seriesName}
+        </span>
+        <div className="cricket-tour-series-pills" role="tablist">
+          {sorted.map((item) => (
+            <button
+              key={item.tournament.id}
+              type="button"
+              className={`cricket-tour-series-pill ${item.tournament.id === activeId ? "active" : ""}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveId(item.tournament.id);
+              }}
+            >
+              {item.seasonLabel ?? `S${item.tournament.id}`}
+            </button>
+          ))}
+        </div>
+      </div>
+      {renderCard(activeTournament)}
+    </div>
+  );
+}
+
 // Phase filter + card grid, the tournament twin of MatchesBoard.
 export function TournamentsBoard({
   tournaments,
@@ -198,6 +259,20 @@ export function TournamentsBoard({
 }) {
   const [filter, setFilter] = useState<Filter>("all");
   const visible = tournaments.filter((t) => filter === "all" || tournamentPhase(t, matches) === filter);
+
+  const grouped = useMemo(() => {
+    const map = new Map<string, { seriesName: string; items: { tournament: CricketTournament; seasonLabel: string | null }[] }>();
+    for (const t of visible) {
+      const { seriesName, seasonLabel } = parseTournamentSeries(t.name);
+      const key = seriesName.toLowerCase();
+      if (!map.has(key)) {
+        map.set(key, { seriesName, items: [] });
+      }
+      map.get(key)!.items.push({ tournament: t, seasonLabel });
+    }
+    return Array.from(map.values());
+  }, [visible]);
+
   return (
     <>
       <div className="cricket-squad-toolbar">
@@ -219,7 +294,15 @@ export function TournamentsBoard({
       {visible.length === 0 ? (
         <div className="admin-empty-state">{tournaments.length === 0 ? empty : "No tournaments here."}</div>
       ) : (
-        <div className="cricket-match-grid">{visible.map(renderCard)}</div>
+        <div className="cricket-match-grid">
+          {grouped.map((group) =>
+            group.items.length === 1 ? (
+              renderCard(group.items[0].tournament)
+            ) : (
+              <TournamentSeriesGroup key={group.seriesName} group={group} renderCard={renderCard} />
+            ),
+          )}
+        </div>
       )}
     </>
   );

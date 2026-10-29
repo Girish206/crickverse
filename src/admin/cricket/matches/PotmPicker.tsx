@@ -3,27 +3,42 @@ import type { CricketMatch } from "../../../api/types";
 import { useSetCricketPlayerOfMatch } from "../../../api/hooks/cricket/useCricketMatches";
 import { BottomSheet } from "../BottomSheet";
 import { PlayerAvatar } from "../players/PlayerAvatar";
-import { matchImpact, points, tookPart, type NameOf } from "../stats";
+import { autoPlayerOfMatch, matchImpact, points, type NameOf } from "../stats";
 import { usePlayerPhotos } from "./matchUtils";
 
 // Organiser's override of the player of the match: a one-line summary with
-// a "Change" button that opens a tap-friendly list of the players, ranked by
-// impact, with "Auto" (top impact) first.
+// a "Change" button that opens a tap-friendly list of players from the winning
+// team (or both if tied), ranked by impact, with "Auto" (winning team's top impact) first.
 export function PotmPicker({ match, nameOf }: { match: CricketMatch; nameOf: NameOf }) {
   const [open, setOpen] = useState(false);
   const setPlayerOfMatch = useSetCricketPlayerOfMatch();
   const photoOf = usePlayerPhotos();
   const rows = matchImpact(match);
-  const auto = rows.find(tookPart)?.playerId ?? null;
-  const ranked = new Set(rows.map((row) => row.playerId));
-  // Everyone in the XIs; those who didn't feature come last with no points.
-  const players = [
-    ...rows,
-    ...match.teams.flatMap((team, slot) =>
-      team.playerIds.filter((id) => !ranked.has(id)).map((playerId) => ({ playerId, team: slot, total: null })),
+  const auto = autoPlayerOfMatch(match, rows)?.playerId ?? null;
+  const picked = match.playerOfMatchId ?? null;
+
+  const winningTeam = match.winner;
+  const winningTeamName = winningTeam !== null ? match.teams[winningTeam]?.name : null;
+  const eligibleRows = winningTeam !== null ? rows.filter((r) => r.team === winningTeam) : rows;
+  const eligibleTeams = winningTeam !== null ? [winningTeam] : [0, 1];
+  const ranked = new Set(eligibleRows.map((row) => row.playerId));
+  // Everyone in the winning team's XI (or both if tied); those who didn't feature come last with no points.
+  let players = [
+    ...eligibleRows,
+    ...eligibleTeams.flatMap((slot) =>
+      match.teams[slot].playerIds
+        .filter((id) => !ranked.has(id))
+        .map((playerId) => ({ playerId, team: slot, total: null })),
     ),
   ];
-  const picked = match.playerOfMatchId ?? null;
+  if (picked !== null && !players.some((p) => p.playerId === picked)) {
+    const existing = rows.find((r) => r.playerId === picked) ?? {
+      playerId: picked,
+      team: Math.max(0, match.teams.findIndex((t) => t.playerIds.includes(picked))),
+      total: null,
+    };
+    players = [existing as (typeof players)[number], ...players];
+  }
 
   function choose(playerId: number | null) {
     setPlayerOfMatch.mutate({ id: match.id, playerId });
@@ -37,7 +52,13 @@ export function PotmPicker({ match, nameOf }: { match: CricketMatch; nameOf: Nam
           <span>Player of the match</span>
           <strong>
             {picked !== null ? nameOf(picked) : auto !== null ? nameOf(auto) : "—"}
-            <small>{picked !== null ? " · Picked by you" : " · Auto (top impact)"}</small>
+            <small>
+              {picked !== null
+                ? " · Picked by you"
+                : winningTeamName
+                  ? ` · Auto (${winningTeamName})`
+                  : " · Auto (top impact)"}
+            </small>
           </strong>
         </div>
         <button type="button" className="cricket-potm-change" onClick={() => setOpen(true)}>
@@ -46,7 +67,10 @@ export function PotmPicker({ match, nameOf }: { match: CricketMatch; nameOf: Nam
       </div>
 
       {open && (
-        <BottomSheet title="Player of the match" onClose={() => setOpen(false)}>
+        <BottomSheet
+          title={winningTeamName ? `Player of the match · ${winningTeamName}` : "Player of the match"}
+          onClose={() => setOpen(false)}
+        >
           <ul className="cricket-potm-list">
             <li>
               <button type="button" className={picked === null ? "is-selected" : ""} onClick={() => choose(null)}>
@@ -55,7 +79,10 @@ export function PotmPicker({ match, nameOf }: { match: CricketMatch; nameOf: Nam
                 </span>
                 <span className="cricket-potm-who">
                   <strong>Auto</strong>
-                  <small>Top impact{auto !== null ? ` · ${nameOf(auto)}` : ""}</small>
+                  <small>
+                    Top impact{winningTeamName ? ` (${winningTeamName})` : ""}
+                    {auto !== null ? ` · ${nameOf(auto)}` : ""}
+                  </small>
                 </span>
                 {picked === null && <i className="fa-solid fa-check cricket-potm-check" aria-hidden="true"></i>}
               </button>

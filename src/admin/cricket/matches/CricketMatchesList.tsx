@@ -41,11 +41,32 @@ export function MatchesBoard({
   counts?: boolean;
 }) {
   const [filter, setFilter] = useState<Filter>("all");
-  // Oldest first (by start time; undated ones by when they were made), so
-  // they read in the order they're played.
+  // Order in 'all': Live first, then upcoming (ascending), then completed (descending).
+  const statusRank = (m: CricketMatch) => (m.status === "live" ? 0 : m.status === "scheduled" ? 1 : 2);
+  const sortMatches = (a: CricketMatch, b: CricketMatch) => {
+    if (filter === "all") {
+      const rankA = statusRank(a);
+      const rankB = statusRank(b);
+      if (rankA !== rankB) return rankA - rankB;
+    }
+    // Upcoming matches: ascending order (earliest upcoming match first)
+    if (a.status === "scheduled" && b.status === "scheduled") {
+      return (a.scheduledAt ?? a.createdAt).localeCompare(b.scheduledAt ?? b.createdAt);
+    }
+    // Completed / abandoned matches: descending order (most recently finished first)
+    if (
+      (a.status === "completed" || a.status === "abandoned") &&
+      (b.status === "completed" || b.status === "abandoned")
+    ) {
+      return (b.scheduledAt ?? b.createdAt).localeCompare(a.scheduledAt ?? a.createdAt);
+    }
+    // Live matches: newest first
+    return (b.scheduledAt ?? b.createdAt).localeCompare(a.scheduledAt ?? a.createdAt);
+  };
+
   const visible = matches
     .filter((match) => filter === "all" || match.status === filter || (filter === "completed" && match.status === "abandoned"))
-    .sort((a, b) => (a.scheduledAt ?? a.createdAt).localeCompare(b.scheduledAt ?? b.createdAt));
+    .sort(sortMatches);
   const countOf = (value: Filter) =>
     matches.filter((m) => value === "all" || m.status === value || (value === "completed" && m.status === "abandoned")).length;
   const list =
@@ -113,7 +134,8 @@ export function CricketMatchesList() {
       plain
       action={
         <Button variant="primary" onClick={() => setCreating(true)}>
-          + Schedule
+          <i className="fa-solid fa-plus" aria-hidden="true" style={{ marginRight: 6 }}></i>
+          New Match
         </Button>
       }
     >
@@ -151,7 +173,7 @@ export function CricketMatchesList() {
 
       {creating && (
         <BottomSheet
-          title="Schedule Match"
+          title="New Match"
           icon="fa-solid fa-baseball-bat-ball"
           onClose={() => setCreating(false)}
           wide

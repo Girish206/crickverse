@@ -36,6 +36,7 @@ import { TournamentBanner } from "./TournamentBanner";
 import { TournamentInfo } from "./TournamentInfo";
 import { TournamentStats } from "./TournamentStats";
 import { ShareFixturesSheet, upcomingFixtures } from "./ShareFixturesSheet";
+import { NrrCalculatorSheet } from "./NrrCalculatorSheet";
 import { FollowButton, useFollowMenuItem } from "../follow/FollowButton";
 import { SettingsMenu } from "../SettingsMenu";
 import { ScorersSheet } from "../ScorersSheet";
@@ -183,6 +184,7 @@ export function CricketTournamentPage() {
   const [pickingScorers, setPickingScorers] = useState(false);
   const [schedulingMatch, setSchedulingMatch] = useState(false);
   const [sharingFixtures, setSharingFixtures] = useState(false);
+  const [nrrCalcOpen, setNrrCalcOpen] = useState(false);
   const [params, setParams] = useSearchParams();
   const location = useLocation();
   const requested = params.get("tab") as Tab | null;
@@ -455,7 +457,8 @@ export function CricketTournamentPage() {
           action={
             canManage ? (
               <Button variant="primary" onClick={() => setSchedulingMatch(true)}>
-                + Schedule
+                <i className="fa-solid fa-plus" aria-hidden="true" style={{ marginRight: 6 }}></i>
+                New Match
               </Button>
             ) : undefined
           }
@@ -465,7 +468,13 @@ export function CricketTournamentPage() {
       )}
 
       {tab === "points" && (
-        <ListCard>
+        <ListCard
+          action={
+            <Button size="sm" variant="outline" onClick={() => setNrrCalcOpen(true)}>
+              <i className="fa-solid fa-calculator me-1" aria-hidden="true"></i> NRR Calculator
+            </Button>
+          }
+        >
           <FormatView tournament={tournament} matches={matches ?? []} canManage={canManage} />
         </ListCard>
       )}
@@ -484,7 +493,7 @@ export function CricketTournamentPage() {
 
       {schedulingMatch && (
         <BottomSheet
-          title="Schedule Match"
+          title="New Match"
           icon="fa-solid fa-baseball-bat-ball"
           onClose={() => setSchedulingMatch(false)}
           wide
@@ -556,6 +565,13 @@ export function CricketTournamentPage() {
           saving={setScorers.isPending}
           onSave={(playerIds) => setScorers.mutateAsync({ id: tournament.id, playerIds })}
           onClose={() => setPickingScorers(false)}
+        />
+      )}
+      {nrrCalcOpen && (
+        <NrrCalculatorSheet
+          tournament={tournament}
+          matches={matches ?? []}
+          onClose={() => setNrrCalcOpen(false)}
         />
       )}
     </div>

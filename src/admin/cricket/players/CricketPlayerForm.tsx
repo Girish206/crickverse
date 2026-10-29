@@ -19,7 +19,7 @@ import { confirmAction } from "../../components/confirmDelete";
 import InputComp from "../../dms/components/InputComp";
 import TextareaInput from "../../dms/components/TextareaInput";
 import { ChipChoice } from "../CricketChoices";
-import { PLAYER_ROLES } from "../playerRoles";
+import { BATTING_STYLES, BOWLING_STYLES, PLAYER_ROLES } from "../playerRoles";
 import { formatMobile, normalizeMobile } from "../mobile";
 import { PlayerAvatar } from "./PlayerAvatar";
 import { compressImage, MAX_UPLOAD_BYTES, PLAYER_PHOTO } from "../../../utils/compressImage";
@@ -29,6 +29,8 @@ import { PlayerInvite, ResetPlayerLogin } from "./PlayerInvite";
 const schema = z.object({
   name: z.string().trim().min(1, "Required").max(100),
   role: z.string().nullable(),
+  battingStyle: z.string().nullable().optional(),
+  bowlingStyle: z.string().nullable().optional(),
   mobile: z.string().refine((value) => normalizeMobile(value) !== null, "Enter a valid 10-digit mobile number"),
 });
 type FormValues = z.infer<typeof schema>;
@@ -74,13 +76,21 @@ export function CricketPlayerForm({ id, onSaved }: CricketPlayerFormProps) {
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    values: { name: existing?.name ?? "", role: existing?.role ?? null, mobile: existing?.mobile ?? "" },
+    values: {
+      name: existing?.name ?? "",
+      role: existing?.role ?? null,
+      battingStyle: existing?.battingStyle ?? null,
+      bowlingStyle: existing?.bowlingStyle ?? null,
+      mobile: existing?.mobile ?? "",
+    },
   });
 
   async function onSubmit(values: FormValues) {
     const input = {
       name: values.name,
       role: (values.role || null) as CricketPlayerRole | null,
+      battingStyle: (values.battingStyle || null) as import("../../../api/types").CricketBattingStyle | null,
+      bowlingStyle: (values.bowlingStyle || null) as import("../../../api/types").CricketBowlingStyle | null,
       mobile: normalizeMobile(values.mobile)!,
     };
     const saved = existing
@@ -145,6 +155,30 @@ export function CricketPlayerForm({ id, onSaved }: CricketPlayerFormProps) {
             label="Playing role"
             options={PLAYER_ROLES.map((role) => ({ value: role.value, label: role.label }))}
             value={field.value as CricketPlayerRole | null}
+            onChange={field.onChange}
+          />
+        )}
+      />
+      <Controller
+        name="battingStyle"
+        control={control}
+        render={({ field }) => (
+          <ChipChoice
+            label="Batting style"
+            options={BATTING_STYLES.map((b) => ({ value: b.value, label: b.label }))}
+            value={field.value as import("../../../api/types").CricketBattingStyle | null}
+            onChange={field.onChange}
+          />
+        )}
+      />
+      <Controller
+        name="bowlingStyle"
+        control={control}
+        render={({ field }) => (
+          <ChipChoice
+            label="Bowling style"
+            options={BOWLING_STYLES.map((b) => ({ value: b.value, label: b.label }))}
+            value={field.value as import("../../../api/types").CricketBowlingStyle | null}
             onChange={field.onChange}
           />
         )}

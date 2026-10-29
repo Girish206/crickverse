@@ -1,5 +1,7 @@
 import { ballsPerOverOf, type CricketMatch } from "../../../api/types";
+import { avatarColorFor } from "../avatarColor";
 import { PlayerLink } from "../players/PlayerProfileSheet";
+import { TeamMark } from "../teams/TeamMark";
 import {
   battingCard,
   bowlingCard,
@@ -42,18 +44,45 @@ export function LiveView({ match, nameOf }: { match: CricketMatch; nameOf: NameO
   return (
     <div className="cricket-scorer">
       <div className="cricket-scorer-head">
-        <div>
-          <span className="cricket-scorer-team">{match.teams[innings.battingTeam].name} batting</span>
-          <strong className="cricket-scorer-score">
-            {summary.runs}/{summary.wickets} <small>({summary.overs} / {match.overs} ov)</small>
-          </strong>
+        <div className="cricket-scorer-head-main">
+          <TeamMark
+            className="cricket-scorer-team-logo"
+            name={match.teams[innings.battingTeam].name}
+            logoUrl={match.teams[innings.battingTeam].logoUrl}
+            color={avatarColorFor(match.teams[innings.battingTeam].name)}
+          />
+          <div className="cricket-scorer-head-info">
+            <div className="cricket-scorer-team-row">
+              <span className="cricket-scorer-team">{match.teams[innings.battingTeam].name}</span>
+              <span className="cricket-scorer-innings-tag">
+                {match.innings.length === 2 ? "2nd Inn" : "1st Inn"}
+              </span>
+            </div>
+            <div className="cricket-scorer-score-row">
+              <strong className="cricket-scorer-score">
+                {summary.runs}/{summary.wickets}
+              </strong>
+              <span className="cricket-scorer-overs">
+                ({summary.overs} / {match.overs} ov)
+              </span>
+            </div>
+          </div>
         </div>
         <div className="cricket-scorer-rates">
-          <span>CRR {rate(summary.runs, summary.legalBalls, perOver)}</span>
+          <span className="cricket-rate-pill">
+            <small>CRR</small>
+            <strong>{rate(summary.runs, summary.legalBalls, perOver)}</strong>
+          </span>
           {chase && (
             <>
-              <span>Target {chase.target}{chase.revised && " (revised)"}</span>
-              <span>RRR {chase.requiredRate}</span>
+              <span className="cricket-rate-pill is-target">
+                <small>Target</small>
+                <strong>{chase.target}</strong>
+              </span>
+              <span className="cricket-rate-pill">
+                <small>RRR</small>
+                <strong>{chase.requiredRate}</strong>
+              </span>
             </>
           )}
         </div>
@@ -67,8 +96,11 @@ export function LiveView({ match, nameOf }: { match: CricketMatch; nameOf: NameO
       )}
       {chase && innings.balls.length > 0 && (
         <div className="cricket-chase-line">
-          Need <strong>{Math.max(chase.need, 0)}</strong> run{chase.need === 1 ? "" : "s"} from{" "}
-          <strong>{chase.ballsLeft}</strong> ball{chase.ballsLeft === 1 ? "" : "s"}
+          <i className="fa-solid fa-bullseye" aria-hidden="true"></i>
+          <span>
+            Need <strong>{Math.max(chase.need, 0)}</strong> run{chase.need === 1 ? "" : "s"} from{" "}
+            <strong>{chase.ballsLeft}</strong> ball{chase.ballsLeft === 1 ? "" : "s"}
+          </span>
         </div>
       )}
       {chase && innings.balls.length === 0 && (
@@ -79,7 +111,7 @@ export function LiveView({ match, nameOf }: { match: CricketMatch; nameOf: NameO
 
       {/* Who's in, Cricbuzz style: Batter R B 4s 6s SR, then Bowler O M R W
           ECO, on one grid so every column lines up. */}
-      <section className="cricket-crease">
+      <section className="cricket-crease is-table">
         <div className="cricket-crease-head">
           <span>Batter</span>
           <span>R</span>

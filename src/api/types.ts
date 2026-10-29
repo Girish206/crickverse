@@ -1,10 +1,20 @@
 // Shapes returned by the shared API (portfolio-server) for /admin/cricket.
 export type CricketPlayerRole = "batter" | "bowler" | "all-rounder" | "wicket-keeper";
+export type CricketBattingStyle = "right-hand" | "left-hand";
+export type CricketBowlingStyle =
+  | "right-arm-fast"
+  | "right-arm-medium"
+  | "right-arm-spin"
+  | "left-arm-fast"
+  | "left-arm-medium"
+  | "left-arm-spin";
 
 export interface CricketPlayer {
   id: number;
   name: string;
   role: CricketPlayerRole | null;
+  battingStyle?: CricketBattingStyle | null;
+  bowlingStyle?: CricketBowlingStyle | null;
   // Profile photo (/api/files/<id>); null = show their initial.
   photoUrl: string | null;
   // Super admins only: digits only, unique; null on players added before
@@ -335,6 +345,8 @@ export interface CricketBall {
   // A 4 or 6 that reached the boundary (false = all run). Missing/null on
   // older balls: 4s and 6s count as boundaries then.
   boundary?: boolean | null;
+  // Whether this no-ball awards a free hit (false = free hit turned off).
+  freeHit?: boolean | null;
 }
 
 export interface CricketInnings {

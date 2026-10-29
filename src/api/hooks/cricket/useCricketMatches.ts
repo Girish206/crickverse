@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../../client";
 import { isAxiosError } from "axios";
 import { followLive } from "./followLive";
@@ -60,6 +60,27 @@ export function useCricketMatches(tournamentId?: number | "none", { enabled = tr
       });
       return data.data;
     },
+  });
+}
+
+// Matches of multiple tournaments in parallel (e.g. for player's home feed).
+export function useTournamentsMatches(tournamentIds: number[], { enabled = true } = {}) {
+  return useQueries({
+    queries: tournamentIds.map((id) => ({
+      queryKey: ["cricket-matches", "list", id],
+      enabled,
+      refetchOnWindowFocus: true,
+      refetchInterval: (query: { state: { data?: CricketMatch[] } }) => {
+        const hasLive = query.state.data?.some((m) => m.status === "live");
+        return hasLive ? 10_000 : 60_000;
+      },
+      queryFn: async () => {
+        const { data } = await apiClient.get<ApiEnvelope<CricketMatch[]>>("/admin/cricket/matches", {
+          params: { tournamentId: id },
+        });
+        return data.data;
+      },
+    })),
   });
 }
 
@@ -225,7 +246,6 @@ export function useAddCricketBall() {
         inningsIndex: Math.max(0, (held?.innings.length ?? 1) - 1),
         expectedBalls: held?.innings[held.innings.length - 1]?.balls.length ?? 0,
       };
-      writePendingBall(id, send);
       try {
         const { data } = await apiClient.post<ApiEnvelope<CricketMatch>>(url(id, "/balls"), {
           ...send.ball,
@@ -236,6 +256,7 @@ export function useAddCricketBall() {
         return data.data;
       } catch (error) {
         if (isAxiosError(error) && error.response) writePendingBall(id, null);
+        else writePendingBall(id, send);
         throw error;
       }
     },

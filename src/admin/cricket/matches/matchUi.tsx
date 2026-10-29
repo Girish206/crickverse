@@ -60,7 +60,14 @@ export function MatchCard({
   tag?: MatchTag;
 }) {
   const navigate = useNavigate();
-  const open = () => navigate(`/matches/${match.id}`);
+  const open = () => {
+    try {
+      sessionStorage.removeItem(`view_match_${match.id}`);
+    } catch {
+      // ignore
+    }
+    navigate(`/matches/${match.id}`);
+  };
   const decided = match.status === "completed" && match.winner !== null;
   const ballType = BALL_TYPES.find((type) => type.value === match.ballType);
   const ballColor = ballType?.color;
@@ -99,19 +106,23 @@ export function MatchCard({
           const team = match.teams[slot];
           const score = teamScore(match, slot);
           const state = decided ? (match.winner === slot ? "is-winner" : "is-loser") : "";
+          const isBattingNow = match.status === "live" && match.innings[match.innings.length - 1]?.battingTeam === slot;
           return (
             <Fragment key={slot}>
               {i === 1 && <MatchCardCentre match={match} />}
-              <div className={`cricket-match-card-team ${state}`.trim()}>
+              <div className={`cricket-match-card-team ${state} ${isBattingNow ? "is-batting-now" : ""}`.trim()}>
                 <TeamMark className="cricket-match-card-badge" name={team.name} logoUrl={team.logoUrl} text={teamInitials(team.name)} />
                 <span className="cricket-match-card-name" title={team.name}>
                   {team.name}
                   {match.winner === slot && decided && (
                     <i className="fa-solid fa-trophy cricket-match-card-trophy" aria-label="Winner"></i>
                   )}
+                  {isBattingNow && (
+                    <i className="fa-solid fa-baseball-bat-ball cricket-match-card-batting-icon" title="Batting now" aria-label="Batting now"></i>
+                  )}
                 </span>
                 {score ? (
-                  <span className="cricket-match-card-score">
+                  <span className={`cricket-match-card-score ${isBattingNow ? "is-current-score" : ""}`.trim()}>
                     {score.runs} <small>({score.overs})</small>
                   </span>
                 ) : (

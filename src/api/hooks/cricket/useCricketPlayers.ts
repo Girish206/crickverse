@@ -6,6 +6,8 @@ import type {
   CricketMe,
   CricketPlayer,
   CricketPlayerRole,
+  CricketBattingStyle,
+  CricketBowlingStyle,
   CricketTournament,
 } from "../../types";
 
@@ -13,6 +15,8 @@ export interface CricketPlayerInput {
   name: string;
   role: CricketPlayerRole | null;
   mobile: string;
+  battingStyle?: CricketBattingStyle | null;
+  bowlingStyle?: CricketBowlingStyle | null;
 }
 
 // The signed-in user's player record, tournaments and matches.

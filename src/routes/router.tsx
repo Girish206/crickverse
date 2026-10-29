@@ -112,6 +112,10 @@ export const router = createBrowserRouter([
                     path: "matches/:id",
                     lazy: page(() => import("../admin/cricket/matches/CricketMatchPage"), (m) => m.CricketMatchPage),
                   },
+                  {
+                    path: "matches/:id/score",
+                    lazy: page(() => import("../admin/cricket/matches/CricketMatchPage"), (m) => m.CricketMatchPage),
+                  },
                   // Whoever organises the match sets it up (the API checks who).
                   {
                     path: "matches/:id/setup",

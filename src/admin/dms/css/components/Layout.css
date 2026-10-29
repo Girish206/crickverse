@@ -28,7 +28,7 @@
    content: "";
    position: fixed;
    inset: 0;
-   z-index: 0;
+   z-index: -1;
    pointer-events: none;
    background-image: var(--bg-overlay, linear-gradient(rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.88))),
       linear-gradient(170deg, var(--layout-bg-top) 0%, var(--layout-bg-bottom) 100%);
@@ -130,7 +130,7 @@
    /* 64px Navbar + 40px spacing */
    transition: padding-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
    position: relative;
-   z-index: auto;
+   z-index: 1;
 }
 
 /* The Girish Creations signature closes every page on desktop: the main

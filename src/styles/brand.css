@@ -33,14 +33,14 @@
   --brand-orange-bright: #ff7a45;
   --brand-amber-bright: #ffd83d;
 
-  /* Charcoal surfaces (dark theme) */
-  --brand-navy-night: #0f1012;
-  --brand-navy-surface: #17181b;
-  --brand-navy-raised: #222428;
+  /* Charcoal surfaces (mobile-friendly dark theme) */
+  --brand-navy-night: #16181d;
+  --brand-navy-surface: #20232a;
+  --brand-navy-raised: #2a2e37;
 
   /* "r, g, b" triplets, for rgba(var(--brand-…-rgb), alpha) */
   --brand-navy-rgb: 42, 15, 18;
-  --brand-navy-night-rgb: 15, 16, 18;
+  --brand-navy-night-rgb: 22, 24, 29;
   --brand-crimson-rgb: 201, 68, 59;
   --brand-orange-rgb: 232, 80, 31;
   --brand-orange-deep-rgb: 192, 74, 38;

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import {
   type CricketTournamentInput,
   useCreateCricketTournament,
@@ -40,6 +41,24 @@ const today = () => {
 };
 
 type Errors = Partial<Record<"name" | "city" | "ground" | "organiserName" | "organiserMobile" | "organiserEmail" | "startDate" | "endDate" | "category" | "ballType" | "matchType" | "overs" | "bowlerOverLimit" | "image", string>>;
+
+// Field names as shown in the "fix these fields" toast.
+const FIELD_LABELS: Record<keyof Errors, string> = {
+  name: "Name",
+  city: "City",
+  ground: "Ground",
+  organiserName: "Organiser name",
+  organiserMobile: "Organiser mobile",
+  organiserEmail: "Organiser email",
+  startDate: "Start date",
+  endDate: "End date",
+  category: "Category",
+  ballType: "Ball type",
+  matchType: "Match type",
+  overs: "Overs",
+  bowlerOverLimit: "Overs per bowler",
+  image: "Image",
+};
 
 // A picked image: a new file (with a preview URL), the current one, or none.
 export function useImagePick(current: string | null | undefined) {
@@ -147,7 +166,10 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
       const picked = e.target.files?.[0];
       e.target.value = "";
       if (!picked) return;
-      const fail = (image: string) => setErrors((c) => ({ ...c, image }));
+      const fail = (image: string) => {
+        setErrors((c) => ({ ...c, image }));
+        toast.error(image, { duration: 5000 });
+      };
       if (!picked.type.startsWith("image/")) return fail("Choose an image file.");
       try {
         const file = await compressImage(picked, options);
@@ -191,7 +213,17 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
     e.preventDefault();
     const found = validate();
     setErrors(found);
-    if (Object.values(found).some(Boolean)) return;
+    const keys = (Object.keys(found) as (keyof Errors)[]).filter((key) => found[key]);
+    if (keys.length) {
+      // Also a toast, since the field messages may be scrolled out of view.
+      toast.error(
+        keys.length === 1
+          ? `${FIELD_LABELS[keys[0]]}: ${found[keys[0]]}`
+          : `Please fix ${keys.length} fields: ${keys.map((key) => FIELD_LABELS[key]).join(", ")}`,
+        { duration: 5000 },
+      );
+      return;
+    }
     const input = {
       name: name.trim(),
       city: city.trim(),

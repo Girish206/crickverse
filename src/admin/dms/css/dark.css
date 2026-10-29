@@ -17,19 +17,19 @@
   --adm-bg: var(--brand-navy-night);
   --adm-surface: var(--brand-navy-surface);
   --adm-raised: var(--brand-navy-raised);
-  --adm-glass: rgba(23, 24, 27, 0.86);
-  --adm-line: rgba(255, 255, 255, 0.09);
-  --adm-line-strong: rgba(255, 255, 255, 0.16);
-  --adm-hover: rgba(255, 255, 255, 0.05);
-  --adm-text: #f3f4f6;
-  --adm-text-2: #c9ccd2;
+  --adm-glass: rgba(32, 35, 42, 0.90);
+  --adm-line: rgba(255, 255, 255, 0.10);
+  --adm-line-strong: rgba(255, 255, 255, 0.18);
+  --adm-hover: rgba(255, 255, 255, 0.06);
+  --adm-text: #f9fafb;
+  --adm-text-2: #d1d5db;
 
   /* Brand: the lighter maroon — the plain one is too dark to read on the
      charcoal. Buttons and highlights use the night-sky maroon gradient. */
   --primary: var(--brand-maroon-bright);
   --primary-rgb: var(--brand-maroon-bright-rgb);
   --primary-gradient: var(--brand-gradient-sky-night);
-  --hero-gradient: var(--brand-gradient-sky-night);
+  --hero-gradient: linear-gradient(135deg, #781c22 0%, #521317 50%, #320c10 100%);
   --secondary: var(--brand-amber-bright);
 
   /* "light" tints are used as soft backgrounds → mix into the surface;
@@ -58,36 +58,36 @@
   --secondary-dark-4: color-mix(in srgb, var(--secondary) 30%, #fff);
 
   --theme-text-dark: var(--adm-text);
-  --muted-color: #a3a2bf;
+  --muted-color: #9ca3af;
   --border-color: var(--adm-line-strong);
-  --background-color: rgba(255, 255, 255, 0.04);
+  --background-color: rgba(255, 255, 255, 0.05);
 
   --logo-navy-light: var(--adm-bg);
   --logo-crimson-light: color-mix(in srgb, var(--brand-crimson) 10%, var(--adm-bg));
   --logo-orange-light: color-mix(in srgb, var(--brand-orange) 8%, var(--adm-bg));
   --logo-gold-light: color-mix(in srgb, var(--brand-amber) 6%, var(--adm-bg));
-  --layout-bg-top: #141518;
+  --layout-bg-top: #1b1e24;
   --layout-bg-bottom: var(--adm-bg);
 
   /* Legacy template variables still read by admin.css */
   --black: var(--adm-text);
-  --light-black: #a3a2bf;
-  --background: rgba(255, 255, 255, 0.04);
+  --light-black: #9ca3af;
+  --background: rgba(255, 255, 255, 0.05);
   --border: var(--adm-line-strong);
 
   --sidebar-bg: var(--adm-surface);
-  --sidebar-text-muted: #a3a2bf;
+  --sidebar-text-muted: #9ca3af;
   --sidebar-shadow: 0 30px 70px rgba(0, 0, 0, 0.5);
 
   /* Bootstrap, so its components use the same charcoal surfaces. */
   --bs-body-bg: var(--adm-surface);
-  --bs-body-bg-rgb: 23, 24, 27;
+  --bs-body-bg-rgb: 32, 35, 42;
   --bs-body-color: var(--adm-text-2);
   --bs-emphasis-color: var(--adm-text);
   --bs-heading-color: var(--adm-text);
-  --bs-secondary-color: #a3a2bf;
+  --bs-secondary-color: #9ca3af;
   --bs-secondary-bg: var(--adm-raised);
-  --bs-tertiary-bg: #12143a;
+  --bs-tertiary-bg: #1c1f27;
   --bs-border-color: var(--adm-line-strong);
   --bs-border-color-translucent: var(--adm-line);
   --bs-link-color: var(--brand-maroon-bright);
@@ -102,7 +102,7 @@
 }
 :root[data-bs-theme="dark"] .layout-wrapper,
 :root[data-bs-theme="dark"] .layout-wrapper[class*="bg-"] {
-  --bg-overlay: linear-gradient(rgba(15, 16, 18, 0.82), rgba(15, 16, 18, 0.82));
+  --bg-overlay: linear-gradient(rgba(22, 24, 29, 0.85), rgba(22, 24, 29, 0.85));
 }
 :root[data-bs-theme="dark"] .cricket-home-hero {
   border: 1px solid rgba(255, 255, 255, 0.07);
@@ -123,18 +123,18 @@
 /* ---------- Navbar ---------- */
 
 :root[data-bs-theme="dark"] .navbar {
-  background: rgba(15, 16, 18, 0.9);
+  background: rgba(22, 24, 29, 0.92);
   box-shadow: 0 10px 28px -6px rgba(0, 0, 0, 0.85), 0 4px 12px rgba(0, 0, 0, 0.55);
 }
 :root[data-bs-theme="dark"] .navbar-scrolled {
-  background: rgba(15, 16, 18, 0.96);
+  background: rgba(22, 24, 29, 0.98);
   box-shadow: 0 12px 32px -6px rgba(0, 0, 0, 0.9), 0 4px 14px rgba(0, 0, 0, 0.6);
 }
 :root[data-bs-theme="dark"] .navbar .nav {
   background: var(--adm-hover);
 }
 :root[data-bs-theme="dark"] .navbar .nav .nav-link {
-  color: #a3a2bf;
+  color: #9ca3af;
 }
 :root[data-bs-theme="dark"] .navbar .nav .nav-item:not(.active) .nav-link:hover {
   color: var(--adm-text);
@@ -196,7 +196,7 @@
 }
 :root[data-bs-theme="dark"] .notif-message,
 :root[data-bs-theme="dark"] .navbar-notif-btn {
-  color: #a3a2bf;
+  color: #9ca3af;
 }
 :root[data-bs-theme="dark"] .user-img,
 :root[data-bs-theme="dark"] .user-avatar {
@@ -233,7 +233,7 @@
   border-top-color: var(--adm-line);
 }
 :root[data-bs-theme="dark"] .submenu-link {
-  color: #a3a2bf !important;
+  color: #9ca3af !important;
 }
 :root[data-bs-theme="dark"] .submenu-link:hover {
   color: var(--adm-text) !important;
@@ -242,7 +242,7 @@
   background: var(--adm-raised) !important;
 }
 :root[data-bs-theme="dark"] .user-role-text {
-  color: #a3a2bf;
+  color: #9ca3af;
 }
 :root[data-bs-theme="dark"] .logout-btn {
   background: rgba(244, 63, 94, 0.1);
@@ -279,7 +279,7 @@
   color: var(--adm-text) !important;
 }
 :root[data-bs-theme="dark"] .ki-card small {
-  color: #a3a2bf;
+  color: #9ca3af;
 }
 :root[data-bs-theme="dark"] .card-header-gradient-primary {
   background: linear-gradient(135deg, var(--primary-light-6) 0%, var(--adm-surface) 100%) !important;
@@ -336,7 +336,7 @@
   --field-line: var(--adm-line-strong);
   --field-line-hover: rgba(255, 255, 255, 0.32);
   --field-error: var(--brand-crimson-bright);
-  --field-muted: #a3a2bf;
+  --field-muted: #9ca3af;
 }
 :root[data-bs-theme="dark"] .form-control {
   color: var(--adm-text);
@@ -375,7 +375,7 @@
   background-color: var(--adm-surface) !important;
 }
 :root[data-bs-theme="dark"] .btn-clear-filters {
-  background-color: rgba(255, 255, 255, 0.05) !important;
+  background-color: rgba(255, 255, 255, 0.06) !important;
   border-color: var(--adm-line-strong) !important;
   color: var(--adm-text-2) !important;
 }
@@ -393,7 +393,7 @@
 }
 :root[data-bs-theme="dark"] .custom-nav-pills .nav-link,
 :root[data-bs-theme="dark"] .custom-tabs .nav-link {
-  color: #a3a2bf;
+  color: #9ca3af;
 }
 :root[data-bs-theme="dark"] .custom-nav-pills .nav-link:hover {
   background-color: var(--adm-hover);

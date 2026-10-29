@@ -20,9 +20,10 @@ import {
 import { Button } from "../../components/Button";
 import { confirmAction } from "../../components/confirmDelete";
 import { BottomSheet } from "../BottomSheet";
+import { avatarColorFor } from "../avatarColor";
 import { PlayerAvatar } from "../players/PlayerAvatar";
+import { TeamMark } from "../teams/TeamMark";
 import { OutArt } from "./OutArt";
-import { Commentary } from "./Commentary";
 import { PlayerPicker, type PickItem } from "./PlayerPicker";
 import { usePlayerPhotos } from "./matchUtils";
 import { ShotGround, shotZoneAt } from "./ShotMap";
@@ -32,6 +33,16 @@ import { EndChaseSheet } from "./scorer/EndChaseSheet";
 import { PenaltySheet } from "./scorer/PenaltySheet";
 import { RunChoice } from "./scorer/RunChoice";
 import "./scorer/scorer.css";
+import {
+  useCricketPlayers,
+  useUpdateCricketPlayer,
+} from "../../../api/hooks/cricket/useCricketPlayers";
+import {
+  BATTING_STYLES,
+  BOWLING_STYLES,
+  battingStyleOf,
+  bowlingStyleOf,
+} from "../playerRoles";
 import {
   ballChipClass,
   ballLabel,
@@ -188,6 +199,23 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   const chase = innings === match.innings[1] ? chaseInfo(match) : null;
 
   const setPlayers = useSetCricketCurrentPlayers();
+  const { data: allPlayers } = useCricketPlayers();
+  const updatePlayer = useUpdateCricketPlayer();
+  const [promptStyle, setPromptStyle] = useState<{
+    playerId: number;
+    name: string;
+    type: "batting" | "bowling";
+  } | null>(null);
+
+  const checkPromptStyle = (slot: Slot, id: number) => {
+    const player = allPlayers?.find((p) => p.id === id);
+    if (!player) return;
+    if ((slot === "strikerId" || slot === "nonStrikerId") && !player.battingStyle) {
+      setPromptStyle({ playerId: id, name: player.name, type: "batting" });
+    } else if (slot === "bowlerId" && !player.bowlingStyle) {
+      setPromptStyle({ playerId: id, name: player.name, type: "bowling" });
+    }
+  };
   const addBall = useAddCricketBall();
   const undoBall = useUndoCricketBall();
   const endInnings = useEndCricketInnings();
@@ -202,9 +230,25 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
         if (isStaleScore(error)) toast("Score updated from another device");
       },
     });
+
+  const ballsScrollRef = useRef<HTMLDivElement>(null);
+
+  const [offlineOrFailed, setOfflineOrFailed] = useState(!navigator.onLine);
+  useEffect(() => {
+    const handleOnline = () => setOfflineOrFailed(false);
+    const handleOffline = () => setOfflineOrFailed(true);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
   // A ball kept on this device while offline: it goes again once the
   // connection's back (or on Retry); the pad waits for it meanwhile.
   const pendingBall = usePendingBall(match, (pending) => sendBall({ id: match.id, ...pending.ball, pending }), busy);
+  const hasSendFailure = Boolean(pendingBall && (offlineOrFailed || addBall.isError));
 
   const [picks, setPicks] = useState<{ strikerId: number | null; nonStrikerId: number | null; bowlerId: number | null }>({
     strikerId: null,
@@ -219,6 +263,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   const [extraRuns, setExtraRuns] = useState(0);
   // A no ball's runs: off the bat (null), or byes / leg-byes.
   const [noBallByes, setNoBallByes] = useState<"bye" | "leg-bye" | null>(null);
+  const [noBallFreeHit, setNoBallFreeHit] = useState<boolean>(true);
   const [penaltyOpen, setPenaltyOpen] = useState(false);
   // Correcting a ball: the one tapped, or null to choose from the list.
   const [correcting, setCorrecting] = useState<{ ballIndex: number | null } | null>(null);
@@ -340,6 +385,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   function change(slot: Slot, id: number) {
     setChanging(null);
     setPlayers.mutate({ id: match.id, [slot]: id });
+    checkPromptStyle(slot, id);
   }
   // Batting on alone, only the one batter is needed.
   const emptySlots: Slot[] = (["strikerId", "nonStrikerId", "bowlerId"] as const).filter((slot) =>
@@ -354,6 +400,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
     const nextSlot = emptySlots.find((s) => s !== slot && next[s] === null) ?? null;
     setPickerFor(nextSlot);
     if (!nextSlot) savePlayers(next);
+    checkPromptStyle(slot, id);
   }
   const thisOver = oversOf(innings, perOver).at(-1);
   const overEndPending = overJustEnded && innings.bowlerId === null;
@@ -384,8 +431,23 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   // Closed without a pick, the strip keeps showing the finished over (all
   // its balls); once the next bowler is in, it starts empty for the new one.
   const showOver = !overJustEnded || (overEndPending && overPromptSeen === overKey) ? thisOver : undefined;
+
+  useEffect(() => {
+    if (ballsScrollRef.current) {
+      const el = ballsScrollRef.current;
+      if (el.scrollWidth > el.clientWidth + 4) {
+        el.scrollTo({
+          left: el.scrollWidth,
+          behavior: "smooth",
+        });
+      } else {
+        el.scrollTo({ left: 0, behavior: "smooth" });
+      }
+    }
+  }, [showOver?.balls.length]);
+
   // The pad stays live between overs — tapping it brings the prompt back.
-  const padDisabled = busy || pendingBall !== null || (needsPlayers && !overEndPending);
+  const padDisabled = busy || (hasSendFailure && !navigator.onLine) || (needsPlayers && !overEndPending);
   const scoreOr = (action: () => void) => () => (overEndPending ? setOverPromptSeen(null) : action());
 
   // Saves the picks for the empty slots (called once the last one is chosen).
@@ -464,8 +526,10 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
     if (extraModal === "wide") record({ extraType: "wide", extras: 1 + extraRuns });
     // Byes or leg-byes off a no ball are extras on top of its penalty.
     if (extraModal === "no-ball" && noBallByes && extraRuns > 0) {
-      record({ extraType: "no-ball", runs: 0, extras: 1 + extraRuns, byeType: noBallByes });
-    } else if (extraModal === "no-ball") recordShot({ extraType: "no-ball", extras: 1, runs: noBallByes ? 0 : extraRuns });
+      record({ extraType: "no-ball", runs: 0, extras: 1 + extraRuns, byeType: noBallByes, freeHit: noBallFreeHit });
+    } else if (extraModal === "no-ball") {
+      recordShot({ extraType: "no-ball", extras: 1, runs: noBallByes ? 0 : extraRuns, freeHit: noBallFreeHit });
+    }
     if (extraModal === "bye" || extraModal === "leg-bye") record({ extraType: extraModal, extras: Math.max(extraRuns, 1) });
     setExtraModal(null);
   }
@@ -636,18 +700,45 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
       )}
       {!inningsBreak && (
       <div className="cricket-scorer-head">
-        <div>
-          <span className="cricket-scorer-team">{match.teams[innings.battingTeam].name} batting</span>
-          <strong className="cricket-scorer-score">
-            {summary.runs}/{summary.wickets} <small>({summary.overs} / {match.overs} ov)</small>
-          </strong>
+        <div className="cricket-scorer-head-main">
+          <TeamMark
+            className="cricket-scorer-team-logo"
+            name={match.teams[innings.battingTeam].name}
+            logoUrl={match.teams[innings.battingTeam].logoUrl}
+            color={avatarColorFor(match.teams[innings.battingTeam].name)}
+          />
+          <div className="cricket-scorer-head-info">
+            <div className="cricket-scorer-team-row">
+              <span className="cricket-scorer-team">{match.teams[innings.battingTeam].name}</span>
+              <span className="cricket-scorer-innings-tag">
+                {match.innings.length === 2 ? "2nd Inn" : "1st Inn"}
+              </span>
+            </div>
+            <div className="cricket-scorer-score-row">
+              <strong className="cricket-scorer-score">
+                {summary.runs}/{summary.wickets}
+              </strong>
+              <span className="cricket-scorer-overs">
+                ({summary.overs} / {match.overs} ov)
+              </span>
+            </div>
+          </div>
         </div>
         <div className="cricket-scorer-rates">
-          <span>CRR {rate(summary.runs, summary.legalBalls, perOver)}</span>
+          <span className="cricket-rate-pill">
+            <small>CRR</small>
+            <strong>{rate(summary.runs, summary.legalBalls, perOver)}</strong>
+          </span>
           {chase && (
             <>
-              <span>Target {chase.target}</span>
-              <span>RRR {chase.requiredRate}</span>
+              <span className="cricket-rate-pill is-target">
+                <small>Target</small>
+                <strong>{chase.target}</strong>
+              </span>
+              <span className="cricket-rate-pill">
+                <small>RRR</small>
+                <strong>{chase.requiredRate}</strong>
+              </span>
             </>
           )}
         </div>
@@ -655,8 +746,11 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
       )}
       {chase && !inningsBreak && (
         <div className="cricket-chase-line">
-          Need <strong>{Math.max(chase.need, 0)}</strong> run{chase.need === 1 ? "" : "s"} from{" "}
-          <strong>{chase.ballsLeft}</strong> ball{chase.ballsLeft === 1 ? "" : "s"}
+          <i className="fa-solid fa-bullseye" aria-hidden="true"></i>
+          <span>
+            Need <strong>{Math.max(chase.need, 0)}</strong> run{chase.need === 1 ? "" : "s"} from{" "}
+            <strong>{chase.ballsLeft}</strong> ball{chase.ballsLeft === 1 ? "" : "s"}
+          </span>
         </div>
       )}
       {needsPlayers ? (
@@ -726,11 +820,50 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
                 onClick={() => setChanging(slot)}
                 title={playerId === null ? undefined : `Change ${i === 0 ? "striker" : "non-striker"}`}
               >
-                <span>
-                  {playerId === null ? "—" : nameOf(playerId)}
-                  {i === 0 && playerId !== null && " *"}
+                <span className="cricket-crease-avatar-wrap">
+                  {playerId !== null ? (
+                    <PlayerAvatar name={nameOf(playerId)} photoUrl={photoOf(playerId)} className="cricket-crease-avatar" />
+                  ) : (
+                    <span className="cricket-crease-avatar is-empty">
+                      <i className="fa-solid fa-user" aria-hidden="true"></i>
+                    </span>
+                  )}
+                  {i === 0 && playerId !== null && (
+                    <span className="cricket-crease-strike-dot" aria-hidden="true">
+                      <i className="fa-solid fa-baseball-bat-ball"></i>
+                    </span>
+                  )}
                 </span>
-                <strong>
+                <span className="cricket-crease-who">
+                  <span className="cricket-crease-name">
+                    {playerId === null ? "—" : nameOf(playerId)}
+                    {i === 0 && playerId !== null && <span className="cricket-crease-star">*</span>}
+                    {playerId !== null && (() => {
+                      const p = allPlayers?.find((item) => item.id === playerId);
+                      const s = battingStyleOf(p?.battingStyle);
+                      return s ? (
+                        <span
+                          className="cricket-player-style-tag"
+                          title={`${s.label} (Tap to change)`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPromptStyle({ playerId, name: nameOf(playerId), type: "batting" });
+                          }}
+                        >
+                          {s.short}
+                        </span>
+                      ) : null;
+                    })()}
+                  </span>
+                  <small className="cricket-crease-meta">
+                    {row && (row.fours > 0 || row.sixes > 0)
+                      ? `${row.fours}×4 · ${row.sixes}×6`
+                      : i === 0
+                        ? "On strike"
+                        : "Non-striker"}
+                  </small>
+                </span>
+                <strong className="cricket-crease-figs">
                   {row?.runs ?? 0} <small>({row?.balls ?? 0})</small>
                 </strong>
               </button>
@@ -758,47 +891,109 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
           onClick={() => setChanging("bowlerId")}
           title={innings.bowlerId === null ? undefined : "Change bowler"}
         >
-          <span>
-            <i className="fa-solid fa-baseball" aria-hidden="true"></i> {innings.bowlerId === null ? "—" : nameOf(innings.bowlerId)}
+          <span className="cricket-crease-avatar-wrap">
+            {innings.bowlerId !== null ? (
+              <PlayerAvatar name={nameOf(innings.bowlerId)} photoUrl={photoOf(innings.bowlerId)} className="cricket-crease-avatar" />
+            ) : (
+              <span className="cricket-crease-avatar is-empty">
+                <i className="fa-solid fa-baseball" aria-hidden="true"></i>
+              </span>
+            )}
+            <span className="cricket-crease-strike-dot is-ball" aria-hidden="true">
+              <i className="fa-solid fa-baseball"></i>
+            </span>
           </span>
-          <strong>
-            {bowlerRow ? `${oversText(bowlerRow.legalBalls, perOver)}-${bowlerRow.maidens}-${bowlerRow.runs}-${bowlerRow.wickets}` : "0-0-0-0"}
-          </strong>
+          <span className="cricket-crease-who">
+            <span className="cricket-crease-name">
+              {innings.bowlerId === null ? "—" : nameOf(innings.bowlerId)}
+              {innings.bowlerId !== null && (() => {
+                const p = allPlayers?.find((item) => item.id === innings.bowlerId);
+                const s = bowlingStyleOf(p?.bowlingStyle);
+                return s ? (
+                  <span
+                    className="cricket-player-style-tag"
+                    title={`${s.label} (Tap to change)`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPromptStyle({ playerId: innings.bowlerId!, name: nameOf(innings.bowlerId!), type: "bowling" });
+                    }}
+                  >
+                    {s.short}
+                  </span>
+                ) : null;
+              })()}
+            </span>
+            <small className="cricket-crease-meta">Bowling</small>
+          </span>
+          <span className="cricket-crease-bowler-figs">
+            <strong>
+              {bowlerRow ? `${oversText(bowlerRow.legalBalls, perOver)}-${bowlerRow.maidens}-${bowlerRow.runs}-${bowlerRow.wickets}` : "0-0-0-0"}
+            </strong>
+            <small>O-M-R-W</small>
+          </span>
         </button>
       </div>
-
-      <Commentary match={match} nameOf={nameOf} />
 
       {/* Fixed to the bottom of the screen on phones. */}
       <div className="cricket-scorer-dock" ref={dockRef}>
       <div className="cricket-this-over">
-        <span>{overEndPending ? "Last over" : "This over"}</span>
-        {showOver?.balls.map((ball, i) => (
-          // Tap a ball to correct it.
-          <button
-            key={i}
-            type="button"
-            className={`${ballChipClass(ball)} cricket-chip-btn`}
-            disabled={busy || ball.extraType === "penalty"}
-            onClick={() => setCorrecting({ ballIndex: innings.balls.indexOf(ball) })}
-            title="Correct this ball"
-          >
-            {ballLabel(ball)}
-          </button>
-        ))}
+        <span className="cricket-this-over-label">{overEndPending ? "Last over" : "This over"}</span>
+        <div className="cricket-this-over-balls" ref={ballsScrollRef}>
+          {showOver?.balls.map((ball, i) => (
+            // Tap a ball to correct it.
+            <button
+              key={i}
+              type="button"
+              className={`${ballChipClass(ball)} cricket-chip-btn`}
+              disabled={busy || ball.extraType === "penalty"}
+              onClick={() => setCorrecting({ ballIndex: innings.balls.indexOf(ball) })}
+              title="Correct this ball"
+            >
+              {ballLabel(ball)}
+            </button>
+          ))}
+          {Array.from({
+            length:
+              (showOver?.balls.length ?? 0) >= perOver
+                ? ((showOver?.balls.filter(isLegal).length ?? 0) < perOver ? 1 : 0)
+                : Math.max(0, perOver - (showOver?.balls.length ?? 0)),
+          }).map((_, idx) => (
+            <span key={`rem-${idx}`} className="cricket-ball-slot-empty" aria-hidden="true"></span>
+          ))}
+        </div>
+        <span className="cricket-this-over-runs">
+          {showOver?.runs ?? 0} {(showOver?.runs ?? 0) === 1 ? "run" : "runs"}
+        </span>
       </div>
 
-      {pendingBall && (
+      {hasSendFailure && (
         <div className="cricket-pending-ball" role="status">
           <i className="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
-          <span>1 ball waiting to send — will retry when you're back online</span>
-          <Button
-            variant="outline"
-            disabled={busy}
-            onClick={() => sendBall({ id: match.id, ...pendingBall.ball, pending: pendingBall })}
-          >
-            Retry
-          </Button>
+          <span>Failed to send ball score — check connection or tap Retry</span>
+          <div className="d-flex gap-2 align-items-center ms-auto">
+            <Button
+              variant="outline"
+              disabled={busy}
+              onClick={() => sendBall({ id: match.id, ...pendingBall!.ball, pending: pendingBall! })}
+            >
+              Retry
+            </Button>
+            <button
+              type="button"
+              className="btn btn-sm btn-link text-white text-decoration-none p-1"
+              title="Dismiss"
+              onClick={() => {
+                try {
+                  localStorage.removeItem(`cricdesk_pending_ball_${match.id}`);
+                } catch {
+                  // ignore
+                }
+                addBall.reset();
+              }}
+            >
+              <i className="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+          </div>
         </div>
       )}
 
@@ -808,27 +1003,67 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
         </div>
       )}
 
-      {/* Four columns: runs on the left three, more runs / No ball / Out
-          down the last, Bye / Leg bye / Wide along the bottom. */}
+      {/* Four columns and four rows:
+          Row 1: 0, 1, 2, Undo
+          Row 2: 3, 4, 6, 5/6...
+          Row 3: Swap strike (span 3), Leg bye
+          Row 4: Wide, No ball, Bye, Out (corner button) */}
       <div className="cricket-pad">
         {[
-          [0, 1, 2, "more"],
-          [3, 4, 6, "no-ball"],
-          ["bye", "leg-bye", "wide", "out"],
+          [0, 1, 2, "undo"],
+          [3, 4, 6, "more"],
+          ["swap", "leg-bye"],
+          ["wide", "no-ball", "bye", "out"],
         ]
           .flat()
           .map((key) => {
             if (typeof key === "number") {
+              const isBoundary = key === 4 || key === 6;
               return (
                 <button
                   key={key}
                   type="button"
-                  className={`cricket-pad-btn ${key === 4 || key === 6 ? "is-boundary" : ""}`}
+                  className={`cricket-pad-btn is-run ${isBoundary ? `is-boundary is-${key === 4 ? "four" : "six"}` : key === 0 ? "is-dot" : ""}`}
                   disabled={padDisabled}
-                  onClick={scoreOr(() => recordShot(key === 4 || key === 6 ? { runs: key, boundary: true } : { runs: key }))}
+                  onClick={scoreOr(() => recordShot(isBoundary ? { runs: key, boundary: true } : { runs: key }))}
                 >
-                  {key}
-                  {(key === 4 || key === 6) && <small className="cricket-pad-word">{key === 4 ? "Four" : "Six"}</small>}
+                  <span className="cricket-pad-num">{key}</span>
+                  {(isBoundary || key === 0) && (
+                    <small className="cricket-pad-word">{key === 4 ? "Four" : key === 6 ? "Six" : "Dot"}</small>
+                  )}
+                </button>
+              );
+            }
+            if (key === "undo") {
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  className="cricket-pad-btn is-extra is-undo"
+                  disabled={busy || !canUndo}
+                  onClick={undo}
+                  title="Undo last ball"
+                >
+                  <i className="fa-solid fa-rotate-left cricket-pad-art" aria-hidden="true"></i>
+                  <span>Undo</span>
+                </button>
+              );
+            }
+            if (key === "swap") {
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  className="cricket-pad-btn is-extra is-swap-strike"
+                  style={{ gridColumn: "span 3" }}
+                  disabled={busy || lastMan || innings.strikerId === null || innings.nonStrikerId === null}
+                  onClick={() =>
+                    setPlayers.mutate({ id: match.id, strikerId: innings.nonStrikerId, nonStrikerId: innings.strikerId })
+                  }
+                  title="Swap strike"
+                >
+                  <i className="fa-solid fa-arrow-right-arrow-left fa-rotate-90 me-2" aria-hidden="true"></i>
+                  <span>Swap strike</span>
                 </button>
               );
             }
@@ -853,7 +1088,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
                   })}
                 >
                   <OutArt type="runs" className="cricket-pad-art" />
-                  <span>5, 7…</span>
+                  <span>5, 6…</span>
                 </button>
               );
             }
@@ -867,6 +1102,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
                 onClick={scoreOr(() => {
                   setExtraRuns(type === "bye" || type === "leg-bye" ? 1 : 0);
                   setNoBallByes(null);
+                  setNoBallFreeHit(match.freeHit !== false);
                   setExtraModal(type);
                 })}
               >
@@ -875,20 +1111,6 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
               </button>
             );
           })}
-      </div>
-
-      <div className="cricket-scorer-actions">
-        <Button variant="outline" onClick={undo} disabled={busy || !canUndo}>
-          <i className="fa-solid fa-rotate-left" aria-hidden="true"></i> Undo last ball
-        </Button>
-        <Button
-          variant="outline"
-          className="cricket-penalty-btn"
-          onClick={() => setPenaltyOpen(true)}
-          disabled={busy || pendingBall !== null || needsPlayers}
-        >
-          <i className="fa-solid fa-gavel" aria-hidden="true"></i> Penalty runs
-        </Button>
       </div>
       </div>
       </>
@@ -1066,6 +1288,22 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
               </span>
               <span className={`cricket-shot-toggle-knob ${smallShotsOn ? "is-on" : ""}`.trim()} aria-hidden="true"></span>
             </button>
+            <button
+              type="button"
+              className="cricket-settings-item"
+              disabled={busy || pendingBall !== null || needsPlayers}
+              onClick={() => {
+                onCloseSettings();
+                setPenaltyOpen(true);
+              }}
+            >
+              <i className="fa-solid fa-gavel text-warning" aria-hidden="true"></i>
+              <span>
+                Penalty runs
+                <small>Award 5 penalty runs to batting or fielding side</small>
+              </span>
+              <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
+            </button>
           </div>
 
           {matchSettings}
@@ -1125,6 +1363,79 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
       )}
 
       {addingPlayer && <AddPlayerSheet match={match} nameOf={nameOf} onClose={() => setAddingPlayer(false)} />}
+
+      {promptStyle && (
+        <BottomSheet
+          title={`Set ${promptStyle.type === "batting" ? "Batting Style" : "Bowling Style"}`}
+          icon={promptStyle.type === "batting" ? "fa-solid fa-baseball-bat-ball" : "fa-solid fa-baseball"}
+          onClose={() => setPromptStyle(null)}
+        >
+          <div className="cricket-sheet-context mb-2">
+            <span className="fw-bold">{promptStyle.name}</span>
+            <small className="d-block text-muted">
+              {promptStyle.type === "batting"
+                ? "Select batting hand (saved to player profile):"
+                : "Select bowling arm & style (saved to player profile):"}
+            </small>
+          </div>
+          <div className="d-flex flex-column gap-2 mb-3">
+            {promptStyle.type === "batting"
+              ? BATTING_STYLES.map((style) => (
+                  <button
+                    key={style.value}
+                    type="button"
+                    className="btn btn-outline-secondary text-start py-2 px-3 d-flex justify-content-between align-items-center"
+                    onClick={async () => {
+                      const p = allPlayers?.find((item) => item.id === promptStyle.playerId);
+                      if (p) {
+                        await updatePlayer.mutateAsync({
+                          id: promptStyle.playerId,
+                          name: p.name,
+                          role: p.role,
+                          mobile: p.mobile ?? "",
+                          battingStyle: style.value,
+                        });
+                      }
+                      setPromptStyle(null);
+                    }}
+                  >
+                    <span className="fw-semibold">{style.label}</span>
+                    <span className="badge bg-secondary-subtle text-secondary">{style.short}</span>
+                  </button>
+                ))
+              : BOWLING_STYLES.map((style) => (
+                  <button
+                    key={style.value}
+                    type="button"
+                    className="btn btn-outline-secondary text-start py-2 px-3 d-flex justify-content-between align-items-center"
+                    onClick={async () => {
+                      const p = allPlayers?.find((item) => item.id === promptStyle.playerId);
+                      if (p) {
+                        await updatePlayer.mutateAsync({
+                          id: promptStyle.playerId,
+                          name: p.name,
+                          role: p.role,
+                          mobile: p.mobile ?? "",
+                          bowlingStyle: style.value,
+                        });
+                      }
+                      setPromptStyle(null);
+                    }}
+                  >
+                    <span className="fw-semibold">{style.label}</span>
+                    <span className="badge bg-secondary-subtle text-secondary">{style.short}</span>
+                  </button>
+                ))}
+          </div>
+          <button
+            type="button"
+            className="btn btn-sm btn-link text-muted w-100"
+            onClick={() => setPromptStyle(null)}
+          >
+            Skip for now
+          </button>
+        </BottomSheet>
+      )}
 
       {endChaseOpen && onEnterResult && (
         <EndChaseSheet
@@ -1262,6 +1573,31 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
             onChange={setExtraRuns}
             min={extraModal === "bye" || extraModal === "leg-bye" ? 1 : 0}
           />
+          {extraModal === "no-ball" && (
+            <div className="cricket-freehit-choice mt-3 pt-2 border-top">
+              <label className="cricket-sheet-label mb-1">Free hit on next ball?</label>
+              <div className="cricket-chip-choice" role="radiogroup" aria-label="Free hit on next ball">
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={noBallFreeHit}
+                  className={noBallFreeHit ? "active" : ""}
+                  onClick={() => setNoBallFreeHit(true)}
+                >
+                  <i className="fa-solid fa-bolt text-warning me-1" aria-hidden="true"></i> Yes (Free hit)
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={!noBallFreeHit}
+                  className={!noBallFreeHit ? "active" : ""}
+                  onClick={() => setNoBallFreeHit(false)}
+                >
+                  <i className="fa-solid fa-ban me-1" aria-hidden="true"></i> No free hit
+                </button>
+              </div>
+            </div>
+          )}
         </BottomSheet>
       )}
 

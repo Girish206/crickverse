@@ -49,7 +49,69 @@
   color: var(--theme-text-dark);
 }
 
+/* Each kind also tints the toast itself (background, edge and text). */
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"][data-type="success"] {
+  --normal-bg: #f0fdf4;
+  --normal-border: #bbf7d0;
+  --normal-text: #166534;
+  --normal-bg-hover: #f0fdf4;
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"][data-type="error"] {
+  --normal-bg: #fef2f2;
+  --normal-border: #fecaca;
+  --normal-text: #991b1b;
+  --normal-bg-hover: #fef2f2;
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"][data-type="warning"] {
+  --normal-bg: #fffbeb;
+  --normal-border: #fde68a;
+  --normal-text: #92400e;
+  --normal-bg-hover: #fffbeb;
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"][data-type="info"] {
+  --toast-accent: #2563eb;
+  --normal-bg: #eff6ff;
+  --normal-border: #bfdbfe;
+  --normal-text: #1e40af;
+  --normal-bg-hover: #eff6ff;
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"][data-type] [data-description] {
+  color: inherit;
+  opacity: 0.85;
+}
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"][data-type="success"],
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"][data-type="error"],
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"][data-type="warning"],
+[data-sonner-toaster] [data-sonner-toast][data-styled="true"][data-type="info"] {
+  border-left-width: 4px;
+}
+
 /* Dark: brighter accents so they read on the dark surface. */
+:root[data-bs-theme="dark"] [data-sonner-toaster] [data-sonner-toast][data-styled="true"][data-type="success"] {
+  --normal-bg: #0f2a1a;
+  --normal-border: #166534;
+  --normal-text: #bbf7d0;
+  --normal-bg-hover: #0f2a1a;
+}
+:root[data-bs-theme="dark"] [data-sonner-toaster] [data-sonner-toast][data-styled="true"][data-type="error"] {
+  --normal-bg: #2c1214;
+  --normal-border: #7f1d1d;
+  --normal-text: #fecaca;
+  --normal-bg-hover: #2c1214;
+}
+:root[data-bs-theme="dark"] [data-sonner-toaster] [data-sonner-toast][data-styled="true"][data-type="warning"] {
+  --normal-bg: #2b2008;
+  --normal-border: #78350f;
+  --normal-text: #fde68a;
+  --normal-bg-hover: #2b2008;
+}
+:root[data-bs-theme="dark"] [data-sonner-toaster] [data-sonner-toast][data-styled="true"][data-type="info"] {
+  --toast-accent: #60a5fa;
+  --normal-bg: #0f1c33;
+  --normal-border: #1e3a8a;
+  --normal-text: #bfdbfe;
+  --normal-bg-hover: #0f1c33;
+}
 :root[data-bs-theme="dark"] [data-sonner-toaster] [data-sonner-toast][data-type="success"] {
   --toast-accent: #4ade80;
 }
