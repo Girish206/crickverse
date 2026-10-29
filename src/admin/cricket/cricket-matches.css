@@ -1964,10 +1964,43 @@
   border-color: rgba(var(--primary-rgb), 0.3);
   color: var(--theme-text-dark);
 }
-.cricket-pad {
+.cricket-pad,
+.cricket-pad-container {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 7px;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
+  gap: 6px;
+  width: 100%;
+}
+.cricket-pad-main {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, 1fr);
+  gap: 6px;
+}
+.cricket-pad-side {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: repeat(4, 1fr);
+  gap: 6px;
+}
+.cricket-pad-main .cricket-pad-btn {
+  height: 100%;
+  min-height: 52px;
+}
+.cricket-pad-side .cricket-pad-btn {
+  height: 100%;
+  min-height: 38px;
+  padding: 3px 2px;
+}
+.cricket-pad-side .cricket-pad-btn .cricket-pad-art {
+  width: 16px;
+  height: 16px;
+}
+.cricket-pad-side .cricket-pad-btn span {
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
 }
 /* The umpire-signal drawings (OutArt) on the extras and Out: thicker
    lines, as they're drawn small. */

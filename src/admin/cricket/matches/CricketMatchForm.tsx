@@ -716,7 +716,12 @@ export function CricketMatchForm({
             onChange={setBallType}
             error={missingType && !ballType ? "Choose a ball type." : null}
           />
-          <ChipChoice label="Pitch type" options={PITCH_TYPES} value={pitchType} onChange={setPitchType} />
+          <ChipChoice
+            label="Pitch type"
+            options={PITCH_TYPES}
+            value={pitchType}
+            onChange={(val) => setPitchType(val ? (val as CricketPitchType) : null)}
+          />
         </div>
 
         <h2 className="cricket-app-group-title">Playing conditions</h2>

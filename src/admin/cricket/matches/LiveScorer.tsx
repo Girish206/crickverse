@@ -1003,114 +1003,110 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
         </div>
       )}
 
-      {/* Four columns and four rows:
-          Row 1: 0, 1, 2, Undo
-          Row 2: 3, 4, 6, 5/6...
-          Row 3: Swap strike (span 3), Leg bye
-          Row 4: Wide, No ball, Bye, Out (corner button) */}
-      <div className="cricket-pad">
-        {[
-          [0, 1, 2, "undo"],
-          [3, 4, 6, "more"],
-          ["swap", "leg-bye"],
-          ["wide", "no-ball", "bye", "out"],
-        ]
-          .flat()
-          .map((key) => {
-            if (typeof key === "number") {
-              const isBoundary = key === 4 || key === 6;
+      {/* Main pad: 3 columns with 3 rows on the left; 4 buttons in the last column on the right.
+          Left:
+            Row 1: 0, 1, 2
+            Row 2: 3, 4, 6
+            Row 3: Wide, Bye, Leg bye
+          Right (last column):
+            1: Undo
+            2: 5, 6...
+            3: No ball
+            4: Out (corner button at bottom right) */}
+      <div className="cricket-pad-container">
+        <div className="cricket-pad-main">
+          {[
+            [0, 1, 2],
+            [3, 4, 6],
+            ["wide", "bye", "leg-bye"],
+          ]
+            .flat()
+            .map((key) => {
+              if (typeof key === "number") {
+                const isBoundary = key === 4 || key === 6;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`cricket-pad-btn is-run ${isBoundary ? `is-boundary is-${key === 4 ? "four" : "six"}` : key === 0 ? "is-dot" : ""}`}
+                    disabled={padDisabled}
+                    onClick={scoreOr(() => recordShot(isBoundary ? { runs: key, boundary: true } : { runs: key }))}
+                  >
+                    <span className="cricket-pad-num">{key}</span>
+                    {(isBoundary || key === 0) && (
+                      <small className="cricket-pad-word">{key === 4 ? "Four" : key === 6 ? "Six" : "Dot"}</small>
+                    )}
+                  </button>
+                );
+              }
+              const type = key as CricketExtraType;
               return (
                 <button
-                  key={key}
-                  type="button"
-                  className={`cricket-pad-btn is-run ${isBoundary ? `is-boundary is-${key === 4 ? "four" : "six"}` : key === 0 ? "is-dot" : ""}`}
-                  disabled={padDisabled}
-                  onClick={scoreOr(() => recordShot(isBoundary ? { runs: key, boundary: true } : { runs: key }))}
-                >
-                  <span className="cricket-pad-num">{key}</span>
-                  {(isBoundary || key === 0) && (
-                    <small className="cricket-pad-word">{key === 4 ? "Four" : key === 6 ? "Six" : "Dot"}</small>
-                  )}
-                </button>
-              );
-            }
-            if (key === "undo") {
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  className="cricket-pad-btn is-extra is-undo"
-                  disabled={busy || !canUndo}
-                  onClick={undo}
-                  title="Undo last ball"
-                >
-                  <i className="fa-solid fa-rotate-left cricket-pad-art" aria-hidden="true"></i>
-                  <span>Undo</span>
-                </button>
-              );
-            }
-            if (key === "swap") {
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  className="cricket-pad-btn is-extra is-swap-strike"
-                  style={{ gridColumn: "span 3" }}
-                  disabled={busy || lastMan || innings.strikerId === null || innings.nonStrikerId === null}
-                  onClick={() =>
-                    setPlayers.mutate({ id: match.id, strikerId: innings.nonStrikerId, nonStrikerId: innings.strikerId })
-                  }
-                  title="Swap strike"
-                >
-                  <i className="fa-solid fa-arrow-right-arrow-left fa-rotate-90 me-2" aria-hidden="true"></i>
-                  <span>Swap strike</span>
-                </button>
-              );
-            }
-            if (key === "out") {
-              return (
-                <button key={key} type="button" className="cricket-pad-btn is-wicket" disabled={padDisabled} onClick={scoreOr(openWicket)}>
-                  <OutArt type="out" className="cricket-pad-art" />
-                  <span>Out</span>
-                </button>
-              );
-            }
-            if (key === "more") {
-              return (
-                <button
-                  key={key}
+                  key={type}
                   type="button"
                   className="cricket-pad-btn is-extra"
                   disabled={padDisabled}
                   onClick={scoreOr(() => {
-                    setAllRun(false);
-                    setMoreRuns(5);
+                    setExtraRuns(type === "bye" || type === "leg-bye" ? 1 : 0);
+                    setNoBallByes(null);
+                    setNoBallFreeHit(match.freeHit !== false);
+                    setExtraModal(type);
                   })}
                 >
-                  <OutArt type="runs" className="cricket-pad-art" />
-                  <span>5, 6…</span>
+                  <OutArt type={type} className="cricket-pad-art" />
+                  <span>{EXTRA_LABELS[type]}</span>
                 </button>
               );
-            }
-            const type = key as CricketExtraType;
-            return (
-              <button
-                key={type}
-                type="button"
-                className="cricket-pad-btn is-extra"
-                disabled={padDisabled}
-                onClick={scoreOr(() => {
-                  setExtraRuns(type === "bye" || type === "leg-bye" ? 1 : 0);
-                  setNoBallByes(null);
-                  setNoBallFreeHit(match.freeHit !== false);
-                  setExtraModal(type);
-                })}
-              >
-                <OutArt type={type} className="cricket-pad-art" />
-                <span>{EXTRA_LABELS[type]}</span>
-              </button>
-            );
-          })}
+            })}
+        </div>
+
+        <div className="cricket-pad-side">
+          <button
+            type="button"
+            className="cricket-pad-btn is-extra is-undo"
+            disabled={busy || !canUndo}
+            onClick={undo}
+            title="Undo last ball"
+          >
+            <i className="fa-solid fa-rotate-left cricket-pad-art" aria-hidden="true"></i>
+            <span>Undo</span>
+          </button>
+          <button
+            type="button"
+            className="cricket-pad-btn is-extra"
+            disabled={padDisabled}
+            onClick={scoreOr(() => {
+              setAllRun(false);
+              setMoreRuns(5);
+            })}
+          >
+            <OutArt type="runs" className="cricket-pad-art" />
+            <span>5, 6…</span>
+          </button>
+          <button
+            type="button"
+            className="cricket-pad-btn is-extra"
+            disabled={padDisabled}
+            onClick={scoreOr(() => {
+              setExtraRuns(0);
+              setNoBallByes(null);
+              setNoBallFreeHit(match.freeHit !== false);
+              setExtraModal("no-ball");
+            })}
+          >
+            <OutArt type="no-ball" className="cricket-pad-art" />
+            <span>No ball</span>
+          </button>
+          <button
+            type="button"
+            className="cricket-pad-btn is-wicket"
+            disabled={padDisabled}
+            onClick={scoreOr(openWicket)}
+          >
+            <OutArt type="out" className="cricket-pad-art" />
+            <span>Out</span>
+          </button>
+        </div>
       </div>
       </div>
       </>
