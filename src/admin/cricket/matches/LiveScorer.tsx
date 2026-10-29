@@ -53,6 +53,7 @@ import {
   inningsSummary,
   isFreeHitNext,
   isLegal,
+  isWicket,
   oversOf,
   oversText,
   rate,
@@ -431,6 +432,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   // Closed without a pick, the strip keeps showing the finished over (all
   // its balls); once the next bowler is in, it starts empty for the new one.
   const showOver = !overJustEnded || (overEndPending && overPromptSeen === overKey) ? thisOver : undefined;
+  const [showAllPrevOvers, setShowAllPrevOvers] = useState(false);
 
   useEffect(() => {
     if (ballsScrollRef.current) {
@@ -806,139 +808,265 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
 
       {!inningsBreak && (
       <>
-      <div className="cricket-crease">
-        <div className="cricket-crease-pair">
-          {(["strikerId", "nonStrikerId"] as const).filter((slot) => !lastMan || slot === "strikerId").map((slot, i) => {
-            const playerId = slot === "strikerId" ? facing : innings[slot];
-            const row = batting.find((r) => r.playerId === playerId);
-            return (
-              <button
-                key={slot}
-                type="button"
-                className={`cricket-crease-batter ${i === 0 ? "is-striker" : ""}`}
-                disabled={playerId === null || busy}
-                onClick={() => setChanging(slot)}
-                title={playerId === null ? undefined : `Change ${i === 0 ? "striker" : "non-striker"}`}
-              >
-                <span className="cricket-crease-avatar-wrap">
-                  {playerId !== null ? (
-                    <PlayerAvatar name={nameOf(playerId)} photoUrl={photoOf(playerId)} className="cricket-crease-avatar" />
-                  ) : (
-                    <span className="cricket-crease-avatar is-empty">
-                      <i className="fa-solid fa-user" aria-hidden="true"></i>
-                    </span>
-                  )}
-                  {i === 0 && playerId !== null && (
-                    <span className="cricket-crease-strike-dot" aria-hidden="true">
-                      <i className="fa-solid fa-baseball-bat-ball"></i>
-                    </span>
-                  )}
-                </span>
-                <span className="cricket-crease-who">
-                  <span className="cricket-crease-name">
-                    {playerId === null ? "—" : nameOf(playerId)}
-                    {i === 0 && playerId !== null && <span className="cricket-crease-star">*</span>}
-                    {playerId !== null && (() => {
-                      const p = allPlayers?.find((item) => item.id === playerId);
-                      const s = battingStyleOf(p?.battingStyle);
-                      return s ? (
-                        <span
-                          className="cricket-player-style-tag"
-                          title={`${s.label} (Tap to change)`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPromptStyle({ playerId, name: nameOf(playerId), type: "batting" });
-                          }}
-                        >
-                          {s.short}
-                        </span>
-                      ) : null;
-                    })()}
+      <div className="cricket-crease-card">
+        {/* Batters section */}
+        <div className="cricket-crease-section">
+          <div className="cricket-crease-section-header">
+            <span className="cricket-crease-section-tag">
+              <i className="fa-solid fa-baseball-bat-ball" aria-hidden="true"></i>
+              <span>Batting</span>
+            </span>
+            <button
+              type="button"
+              className="cricket-crease-swap-btn"
+              hidden={lastMan}
+              disabled={busy || innings.strikerId === null || innings.nonStrikerId === null}
+              onClick={() =>
+                setPlayers.mutate({ id: match.id, strikerId: innings.nonStrikerId, nonStrikerId: innings.strikerId })
+              }
+              title="Swap strike"
+              aria-label="Swap strike"
+            >
+              <i className="fa-solid fa-arrow-right-arrow-left" aria-hidden="true"></i>
+              <span>Swap strike</span>
+            </button>
+          </div>
+
+          <div className="cricket-crease-players">
+            {(["strikerId", "nonStrikerId"] as const).filter((slot) => !lastMan || slot === "strikerId").map((slot, i) => {
+              const playerId = slot === "strikerId" ? facing : innings[slot];
+              const row = batting.find((r) => r.playerId === playerId);
+              const isStriker = i === 0;
+              const sr = row && row.balls > 0 ? ((row.runs / row.balls) * 100).toFixed(1) : "0.0";
+              return (
+                <button
+                  key={slot}
+                  type="button"
+                  className={`cricket-crease-player-row ${isStriker ? "is-striker" : ""}`}
+                  disabled={playerId === null || busy}
+                  onClick={() => setChanging(slot)}
+                  title={playerId === null ? undefined : `Change ${isStriker ? "striker" : "non-striker"}`}
+                >
+                  <span className="cricket-crease-avatar-wrap">
+                    {playerId !== null ? (
+                      <PlayerAvatar name={nameOf(playerId)} photoUrl={photoOf(playerId)} className="cricket-crease-avatar" />
+                    ) : (
+                      <span className="cricket-crease-avatar is-empty">
+                        <i className="fa-solid fa-user" aria-hidden="true"></i>
+                      </span>
+                    )}
+                    {isStriker && playerId !== null && (
+                      <span className="cricket-crease-strike-dot" aria-hidden="true" title="On strike">
+                        <i className="fa-solid fa-baseball-bat-ball"></i>
+                      </span>
+                    )}
                   </span>
-                  <small className="cricket-crease-meta">
-                    {row && (row.fours > 0 || row.sixes > 0)
-                      ? `${row.fours}×4 · ${row.sixes}×6`
-                      : i === 0
-                        ? "On strike"
-                        : "Non-striker"}
-                  </small>
-                </span>
-                <strong className="cricket-crease-figs">
-                  {row?.runs ?? 0} <small>({row?.balls ?? 0})</small>
-                </strong>
-              </button>
-            );
-          })}
-          <button
-            type="button"
-            className="cricket-crease-swap"
-            hidden={lastMan}
-            disabled={busy || innings.strikerId === null || innings.nonStrikerId === null}
-            onClick={() =>
-              setPlayers.mutate({ id: match.id, strikerId: innings.nonStrikerId, nonStrikerId: innings.strikerId })
-            }
-            title="Swap strike"
-            aria-label="Swap strike"
-          >
-            <i className="fa-solid fa-arrow-right-arrow-left fa-rotate-90" aria-hidden="true"></i>
-            <span>Swap</span>
-          </button>
+                  <span className="cricket-crease-who">
+                    <span className="cricket-crease-name-line">
+                      <span className="cricket-crease-name">
+                        {playerId === null ? "—" : nameOf(playerId)}
+                        {isStriker && playerId !== null && <span className="cricket-crease-star">*</span>}
+                      </span>
+                      {isStriker && playerId !== null && (
+                        <span className="cricket-strike-badge">STRIKE</span>
+                      )}
+                      {playerId !== null && (() => {
+                        const p = allPlayers?.find((item) => item.id === playerId);
+                        const s = battingStyleOf(p?.battingStyle);
+                        return s ? (
+                          <span
+                            className="cricket-player-style-tag"
+                            title={`${s.label} (Tap to change)`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPromptStyle({ playerId, name: nameOf(playerId), type: "batting" });
+                            }}
+                          >
+                            {s.short}
+                          </span>
+                        ) : null;
+                      })()}
+                    </span>
+                    <span className="cricket-crease-meta-line">
+                      <span>{row ? `${row.fours}×4 · ${row.sixes}×6` : "0×4 · 0×6"}</span>
+                      <span className="cricket-crease-dot-sep">·</span>
+                      <span className="cricket-crease-sr">SR {sr}</span>
+                    </span>
+                  </span>
+                  <span className="cricket-crease-figs-col">
+                    <strong className="cricket-crease-runs">{row?.runs ?? 0}</strong>
+                    <span className="cricket-crease-balls">({row?.balls ?? 0}b)</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-        <button
-          type="button"
-          className="cricket-crease-batter is-bowler"
-          disabled={innings.bowlerId === null || busy}
-          onClick={() => setChanging("bowlerId")}
-          title={innings.bowlerId === null ? undefined : "Change bowler"}
-        >
-          <span className="cricket-crease-avatar-wrap">
-            {innings.bowlerId !== null ? (
-              <PlayerAvatar name={nameOf(innings.bowlerId)} photoUrl={photoOf(innings.bowlerId)} className="cricket-crease-avatar" />
-            ) : (
-              <span className="cricket-crease-avatar is-empty">
-                <i className="fa-solid fa-baseball" aria-hidden="true"></i>
+
+        {/* Divider */}
+        <div className="cricket-crease-divider" />
+
+        {/* Bowler section */}
+        <div className="cricket-crease-section">
+          <div className="cricket-crease-section-header">
+            <span className="cricket-crease-section-tag is-bowler-tag">
+              <i className="fa-solid fa-baseball" aria-hidden="true"></i>
+              <span>Bowling</span>
+            </span>
+            {bowlerRow && bowlerRow.legalBalls > 0 && (
+              <span className="cricket-crease-econ-badge">
+                Econ {rate(bowlerRow.runs, bowlerRow.legalBalls, perOver)}
               </span>
             )}
-            <span className="cricket-crease-strike-dot is-ball" aria-hidden="true">
-              <i className="fa-solid fa-baseball"></i>
+          </div>
+
+          <button
+            type="button"
+            className="cricket-crease-player-row is-bowler-row"
+            disabled={innings.bowlerId === null || busy}
+            onClick={() => setChanging("bowlerId")}
+            title={innings.bowlerId === null ? undefined : "Change bowler"}
+          >
+            <span className="cricket-crease-avatar-wrap">
+              {innings.bowlerId !== null ? (
+                <PlayerAvatar name={nameOf(innings.bowlerId)} photoUrl={photoOf(innings.bowlerId)} className="cricket-crease-avatar" />
+              ) : (
+                <span className="cricket-crease-avatar is-empty">
+                  <i className="fa-solid fa-baseball" aria-hidden="true"></i>
+                </span>
+              )}
+              <span className="cricket-crease-strike-dot is-ball" aria-hidden="true">
+                <i className="fa-solid fa-baseball"></i>
+              </span>
             </span>
-          </span>
-          <span className="cricket-crease-who">
-            <span className="cricket-crease-name">
-              {innings.bowlerId === null ? "—" : nameOf(innings.bowlerId)}
-              {innings.bowlerId !== null && (() => {
-                const p = allPlayers?.find((item) => item.id === innings.bowlerId);
-                const s = bowlingStyleOf(p?.bowlingStyle);
-                return s ? (
-                  <span
-                    className="cricket-player-style-tag"
-                    title={`${s.label} (Tap to change)`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPromptStyle({ playerId: innings.bowlerId!, name: nameOf(innings.bowlerId!), type: "bowling" });
-                    }}
-                  >
-                    {s.short}
-                  </span>
-                ) : null;
-              })()}
+            <span className="cricket-crease-who">
+              <span className="cricket-crease-name-line">
+                <span className="cricket-crease-name">
+                  {innings.bowlerId === null ? "—" : nameOf(innings.bowlerId)}
+                </span>
+                {innings.bowlerId !== null && (() => {
+                  const p = allPlayers?.find((item) => item.id === innings.bowlerId);
+                  const s = bowlingStyleOf(p?.bowlingStyle);
+                  return s ? (
+                    <span
+                      className="cricket-player-style-tag"
+                      title={`${s.label} (Tap to change)`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPromptStyle({ playerId: innings.bowlerId!, name: nameOf(innings.bowlerId!), type: "bowling" });
+                      }}
+                    >
+                      {s.short}
+                    </span>
+                  ) : null;
+                })()}
+              </span>
+              <span className="cricket-crease-meta-line">
+                <span>{bowlerRow ? `Dots: ${bowlerRow.dots}` : "Tap to change"}</span>
+                {bowlerRow && (bowlerRow.wides > 0 || bowlerRow.noBalls > 0) && (
+                  <>
+                    <span className="cricket-crease-dot-sep">·</span>
+                    <span>Extras: {bowlerRow.wides + bowlerRow.noBalls}</span>
+                  </>
+                )}
+              </span>
             </span>
-            <small className="cricket-crease-meta">Bowling</small>
-          </span>
-          <span className="cricket-crease-bowler-figs">
-            <strong>
-              {bowlerRow ? `${oversText(bowlerRow.legalBalls, perOver)}-${bowlerRow.maidens}-${bowlerRow.runs}-${bowlerRow.wickets}` : "0-0-0-0"}
-            </strong>
-            <small>O-M-R-W</small>
-          </span>
-        </button>
+            <span className="cricket-crease-bowler-figs-col">
+              <strong className="cricket-crease-bowler-figs">
+                {bowlerRow ? `${oversText(bowlerRow.legalBalls, perOver)}-${bowlerRow.maidens}-${bowlerRow.runs}-${bowlerRow.wickets}` : "0-0-0-0"}
+              </strong>
+              <small className="cricket-crease-bowler-sub">O - M - R - W</small>
+            </span>
+          </button>
+        </div>
       </div>
+
+      {/* Previous Overs History */}
+      {(() => {
+        const allOvers = oversOf(innings, perOver);
+        const prevOvers = allOvers.filter((o) => o !== showOver).reverse();
+        if (prevOvers.length === 0) return null;
+
+        let cumR = 0;
+        let cumW = 0;
+        const overScores = new Map<number, { score: string }>();
+        for (const ov of allOvers) {
+          cumR += ov.runs;
+          cumW += ov.balls.filter(isWicket).length;
+          overScores.set(ov.number, { score: `${cumR}/${cumW}` });
+        }
+
+        const displayedOvers = showAllPrevOvers ? prevOvers : prevOvers.slice(0, 2);
+
+        return (
+          <div className="cricket-prev-overs-card">
+            <div className="cricket-prev-overs-header">
+              <span className="cricket-prev-overs-title">
+                <i className="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+                <span>Previous Overs</span>
+              </span>
+              {prevOvers.length > 2 && (
+                <button
+                  type="button"
+                  className="cricket-prev-overs-toggle-btn"
+                  onClick={() => setShowAllPrevOvers((prev) => !prev)}
+                >
+                  {showAllPrevOvers ? "Show recent" : `All (${prevOvers.length})`}
+                  <i className={`fa-solid fa-chevron-${showAllPrevOvers ? "up" : "down"}`} aria-hidden="true"></i>
+                </button>
+              )}
+            </div>
+
+            <div className="cricket-prev-overs-list">
+              {displayedOvers.map((over) => {
+                const overWkts = over.balls.filter(isWicket).length;
+                const scoreAtEnd = overScores.get(over.number)?.score;
+                return (
+                  <div key={over.number} className="cricket-prev-over-item">
+                    <div className="cricket-prev-over-meta">
+                      <div className="cricket-prev-over-left">
+                        <span className="cricket-prev-over-badge">Over {over.number + 1}</span>
+                        <span className="cricket-prev-over-bowler">{nameOf(over.bowlerId)}</span>
+                      </div>
+                      <div className="cricket-prev-over-right">
+                        <span className="cricket-prev-over-runs">
+                          <strong>{over.runs}</strong> {over.runs === 1 ? "run" : "runs"}
+                          {overWkts > 0 && <span className="cricket-prev-over-wkts"> · {overWkts} {overWkts === 1 ? "wkt" : "wkts"}</span>}
+                        </span>
+                        {scoreAtEnd && <span className="cricket-prev-over-score">({scoreAtEnd})</span>}
+                      </div>
+                    </div>
+                    <div className="cricket-prev-over-balls">
+                      {over.balls.map((ball, bi) => {
+                        const originalIndex = innings.balls.indexOf(ball);
+                        return (
+                          <button
+                            key={bi}
+                            type="button"
+                            className={`${ballChipClass(ball)} cricket-chip-btn`}
+                            disabled={busy || ball.extraType === "penalty"}
+                            onClick={() => setCorrecting({ ballIndex: originalIndex })}
+                            title="Tap to correct this ball"
+                          >
+                            {ballLabel(ball)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Fixed to the bottom of the screen on phones. */}
       <div className="cricket-scorer-dock" ref={dockRef}>
       <div className="cricket-this-over">
         <span className="cricket-this-over-label">{overEndPending ? "Last over" : "This over"}</span>
-        <div className="cricket-this-over-balls" ref={ballsScrollRef}>
+        <div className="cricket-this-over-balls-wrap">
+          <div className="cricket-this-over-balls" ref={ballsScrollRef}>
           {showOver?.balls.map((ball, i) => (
             // Tap a ball to correct it.
             <button
@@ -960,6 +1088,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
           }).map((_, idx) => (
             <span key={`rem-${idx}`} className="cricket-ball-slot-empty" aria-hidden="true"></span>
           ))}
+          </div>
         </div>
         <span className="cricket-this-over-runs">
           {showOver?.runs ?? 0} {(showOver?.runs ?? 0) === 1 ? "run" : "runs"}
