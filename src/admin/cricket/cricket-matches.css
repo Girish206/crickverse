@@ -1224,12 +1224,33 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 :root[data-bs-theme="dark"] .cricket-scorer-head {
-  background: linear-gradient(135deg, #882228 0%, #5d171d 50%, #3a0e13 100%);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, #741e24 0%, #8c262c 48%, #5d171c 100%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-top: 1px solid rgba(255, 255, 255, 0.35);
-  border-bottom: 3px solid rgba(var(--brand-amber-rgb), 0.9);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5), 0 0 16px -4px rgba(168, 54, 47, 0.35);
   color: #fff;
+}
+:root[data-bs-theme="dark"] .cricket-scorer-team-logo {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25), 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+:root[data-bs-theme="dark"] .cricket-scorer-innings-tag {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+:root[data-bs-theme="dark"] .cricket-scorer-overs {
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.95);
+}
+:root[data-bs-theme="dark"] .cricket-rate-pill {
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+:root[data-bs-theme="dark"] .cricket-rate-pill small {
+  color: rgba(255, 255, 255, 0.85);
 }
 .cricket-scorer-head-main {
   display: flex;
@@ -1761,20 +1782,25 @@
 .cricket-this-over {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 6px;
-  border: 1px solid var(--adm-line-strong, rgba(255, 255, 255, 0.16));
-  border-radius: 14px;
-  background: var(--adm-surface, #fff);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  gap: 3px !important;
+  padding: 0 !important;
+  border: 1px solid rgba(var(--primary-rgb), 0.22);
+  border-radius: 12px;
+  background:
+    linear-gradient(90deg, rgba(var(--primary-rgb), 0.08) 0%, rgba(var(--primary-rgb), 0.04) 50%, rgba(var(--primary-rgb), 0.08) 100%),
+    var(--adm-surface, #fff);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
   font-size: var(--fs-xs);
   color: var(--muted-color);
-  min-height: 40px;
+  min-height: 36px;
   overflow: hidden;
 }
 :root[data-bs-theme="dark"] .cricket-this-over {
-  border-color: rgba(255, 255, 255, 0.14);
-  background: var(--adm-surface);
+  border-color: rgba(var(--primary-rgb), 0.34);
+  background:
+    linear-gradient(90deg, rgba(var(--primary-rgb), 0.18) 0%, rgba(var(--primary-rgb), 0.09) 50%, rgba(var(--primary-rgb), 0.18) 100%),
+    var(--adm-surface);
 }
 .cricket-this-over-balls-wrap {
   position: relative;
@@ -1834,13 +1860,11 @@
   overflow: hidden;
 }
 :root[data-bs-theme="dark"] .cricket-crease-card {
-  border: 1.5px solid rgba(255, 255, 255, 0.18);
-  border-top: 2.5px solid var(--brand-crimson-bright, #f2756b);
-  border-bottom: 3px solid rgba(var(--brand-amber-rgb), 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-top: 2.5px solid #a8362f;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
   background: var(--adm-surface);
-  box-shadow:
-    0 8px 24px -4px rgba(0, 0, 0, 0.5),
-    0 3px 10px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
 .cricket-crease-section {
@@ -1852,51 +1876,101 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   padding: 6px 12px;
-  background: linear-gradient(90deg, rgba(var(--primary-rgb), 0.12) 0%, rgba(var(--primary-rgb), 0.04) 100%);
+  background: linear-gradient(90deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--primary-rgb), 0.04) 100%);
   border-bottom: 1px solid rgba(var(--primary-rgb), 0.16);
+  color: var(--primary);
 }
 :root[data-bs-theme="dark"] .cricket-crease-section-header {
-  background: linear-gradient(90deg, rgba(var(--primary-rgb), 0.22) 0%, rgba(255, 255, 255, 0.03) 100%);
-  border-bottom-color: rgba(255, 255, 255, 0.1);
+  background: linear-gradient(90deg, rgba(var(--primary-rgb), 0.25) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+}
+
+.cricket-crease-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.cricket-prev-overs-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2.5px 9px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: var(--primary);
+  background: #ffffff;
+  border: 1px solid rgba(var(--primary-rgb), 0.22);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+}
+.cricket-prev-overs-trigger-btn:hover {
+  background: rgba(var(--primary-rgb), 0.06);
+}
+.cricket-prev-overs-trigger-btn:active {
+  transform: scale(0.95);
+}
+:root[data-bs-theme="dark"] .cricket-prev-overs-trigger-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  box-shadow: none;
+}
+:root[data-bs-theme="dark"] .cricket-prev-overs-trigger-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
 }
 
 .cricket-crease-section-tag {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 0.64rem;
+  gap: 6px;
+  font-size: 0.66rem;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   color: var(--primary);
 }
 .cricket-crease-section-tag i {
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   color: var(--primary);
 }
 .cricket-crease-section-tag.is-bowler-tag i {
   color: #ea580c;
+}
+:root[data-bs-theme="dark"] .cricket-crease-section-tag {
+  color: #f8fafc;
+}
+:root[data-bs-theme="dark"] .cricket-crease-section-tag i {
+  color: #f87171;
+}
+:root[data-bs-theme="dark"] .cricket-crease-section-tag.is-bowler-tag i {
+  color: #fb923c;
 }
 
 .cricket-crease-swap-btn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 10px;
+  padding: 2.5px 10px;
   border-radius: 999px;
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: #fff;
-  background: var(--primary-gradient);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  box-shadow: 0 2px 6px rgba(var(--primary-rgb), 0.28);
+  font-size: 0.63rem;
+  font-weight: 800;
+  color: var(--primary);
+  background: #ffffff;
+  border: 1px solid rgba(var(--primary-rgb), 0.22);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   cursor: pointer;
   transition: filter 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
 }
 .cricket-crease-swap-btn:hover:not(:disabled) {
-  filter: brightness(1.08);
-  box-shadow: 0 3px 8px rgba(var(--primary-rgb), 0.38);
+  background: rgba(var(--primary-rgb), 0.06);
 }
 .cricket-crease-swap-btn:active:not(:disabled) {
   transform: scale(0.96);
@@ -1905,19 +1979,30 @@
   opacity: 0.45;
   cursor: not-allowed;
 }
+:root[data-bs-theme="dark"] .cricket-crease-swap-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  box-shadow: none;
+}
+:root[data-bs-theme="dark"] .cricket-crease-swap-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.16);
+}
 
 .cricket-crease-econ-badge {
-  font-size: 0.62rem;
+  font-size: 0.61rem;
   font-weight: 800;
   color: var(--primary);
-  padding: 2px 7px;
+  padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(var(--primary-rgb), 0.1);
-  border: 1px solid rgba(var(--primary-rgb), 0.22);
+  background: rgba(var(--primary-rgb), 0.08);
+  border: 1px solid rgba(var(--primary-rgb), 0.18);
+  font-variant-numeric: tabular-nums;
 }
 :root[data-bs-theme="dark"] .cricket-crease-econ-badge {
-  background: rgba(var(--primary-rgb), 0.2);
-  border-color: rgba(var(--primary-rgb), 0.35);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #f1f5f9;
 }
 
 .cricket-crease-players {
@@ -1930,8 +2015,9 @@
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 8px 12px;
+  padding: 11px 12px;
   border: 0;
+  border-left: 4px solid transparent;
   background: transparent;
   color: var(--theme-text-dark);
   font: inherit;
@@ -1957,17 +2043,17 @@
 }
 
 .cricket-crease-player-row.is-striker {
-  background: linear-gradient(90deg, rgba(var(--brand-crimson-rgb, 201, 68, 59), 0.11) 0%, rgba(var(--brand-crimson-rgb, 201, 68, 59), 0.02) 100%);
-  border-left: 4px solid var(--brand-crimson, #c9443b);
+  background: linear-gradient(90deg, #f6f8fb 0%, transparent 100%);
+  border-left-color: var(--brand-crimson, #c9443b);
 }
 :root[data-bs-theme="dark"] .cricket-crease-player-row.is-striker {
-  background: linear-gradient(90deg, rgba(var(--brand-crimson-rgb, 201, 68, 59), 0.2) 0%, rgba(var(--brand-crimson-rgb, 201, 68, 59), 0.04) 100%);
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0%, transparent 100%);
   border-left-color: var(--brand-crimson-bright, #f2756b);
 }
 
 .cricket-crease-player-row.is-bowler-row {
   background: linear-gradient(90deg, rgba(234, 88, 12, 0.06) 0%, transparent 100%);
-  border-left: 4px solid #ea580c;
+  border-left-color: #ea580c;
 }
 :root[data-bs-theme="dark"] .cricket-crease-player-row.is-bowler-row {
   background: linear-gradient(90deg, rgba(251, 146, 60, 0.12) 0%, transparent 100%);
@@ -1982,29 +2068,38 @@
   line-height: 1.2;
 }
 
-.cricket-strike-badge {
+.cricket-crease-role-tag {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   padding: 1px 4px;
-  border-radius: 3px;
-  font-size: 0.52rem;
+  border-radius: 4px;
+  font-size: 0.56rem;
   font-weight: 800;
-  letter-spacing: 0.06em;
-  background: var(--brand-crimson, #c9443b);
-  color: #fff;
-  vertical-align: middle;
-  line-height: 1.1;
+  line-height: 1.2;
+  letter-spacing: 0.03em;
+  color: var(--brand-amber-deep, #a16207);
+  background: rgba(var(--brand-amber-rgb), 0.18);
+  border: 1px solid rgba(var(--brand-amber-rgb), 0.45);
+  flex-shrink: 0;
+}
+:root[data-bs-theme="dark"] .cricket-crease-role-tag {
+  color: #ffd83d;
+  background: rgba(var(--brand-amber-rgb), 0.16);
+  border-color: rgba(var(--brand-amber-rgb), 0.38);
 }
 
 .cricket-crease-meta-line {
   display: flex;
   align-items: center;
-  gap: 5px;
+  flex-wrap: wrap;
+  gap: 2px 5px;
   font-size: 0.65rem;
   font-weight: 600;
   color: var(--muted-color);
-  margin-top: 2px;
-  line-height: 1.15;
+  margin-top: 3px;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
 }
 
 .cricket-crease-dot-sep {
@@ -2054,6 +2149,14 @@
   font-weight: 800;
   color: var(--theme-text-dark);
 }
+.cricket-crease-bowler-econ {
+  margin-top: 2px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--theme-text-dark);
+  opacity: 0.8;
+  font-variant-numeric: tabular-nums;
+}
 .cricket-crease-bowler-sub {
   font-size: 0.54rem;
   font-weight: 700;
@@ -2071,74 +2174,177 @@
 }
 
 /* ==========================================================================
-   Previous Overs History Card
+   Previous Overs History Popover (Bottom Sheet Popover) & Over Status Badges
    ========================================================================== */
-.cricket-prev-overs-card {
-  margin-top: 8px;
-  border: 1.5px solid rgba(var(--primary-rgb), 0.32);
-  border-top: 2.5px solid var(--primary);
-  border-bottom: 3px solid rgba(var(--brand-amber-rgb), 0.85);
-  border-radius: 16px;
-  background: var(--adm-surface, #fff);
-  box-shadow:
-    0 6px 20px -4px rgba(126, 29, 35, 0.18),
-    0 2px 8px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+.cricket-popover-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1070;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(2px);
+  animation: cricket-popover-backdrop-in 0.2s ease forwards;
 }
-:root[data-bs-theme="dark"] .cricket-prev-overs-card {
-  border: 1.5px solid rgba(255, 255, 255, 0.18);
-  border-top: 2.5px solid var(--brand-crimson-bright, #f2756b);
-  border-bottom: 3px solid rgba(var(--brand-amber-rgb), 0.9);
-  background: var(--adm-surface);
-  box-shadow:
-    0 8px 24px -4px rgba(0, 0, 0, 0.5),
-    0 3px 10px rgba(0, 0, 0, 0.35);
+.cricket-popover-backdrop.is-closing {
+  animation: cricket-popover-backdrop-out 0.2s ease forwards;
 }
 
-.cricket-prev-overs-header {
+.cricket-popover-card {
+  width: 100%;
+  max-width: 560px;
+  max-height: min(76vh, 540px);
+  display: flex;
+  flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom);
+  border: 1.5px solid rgba(var(--primary-rgb), 0.32);
+  border-top: 3px solid var(--primary);
+  border-bottom: 0;
+  border-radius: 20px 20px 0 0;
+  background: var(--adm-surface, #fff);
+  box-shadow:
+    0 -12px 36px -4px rgba(0, 0, 0, 0.28),
+    0 -4px 14px rgba(0, 0, 0, 0.14);
+  overflow: hidden;
+  animation: cricket-popover-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.cricket-popover-card.is-closing {
+  animation: cricket-popover-out 0.2s cubic-bezier(0.32, 0, 0.67, 0) forwards;
+}
+:root[data-bs-theme="dark"] .cricket-popover-card {
+  border-color: rgba(255, 255, 255, 0.18);
+  border-top-color: var(--brand-crimson-bright, #f2756b);
+  background: var(--adm-surface);
+  box-shadow:
+    0 -16px 44px -4px rgba(0, 0, 0, 0.65),
+    0 -6px 18px rgba(0, 0, 0, 0.45);
+}
+
+.cricket-popover-handle-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 4px;
+  background: linear-gradient(90deg, rgba(var(--primary-rgb), 0.12) 0%, rgba(var(--primary-rgb), 0.04) 100%);
+}
+:root[data-bs-theme="dark"] .cricket-popover-handle-wrap {
+  background: linear-gradient(90deg, rgba(var(--primary-rgb), 0.22) 0%, rgba(255, 255, 255, 0.03) 100%);
+}
+.cricket-popover-handle {
+  width: 38px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.32);
+}
+:root[data-bs-theme="dark"] .cricket-popover-handle {
+  background: rgba(255, 255, 255, 0.26);
+}
+
+@keyframes cricket-popover-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes cricket-popover-backdrop-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes cricket-popover-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes cricket-popover-out {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+.cricket-popover-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 12px;
+  padding: 4px 14px 10px;
   background: linear-gradient(90deg, rgba(var(--primary-rgb), 0.12) 0%, rgba(var(--primary-rgb), 0.04) 100%);
   border-bottom: 1px solid rgba(var(--primary-rgb), 0.16);
 }
-:root[data-bs-theme="dark"] .cricket-prev-overs-header {
+:root[data-bs-theme="dark"] .cricket-popover-header {
   background: linear-gradient(90deg, rgba(var(--primary-rgb), 0.22) 0%, rgba(255, 255, 255, 0.03) 100%);
   border-bottom-color: rgba(255, 255, 255, 0.1);
+}
+
+.cricket-popover-close {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(var(--primary-rgb), 0.1);
+  color: var(--primary);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+.cricket-popover-close:hover {
+  background: rgba(var(--primary-rgb), 0.18);
+}
+.cricket-popover-close:active {
+  transform: scale(0.94);
+}
+
+.cricket-popover-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.cricket-popover-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 28px 16px;
+  color: var(--muted-color);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: center;
+}
+.cricket-popover-empty i {
+  font-size: 1.25rem;
+  color: var(--primary);
+  opacity: 0.7;
 }
 
 .cricket-prev-overs-title {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.64rem;
+  font-size: 0.72rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--primary);
 }
 .cricket-prev-overs-title i {
-  font-size: 0.65rem;
+  font-size: 0.74rem;
   color: var(--primary);
-}
-
-.cricket-prev-overs-toggle-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border: 0;
-  background: transparent;
-  color: var(--primary);
-  font-size: 0.65rem;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 1px 4px;
-  border-radius: 4px;
-  transition: opacity 0.12s ease;
-}
-.cricket-prev-overs-toggle-btn:hover {
-  opacity: 0.8;
 }
 
 .cricket-prev-overs-list {
@@ -2147,16 +2353,19 @@
 }
 
 .cricket-prev-over-item {
-  padding: 6px 12px;
+  padding: 8px 14px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
+}
+.cricket-prev-over-item.is-current-over {
+  background: rgba(var(--primary-rgb), 0.04);
 }
 .cricket-prev-over-item + .cricket-prev-over-item {
-  border-top: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+  border-top: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
 }
 :root[data-bs-theme="dark"] .cricket-prev-over-item + .cricket-prev-over-item {
-  border-top-color: rgba(255, 255, 255, 0.06);
+  border-top-color: rgba(255, 255, 255, 0.08);
 }
 
 .cricket-prev-over-meta {
@@ -2164,7 +2373,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   line-height: 1.2;
 }
 
@@ -2176,19 +2385,19 @@
 }
 
 .cricket-prev-over-badge {
-  font-size: 0.6rem;
+  font-size: 0.62rem;
   font-weight: 800;
-  padding: 1px 5px;
-  border-radius: 4px;
-  background: rgba(var(--primary-rgb), 0.09);
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: rgba(var(--primary-rgb), 0.1);
   color: var(--primary);
-  border: 1px solid rgba(var(--primary-rgb), 0.2);
+  border: 1px solid rgba(var(--primary-rgb), 0.22);
   white-space: nowrap;
 }
 
 .cricket-prev-over-bowler {
   font-weight: 700;
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   color: var(--theme-text-dark);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2205,7 +2414,7 @@
 }
 
 .cricket-prev-over-runs {
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   color: var(--theme-text-dark);
 }
 .cricket-prev-over-wkts {
@@ -2219,39 +2428,42 @@
   color: var(--muted-color);
 }
 
-.cricket-prev-over-balls {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  overflow-x: auto;
-  padding: 1px 0 2px 0;
-  scrollbar-width: none;
-}
-.cricket-prev-over-balls::-webkit-scrollbar {
-  display: none;
-}
-.cricket-prev-over-balls .cricket-ball-chip {
-  min-width: 24px;
-  height: 24px;
-  font-size: 0.68rem;
+.cricket-prev-over-balls-wrap .cricket-ball-chip {
+  min-width: 26px;
+  height: 26px;
+  font-size: 0.7rem;
   font-weight: 800;
   border-radius: 50%;
   flex-shrink: 0;
 }
+
 .cricket-this-over-label {
   flex-shrink: 0;
-  font-size: 0.58rem;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  font-size: 0.52rem;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--primary);
   white-space: nowrap;
-  padding: 2px 6px;
-  border-radius: 5px;
-  background: rgba(var(--primary-rgb), 0.1);
-  border: 1px solid rgba(var(--primary-rgb), 0.22);
-  margin-right: 2px;
-  line-height: 1.2;
+  padding: 2px 7px;
+  border-radius: 11px 0 0 11px;
+  background: rgba(var(--primary-rgb), 0.14);
+  border-right: 1px solid rgba(var(--primary-rgb), 0.22);
+  line-height: 1.08;
+  text-align: center;
+}
+:root[data-bs-theme="dark"] .cricket-this-over-label {
+  background: rgba(255, 255, 255, 0.09);
+  border-right-color: rgba(255, 255, 255, 0.14);
+  color: #e2e8f0 !important;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-shadow: none;
 }
 .cricket-this-over-balls {
   flex: 1;
@@ -2295,14 +2507,26 @@
 .cricket-this-over-runs {
   flex-shrink: 0;
   margin-left: auto;
-  padding: 4px 10px;
+  margin-right: 3px;
+  padding: 4px 9px;
   border-radius: 999px;
   background: var(--primary-gradient);
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   color: #fff;
   white-space: nowrap;
+}
+:root[data-bs-theme="dark"] .cricket-ball-slot-empty {
+  border: 1.5px dashed rgba(255, 255, 255, 0.28);
+  background: transparent;
+}
+:root[data-bs-theme="dark"] .cricket-this-over-runs {
+  background: rgba(var(--primary-rgb), 0.35);
+  border: 1px solid rgba(var(--primary-rgb), 0.55);
+  color: #ffffff;
+  font-weight: 800;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
 /* NRR Calculator theme styles */
@@ -2427,6 +2651,31 @@
   border-color: rgba(var(--primary-rgb), 0.3);
   color: var(--theme-text-dark);
 }
+:root[data-bs-theme="dark"] .cricket-ball-chip {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #f1f5f9;
+}
+:root[data-bs-theme="dark"] .cricket-ball-chip.is-4 {
+  background: rgba(37, 99, 235, 0.18);
+  border-color: rgba(96, 165, 250, 0.5);
+  color: #93c5fd;
+}
+:root[data-bs-theme="dark"] .cricket-ball-chip.is-6 {
+  background: rgba(147, 51, 234, 0.18);
+  border-color: rgba(192, 132, 252, 0.5);
+  color: #d8b4fe;
+}
+:root[data-bs-theme="dark"] .cricket-ball-chip.is-wide {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: #fde68a;
+}
+:root[data-bs-theme="dark"] .cricket-ball-chip.is-no-ball {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+}
 .cricket-pad,
 .cricket-pad-container {
   display: grid;
@@ -2549,22 +2798,85 @@
   color: var(--primary);
 }
 .cricket-pad-btn.is-boundary.is-four {
-  border-color: rgba(37, 99, 235, 0.3);
-  background: rgba(37, 99, 235, 0.09);
-  color: #1d4ed8;
+  border: 1.5px solid #60a5fa !important;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
+  color: #1d4ed8 !important;
+  box-shadow: 0 2px 6px -1px rgba(37, 99, 235, 0.18);
 }
+.cricket-pad-btn.is-boundary.is-four .cricket-pad-word {
+  color: #1e40af;
+  font-weight: 800;
+}
+.cricket-pad-btn.is-boundary.is-four:hover:not(:disabled) {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%) !important;
+  border-color: #2563eb !important;
+}
+
 .cricket-pad-btn.is-boundary.is-six {
-  border-color: rgba(124, 58, 237, 0.32);
-  background: rgba(124, 58, 237, 0.1);
-  color: #6d28d9;
+  border: 1.5px solid #c084fc !important;
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%) !important;
+  color: #7e22ce !important;
+  box-shadow: 0 2px 6px -1px rgba(126, 34, 206, 0.18);
 }
+.cricket-pad-btn.is-boundary.is-six .cricket-pad-word {
+  color: #6b21a8;
+  font-weight: 800;
+}
+.cricket-pad-btn.is-boundary.is-six:hover:not(:disabled) {
+  background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%) !important;
+  border-color: #7c3aed !important;
+}
+
 :root[data-bs-theme="dark"] .cricket-pad-btn.is-boundary.is-four {
-  color: #60a5fa;
-  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa !important;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.28) 0%, rgba(29, 78, 216, 0.16) 100%) !important;
+  border: 1.5px solid rgba(96, 165, 250, 0.6) !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
 }
+:root[data-bs-theme="dark"] .cricket-pad-btn.is-boundary.is-four .cricket-pad-word {
+  color: #bfdbfe !important;
+  font-weight: 800;
+}
+:root[data-bs-theme="dark"] .cricket-pad-btn.is-boundary.is-four:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.4) 0%, rgba(29, 78, 216, 0.28) 100%) !important;
+  border-color: #60a5fa !important;
+}
+
 :root[data-bs-theme="dark"] .cricket-pad-btn.is-boundary.is-six {
-  color: #c084fc;
-  background: rgba(168, 85, 247, 0.16);
+  color: #c084fc !important;
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.28) 0%, rgba(109, 40, 217, 0.16) 100%) !important;
+  border: 1.5px solid rgba(192, 132, 252, 0.6) !important;
+  box-shadow: 0 2px 8px rgba(147, 51, 234, 0.25);
+}
+:root[data-bs-theme="dark"] .cricket-pad-btn.is-boundary.is-six .cricket-pad-word {
+  color: #f3e8ff !important;
+  font-weight: 800;
+}
+:root[data-bs-theme="dark"] .cricket-pad-btn.is-boundary.is-six:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.4) 0%, rgba(109, 40, 217, 0.28) 100%) !important;
+  border-color: #c084fc !important;
+}
+
+:root[data-bs-theme="dark"] .cricket-pad-btn.is-undo {
+  background: var(--adm-surface);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #e2e8f0;
+}
+:root[data-bs-theme="dark"] .cricket-pad-btn.is-undo:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
+:root[data-bs-theme="dark"] .cricket-pad-btn.is-extra {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--adm-surface);
+  color: #e2e8f0;
+}
+:root[data-bs-theme="dark"] .cricket-pad-btn.is-extra:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
 }
 .cricket-pad-word {
   font-size: 0.56rem;
@@ -4531,4 +4843,285 @@
 }
 :root[data-bs-theme="dark"] .cricket-app-row-value.cricket-timing-now {
   color: #f87171;
+}
+
+/* ===== Set Batting / Bowling Style Sheet ===== */
+.cricket-style-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 2px 0 4px;
+}
+.cricket-style-player-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(var(--primary-rgb), 0.22);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08) 0%, rgba(var(--primary-rgb), 0.02) 100%), var(--adm-surface, #fff);
+}
+.cricket-style-player-avatar {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+.cricket-style-player-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cricket-style-player-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.cricket-style-player-name {
+  font-size: var(--fs-sm);
+  font-weight: 800;
+  color: var(--theme-text-dark);
+  line-height: 1.2;
+}
+.cricket-style-role-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: rgba(var(--primary-rgb), 0.12);
+  color: var(--primary);
+}
+.cricket-style-player-sub {
+  font-size: var(--fs-xs);
+  color: var(--muted-color);
+  line-height: 1.25;
+}
+.cricket-style-step-pill,
+.cricket-style-current-pill {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  background: var(--primary);
+  color: #fff;
+}
+.cricket-style-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.cricket-style-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.cricket-style-col:first-child {
+  padding-right: 10px;
+  border-right: 1.5px dashed rgba(var(--primary-rgb), 0.26);
+}
+.cricket-style-col:last-child {
+  padding-left: 10px;
+}
+:root[data-bs-theme="dark"] .cricket-style-col:first-child {
+  border-right-color: rgba(255, 255, 255, 0.18);
+}
+.cricket-style-col-heading {
+  display: block;
+  padding: 0 2px 2px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted-color);
+}
+.cricket-style-col-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cricket-style-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  padding: 11px 12px;
+  border-radius: 14px;
+  border: 1.5px solid var(--border-color, rgba(0, 0, 0, 0.1));
+  background: var(--adm-surface, #fff);
+  color: var(--theme-text-dark);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+.cricket-style-card:focus,
+.cricket-style-card:focus-visible {
+  outline: none !important;
+}
+.cricket-style-card.is-batting-card {
+  padding: 14px 12px;
+  gap: 10px;
+}
+.cricket-style-card:not(.is-selected):hover {
+  border-color: rgba(var(--primary-rgb), 0.45);
+  background: rgba(var(--primary-rgb), 0.03);
+}
+.cricket-style-card.is-selected {
+  border-color: var(--primary);
+  background: rgba(var(--primary-rgb), 0.06);
+  box-shadow: 0 2px 10px rgba(var(--primary-rgb), 0.1);
+}
+.cricket-style-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+}
+.cricket-style-card-icon {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--primary-rgb), 0.08);
+  border: 1px solid rgba(var(--primary-rgb), 0.15);
+  color: var(--primary);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.cricket-style-card-icon .cricket-style-art {
+  width: 28px;
+  height: 28px;
+  stroke-width: 2.3;
+}
+.cricket-style-card-icon .cricket-style-art .cricket-out-art-bat {
+  stroke-width: 3.6;
+}
+.cricket-style-card:hover .cricket-style-card-icon,
+.cricket-style-card.is-selected .cricket-style-card-icon {
+  background: rgba(var(--primary-rgb), 0.12);
+  border-color: rgba(var(--primary-rgb), 0.24);
+  color: var(--primary);
+}
+.cricket-style-card-short {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  background: rgba(var(--primary-rgb), 0.09);
+  color: var(--primary);
+  border: 1px solid rgba(var(--primary-rgb), 0.22);
+  transition: all 0.16s ease;
+}
+.cricket-style-card:hover .cricket-style-card-short,
+.cricket-style-card.is-selected .cricket-style-card-short {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.cricket-style-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.cricket-style-card-title {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--theme-text-dark);
+  line-height: 1.22;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cricket-style-card-note {
+  font-size: 0.7rem;
+  color: var(--muted-color);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cricket-style-sheet-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+.cricket-style-skip-btn,
+.cricket-style-skip-all-btn {
+  flex: 1;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
+  background: rgba(var(--primary-rgb), 0.03);
+  color: var(--muted-color);
+  font: inherit;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.cricket-style-skip-btn:hover,
+.cricket-style-skip-all-btn:hover {
+  border-color: rgba(var(--primary-rgb), 0.3);
+  background: rgba(var(--primary-rgb), 0.08);
+  color: var(--theme-text-dark);
+}
+:root[data-bs-theme="dark"] .cricket-style-player-card {
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.16) 0%, rgba(var(--primary-rgb), 0.04) 100%), var(--adm-surface, #18191c);
+  border-color: rgba(var(--primary-rgb), 0.35);
+}
+:root[data-bs-theme="dark"] .cricket-style-card {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+:root[data-bs-theme="dark"] .cricket-style-card:not(.is-selected):hover {
+  background: rgba(var(--primary-rgb), 0.08);
+  border-color: rgba(var(--primary-rgb), 0.55);
+}
+:root[data-bs-theme="dark"] .cricket-style-card.is-selected {
+  background: rgba(var(--primary-rgb), 0.14);
+  border-color: var(--primary);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+}
+:root[data-bs-theme="dark"] .cricket-style-skip-btn,
+:root[data-bs-theme="dark"] .cricket-style-skip-all-btn {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
 }

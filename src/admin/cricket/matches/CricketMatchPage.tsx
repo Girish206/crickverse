@@ -98,7 +98,13 @@ export function CricketMatchPage() {
   // rest follow the live view. (A live match opens on Live.)
   const onScoreScreen = location.pathname.endsWith("/score") || params.get("score") === "1";
   const onLiveTab = (params.get("tab") ?? "live") === "live";
-  const seat = useScoringSeat(match, canManage && (onScoreScreen || onLiveTab), admin?.sub);
+  const isViewingMatch =
+    params.has("view") ||
+    (params.has("tab") && params.get("tab") !== "live") ||
+    Boolean(sessionStorage.getItem(`view_match_${id}`));
+  // Just viewing (e.g. after Stop scoring): don't grab a free seat again,
+  // or it would bounce straight back into the scorer.
+  const seat = useScoringSeat(match, canManage && (onScoreScreen || (onLiveTab && !isViewingMatch)), admin?.sub);
   const [handingOver, setHandingOver] = useState(false);
   const [leavingScoreOpen, setLeavingScoreOpen] = useState(false);
   // Not while they're scoring — the tips would sit over the buttons.
@@ -111,11 +117,6 @@ export function CricketMatchPage() {
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [guarding]);
-
-  const isViewingMatch =
-    params.has("view") ||
-    (params.has("tab") && params.get("tab") !== "live") ||
-    Boolean(sessionStorage.getItem(`view_match_${id}`));
 
   // If you are the active scorer for this live match, open directly into the scoring screen!
   // If you click back from the scoring screen, isViewingMatch is true so you can view the match without looping.
@@ -433,8 +434,10 @@ export function CricketMatchPage() {
       // A failure shows its own toast; stay put.
       return seat.release().then(
         () => {
+          // Land on the match view, not back in the scorer.
+          sessionStorage.setItem(`view_match_${match!.id}`, "1");
           if (onScoreScreen) {
-            navigate(`/matches/${match!.id}`, { replace: true });
+            navigate(`/matches/${match!.id}?view=1`, { replace: true });
           }
           return true;
         },
@@ -580,7 +583,7 @@ export function CricketMatchPage() {
             ))}
           </div>
 
-          <ListCard title="" bodyClassName={tab === "live" ? "cricket-live-body" : undefined}>
+          <ListCard title="" plain={tab === "overs"} bodyClassName={tab === "live" ? "cricket-live-body" : undefined}>
             {tab === "info" && <MatchInfo match={match} tournament={tournament} />}
             {tab === "live" &&
               (match.status === "live" ? (

@@ -369,6 +369,122 @@ const ART: Record<string, ReactNode> = {
       <line x1={33} y1={28} x2={33} y2={30} />
     </>
   ),
+
+  // Batting & bowling style illustrations (LiveScorer style prompt sheet).
+  "right-hand": (
+    <>
+      <Ground />
+      <Stumps x={7} />
+      <Head x={21} y={11} />
+      <line x1={21} y1={14.5} x2={20} y2={27} />
+      <line x1={20} y1={27} x2={16} y2={43} />
+      <line x1={20} y1={27} x2={25} y2={43} />
+      <line x1={21} y1={18} x2={27} y2={23} />
+      <Bat x1={27} y1={23} x2={33} y2={37} />
+      <path d="M44 20 Q39 24 35 28" strokeDasharray="2 2" />
+      <Ball x={41} y={24} />
+    </>
+  ),
+  "left-hand": (
+    <>
+      <Ground />
+      <Stumps x={34.6} />
+      <Head x={27} y={11} />
+      <line x1={27} y1={14.5} x2={28} y2={27} />
+      <line x1={28} y1={27} x2={23} y2={43} />
+      <line x1={28} y1={27} x2={32} y2={43} />
+      <line x1={27} y1={18} x2={21} y2={23} />
+      <Bat x1={21} y1={23} x2={15} y2={37} />
+      <path d="M4 20 Q9 24 13 28" strokeDasharray="2 2" />
+      <Ball x={7} y={24} />
+    </>
+  ),
+  "right-arm-fast": (
+    <>
+      <Ground />
+      <Head x={14} y={11} />
+      <line x1={14} y1={14.5} x2={17} y2={27} />
+      <line x1={17} y1={27} x2={8} y2={41} />
+      <line x1={17} y1={27} x2={24} y2={43} />
+      <line x1={15} y1={18} x2={24} y2={15} />
+      <line x1={15} y1={18} x2={10} y2={7} />
+      <line x1={22} y1={9.5} x2={34} y2={9.5} />
+      <line x1={26} y1={13} x2={35} y2={13} />
+      <line x1={23} y1={16.5} x2={34} y2={16.5} />
+      <Ball x={40} y={13} />
+    </>
+  ),
+  "left-arm-fast": (
+    <>
+      <Ground />
+      <Head x={34} y={11} />
+      <line x1={34} y1={14.5} x2={31} y2={27} />
+      <line x1={31} y1={27} x2={40} y2={41} />
+      <line x1={31} y1={27} x2={24} y2={43} />
+      <line x1={33} y1={18} x2={24} y2={15} />
+      <line x1={33} y1={18} x2={38} y2={7} />
+      <line x1={26} y1={9.5} x2={14} y2={9.5} />
+      <line x1={22} y1={13} x2={13} y2={13} />
+      <line x1={25} y1={16.5} x2={14} y2={16.5} />
+      <Ball x={8} y={13} />
+    </>
+  ),
+  "right-arm-medium": (
+    <>
+      <Ground />
+      <Head x={14} y={11} />
+      <line x1={14} y1={14.5} x2={16} y2={27} />
+      <line x1={16} y1={27} x2={10} y2={43} />
+      <line x1={16} y1={27} x2={22} y2={43} />
+      <line x1={15} y1={18} x2={9} y2={24} />
+      <line x1={15} y1={18} x2={20} y2={8} />
+      <path d="M23 11 C 29 8, 31 23, 37 19" />
+      <path d="M24 16 C 29 14, 31 26, 36 23" strokeDasharray="2 2" />
+      <Ball x={41} y={18} />
+    </>
+  ),
+  "left-arm-medium": (
+    <>
+      <Ground />
+      <Head x={34} y={11} />
+      <line x1={34} y1={14.5} x2={32} y2={27} />
+      <line x1={32} y1={27} x2={38} y2={43} />
+      <line x1={32} y1={27} x2={26} y2={43} />
+      <line x1={33} y1={18} x2={39} y2={24} />
+      <line x1={33} y1={18} x2={28} y2={8} />
+      <path d="M25 11 C 19 8, 17 23, 11 19" />
+      <path d="M24 16 C 19 14, 17 26, 12 23" strokeDasharray="2 2" />
+      <Ball x={7} y={18} />
+    </>
+  ),
+  "right-arm-spin": (
+    <>
+      <Ground />
+      <Head x={13} y={12} />
+      <line x1={13} y1={15.5} x2={14} y2={28} />
+      <line x1={14} y1={28} x2={9} y2={43} />
+      <line x1={14} y1={28} x2={20} y2={43} />
+      <line x1={13} y1={19} x2={8} y2={25} />
+      <line x1={13} y1={19} x2={20} y2={12} />
+      <path d="M22 12 Q 29 10 31 42" strokeDasharray="2 2.2" />
+      <path d="M31 42 L 39 26" />
+      <Ball x={41} y={22} />
+    </>
+  ),
+  "left-arm-spin": (
+    <>
+      <Ground />
+      <Head x={35} y={12} />
+      <line x1={35} y1={15.5} x2={34} y2={28} />
+      <line x1={34} y1={28} x2={39} y2={43} />
+      <line x1={34} y1={28} x2={28} y2={43} />
+      <line x1={35} y1={19} x2={40} y2={25} />
+      <line x1={35} y1={19} x2={28} y2={12} />
+      <path d="M26 12 Q 19 10 17 42" strokeDasharray="2 2.2" />
+      <path d="M17 42 L 9 26" />
+      <Ball x={7} y={22} />
+    </>
+  ),
 };
 
 export function OutArt({ type, className }: { type: string; className?: string }) {

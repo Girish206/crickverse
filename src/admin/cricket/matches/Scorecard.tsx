@@ -1,4 +1,4 @@
-import { Fragment, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { ballsPerOverOf, type CricketMatch } from "../../../api/types";
 import { PlayerLink } from "../players/PlayerProfileSheet";
 import {
@@ -9,6 +9,7 @@ import {
   dismissalText,
   fallOfWickets,
   inningsSummary,
+  isLegal,
   isWicket,
   oversOf,
   oversText,
@@ -16,6 +17,43 @@ import {
   type NameOf,
 } from "../stats";
 import { NoPlayNote } from "./result/ResultNote";
+
+export function ScrollableOverBalls({ children, className = "" }: { children: ReactNode; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [overflow, setOverflow] = useState({ left: false, right: false });
+
+  const update = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    const isScrollable = el.scrollWidth > el.clientWidth + 2;
+    const left = isScrollable && el.scrollLeft > 2;
+    const right = isScrollable && el.scrollLeft + el.clientWidth < el.scrollWidth - 2;
+    setOverflow((prev) => (prev.left === left && prev.right === right ? prev : { left, right }));
+  }, []);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    update();
+    const timer = setTimeout(update, 120);
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, [update, children]);
+
+  return (
+    <div
+      className={`cricket-this-over-balls-wrap ${className}${overflow.left ? " has-left-shadow" : ""}${overflow.right ? " has-right-shadow" : ""}`.trim()}
+    >
+      <div className="cricket-this-over-balls" ref={ref} onScroll={update}>
+        {children}
+      </div>
+    </div>
+  );
+}
 
 // Per-innings scorecard in the CricHeroes style: a coloured bar with the
 // team and score (tap to collapse), batters with how they got out under
@@ -205,12 +243,13 @@ export function BallByBall({ match, nameOf }: { match: CricketMatch; nameOf: Nam
     return match.resultMethod ? <NoPlayNote match={match} /> : <div className="admin-empty-state">No balls bowled yet.</div>;
   }
   const innings = bowled.find((inn) => inn.battingTeam === picked) ?? bowled[bowled.length - 1];
+  const perOver = ballsPerOverOf(match);
 
   // Score at the end of each over.
   const overs: (ReturnType<typeof oversOf>[number] & { score: string; batters: number[] })[] = [];
   let runs = 0;
   let wickets = 0;
-  for (const over of oversOf(innings, ballsPerOverOf(match))) {
+  for (const over of oversOf(innings, perOver)) {
     runs += over.runs;
     wickets += over.balls.filter(isWicket).length;
     overs.push({ ...over, score: `${runs}-${wickets}`, batters: [...new Set(over.balls.map((ball) => ball.batterId))] });
@@ -235,42 +274,79 @@ export function BallByBall({ match, nameOf }: { match: CricketMatch; nameOf: Nam
         </div>
       )}
       <ol className="cricket-over-cards">
-        {[...overs].reverse().map((over) => (
-          <li key={over.number} className="cricket-over-card">
-            <div className="cricket-over-card-num">
-              <strong>Ov {over.number + 1}</strong>
-              <small>{over.score}</small>
-            </div>
-            <div className="cricket-over-card-body">
-              <span className="cricket-over-card-who">
-                <PlayerLink playerId={over.bowlerId}>{nameOf(over.bowlerId)}</PlayerLink> to{" "}
-                {over.batters.map((id, i) => (
-                  <Fragment key={id}>
-                    {i > 0 && ", "}
-                    <PlayerLink playerId={id}>{nameOf(id)}</PlayerLink>
-                  </Fragment>
-                ))}
-              </span>
-              <div className="cricket-this-over">
-                {over.balls.map((ball, i) => (
-                  <span
-                    key={i}
-                    className={ballChipClass(ball)}
-                    title={`${nameOf(ball.bowlerId)} to ${nameOf(ball.batterId)}${
-                      ball.wicketType ? ` — ${nameOf(ball.dismissedId)} ${dismissalText(ball, nameOf)}` : ""
-                    }`}
-                  >
-                    {ballLabel(ball) === "0" ? "•" : ballLabel(ball)}
+        {[...overs].reverse().map((over) => {
+          const legalBalls = over.balls.filter(isLegal).length;
+          const isLastOver = over.number === overs.length - 1;
+          const isIncomplete = legalBalls < perOver;
+          const isLiveOver =
+            isIncomplete &&
+            isLastOver &&
+            match.status === "live" &&
+            innings === match.innings[match.innings.length - 1] &&
+            !innings.closed;
+          const remainingBalls = isIncomplete ? Math.max(0, perOver - legalBalls) : 0;
+
+          return (
+            <li
+              key={over.number}
+              className={`cricket-over-card${isIncomplete ? " is-incomplete" : ""}${isLiveOver ? " is-live-over" : ""}`}
+            >
+              <div className="cricket-over-card-num">
+                <strong>Ov {over.number + 1}</strong>
+                <small>{over.score}</small>
+                {isIncomplete && (
+                  <span className={`cricket-over-card-sub-badge${isLiveOver ? " is-live" : ""}`}>
+                    {over.number}.{legalBalls} ov
                   </span>
-                ))}
+                )}
               </div>
-            </div>
-            <div className="cricket-over-card-runs">
-              <strong>{over.runs}</strong>
-              <small>Run{over.runs === 1 ? "" : "s"}</small>
-            </div>
-          </li>
-        ))}
+              <div className="cricket-over-card-body">
+                <div className="cricket-over-card-top">
+                  <span className="cricket-over-card-who">
+                    <PlayerLink playerId={over.bowlerId}>{nameOf(over.bowlerId)}</PlayerLink> to{" "}
+                    {over.batters.map((id, i) => (
+                      <Fragment key={id}>
+                        {i > 0 && ", "}
+                        <PlayerLink playerId={id}>{nameOf(id)}</PlayerLink>
+                      </Fragment>
+                    ))}
+                  </span>
+                  {isIncomplete && (
+                    <span className={`cricket-over-incomplete-badge${isLiveOver ? " is-live" : ""}`}>
+                      {isLiveOver && <span className="cricket-over-live-dot" aria-hidden="true" />}
+                      {isLiveOver ? `In progress · ${remainingBalls}b left` : `${legalBalls}/${perOver} balls`}
+                    </span>
+                  )}
+                </div>
+                <ScrollableOverBalls className="cricket-over-card-balls-wrap">
+                  {over.balls.map((ball, i) => (
+                    <span
+                      key={i}
+                      className={ballChipClass(ball)}
+                      title={`${nameOf(ball.bowlerId)} to ${nameOf(ball.batterId)}${ball.wicketType ? ` — ${nameOf(ball.dismissedId)} ${dismissalText(ball, nameOf)}` : ""
+                        }`}
+                    >
+                      {ballLabel(ball) === "0" ? "•" : ballLabel(ball)}
+                    </span>
+                  ))}
+                  {remainingBalls > 0 &&
+                    Array.from({ length: remainingBalls }, (_, i) => (
+                      <span
+                        key={`empty-${i}`}
+                        className="cricket-ball-slot-empty"
+                        title="Remaining delivery in this over"
+                        aria-hidden="true"
+                      />
+                    ))}
+                </ScrollableOverBalls>
+              </div>
+              <div className="cricket-over-card-runs">
+                <strong>{over.runs}</strong>
+                <small>Run{over.runs === 1 ? "" : "s"}</small>
+              </div>
+            </li>
+          );
+        })}
       </ol>
     </div>
   );

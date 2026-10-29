@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ModalContext } from "../dms/components/modalContext";
 
@@ -25,10 +25,24 @@ interface BottomSheetProps {
 // into its footer, just as they do inside a DefaultModal.
 export function BottomSheet({ title, icon, onClose, children, footer, fullScreen = false, wide = false }: BottomSheetProps) {
   const [footerSlot, setFooterSlot] = useState<HTMLElement | null>(null);
+  const [closing, setClosing] = useState(false);
+  const closingRef = useRef(false);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  const requestClose = useCallback(() => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    setClosing(true);
+    setTimeout(() => {
+      onCloseRef.current();
+    }, 200);
+  }, []);
+
   useEffect(() => {
     const self = {};
     openSheets.push(self);
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && openSheets.at(-1) === self && onClose();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && openSheets.at(-1) === self && requestClose();
     // The page stays locked while any sheet is open. Restoring a saved value
     // instead would leave it stuck when sheets close out of order (e.g. a
     // parent sheet unmounting before the one opened from it).
@@ -39,12 +53,12 @@ export function BottomSheet({ title, icon, onClose, children, footer, fullScreen
       if (openSheets.length === 0) document.body.style.overflow = "";
       document.removeEventListener("keydown", onKey);
     };
-  }, [onClose]);
+  }, [requestClose]);
 
   return createPortal(
-    <div className="cricket-sheet-backdrop" onClick={onClose}>
+    <div className={`cricket-sheet-backdrop ${closing ? "is-closing" : ""}`.trim()} onClick={requestClose}>
       <div
-        className={`cricket-sheet ${fullScreen ? "is-full" : ""} ${wide ? "is-wide" : ""}`}
+        className={`cricket-sheet ${fullScreen ? "is-full" : ""} ${wide ? "is-wide" : ""} ${closing ? "is-closing" : ""}`.trim()}
         role="dialog"
         aria-modal="true"
         aria-label={title}
@@ -58,11 +72,11 @@ export function BottomSheet({ title, icon, onClose, children, footer, fullScreen
             </span>
           )}
           <h2>{title}</h2>
-          <button type="button" className="cricket-sheet-close" onClick={onClose} aria-label="Close">
+          <button type="button" className="cricket-sheet-close" onClick={requestClose} aria-label="Close">
             <i className="fa-solid fa-xmark" aria-hidden="true"></i>
           </button>
         </header>
-        <ModalContext.Provider value={{ footer: footerSlot, close: onClose }}>
+        <ModalContext.Provider value={{ footer: footerSlot, close: requestClose }}>
           <div className="cricket-sheet-body">{children}</div>
         </ModalContext.Provider>
         {footer ? (

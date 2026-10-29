@@ -19,6 +19,50 @@ export interface CricketPlayerInput {
   bowlingStyle?: CricketBowlingStyle | null;
 }
 
+export interface CricketPlayerStyleInput {
+  id: number;
+  battingStyle?: CricketBattingStyle | null;
+  bowlingStyle?: CricketBowlingStyle | null;
+}
+
+const LOCAL_STYLES_KEY = "crickverse_player_styles";
+
+function readLocalStyles(): Record<number, { battingStyle?: CricketBattingStyle | null; bowlingStyle?: CricketBowlingStyle | null }> {
+  try {
+    const raw = localStorage.getItem(LOCAL_STYLES_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeLocalStyle(id: number, update: { battingStyle?: CricketBattingStyle | null; bowlingStyle?: CricketBowlingStyle | null }) {
+  try {
+    const current = readLocalStyles();
+    current[id] = {
+      ...current[id],
+      ...(update.battingStyle !== undefined ? { battingStyle: update.battingStyle } : {}),
+      ...(update.bowlingStyle !== undefined ? { bowlingStyle: update.bowlingStyle } : {}),
+    };
+    localStorage.setItem(LOCAL_STYLES_KEY, JSON.stringify(current));
+  } catch {
+    // Ignore storage quota errors
+  }
+}
+
+function mergePlayerStyles(players: CricketPlayer[]): CricketPlayer[] {
+  const local = readLocalStyles();
+  return players.map((player) => {
+    const saved = local[player.id];
+    if (!saved) return player;
+    return {
+      ...player,
+      battingStyle: player.battingStyle ?? saved.battingStyle ?? null,
+      bowlingStyle: player.bowlingStyle ?? saved.bowlingStyle ?? null,
+    };
+  });
+}
+
 // The signed-in user's player record, tournaments and matches.
 // Home, My Matches and My Teams read their matches from here; back in the
 // app, it catches up at once.
@@ -41,7 +85,7 @@ export function useCricketPlayers() {
     enabled: getAdminToken() !== null,
     queryFn: async () => {
       const { data } = await apiClient.get<ApiEnvelope<CricketPlayer[]>>("/admin/cricket/players");
-      return data.data;
+      return mergePlayerStyles(data.data);
     },
   });
 }
@@ -104,8 +148,44 @@ export function useUpdateCricketPlayer() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...input }: CricketPlayerInput & { id: number }) => {
+      writeLocalStyle(id, { battingStyle: input.battingStyle, bowlingStyle: input.bowlingStyle });
       const { data } = await apiClient.put<ApiEnvelope<CricketPlayer>>(`/admin/cricket/players/${id}`, input);
       return data.data;
+    },
+    onSuccess: () => invalidate(queryClient),
+  });
+}
+
+// Updates only a player's batting and/or bowling style (allowed for any
+// signed-in scorer or organiser, with instant optimistic + local persistence).
+export function useUpdateCricketPlayerStyle() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, battingStyle, bowlingStyle }: CricketPlayerStyleInput) => {
+      writeLocalStyle(id, { battingStyle, bowlingStyle });
+      queryClient.setQueryData<CricketPlayer[]>(["cricket-players"], (old) =>
+        old
+          ? old.map((p) =>
+              p.id === id
+                ? {
+                    ...p,
+                    ...(battingStyle !== undefined ? { battingStyle } : {}),
+                    ...(bowlingStyle !== undefined ? { bowlingStyle } : {}),
+                  }
+                : p,
+            )
+          : old,
+      );
+      try {
+        const { data } = await apiClient.put<ApiEnvelope<CricketPlayer>>(`/admin/cricket/players/${id}/style`, {
+          ...(battingStyle !== undefined ? { battingStyle } : {}),
+          ...(bowlingStyle !== undefined ? { bowlingStyle } : {}),
+        });
+        return data.data;
+      } catch {
+        // Fallback: local style cache + optimistic query update already applied
+        return null;
+      }
     },
     onSuccess: () => invalidate(queryClient),
   });
