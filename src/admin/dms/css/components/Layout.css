@@ -30,7 +30,7 @@
    inset: 0;
    z-index: -1;
    pointer-events: none;
-   background-image: var(--bg-overlay, linear-gradient(rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.88))),
+   background-image: var(--bg-overlay, linear-gradient(rgba(238, 240, 245, 0.75), rgba(230, 233, 240, 0.85))),
       linear-gradient(170deg, var(--layout-bg-top) 0%, var(--layout-bg-bottom) 100%);
    background-size: cover;
    background-position: center;
@@ -60,8 +60,8 @@
   border-radius: 50%;
   background: radial-gradient(
     circle at 50% 50%,
-    rgba(var(--brand-orange-rgb), 0.1) 0%,
-    rgba(var(--brand-amber-rgb), 0.06) 40%,
+    rgba(var(--brand-orange-rgb), 0.04) 0%,
+    rgba(var(--brand-amber-rgb), 0.02) 40%,
     transparent 70%
   );
 }

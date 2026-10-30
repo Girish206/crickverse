@@ -8,7 +8,7 @@ import { BottomSheet } from "../BottomSheet";
 import SelectInput from "../../dms/components/SelectInput";
 import { CricketKpis } from "../CricketKpis";
 import { CricketMatchForm } from "./CricketMatchForm";
-import { MatchCard } from "./matchUi";
+import { LiveMatchCard, MatchCard } from "./matchUi";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
@@ -83,14 +83,23 @@ export function MatchesBoard({
       </div>
     ) : (
       <div className="cricket-match-grid">
-        {visible.map((match) => (
-          <MatchCard
-            key={match.id}
-            match={match}
-            tournamentName={match.tournamentId === null ? undefined : tournamentNames?.get(match.tournamentId)}
-            footnote={footnote?.(match)}
-          />
-        ))}
+        {visible.map((match) =>
+          match.status === "live" ? (
+            <LiveMatchCard
+              key={match.id}
+              match={match}
+              tournamentName={match.tournamentId === null ? undefined : tournamentNames?.get(match.tournamentId)}
+              footnote={footnote?.(match)}
+            />
+          ) : (
+            <MatchCard
+              key={match.id}
+              match={match}
+              tournamentName={match.tournamentId === null ? undefined : tournamentNames?.get(match.tournamentId)}
+              footnote={footnote?.(match)}
+            />
+          ),
+        )}
       </div>
     );
   return (

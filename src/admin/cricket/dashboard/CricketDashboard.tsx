@@ -7,7 +7,7 @@ import { ListCard } from "../../components/ListCard";
 import { CricketKpis } from "../CricketKpis";
 import { HomeRail, HomeSection, LiveCount } from "../HomeSection";
 import { LeaderboardGrid } from "../leaderboard/CricketLeaderboard";
-import { MatchCard } from "../matches/matchUi";
+import { LiveMatchCard, MatchCard } from "../matches/matchUi";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
@@ -36,6 +36,9 @@ export function CricketDashboard() {
 
   const card = (m: CricketMatch) => (
     <MatchCard key={m.id} match={m} tournamentName={m.tournamentId === null ? undefined : tournamentNames.get(m.tournamentId)} />
+  );
+  const liveCard = (m: CricketMatch) => (
+    <LiveMatchCard key={m.id} match={m} tournamentName={m.tournamentId === null ? undefined : tournamentNames.get(m.tournamentId)} />
   );
 
   // Laid out like the player Home: the numbers on its gradient banner, then
@@ -75,7 +78,7 @@ export function CricketDashboard() {
                 badge={<LiveCount count={live.length} />}
                 link={{ to: "/matches", label: "All matches" }}
               >
-                <HomeRail>{live.map(card)}</HomeRail>
+                <HomeRail>{live.map(liveCard)}</HomeRail>
               </HomeSection>
             )}
             <HomeSection title="Up next" icon="fa-solid fa-clock" tone="next" link={{ to: "/matches", label: "All matches" }}>

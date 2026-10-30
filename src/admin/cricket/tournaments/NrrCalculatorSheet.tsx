@@ -244,77 +244,77 @@ export function NrrCalculatorSheet({
           </div>
 
           {simulation && (
-            <div className="cricket-nrr-result-card">
-              <div className="d-flex justify-content-between align-items-center mb-2">
-                <div className="d-flex align-items-center gap-2">
-                  <span className="badge rounded-pill bg-danger-subtle text-danger fw-bold px-2 py-1">
-                    <i className="fa-solid fa-bullseye me-1"></i> Target Scenario
+            <div className={`cricket-nrr-compact-card ${simulation.canAchieve ? "is-achievable" : "is-warning"}`}>
+              <div className="cricket-nrr-compact-header">
+                <div className="cricket-nrr-compact-team">
+                  <span className="cricket-nrr-tag">
+                    <i className="fa-solid fa-bullseye me-1" aria-hidden="true"></i> Target Scenario
                   </span>
-                  <span className="fw-bold fs-6">{tournament.teams[teamAIdx]?.name}</span>
+                  <strong className="cricket-nrr-team-name">{tournament.teams[teamAIdx]?.name}</strong>
                 </div>
-                <span className="badge bg-secondary-subtle text-secondary font-monospace">
-                  Beat NRR: {simulation.targetNrrB >= 0 ? `+${simulation.targetNrrB.toFixed(3)}` : simulation.targetNrrB.toFixed(3)}
+                <span className="cricket-nrr-beat-pill">
+                  Beat NRR: <strong>{simulation.targetNrrB >= 0 ? `+${simulation.targetNrrB.toFixed(3)}` : simulation.targetNrrB.toFixed(3)}</strong>
                 </span>
               </div>
 
               {simulation.type === "chasing" ? (
                 simulation.canAchieve ? (
-                  <div className="cricket-nrr-result-hero">
-                    <div className="small text-muted mb-1">
+                  <div className="cricket-nrr-compact-body">
+                    <div className="cricket-nrr-compact-condition">
                       To overtake <strong>{tournament.teams[teamBIdx]?.name}</strong>:
                     </div>
-                    <div className="cricket-nrr-big-target mb-2">
-                      <span>Chase {simulation.targetRuns} in at most</span>
-                      <span className="cricket-nrr-big-pill">
-                        {simulation.reqOversFormatted} ov
-                      </span>
-                      <span className="fs-6 fw-bold text-muted">
+                    <div className="cricket-nrr-compact-action">
+                      <span>Chase <strong>{simulation.targetRuns}</strong> in at most</span>
+                      <span className="cricket-nrr-badge">{simulation.reqOversFormatted} ov</span>
+                      <span className="cricket-nrr-sub">
                         ({oversToTotalBalls(parseOversToDecimal(simulation.reqOversFormatted!))} balls)
                       </span>
                     </div>
-                    <div className="d-flex gap-2 flex-wrap small text-muted">
-                      <span><i className="fa-solid fa-gauge-high text-danger me-1"></i>Min RRR: <strong>{(simulation.targetRuns / Math.max(0.1, parseOversToDecimal(simulation.reqOversFormatted!))).toFixed(2)} RPO</strong></span>
-                      <span>• Target total: <strong>{simulation.targetRuns} runs</strong></span>
+                    <div className="cricket-nrr-compact-meta">
+                      <span>
+                        <i className="fa-solid fa-gauge-high text-danger me-1" aria-hidden="true"></i>
+                        Min RRR: <strong>{(simulation.targetRuns / Math.max(0.1, parseOversToDecimal(simulation.reqOversFormatted!))).toFixed(2)} RPO</strong>
+                      </span>
+                      <span className="cricket-nrr-dot">•</span>
+                      <span>Target: <strong>{simulation.targetRuns} runs</strong></span>
                     </div>
                   </div>
                 ) : (
-                  <div className="cricket-nrr-result-hero is-warning">
-                    <div className="fw-bold text-warning-emphasis mb-1">
-                      <i className="fa-solid fa-circle-exclamation me-1"></i> Target unreachable in single game
+                  <div className="cricket-nrr-compact-warning">
+                    <div className="cricket-nrr-warning-title">
+                      <i className="fa-solid fa-circle-exclamation me-1" aria-hidden="true"></i> Target unreachable in single game
                     </div>
-                    <small className="text-muted">
-                      A chase of {simulation.targetRuns} in {simulation.maxOvers} overs cannot overtake the target NRR
-                      given the tournament overs and previous runs.
+                    <small>
+                      A chase of {simulation.targetRuns} in {simulation.maxOvers} ov cannot overtake the target NRR.
                     </small>
                   </div>
                 )
               ) : simulation.canAchieve ? (
-                <div className="cricket-nrr-result-hero">
-                  <div className="small text-muted mb-1">
+                <div className="cricket-nrr-compact-body">
+                  <div className="cricket-nrr-compact-condition">
                     After setting <strong>{simulation.scoredRuns} runs</strong> in {simulation.maxOvers} ov:
                   </div>
-                  <div className="cricket-nrr-big-target mb-2">
-                    <span>Restrict {tournament.teams[teamBIdx]?.name} to</span>
-                    <span className="cricket-nrr-big-pill">
-                      &le; {simulation.maxAllowedRuns} runs
-                    </span>
-                    <span className="fs-6 fw-bold text-muted">
-                      (in {simulation.maxOvers} ov)
-                    </span>
+                  <div className="cricket-nrr-compact-action">
+                    <span>Restrict <strong>{tournament.teams[teamBIdx]?.name}</strong> to</span>
+                    <span className="cricket-nrr-badge">&le; {simulation.maxAllowedRuns} runs</span>
+                    <span className="cricket-nrr-sub">({simulation.maxOvers} ov)</span>
                   </div>
-                  <div className="d-flex gap-2 flex-wrap small text-muted">
-                    <span><i className="fa-solid fa-shield text-success me-1"></i>Win by at least: <strong>{simulation.scoredRuns - simulation.maxAllowedRuns} runs</strong></span>
-                    <span>• Max Allowed RR: <strong>{(simulation.maxAllowedRuns / simulation.maxOvers).toFixed(2)} RPO</strong></span>
+                  <div className="cricket-nrr-compact-meta">
+                    <span>
+                      <i className="fa-solid fa-shield text-success me-1" aria-hidden="true"></i>
+                      Win by at least: <strong>{simulation.scoredRuns - simulation.maxAllowedRuns} runs</strong>
+                    </span>
+                    <span className="cricket-nrr-dot">•</span>
+                    <span>Max Allowed RR: <strong>{(simulation.maxAllowedRuns / simulation.maxOvers).toFixed(2)} RPO</strong></span>
                   </div>
                 </div>
               ) : (
-                <div className="cricket-nrr-result-hero is-warning">
-                  <div className="fw-bold text-warning-emphasis mb-1">
-                    <i className="fa-solid fa-circle-exclamation me-1"></i> Target unreachable in single game
+                <div className="cricket-nrr-compact-warning">
+                  <div className="cricket-nrr-warning-title">
+                    <i className="fa-solid fa-circle-exclamation me-1" aria-hidden="true"></i> Target unreachable in single game
                   </div>
-                  <small className="text-muted">
-                    Defending {simulation.scoredRuns} in {simulation.maxOvers} overs cannot overtake the target NRR
-                    even with a maximum margin victory.
+                  <small>
+                    Defending {simulation.scoredRuns} in {simulation.maxOvers} ov cannot overtake the target NRR.
                   </small>
                 </div>
               )}

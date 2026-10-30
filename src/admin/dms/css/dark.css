@@ -102,7 +102,10 @@
 }
 :root[data-bs-theme="dark"] .layout-wrapper,
 :root[data-bs-theme="dark"] .layout-wrapper[class*="bg-"] {
-  --bg-overlay: linear-gradient(rgba(22, 24, 29, 0.85), rgba(22, 24, 29, 0.85));
+  --bg-overlay: linear-gradient(rgba(18, 20, 24, 0.92), rgba(18, 20, 24, 0.92));
+}
+:root[data-bs-theme="dark"] .cv-backdrop {
+  opacity: 0.28;
 }
 :root[data-bs-theme="dark"] .cricket-home-hero {
   border: 1px solid rgba(255, 255, 255, 0.07);

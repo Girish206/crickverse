@@ -24,7 +24,8 @@ import {
   type CricketPlayer,
   type CricketTournament,
 } from "../../../api/types";
-import { SubmitButton } from "../../components/SubmitButton";
+import { ModalActions } from "../../components/ModalActions";
+import CustomButton from "../../dms/components/CustomButton";
 import { FormIdContext } from "../../dms/components/modalContext";
 import { avatarColorFor } from "../avatarColor";
 import { BottomSheet } from "../BottomSheet";
@@ -150,7 +151,7 @@ export function CricketMatchForm({
   const updateMatch = useUpdateCricketMatch();
 
   const tournamentId = existing?.tournamentId ?? fixedTournament ?? null;
-  const [startMode, setStartMode] = useState<"immediate" | "scheduled">(initialStartMode ?? "immediate");
+  const startMode = initialStartMode ?? "immediate";
   const [teamA, setTeamA] = useState<number | null>(existing?.teams[0].teamIndex ?? 0);
   const [teamB, setTeamB] = useState<number | null>(existing?.teams[1].teamIndex ?? 1);
   // A standalone match names its own sides.
@@ -397,8 +398,7 @@ export function CricketMatchForm({
     }
   }
 
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
+  async function submitMatch(mode: "immediate" | "scheduled" = startMode) {
     const oversNumber = Number(overs);
     const names: [string, string] = [teamAName.trim(), teamBName.trim()];
     if (standalone) {
@@ -434,9 +434,9 @@ export function CricketMatchForm({
     }
     setMissingType(false);
     setError(null);
-    const matchScheduledAt = !existing && startMode === "immediate"
+    const matchScheduledAt = !existing && mode === "immediate"
       ? new Date().toISOString()
-      : (scheduledAt ? new Date(scheduledAt).toISOString() : null);
+      : (scheduledAt ? new Date(scheduledAt).toISOString() : new Date().toISOString());
     const input = {
       teamAIndex: teamA ?? 0,
       teamBIndex: teamB ?? 1,
@@ -490,12 +490,17 @@ export function CricketMatchForm({
         return setInlineError(messageFor(err));
       }
       onSaved();
-      if (startMode === "immediate") {
+      if (mode === "immediate") {
         navigate(`/matches/${created.id}/setup`);
       } else {
         navigate(`/matches/${created.id}`);
       }
     }
+  }
+
+  function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    submitMatch(startMode);
   }
 
   const oversNumber = Number(overs) || 0;
@@ -563,57 +568,6 @@ export function CricketMatchForm({
           </>
         )}
 
-        {!existing && (
-          <div className="cricket-start-mode-section">
-            <span className="cricket-app-group-title">
-              <i className="fa-solid fa-clock-rotate-left" aria-hidden="true" style={{ marginRight: 6 }}></i>
-              Match Timing
-            </span>
-            <div className="cricket-start-mode-grid" role="radiogroup" aria-label="Match timing">
-              <button
-                type="button"
-                role="radio"
-                aria-checked={startMode === "immediate"}
-                className={`cricket-start-card is-immediate ${startMode === "immediate" ? "is-selected" : ""}`}
-                onClick={() => {
-                  setStartMode("immediate");
-                  setScheduledAt(toLocalInput(new Date().toISOString()));
-                }}
-              >
-                <span className="cricket-start-pill is-live">
-                  <span className="cricket-live-dot" aria-hidden="true"></span> LIVE
-                </span>
-                <span className="cricket-start-card-check" aria-hidden="true">
-                  <i className={startMode === "immediate" ? "fa-solid fa-circle-check" : "fa-regular fa-circle"}></i>
-                </span>
-                <span className="cricket-start-card-icon" aria-hidden="true">
-                  <i className="fa-solid fa-bolt"></i>
-                </span>
-                <strong className="cricket-start-card-title">Start now</strong>
-                <span className="cricket-start-card-hint">Toss & live score</span>
-              </button>
-
-              <button
-                type="button"
-                role="radio"
-                aria-checked={startMode === "scheduled"}
-                className={`cricket-start-card is-scheduled ${startMode === "scheduled" ? "is-selected" : ""}`}
-                onClick={() => setStartMode("scheduled")}
-              >
-                <span className="cricket-start-pill is-scheduled">FIXTURE</span>
-                <span className="cricket-start-card-check" aria-hidden="true">
-                  <i className={startMode === "scheduled" ? "fa-solid fa-circle-check" : "fa-regular fa-circle"}></i>
-                </span>
-                <span className="cricket-start-card-icon" aria-hidden="true">
-                  <i className="fa-solid fa-calendar-days"></i>
-                </span>
-                <strong className="cricket-start-card-title">Schedule</strong>
-                <span className="cricket-start-card-hint">Pick date & time</span>
-              </button>
-            </div>
-          </div>
-        )}
-
         <h2 className="cricket-app-group-title">Match details</h2>
         <div className="cricket-app-group">
           <div className="cricket-app-row">
@@ -655,24 +609,12 @@ export function CricketMatchForm({
             <span className="cricket-app-row-value">{stageLabel(stage)}</span>
             <i className="fa-solid fa-chevron-right cricket-app-row-chevron" aria-hidden="true"></i>
           </button>
-          {startMode === "immediate" && !existing ? (
-            <div className="cricket-app-row is-static">
-              <span className="cricket-app-row-label">
-                <i className="fa-solid fa-bolt text-danger" aria-hidden="true"></i> Timing
-              </span>
-              <span className="cricket-app-row-value cricket-timing-now">
-                <span className="cricket-live-dot" aria-hidden="true"></span>
-                Starting now
-              </span>
-            </div>
-          ) : (
-            <label className="cricket-app-row">
-              <span className="cricket-app-row-label">
-                <i className="fa-regular fa-calendar" aria-hidden="true"></i> Date & time
-              </span>
-              <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
-            </label>
-          )}
+          <label className="cricket-app-row">
+            <span className="cricket-app-row-label">
+              <i className="fa-regular fa-calendar" aria-hidden="true"></i> Date & time
+            </span>
+            <input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
+          </label>
           <label className="cricket-app-row">
             <span className="cricket-app-row-label">
               <i className="fa-solid fa-location-dot" aria-hidden="true"></i> Ground
@@ -836,9 +778,29 @@ export function CricketMatchForm({
         )}
         {error && <div className="admin-banner admin-banner-error">{error}</div>}
         {!existing && (
-          <SubmitButton loading={createMatch.isPending}>
-            {startMode === "immediate" ? "Start Match" : "Schedule Match"}
-          </SubmitButton>
+          <ModalActions>
+            <CustomButton
+              type="button"
+              variant="outline"
+              bg="custom-primary"
+              disabled={createMatch.isPending}
+              onClick={() => submitMatch("scheduled")}
+            >
+              <i className="fa-regular fa-calendar me-1" aria-hidden="true" />
+              Schedule
+            </CustomButton>
+            <CustomButton
+              type="button"
+              variant="normal"
+              bg="custom-primary"
+              className="admin-form-submit"
+              loading={createMatch.isPending}
+              onClick={() => submitMatch("immediate")}
+            >
+              <i className="fa-solid fa-bolt me-1" aria-hidden="true" />
+              Start Match
+            </CustomButton>
+          </ModalActions>
         )}
 
         {choosingStage && (

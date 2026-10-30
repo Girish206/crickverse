@@ -11,7 +11,7 @@ import { HomeRail, HomeSection, LiveCount } from "../HomeSection";
 import { PillSelect } from "../PillSelect";
 import { useTips, type TipStep } from "../TipsTour";
 import { MatchesBoard } from "../matches/CricketMatchesList";
-import { MatchCard, type MatchTag } from "../matches/matchUi";
+import { LiveMatchCard, MatchCard, type MatchTag } from "../matches/matchUi";
 import { teamKeyOf, usePlayerNames } from "../matches/matchUtils";
 import { CricketPlayerProfile } from "../players/CricketPlayerProfile";
 import { battingCard, bowlingCard, oversText, playerOfMatch, playerStats } from "../stats";
@@ -265,6 +265,15 @@ function HomeFeed({ me }: { me: CricketMe }) {
       footnote={noteOf(m)}
     />
   );
+  const liveCard = (m: CricketMatch, aside?: string) => (
+    <LiveMatchCard
+      key={m.id}
+      match={m}
+      tournamentName={m.tournamentId === null ? undefined : tournamentNames.get(m.tournamentId)}
+      tag={{ ...tagOf(m), aside }}
+      footnote={noteOf(m)}
+    />
+  );
 
   const live = [
     ...new Map([...mine, ...tournamentLive, ...following].map((m) => [m.id, m])).values(),
@@ -299,7 +308,7 @@ function HomeFeed({ me }: { me: CricketMe }) {
           tone="live"
           badge={<LiveCount count={live.length} />}
         >
-          <HomeRail>{live.map((m) => card(m))}</HomeRail>
+          <HomeRail>{live.map((m) => liveCard(m))}</HomeRail>
         </HomeSection>
       )}
 
@@ -466,22 +475,63 @@ function RecordHero({
 }
 
 export function MyCricketMatches() {
-  const [show, setShow] = useState<Show>("mine");
   const { me, fallback } = useMyCricket(TITLES.matches);
+  if (!me) return fallback;
+  return <MyMatchesFeed me={me} />;
+}
+
+function MyMatchesFeed({ me }: { me: CricketMe }) {
+  const [show, setShow] = useState<Show>("mine");
   const { data: tournaments } = useCricketTournaments();
   const { followedIds, footnote } = useFollowedPlayerLines();
-  if (!me) return fallback;
   const playerId = me.player!.id;
   const following = followingMatches(me);
+
+  // Tournaments the player is in (from me.tournaments or teams roster)
+  const myTournaments = [
+    ...new Map(
+      [
+        ...me.tournaments,
+        ...(tournaments ?? []).filter((t) => t.teams.some((team) => team.playerIds.includes(playerId))),
+      ].map((t) => [t.id, t]),
+    ).values(),
+  ];
+  const tournamentMatchesQueries = useTournamentsMatches(myTournaments.map((t) => t.id));
+  const tournamentMatches = tournamentMatchesQueries.flatMap((q) => q.data ?? []);
+
+  const tournamentsById = new Map((tournaments ?? []).map((t) => [t.id, t]));
+
+  // Matches I am playing, played, or need to be played:
+  const isPlayingOrNeedsToPlay = (m: CricketMatch) => {
+    // 1. Direct lineup check
+    if (m.teams.some((team) => team.playerIds.includes(playerId))) return true;
+    // 2. Tournament match where player belongs to one of the competing teams
+    if (m.tournamentId !== null) {
+      const tour = tournamentsById.get(m.tournamentId);
+      if (tour) {
+        const myTeamIndices = tour.teams
+          .map((team, idx) => (team.playerIds.includes(playerId) ? idx : -1))
+          .filter((idx) => idx !== -1);
+        if (m.teams.some((team) => myTeamIndices.includes(team.teamIndex))) return true;
+      }
+    }
+    return false;
+  };
+
+  // Matches I am playing, played, or need to be played:
+  const playingMatches = [
+    ...new Map([...me.matches, ...tournamentMatches].filter(isPlayingOrNeedsToPlay).map((m) => [m.id, m])).values(),
+  ];
+
   const tournamentNames = new Map(
     [...(tournaments ?? []), ...me.tournaments, ...me.followedTournaments, ...organisingTournaments(me)].map((t) => [
       t.id,
       t.name,
     ]),
   );
-  const played = me.matches.filter((m) => m.status === "completed");
-  const won = played.filter((m) => m.winner !== null && m.teams[m.winner].playerIds.includes(playerId)).length;
-  const potm = me.matches.filter((m) => playerOfMatch(m) === playerId).length;
+  const played = playingMatches.filter((m) => m.status === "completed");
+  const won = played.filter((m) => m.winner !== null && m.teams[m.winner]?.playerIds.includes(playerId)).length;
+  const potm = playingMatches.filter((m) => playerOfMatch(m) === playerId).length;
   return (
     <ListCard
       {...TITLES.matches}
@@ -501,17 +551,16 @@ export function MyCricketMatches() {
           <RecordHero
             played={played.length}
             won={won}
-            lost={played.filter((m) => m.winner !== null && !m.teams[m.winner].playerIds.includes(playerId)).length}
+            lost={played.filter((m) => m.winner !== null && !m.teams[m.winner]?.playerIds.includes(playerId)).length}
             potm={potm}
             form={[...played]
               .sort((a, b) => playedAt(b) - playedAt(a))
               .slice(0, 5)
-              .map((m): FormResult => (m.winner === null ? "T" : m.teams[m.winner].playerIds.includes(playerId) ? "W" : "L"))}
+              .map((m): FormResult => (m.winner === null ? "T" : m.teams[m.winner]?.playerIds.includes(playerId) ? "W" : "L"))}
           />
           <MatchesBoard
             key="mine"
-            counts
-            matches={me.matches}
+            matches={playingMatches}
             tournamentNames={tournamentNames}
             footnote={(match) => {
               const line = myLine(match, playerId);
@@ -520,11 +569,11 @@ export function MyCricketMatches() {
           />
         </>
       ) : show === "organising" ? (
-        <MatchesBoard key="organising" counts matches={organisingMatches(me)} tournamentNames={tournamentNames} />
+        <MatchesBoard key="organising" matches={organisingMatches(me)} tournamentNames={tournamentNames} />
       ) : me.followedTournaments.length === 0 && followedIds.length === 0 ? (
         nothingFollowed("tournaments, teams or players")
       ) : (
-        <MatchesBoard key="following" counts matches={following} tournamentNames={tournamentNames} footnote={footnote} />
+        <MatchesBoard key="following" matches={following} tournamentNames={tournamentNames} footnote={footnote} />
       )}
     </ListCard>
   );

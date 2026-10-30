@@ -17,6 +17,7 @@
    pointer-events: none;
    z-index: 0;
    color: rgb(var(--brand-navy-rgb));
+   opacity: 0.38;
 }
 
 /* ---------- Ground line art ---------- */
@@ -26,14 +27,14 @@
    right: -14vmax;
    width: 72vmax;
    height: 72vmax;
-   opacity: 0.13;
+   opacity: 0.05;
    animation: cvBdSpin 160s linear infinite;
 }
 
 /* ---------- Drifting bat and ball ---------- */
 .cv-bd-float {
    position: absolute;
-   opacity: 0.15;
+   opacity: 0.06;
 }
 
 .cv-bd-bat {

@@ -67,6 +67,6 @@
   --logo-orange-light: color-mix(in srgb, var(--brand-orange) 18%, #fff);
   --logo-gold-light: color-mix(in srgb, var(--brand-amber) 18%, #fff);
   /* Main layout background: a calm warm off-white (Layout.css). */
-  --layout-bg-top: #fbfaf8;
-  --layout-bg-bottom: #f3f1ed;
+  --layout-bg-top: #eaebee;
+  --layout-bg-bottom: #dde0e6;
 }

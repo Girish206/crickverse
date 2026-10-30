@@ -4,6 +4,10 @@ import type { CricketMatch, CricketMatchStatus } from "../../../api/types";
 import { BALL_TYPES } from "../cricketOptions";
 import { formatMatchDate, battingOrder, matchStageLabel, teamInitials, teamScore } from "./matchUtils";
 import { TeamMark } from "../teams/TeamMark";
+import { LiveMatchCard, type LiveMatchCardProps } from "./LiveMatchCard";
+
+export { LiveMatchCard };
+export type { LiveMatchCardProps };
 
 const STATUS_LABELS: Record<CricketMatchStatus, string> = {
   scheduled: "Upcoming",
@@ -47,12 +51,8 @@ function MatchCardCentre({ match }: { match: CricketMatch }) {
 }
 
 // The fixture/result card used on every match list; opens the match centre.
-export function MatchCard({
-  match,
-  tournamentName,
-  footnote,
-  tag,
-}: {
+// For live matches, it automatically delegates to the theme-highlighted LiveMatchCard.
+export function MatchCard(props: {
   match: CricketMatch;
   tournamentName?: string;
   // An extra line at the bottom, e.g. the viewer's own figures.
@@ -60,6 +60,10 @@ export function MatchCard({
   tag?: MatchTag;
 }) {
   const navigate = useNavigate();
+  if (props.match.status === "live") {
+    return <LiveMatchCard {...props} />;
+  }
+  const { match, tournamentName, footnote, tag } = props;
   const open = () => {
     try {
       sessionStorage.removeItem(`view_match_${match.id}`);
