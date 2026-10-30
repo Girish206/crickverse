@@ -5060,9 +5060,22 @@
   background: rgba(255, 255, 255, 0.03);
 }
 
-/* Player sheet opened from a match: This Match / Career */
-.cricket-profile-views {
-  margin-bottom: 12px;
+/* Player sheet opened from a match: This Match / Career, pinned while the
+   stats scroll under it. */
+.admin-segmented.cricket-tabs.cricket-profile-views {
+  display: flex;
+  width: 100%;
+  position: sticky;
+  top: -10px;
+  z-index: 3;
+  margin: -10px 0 12px;
+  padding: 10px 0 8px;
+  border-radius: 0;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bs-body-bg, #fff);
+}
+:root[data-bs-theme="dark"] .admin-segmented.cricket-tabs.cricket-profile-views {
+  background: var(--adm-raised);
 }
 .cricket-match-stats-note {
   font-size: var(--fs-xs);
@@ -5075,18 +5088,16 @@
   gap: 6px;
   margin-top: 10px;
 }
+/* The hero is dark in both themes, so the badge is bright gold on it. */
 .cricket-match-stats-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
+  gap: 5px;
+  padding: 4px 11px;
   border-radius: 999px;
-  font-size: var(--fs-2xs);
-  font-weight: 700;
-  color: #7a5b00;
-  background: #ffcd0033;
-  border: 1px solid #ffcd0080;
-}
-:root[data-bs-theme="dark"] .cricket-match-stats-badge {
-  color: #ffd84d;
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  color: #1a1300;
+  background: linear-gradient(135deg, #ffd84d, #ffb800);
+  box-shadow: 0 2px 8px rgba(255, 184, 0, 0.35);
 }
