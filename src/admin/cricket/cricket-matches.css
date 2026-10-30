@@ -5059,3 +5059,34 @@
   border-color: rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.03);
 }
+
+/* Player sheet opened from a match: This Match / Career */
+.cricket-profile-views {
+  margin-bottom: 12px;
+}
+.cricket-match-stats-note {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--muted-color);
+}
+.cricket-match-stats-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.cricket-match-stats-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  color: #7a5b00;
+  background: #ffcd0033;
+  border: 1px solid #ffcd0080;
+}
+:root[data-bs-theme="dark"] .cricket-match-stats-badge {
+  color: #ffd84d;
+}
