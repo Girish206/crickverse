@@ -1,5 +1,7 @@
-import { NavLink } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
+import { useSwipeTabs } from "../../useSwipeTabs";
 import "../css/BottomNav.css";
 
 interface Tab {
@@ -29,8 +31,31 @@ const BottomNav = ({ onMore }: { onMore: () => void }) => {
               { to: "/me", label: "My Stats", icon: "fa-solid fa-chart-simple" },
           ];
 
+    const { pathname } = useLocation();
+    const navigate = useNavigate();
+    const [hidden, setHidden] = useState(false);
+
+    // Slides away while scrolling down the page, back on scrolling up.
+    useEffect(() => {
+        setHidden(false);
+        let lastY = window.scrollY;
+        const onScroll = () => {
+            const y = window.scrollY;
+            if (Math.abs(y - lastY) < 8) return;
+            setHidden(y > lastY && y > 60);
+            lastY = y;
+        };
+        window.addEventListener("scroll", onScroll, { passive: true });
+        return () => window.removeEventListener("scroll", onScroll);
+    }, [pathname]);
+
+    // A sideways swipe on the page moves to the neighbouring tab.
+    // It sits outside the page, so its scope is named.
+    const current = tabs.find((t) => (t.to === "/" ? pathname === "/" : pathname === t.to || pathname.startsWith(`${t.to}/`)));
+    const swipeRef = useSwipeTabs(tabs, current, (t) => navigate(t!.to), () => document.querySelector(".scrollable-main"));
+
     return (
-        <nav className="cv-bottom-nav" aria-label="Main" data-tour="nav">
+        <nav ref={swipeRef} className={`cv-bottom-nav ${hidden ? "is-hidden" : ""}`} aria-label="Main" data-tour="nav">
             {tabs.map((tab) => (
                 <NavLink key={tab.to} to={tab.to} end={tab.to === "/"} className={({ isActive }) => `cv-bottom-tab ${isActive ? "is-active" : ""}`}>
                     <i className={tab.icon} aria-hidden="true"></i>

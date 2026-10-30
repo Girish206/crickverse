@@ -16,6 +16,8 @@ import { PublicShell, PublicState } from "./PublicShell";
 import "../admin/dms/css/adminDisplays.css";
 import "../admin/admin.css";
 import "../admin/cricket/cricket.css";
+import { useSwipeTabs } from "../admin/useSwipeTabs";
+import { SwipePanels } from "../admin/SwipePanels";
 
 type Tab = "info" | "live" | "scorecard" | "insights" | "overs" | "squads" | "mvp";
 
@@ -87,6 +89,9 @@ function MatchView({ data: { match, tournament, players } }: { data: PublicMatch
   const fallback: Tab = upcoming ? "info" : "live";
   const requested = params.get("tab") as Tab | null;
   const tab: Tab = requested && tabs.some((t) => t.value === requested) ? requested : fallback;
+  const swipeRef = useSwipeTabs(tabs.map((t) => t.value), tab, (value) =>
+    setParams({ tab: value }, { replace: true, state: location.state })
+  );
 
   return (
     <div className="cricket-page">
@@ -127,7 +132,7 @@ function MatchView({ data: { match, tournament, players } }: { data: PublicMatch
       {/* While it's live the Live tab shows the score, so the card is left out. */}
       {!live && <MatchHero match={match} />}
 
-      <div className="cricket-match-tabs" role="tablist" aria-label="Match sections">
+      <div ref={swipeRef} className="cricket-match-tabs" role="tablist" aria-label="Match sections">
         {tabs.map((t) => (
           <button
             key={t.value}
@@ -143,12 +148,16 @@ function MatchView({ data: { match, tournament, players } }: { data: PublicMatch
         ))}
       </div>
 
-      <ListCard title="" bodyClassName={tab === "live" ? "cricket-live-body" : undefined}>
-        {tab === "info" && <MatchInfo match={match} tournament={tournament ?? undefined} />}
-        {tab === "live" && <LiveView match={match} nameOf={nameOf} />}
-        {tab === "scorecard" && <Scorecard match={match} nameOf={nameOf} />}
-        {LOCKED_TABS.has(tab) && <SignInToSee label={tabs.find((t) => t.value === tab)!.label} tab={tab} />}
-      </ListCard>
+      <SwipePanels swipe={swipeRef} values={tabs.map((t) => t.value)} current={tab} eager>
+        {(tab) => (
+          <ListCard title="" bodyClassName={tab === "live" ? "cricket-live-body" : undefined}>
+            {tab === "info" && <MatchInfo match={match} tournament={tournament ?? undefined} />}
+            {tab === "live" && <LiveView match={match} nameOf={nameOf} />}
+            {tab === "scorecard" && <Scorecard match={match} nameOf={nameOf} />}
+            {LOCKED_TABS.has(tab) && <SignInToSee label={tabs.find((t) => t.value === tab)!.label} tab={tab} />}
+          </ListCard>
+        )}
+      </SwipePanels>
 
       {sharing && (
         <ShareSheet

@@ -21,6 +21,8 @@ import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
 import { TeamMark } from "./TeamMark";
+import { useSwipeTabs } from "../../useSwipeTabs";
+import { SwipePanels } from "../../SwipePanels";
 
 type Tab = "info" | "players" | "matches" | "leaderboard" | "stats";
 
@@ -80,6 +82,9 @@ export function FriendlyTeamPage() {
 
   const requested = params.get("tab") as Tab | null;
   const tab: Tab = requested && TABS.some((t) => t.value === requested) ? requested : "info";
+  const swipeRef = useSwipeTabs(TABS.map((t) => t.value), tab, (value) =>
+    setParams({ tab: value }, { replace: true, state: location.state })
+  );
   const backTo = admin?.isSuperAdmin ? "/matches" : "/my-teams";
 
   if (isLoading) {
@@ -158,7 +163,7 @@ export function FriendlyTeamPage() {
           </div>
         </div>
 
-        <div className="cricket-match-tabs" role="tablist" aria-label="Team sections">
+        <div ref={swipeRef} className="cricket-match-tabs" role="tablist" aria-label="Team sections">
           {TABS.map((t) => (
             <button
               key={t.value}
@@ -174,52 +179,58 @@ export function FriendlyTeamPage() {
         </div>
       </div>
 
-      {tab === "info" && (
-        <ListCard title="">
-          <TeamRecordCard
-            captain={captain}
-            played={completed.length}
-            won={won}
-            lost={lost}
-            tied={tied}
-            tiedLabel="Tied / NR"
-            facts={[
-              ["Players", playerIds.length],
-              ["Matches", matches.length],
-            ]}
-          />
-        </ListCard>
-      )}
+      <SwipePanels swipe={swipeRef} values={TABS.map((t) => t.value)} current={tab} eager>
+        {(tab) => (
+          <>
+            {tab === "info" && (
+              <ListCard title="">
+                <TeamRecordCard
+                  captain={captain}
+                  played={completed.length}
+                  won={won}
+                  lost={lost}
+                  tied={tied}
+                  tiedLabel="Tied / NR"
+                  facts={[
+                    ["Players", playerIds.length],
+                    ["Matches", matches.length],
+                  ]}
+                />
+              </ListCard>
+            )}
 
-      {tab === "players" && (
-        <ListCard>
-          <ul className="cricket-roster">
-            {playerIds.map((playerId) => (
-              <li key={playerId}>
-                <RosterPlayer player={playerById.get(playerId)} tags={roleTagsFor(latest, playerId)} />
-              </li>
-            ))}
-          </ul>
-        </ListCard>
-      )}
+            {tab === "players" && (
+              <ListCard>
+                <ul className="cricket-roster">
+                  {playerIds.map((playerId) => (
+                    <li key={playerId}>
+                      <RosterPlayer player={playerById.get(playerId)} tags={roleTagsFor(latest, playerId)} />
+                    </li>
+                  ))}
+                </ul>
+              </ListCard>
+            )}
 
-      {tab === "matches" && (
-        <ListCard>
-          <MatchesBoard matches={matches} />
-        </ListCard>
-      )}
+            {tab === "matches" && (
+              <ListCard>
+                <MatchesBoard matches={matches} />
+              </ListCard>
+            )}
 
-      {tab === "leaderboard" && (
-        <ListCard>
-          <LeaderboardGrid matches={asTeam} playerIds={playerIds} scope="team" />
-        </ListCard>
-      )}
+            {tab === "leaderboard" && (
+              <ListCard>
+                <LeaderboardGrid matches={asTeam} playerIds={playerIds} scope="team" />
+              </ListCard>
+            )}
 
-      {tab === "stats" && (
-        <ListCard>
-          <TeamStatsView stats={teamStats(asTeam, 0)} />
-        </ListCard>
-      )}
+            {tab === "stats" && (
+              <ListCard>
+                <TeamStatsView stats={teamStats(asTeam, 0)} />
+              </ListCard>
+            )}
+          </>
+        )}
+      </SwipePanels>
 
       {/* Pinned to the bottom while the Players tab is open. */}
       {showAddBar && (

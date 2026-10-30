@@ -42,6 +42,7 @@ import { messageFor } from "../../../api/mutationErrors";
 import { QrScannerSheet, type ScanReply } from "../qr/QrScannerSheet";
 import type { QrTarget } from "../qr/qrLinks";
 import { TeamMark } from "../teams/TeamMark";
+import { useSwipeTabs } from "../../useSwipeTabs";
 
 // <input type="datetime-local"> wants local "YYYY-MM-DDTHH:mm".
 export function toLocalInput(value: string | null) {
@@ -177,6 +178,8 @@ export function CricketMatchForm({
   // A rain-cut chase's new target (blank = first innings + 1).
   const [revisedTarget, setRevisedTarget] = useState(existing?.revisedTarget ? String(existing.revisedTarget) : "");
   const live = existing?.status === "live";
+  // Finished (edited for a day after): where and when, not how it was played.
+  const finished = existing?.status === "completed" || existing?.status === "abandoned";
   const chasing = live && (existing?.innings.length ?? 0) >= 2;
   // Form errors show inline and as a toast, so they're seen even when the
   // inline message is scrolled out of view.
@@ -193,6 +196,7 @@ export function CricketMatchForm({
   const [newTeam, setNewTeam] = useState("");
   // A one-off match's team sheet: pick a known team, or name a new one.
   const [teamTab, setTeamTab] = useState<"existing" | "new">("existing");
+  const teamTabSwipeRef = useSwipeTabs(["existing", "new"] as const, teamTab, setTeamTab);
   const [teamSearch, setTeamSearch] = useState("");
   // The side whose team is being scanned from its invite QR code — any
   // team, even one you don't follow (its captain shows you the code).
@@ -570,38 +574,40 @@ export function CricketMatchForm({
 
         <h2 className="cricket-app-group-title">Match details</h2>
         <div className="cricket-app-group">
-          <div className="cricket-app-row">
-            <span className="cricket-app-row-label">
-              <i className="fa-solid fa-stopwatch" aria-hidden="true"></i> Overs
-            </span>
-            <span className="cricket-app-stepper">
-              <button
-                type="button"
-                aria-label="Fewer overs"
-                disabled={oversNumber <= 1}
-                onClick={() => setOvers(String(Math.max(1, oversNumber - 1)))}
-              >
-                <i className="fa-solid fa-minus" aria-hidden="true"></i>
-              </button>
-              <input
-                type="number"
-                inputMode="numeric"
-                min={1}
-                max={MAX_OVERS}
-                aria-label="Overs per innings"
-                value={overs}
-                onChange={(e) => setOvers(e.target.value)}
-              />
-              <button
-                type="button"
-                aria-label="More overs"
-                disabled={oversNumber >= MAX_OVERS}
-                onClick={() => setOvers(String(Math.min(MAX_OVERS, oversNumber + 1)))}
-              >
-                <i className="fa-solid fa-plus" aria-hidden="true"></i>
-              </button>
-            </span>
-          </div>
+          {!finished && (
+            <div className="cricket-app-row">
+              <span className="cricket-app-row-label">
+                <i className="fa-solid fa-stopwatch" aria-hidden="true"></i> Overs
+              </span>
+              <span className="cricket-app-stepper">
+                <button
+                  type="button"
+                  aria-label="Fewer overs"
+                  disabled={oversNumber <= 1}
+                  onClick={() => setOvers(String(Math.max(1, oversNumber - 1)))}
+                >
+                  <i className="fa-solid fa-minus" aria-hidden="true"></i>
+                </button>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={MAX_OVERS}
+                  aria-label="Overs per innings"
+                  value={overs}
+                  onChange={(e) => setOvers(e.target.value)}
+                />
+                <button
+                  type="button"
+                  aria-label="More overs"
+                  disabled={oversNumber >= MAX_OVERS}
+                  onClick={() => setOvers(String(Math.min(MAX_OVERS, oversNumber + 1)))}
+                >
+                  <i className="fa-solid fa-plus" aria-hidden="true"></i>
+                </button>
+              </span>
+            </div>
+          )}
           <button type="button" className="cricket-app-row" onClick={() => setChoosingStage(true)}>
             <span className="cricket-app-row-label">
               <i className="fa-solid fa-trophy" aria-hidden="true"></i> Stage
@@ -668,54 +674,56 @@ export function CricketMatchForm({
 
         <h2 className="cricket-app-group-title">Playing conditions</h2>
         <div className="cricket-app-group">
-          <div className="cricket-app-row">
-            <span className="cricket-app-row-label">
-              <i className="fa-solid fa-baseball" aria-hidden="true"></i> Balls per over
-            </span>
-            <span className="cricket-app-stepper">
-              <button
-                type="button"
-                aria-label="Fewer balls an over"
-                disabled={live || ballsPerOver <= 4}
-                onClick={() => setBallsPerOver(ballsPerOver - 1)}
-              >
-                <i className="fa-solid fa-minus" aria-hidden="true"></i>
-              </button>
-              <input type="number" aria-label="Balls per over" value={ballsPerOver} readOnly />
-              <button
-                type="button"
-                aria-label="More balls an over"
-                disabled={live || ballsPerOver >= 10}
-                onClick={() => setBallsPerOver(ballsPerOver + 1)}
-              >
-                <i className="fa-solid fa-plus" aria-hidden="true"></i>
-              </button>
-            </span>
-          </div>
-          <label className="cricket-app-row">
-            <span className="cricket-app-row-label">
-              <i className="fa-solid fa-user-clock" aria-hidden="true"></i> Max overs per bowler
-            </span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min={1}
-              max={Math.min(oversNumber || MAX_BOWLER_OVERS, MAX_BOWLER_OVERS)}
-              placeholder="No limit"
-              value={bowlerLimit}
-              onChange={(e) => setBowlerLimit(e.target.value)}
-            />
-          </label>
-          {/* The usual split: a fifth of the overs each, so five bowlers bowl. */}
-          {!bowlerLimit && oversNumber >= 2 && (
-            <div className="cricket-app-row is-hint">
-              <small className="admin-hint">
-                Usually a fifth of the overs —{" "}
-                <button type="button" className="admin-link-btn" onClick={() => setBowlerLimit(String(suggestedLimit))}>
-                  use {suggestedLimit}
-                </button>
-              </small>
-            </div>
+          {!finished && (
+            <>
+              <div className="cricket-app-row">
+                <span className="cricket-app-row-label">
+                  <i className="fa-solid fa-baseball" aria-hidden="true"></i> Balls per over
+                </span>
+                <span className="cricket-app-stepper">
+                  <button
+                    type="button"
+                    aria-label="Fewer balls an over"
+                    disabled={live || ballsPerOver <= 4}
+                    onClick={() => setBallsPerOver(ballsPerOver - 1)}
+                  >
+                    <i className="fa-solid fa-minus" aria-hidden="true"></i>
+                  </button>
+                  <input type="number" aria-label="Balls per over" value={ballsPerOver} readOnly />
+                  <button
+                    type="button"
+                    aria-label="More balls an over"
+                    disabled={live || ballsPerOver >= 10}
+                    onClick={() => setBallsPerOver(ballsPerOver + 1)}
+                  >
+                    <i className="fa-solid fa-plus" aria-hidden="true"></i>
+                  </button>
+                </span>
+              </div>
+              <label className="cricket-app-row">
+                <span className="cricket-app-row-label">
+                  <i className="fa-solid fa-user-clock" aria-hidden="true"></i> Max overs per bowler
+                </span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={Math.min(oversNumber || MAX_BOWLER_OVERS, MAX_BOWLER_OVERS)}
+                  placeholder="No limit"
+                  value={bowlerLimit}
+                  onChange={(e) => setBowlerLimit(e.target.value)}
+                />
+              </label>
+              {/* The usual split: a fifth of the overs each, so five bowlers bowl. */}
+              {!bowlerLimit && oversNumber >= 2 && (
+                <div className="cricket-app-row is-hint">
+                  <small className="admin-hint">
+                    Usually a fifth of the overs —{" "}
+                    <button type="button" className="admin-link-btn" onClick={() => setBowlerLimit(String(suggestedLimit))}>
+                      use {suggestedLimit}
+                    </button>
+                  </small>
+                </div>
           )}
           <SwitchRow
             icon="fa-solid fa-person"
@@ -731,6 +739,8 @@ export function CricketMatchForm({
             on={freeHit}
             onChange={setFreeHit}
           />
+          </>
+          )}
           <SwitchRow
             icon="fa-solid fa-globe"
             label="Anyone with the link can watch"
@@ -740,6 +750,9 @@ export function CricketMatchForm({
           />
         </div>
         {live && <small className="admin-hint d-block">The length of an over can&apos;t change once the match has started.</small>}
+        {finished && (
+          <small className="admin-hint d-block">It&apos;s over, so the overs and playing conditions stay as it was scored.</small>
+        )}
 
         {chasing && (
           <>
@@ -842,7 +855,7 @@ export function CricketMatchForm({
             <div className="cricket-team-sheet">
               {standalone && (
                 <div className="cricket-team-sheet-head">
-                  <div className="admin-segmented cricket-tabs" role="tablist" aria-label="Team">
+                  <div ref={teamTabSwipeRef} className="admin-segmented cricket-tabs" role="tablist" aria-label="Team">
                     <button
                       type="button"
                       role="tab"

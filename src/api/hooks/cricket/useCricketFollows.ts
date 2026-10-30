@@ -1,6 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../../client";
-import type { ApiEnvelope, CricketFollowCounts, CricketFollowTarget, CricketMyFollows } from "../../types";
+import type {
+  ApiEnvelope,
+  CricketFollowCounts,
+  CricketFollowLists,
+  CricketFollowTarget,
+  CricketMyFollows,
+} from "../../types";
 
 const targetParams = (target: CricketFollowTarget) => ({
   kind: target.kind,
@@ -35,6 +41,20 @@ export function useFollowCounts(target: CricketFollowTarget, enabled = true) {
   });
 }
 
+// Who follows the target and what a player follows (loaded when asked for).
+export function useFollowLists(target: CricketFollowTarget, enabled = true) {
+  return useQuery({
+    enabled,
+    queryKey: ["cricket-follow-lists", target.kind, target.targetId, target.teamIndex],
+    queryFn: async () => {
+      const { data } = await apiClient.get<ApiEnvelope<CricketFollowLists>>("/admin/cricket/follows/lists", {
+        params: targetParams(target),
+      });
+      return data.data;
+    },
+  });
+}
+
 // Follows (follow: true) or unfollows the target.
 export function useSetFollow() {
   const queryClient = useQueryClient();
@@ -50,6 +70,7 @@ export function useSetFollow() {
     onSuccess: (follows) => {
       queryClient.setQueryData(["cricket-follows"], follows);
       queryClient.invalidateQueries({ queryKey: ["cricket-follow-counts"] });
+      queryClient.invalidateQueries({ queryKey: ["cricket-follow-lists"] });
       queryClient.invalidateQueries({ queryKey: ["cricket-me"] });
     },
   });

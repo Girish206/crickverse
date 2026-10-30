@@ -5,6 +5,8 @@ import { championOf, makeResolver } from "../format/formatEngine";
 import { bannerFor } from "./tournamentArt";
 import { TournamentLogo } from "./TournamentLogo";
 import { TeamMark } from "../teams/TeamMark";
+import { useSwipeTabs } from "../../useSwipeTabs";
+import { SwipePanels } from "../../SwipePanels";
 
 export type TournamentPhase = "setup" | "upcoming" | "ongoing" | "completed";
 
@@ -216,6 +218,13 @@ function TournamentSeriesGroup({
 
   const [activeId, setActiveId] = useState<number>(sorted[0].tournament.id);
   const activeTournament = sorted.find((item) => item.tournament.id === activeId)?.tournament ?? sorted[0].tournament;
+  // Swipes on this group's card move between its seasons.
+  const seasonSwipeRef = useSwipeTabs(
+    sorted.map((item) => item.tournament.id),
+    activeTournament.id,
+    setActiveId,
+    ".cricket-tour-series-group"
+  );
 
   return (
     <div className="cricket-tour-series-group">
@@ -223,7 +232,7 @@ function TournamentSeriesGroup({
         <span className="cricket-tour-series-title">
           <i className="fa-solid fa-layer-group me-1" aria-hidden="true"></i> {group.seriesName}
         </span>
-        <div className="cricket-tour-series-pills" role="tablist">
+        <div ref={seasonSwipeRef} className="cricket-tour-series-pills" role="tablist">
           {sorted.map((item) => (
             <button
               key={item.tournament.id}
@@ -258,25 +267,38 @@ export function TournamentsBoard({
   matches?: CricketMatch[];
 }) {
   const [filter, setFilter] = useState<Filter>("all");
-  const visible = tournaments.filter((t) => filter === "all" || tournamentPhase(t, matches) === filter);
-
-  const grouped = useMemo(() => {
-    const map = new Map<string, { seriesName: string; items: { tournament: CricketTournament; seasonLabel: string | null }[] }>();
+  const swipeRef = useSwipeTabs(FILTERS.map((f) => f.value), filter, setFilter);
+  // One list per tab, so a swipe brings the next one in beside it.
+  const listFor = (filter: Filter) => {
+    const visible = tournaments.filter((t) => filter === "all" || tournamentPhase(t, matches) === filter);
+    const grouped = new Map<string, { seriesName: string; items: { tournament: CricketTournament; seasonLabel: string | null }[] }>();
     for (const t of visible) {
       const { seriesName, seasonLabel } = parseTournamentSeries(t.name);
       const key = seriesName.toLowerCase();
-      if (!map.has(key)) {
-        map.set(key, { seriesName, items: [] });
+      if (!grouped.has(key)) {
+        grouped.set(key, { seriesName, items: [] });
       }
-      map.get(key)!.items.push({ tournament: t, seasonLabel });
+      grouped.get(key)!.items.push({ tournament: t, seasonLabel });
     }
-    return Array.from(map.values());
-  }, [visible]);
+    return visible.length === 0 ? (
+      <div className="admin-empty-state">{tournaments.length === 0 ? empty : "No tournaments here."}</div>
+    ) : (
+      <div className="cricket-match-grid">
+        {[...grouped.values()].map((group) =>
+          group.items.length === 1 ? (
+            renderCard(group.items[0].tournament)
+          ) : (
+            <TournamentSeriesGroup key={group.seriesName} group={group} renderCard={renderCard} />
+          ),
+        )}
+      </div>
+    );
+  };
 
   return (
     <>
       <div className="cricket-squad-toolbar">
-        <div className="admin-segmented cricket-tabs cricket-text-tabs is-justified" role="tablist" aria-label="Tournament status">
+        <div ref={swipeRef} className="admin-segmented cricket-tabs cricket-text-tabs is-justified" role="tablist" aria-label="Tournament status">
           {FILTERS.map((f) => (
             <button
               key={f.value}
@@ -291,19 +313,9 @@ export function TournamentsBoard({
           ))}
         </div>
       </div>
-      {visible.length === 0 ? (
-        <div className="admin-empty-state">{tournaments.length === 0 ? empty : "No tournaments here."}</div>
-      ) : (
-        <div className="cricket-match-grid">
-          {grouped.map((group) =>
-            group.items.length === 1 ? (
-              renderCard(group.items[0].tournament)
-            ) : (
-              <TournamentSeriesGroup key={group.seriesName} group={group} renderCard={renderCard} />
-            ),
-          )}
-        </div>
-      )}
+      <SwipePanels swipe={swipeRef} values={FILTERS.map((f) => f.value)} current={filter}>
+        {listFor}
+      </SwipePanels>
     </>
   );
 }

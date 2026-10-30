@@ -16,6 +16,8 @@ import { TeamBadge } from "./teams/TeamLogoField";
 import { TournamentLogo } from "./tournaments/TournamentLogo";
 import "../admin.css";
 import "./cricket.css";
+import { useSwipeTabs } from "../useSwipeTabs";
+import { SwipePanels } from "../SwipePanels";
 
 type Kind = "all" | "tournament" | "team" | "player";
 
@@ -155,6 +157,7 @@ function SearchResults({ onDone }: { onDone: () => void }) {
   const { data: tournaments, isLoading: loadingTournaments } = useCricketTournaments();
   const [search, setSearch] = useState("");
   const [kind, setKind] = useState<Kind>("all");
+  const swipeRef = useSwipeTabs(KINDS.map((k) => k.value), kind, setKind);
 
   const myId = me?.player?.id ?? null;
   const follows = mine?.follows ?? [];
@@ -220,13 +223,6 @@ function SearchResults({ onDone }: { onDone: () => void }) {
     }
   }
 
-  const preview = kind === "all";
-  const cap = preview ? PREVIEW : LIMIT;
-  const shows = (k: Kind) => kind === "all" || kind === k;
-  const total =
-    (shows("tournament") ? tournamentItems.length : 0) +
-    (shows("team") ? teamItems.length : 0) +
-    (shows("player") ? playerItems.length : 0);
   const loading = loadingPlayers || loadingTournaments;
 
   return (
@@ -244,7 +240,7 @@ function SearchResults({ onDone }: { onDone: () => void }) {
           enterKeyHint="search"
         />
       </div>
-      <div className="admin-segmented cricket-tabs cricket-search-kinds" role="tablist" aria-label="Show">
+      <div ref={swipeRef} className="admin-segmented cricket-tabs cricket-search-kinds" role="tablist" aria-label="Show">
         {KINDS.map((k) => (
           <button
             key={k.value}
@@ -259,91 +255,102 @@ function SearchResults({ onDone }: { onDone: () => void }) {
         ))}
       </div>
 
-      {!term ? (
-        <div className="admin-empty-state">
-          <span className="cricket-search-empty-icon">
-            <i className="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-          </span>
-          Find any tournament, team or player by name.
-        </div>
-      ) : loading ? (
-        <Loader />
-      ) : !total ? (
-        <div className="admin-empty-state">Nothing matches “{search.trim()}”.</div>
-      ) : (
-        <>
-          {shows("tournament") && (
-            <Section
-              title="Tournaments"
-              icon="fa-trophy"
-              count={tournamentItems.length}
-              preview={preview}
-              onMore={() => setKind("tournament")}
-            >
-              {tournamentItems.slice(0, cap).map((t) => (
-                <ResultRow
-                  key={t.id}
-                  logo={<TournamentLogo tournament={t} className="cricket-picker-avatar" />}
-                  title={t.name}
-                  detail={[t.city, plural(t.teams.length, "team")].filter(Boolean).join(" · ")}
-                  onOpen={canOpen(t) ? () => go(`/tournaments/${t.id}`) : null}
-                  follow={<FollowButton target={{ kind: "tournament", targetId: t.id, teamIndex: null }} />}
-                />
-              ))}
-            </Section>
-          )}
-          {shows("team") && (
-            <Section
-              title="Teams"
-              icon="fa-people-group"
-              count={teamItems.length}
-              preview={preview}
-              onMore={() => setKind("team")}
-            >
-              {teamItems.slice(0, cap).map((team) => (
-                <ResultRow
-                  key={team.key}
-                  logo={<TeamBadge name={team.name} logoUrl={team.logoUrl} />}
-                  title={team.name}
-                  detail={team.detail}
-                  onOpen={team.to ? () => go(team.to!) : null}
-                  follow={team.follow}
-                />
-              ))}
-            </Section>
-          )}
-          {shows("player") && (
-            <Section
-              title="Players"
-              icon="fa-user-group"
-              count={playerItems.length}
-              preview={preview}
-              onMore={() => setKind("player")}
-            >
-              {playerItems.slice(0, cap).map((player) => (
-                <ResultRow
-                  key={player.id}
-                  logo={
-                    <PlayerAvatar
-                      name={player.name}
-                      photoUrl={player.photoUrl}
-                      className="cricket-picker-avatar"
-                      viewable={false}
+      <SwipePanels swipe={swipeRef} values={KINDS.map((k) => k.value)} current={kind}>
+        {(kind) => {
+          const preview = kind === "all";
+          const cap = preview ? PREVIEW : LIMIT;
+          const shows = (k: Kind) => kind === "all" || kind === k;
+          const total =
+            (shows("tournament") ? tournamentItems.length : 0) +
+            (shows("team") ? teamItems.length : 0) +
+            (shows("player") ? playerItems.length : 0);
+          return !term ? (
+            <div className="admin-empty-state">
+              <span className="cricket-search-empty-icon">
+                <i className="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+              </span>
+              Find any tournament, team or player by name.
+            </div>
+          ) : loading ? (
+            <Loader />
+          ) : !total ? (
+            <div className="admin-empty-state">Nothing matches “{search.trim()}”.</div>
+          ) : (
+            <>
+              {shows("tournament") && (
+                <Section
+                  title="Tournaments"
+                  icon="fa-trophy"
+                  count={tournamentItems.length}
+                  preview={preview}
+                  onMore={() => setKind("tournament")}
+                >
+                  {tournamentItems.slice(0, cap).map((t) => (
+                    <ResultRow
+                      key={t.id}
+                      logo={<TournamentLogo tournament={t} className="cricket-picker-avatar" />}
+                      title={t.name}
+                      detail={[t.city, plural(t.teams.length, "team")].filter(Boolean).join(" · ")}
+                      onOpen={canOpen(t) ? () => go(`/tournaments/${t.id}`) : null}
+                      follow={<FollowButton target={{ kind: "tournament", targetId: t.id, teamIndex: null }} />}
                     />
-                  }
-                  title={player.id === myId ? `${player.name} (you)` : player.name}
-                  detail={[roleOf(player.role)?.label, teamOfPlayer.get(player.id)].filter(Boolean).join(" · ") || "Player"}
-                  // The profile opens over the search, so closing it comes back here.
-                  onOpen={() => openProfile?.(player.id)}
-                />
-              ))}
-            </Section>
-          )}
-          {!preview && total > LIMIT && (
-            <p className="cricket-search-note">Showing the first {LIMIT} — type more of the name to narrow it down.</p>
-          )}
-        </>
-      )}
+                  ))}
+                </Section>
+              )}
+              {shows("team") && (
+                <Section
+                  title="Teams"
+                  icon="fa-people-group"
+                  count={teamItems.length}
+                  preview={preview}
+                  onMore={() => setKind("team")}
+                >
+                  {teamItems.slice(0, cap).map((team) => (
+                    <ResultRow
+                      key={team.key}
+                      logo={<TeamBadge name={team.name} logoUrl={team.logoUrl} />}
+                      title={team.name}
+                      detail={team.detail}
+                      onOpen={team.to ? () => go(team.to!) : null}
+                      follow={team.follow}
+                    />
+                  ))}
+                </Section>
+              )}
+              {shows("player") && (
+                <Section
+                  title="Players"
+                  icon="fa-user-group"
+                  count={playerItems.length}
+                  preview={preview}
+                  onMore={() => setKind("player")}
+                >
+                  {playerItems.slice(0, cap).map((player) => (
+                    <ResultRow
+                      key={player.id}
+                      logo={
+                        <PlayerAvatar
+                          name={player.name}
+                          photoUrl={player.photoUrl}
+                          className="cricket-picker-avatar"
+                          viewable={false}
+                        />
+                      }
+                      title={player.id === myId ? `${player.name} (you)` : player.name}
+                      detail={[roleOf(player.role)?.label, teamOfPlayer.get(player.id)].filter(Boolean).join(" · ") || "Player"}
+                      // The profile opens over the search, so closing it comes back here.
+                      onOpen={() => openProfile?.(player.id)}
+                    />
+                  ))}
+                </Section>
+              )}
+              {!preview && total > LIMIT && (
+                <p className="cricket-search-note">Showing the first {LIMIT} — type more of the name to narrow it down.</p>
+              )}
+            </>
+          );
+        }}
+      </SwipePanels>
     </div>
   );
 }

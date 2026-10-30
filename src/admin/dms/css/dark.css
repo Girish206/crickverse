@@ -537,9 +537,21 @@
   color: var(--adm-text-2);
 }
 
+/* Share and Logout: a matched pair of outlined buttons — Share neutral
+   white, Logout the brand's light red — so neither fades into the panel. */
+:root[data-bs-theme="dark"] .sidebar .sidebar-footer .share-app-btn {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--adm-text) !important;
+}
+:root[data-bs-theme="dark"] .sidebar .sidebar-footer .share-app-btn:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.12);
+}
 :root[data-bs-theme="dark"] .sidebar .sidebar-footer .logout-btn {
-  color: var(--primary) !important;
-  border-color: rgba(var(--primary-rgb), 0.3);
+  color: #f87171 !important;
+  border-color: rgba(248, 113, 113, 0.35);
+  background: rgba(248, 113, 113, 0.08);
 }
 :root[data-bs-theme="dark"] .sidebar .sidebar-footer .logout-btn:hover {
   background: var(--primary-gradient) !important;

@@ -407,7 +407,10 @@ function inningsCommentary(match: CricketMatch, innings: CricketInnings, nameOf:
                   <span className="cricket-commentary-live">In play</span>
                 )}
                 <span className="cricket-commentary-head-score">
-                  {team} <b>{scoreAfter[all.indexOf(over)]}</b>
+                  <span className="cricket-commentary-head-team" title={team}>
+                    {team}
+                  </span>
+                  <b>{scoreAfter[all.indexOf(over)]}</b>
                 </span>
               </div>
               <div className="cricket-commentary-chips">
@@ -423,14 +426,14 @@ function inningsCommentary(match: CricketMatch, innings: CricketInnings, nameOf:
                 <dl className="cricket-commentary-stats">
                   {afterOver[all.indexOf(over)].batters.map((row) => (
                     <div key={row.playerId}>
-                      <dt>{nameOf(row.playerId)}</dt>
+                      <dt title={nameOf(row.playerId)}>{nameOf(row.playerId)}</dt>
                       <dd>
                         {row.runs} <small>({row.balls})</small>
                       </dd>
                     </div>
                   ))}
                   <div className="is-bowler">
-                    <dt>
+                    <dt title={nameOf(over.bowlerId)}>
                       <i className="fa-solid fa-baseball" aria-hidden="true"></i> {nameOf(over.bowlerId)}
                     </dt>
                     <dd title="Overs-maidens-runs-wickets">{afterOver[all.indexOf(over)].spell}</dd>

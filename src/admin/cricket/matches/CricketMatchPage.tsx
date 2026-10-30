@@ -14,6 +14,7 @@ import { useCricketTournament } from "../../../api/hooks/cricket/useCricketTourn
 import { ListCard } from "../../components/ListCard";
 import { PageHeader, PageHeaderAction } from "../../components/PageHeader";
 import { ShareSheet } from "../ShareMenu";
+import { useSwipeTabs } from "../../useSwipeTabs";
 import { useTips, type TipStep } from "../TipsTour";
 import { logoFor } from "../tournaments/tournamentArt";
 import { Button } from "../../components/Button";
@@ -38,14 +39,15 @@ import { MatchMvp } from "./MatchMvp";
 import { MatchSquads } from "./MatchSquads";
 import { RescheduleSheet } from "./RescheduleSheet";
 import { existingInput } from "./CricketMatchForm";
-import { formatMatchDate, usePlayerNames } from "./matchUtils";
+import { editableAfterFinish, formatMatchDate, usePlayerNames } from "./matchUtils";
 import { ResultSheet, type ResultSheetStart } from "./result/ResultSheet";
-import { KnockoutPrompt, ResultBanner } from "./result/ResultNote";
+import { KnockoutPrompt } from "./result/ResultNote";
 import { hasBalls, needsKnockoutWinner } from "./result/resultText";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
 import { Loader } from "../../components/Loader";
+import { SwipePanels } from "../../SwipePanels";
 
 type Tab = "info" | "live" | "scorecard" | "insights" | "overs" | "squads" | "mvp";
 
@@ -126,30 +128,12 @@ export function CricketMatchPage() {
     }
   }, [onScoreScreen, isViewingMatch, match?.status, canManage, seat.mine, match?.id, navigate]);
 
-  // /matches is super admin only; players have their own list.
-  const matchesList = admin?.isSuperAdmin ? "/matches" : "/my-matches";
-
-  if (isLoading || !match) {
-    return (
-      <>
-        <PageHeader title="Match" back={matchesList} />
-        {isLoading ? (
-          <Loader page />
-        ) : (
-          <ListCard title="Match">
-            <p>Match not found.</p>
-          </ListCard>
-        )}
-      </>
-    );
-  }
-
   // Same tabs as CricHeroes. "Live" is the scorer for the organiser and a
   // read-only view for players; once it's over it becomes "Summary". An
   // upcoming match only has Info and Squads — editing and setup start from
   // the bottom action bar.
-  const upcoming = match.status === "scheduled";
-  const over = match.status === "completed" || match.status === "abandoned";
+  const upcoming = match?.status === "scheduled";
+  const over = match?.status === "completed" || match?.status === "abandoned";
   const tabs: { value: Tab; label: string }[] = upcoming
     ? [
       { value: "info", label: "Info" },
@@ -168,6 +152,28 @@ export function CricketMatchPage() {
   const fallback: Tab = upcoming ? "info" : "live";
   const requested = params.get("tab") as Tab | null;
   const tab: Tab = requested && tabs.some((t) => t.value === requested) ? requested : fallback;
+  const swipeRef = useSwipeTabs(tabs.map((t) => t.value), tab, (value) =>
+    setParams({ tab: value }, { replace: true, state: location.state })
+  );
+
+  // /matches is super admin only; players have their own list.
+  const matchesList = admin?.isSuperAdmin ? "/matches" : "/my-matches";
+
+  if (isLoading || !match) {
+    return (
+      <>
+        <PageHeader title="Match" back={matchesList} />
+        {isLoading ? (
+          <Loader page />
+        ) : (
+          <ListCard title="Match">
+            <p>Match not found.</p>
+          </ListCard>
+        )}
+      </>
+    );
+  }
+
 
   async function handleDelete() {
     if (await confirmDelete("match", `${match!.teams[0].name} vs ${match!.teams[1].name}`)) {
@@ -307,7 +313,7 @@ export function CricketMatchPage() {
             </button>
           </>
         )}
-        {(upcoming || match.status === "live") && (
+        {(upcoming || match.status === "live" || editableAfterFinish(match)) && (
           <button
             type="button"
             className="cricket-settings-item"
@@ -316,7 +322,7 @@ export function CricketMatchPage() {
             <i className="fa-solid fa-pen" aria-hidden="true"></i>
             <span>
               Edit match details
-              <small>Overs, ground, date and match type</small>
+              <small>{over ? "Ground, date and match type — for a day after it ends" : "Overs, ground, date and match type"}</small>
             </span>
             <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
           </button>
@@ -429,6 +435,7 @@ export function CricketMatchPage() {
         "Stop scoring?",
         "Any of the match's scorers can then pick it up from the match page.",
         "Stop scoring",
+        "fa-solid fa-circle-pause",
       )
     ) {
       // A failure shows its own toast; stay put.
@@ -568,7 +575,7 @@ export function CricketMatchPage() {
           {/* While it's live the Live tab shows the score, so the card is left out. */}
           {match.status !== "live" && <MatchHero match={match} />}
 
-          <div className="cricket-match-tabs" role="tablist" aria-label="Match sections" data-tour="tabs">
+          <div ref={swipeRef} className="cricket-match-tabs" role="tablist" aria-label="Match sections" data-tour="tabs">
             {tabs.map((t) => (
               <button
                 key={t.value}
@@ -583,58 +590,69 @@ export function CricketMatchPage() {
             ))}
           </div>
 
-          <ListCard title="" plain={tab === "overs"} bodyClassName={tab === "live" ? "cricket-live-body" : undefined}>
-            {tab === "info" && <MatchInfo match={match} tournament={tournament} />}
-            {tab === "live" &&
-              (match.status === "live" ? (
-                <>
-                  {canManage && seat.holder && !seat.mine && (
-                    <div className="admin-banner cricket-seat-banner mb-3">
-                      <span>
-                        <i className="fa-solid fa-user-lock" aria-hidden="true"></i> <strong>{seat.holder}</strong> is scoring
-                        this match. Only one person scores at a time — they can hand it over to you.
-                      </span>
-                      {access === "organise" && (
-                        <Button variant="outline" onClick={handleTakeOver} disabled={seat.busy}>
-                          <i className="fa-solid fa-hand" aria-hidden="true"></i> Take over scoring
-                        </Button>
+          <SwipePanels swipe={swipeRef} values={tabs.map((t) => t.value)} current={tab} eager>
+            {(tab) => (
+              <ListCard
+                title=""
+                bodyClassName={tab === "live" ? "cricket-live-body" : tab === "overs" ? "cricket-overs-body" : undefined}
+              >
+                {tab === "info" && <MatchInfo match={match} tournament={tournament} />}
+                {tab === "live" &&
+                  (match.status === "live" ? (
+                    <>
+                      {canManage && seat.holder && !seat.mine && (
+                        <div className="admin-banner cricket-seat-banner mb-3">
+                          <span>
+                            <i className="fa-solid fa-user-lock" aria-hidden="true"></i> <strong>{seat.holder}</strong> is scoring
+                            this match. Only one person scores at a time — they can hand it over to you.
+                          </span>
+                          {access === "organise" && (
+                            <Button variant="outline" onClick={handleTakeOver} disabled={seat.busy}>
+                              <i className="fa-solid fa-hand" aria-hidden="true"></i> Take over scoring
+                            </Button>
+                          )}
+                        </div>
                       )}
+                      <LiveView match={match} nameOf={nameOf} />
+                    </>
+                  ) : (
+                    <div className="cricket-summary">
+                      {organiser && needsKnockoutWinner(match) && (
+                        <KnockoutPrompt
+                          match={match}
+                          onEnter={() => openResult({ outcome: "win", method: match.status === "completed" ? "super-over" : "other" })}
+                        />
+                      )}
+                      <MatchAwards match={match} nameOf={nameOf} />
+                      {match.status === "completed" && <PotmPicker match={match} nameOf={nameOf} />}
+                      {/* The ball that ended it can still be taken back by whoever
+                          scored it (or an organiser) — not a result entered by hand. */}
+                      {match.status === "completed" &&
+                        !match.resultMethod &&
+                        hasBalls(match) &&
+                        (organiser || (admin != null && String(match.scoringById) === admin.sub)) && (
+                          <div className="cricket-potm-row">
+                            <div className="cricket-potm-row-text">
+                              <span>Wrong last ball?</span>
+                              <strong>
+                                Take it back<small> · The match goes back to live</small>
+                              </strong>
+                            </div>
+                            <button type="button" className="cricket-potm-change" onClick={handleUndoLast} disabled={undoBall.isPending}>
+                              <i className="fa-solid fa-rotate-left" aria-hidden="true"></i> Undo
+                            </button>
+                          </div>
+                        )}
                     </div>
-                  )}
-                  <LiveView match={match} nameOf={nameOf} />
-                </>
-              ) : (
-                <div className="cricket-summary">
-                  {organiser && needsKnockoutWinner(match) && (
-                    <KnockoutPrompt
-                      match={match}
-                      onEnter={() => openResult({ outcome: "win", method: match.status === "completed" ? "super-over" : "other" })}
-                    />
-                  )}
-                  <ResultBanner match={match} />
-                  {/* The ball that ended it can still be taken back by whoever
-                      scored it (or an organiser) — not a result entered by hand. */}
-                  {match.status === "completed" &&
-                    !match.resultMethod &&
-                    hasBalls(match) &&
-                    (organiser || (admin != null && String(match.scoringById) === admin.sub)) && (
-                      <div className="cricket-summary-undo mb-3">
-                        <Button variant="outline" onClick={handleUndoLast} disabled={undoBall.isPending}>
-                          <i className="fa-solid fa-rotate-left" aria-hidden="true"></i> Undo last ball
-                        </Button>
-                        <small>Made a mistake on the last ball? It goes back to live.</small>
-                      </div>
-                    )}
-                  <MatchAwards match={match} nameOf={nameOf} />
-                  {match.status === "completed" && <PotmPicker match={match} nameOf={nameOf} />}
-                </div>
-              ))}
-            {tab === "scorecard" && <Scorecard match={match} nameOf={nameOf} />}
-            {tab === "insights" && <MatchInsights match={match} nameOf={nameOf} />}
-            {tab === "overs" && <BallByBall match={match} nameOf={nameOf} />}
-            {tab === "squads" && <MatchSquads match={match} tournament={tournament} nameOf={nameOf} />}
-            {tab === "mvp" && <MatchMvp match={match} nameOf={nameOf} />}
-          </ListCard>
+                  ))}
+                {tab === "scorecard" && <Scorecard match={match} nameOf={nameOf} />}
+                {tab === "insights" && <MatchInsights match={match} nameOf={nameOf} />}
+                {tab === "overs" && <BallByBall match={match} nameOf={nameOf} />}
+                {tab === "squads" && <MatchSquads match={match} tournament={tournament} nameOf={nameOf} />}
+                {tab === "mvp" && <MatchMvp match={match} nameOf={nameOf} />}
+              </ListCard>
+            )}
+          </SwipePanels>
         </>
       )}
 

@@ -9,6 +9,8 @@ import { roleOf } from "./playerRoles";
 import { PlayerAvatar } from "./players/PlayerAvatar";
 import { QrScannerSheet, type ScanReply } from "./qr/QrScannerSheet";
 import type { QrTarget } from "./qr/qrLinks";
+import { useSwipeTabs } from "../useSwipeTabs";
+import { SwipePanels } from "../SwipePanels";
 
 // Who else may score (and edit) a match, or every match of a tournament.
 // Scorers are players, found by mobile number (names repeat) or picked
@@ -48,6 +50,7 @@ export function ScorersSheet({
     ...(pickable.length > 0 ? [{ value: "squad" as const, label: "From squads", icon: "fa-people-group" }] : []),
     { value: "mobile", label: "Mobile number", icon: "fa-mobile-screen" },
   ];
+  const swipeRef = useSwipeTabs(modes.map((m) => m.value), mode, setMode);
   const toggle = (playerId: number) =>
     handOver
       ? void handOver.onPick(playerId).catch(() => undefined) // a failure shows its own toast
@@ -163,7 +166,7 @@ export function ScorersSheet({
         <i className="fa-solid fa-qrcode" aria-hidden="true"></i> Scan a player's QR code
       </button>
       {modes.length > 1 && (
-        <div className="admin-segmented cricket-tabs cricket-scorer-mode" role="tablist" aria-label="Add a scorer by">
+        <div ref={swipeRef} className="admin-segmented cricket-tabs cricket-scorer-mode" role="tablist" aria-label="Add a scorer by">
           {modes.map((m) => (
             <button
               key={m.value}
@@ -179,98 +182,102 @@ export function ScorersSheet({
         </div>
       )}
 
-      {mode === "squad" ? (
-        pickable.map((squad) => (
-          <section key={squad.name} className="cricket-scorer-squad">
-            <h3 className="cricket-add-player-title">{squad.name}</h3>
-            <ul className="cricket-roster">
-              {squad.playerIds.map((playerId) => {
-                const player = playerById.get(playerId);
-                const name = player?.name ?? "Player";
-                const added = !handOver && ids.includes(playerId);
-                return (
-                  <li key={playerId}>
-                    <PlayerAvatar name={name} photoUrl={player?.photoUrl} className="cricket-roster-avatar" />
-                    <span className="cricket-roster-who">
-                      <strong>{name}</strong>
-                      {roleOf(player?.role ?? null) && <small>{roleOf(player?.role ?? null)!.label}</small>}
-                    </span>
-                    <button
-                      type="button"
-                      className={`cricket-add-player-btn ${added ? "is-ghost" : ""}`.trim()}
-                      aria-pressed={added}
-                      onClick={() => toggle(playerId)}
-                    >
-                      {handOver ? (
-                        <>
-                          <i className="fa-solid fa-people-arrows" aria-hidden="true"></i> Hand over
-                        </>
-                      ) : added ? (
-                        <>
-                          <i className="fa-solid fa-check" aria-hidden="true"></i> Added
-                        </>
-                      ) : (
-                        <>
-                          <i className="fa-solid fa-plus" aria-hidden="true"></i> Add
-                        </>
-                      )}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        ))
-      ) : (
-        <form onSubmit={onSubmit} className="cricket-add-player">
-          <div className="cricket-add-player-row">
-            <InputComp
-              label="Scorer's Mobile Number"
-              floating
-              type="tel"
-              inputMode="tel"
-              autoComplete="off"
-              value={mobile}
-              error={error ?? undefined}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                setMobile(e.target.value);
-                setFound(null);
-                setError(null);
-              }}
-            />
-            {found ? (
-              <button type="button" className="cricket-add-player-btn is-ghost" onClick={reset}>
-                Change
-              </button>
-            ) : (
-              <button type="submit" className="cricket-add-player-btn" disabled={!mobile.trim() || looking}>
-                Next <i className="fa-solid fa-arrow-right" aria-hidden="true"></i>
-              </button>
-            )}
-          </div>
-
-          {found && (
-            <div className="cricket-add-player-card">
-              <PlayerAvatar name={found.name} photoUrl={found.photoUrl} className="cricket-roster-avatar" />
-              <span className="cricket-roster-who">
-                <strong>{found.name}</strong>
-                {foundRole && <small>{foundRole.label}</small>}
-              </span>
-              <button type="submit" className="cricket-add-player-btn">
-                {handOver ? (
-                  <>
-                    <i className="fa-solid fa-people-arrows" aria-hidden="true"></i> Hand over
-                  </>
+      <SwipePanels swipe={swipeRef} values={modes.map((m) => m.value)} current={mode}>
+        {(mode) =>
+          mode === "squad" ? (
+            pickable.map((squad) => (
+              <section key={squad.name} className="cricket-scorer-squad">
+                <h3 className="cricket-add-player-title">{squad.name}</h3>
+                <ul className="cricket-roster">
+                  {squad.playerIds.map((playerId) => {
+                    const player = playerById.get(playerId);
+                    const name = player?.name ?? "Player";
+                    const added = !handOver && ids.includes(playerId);
+                    return (
+                      <li key={playerId}>
+                        <PlayerAvatar name={name} photoUrl={player?.photoUrl} className="cricket-roster-avatar" />
+                        <span className="cricket-roster-who">
+                          <strong>{name}</strong>
+                          {roleOf(player?.role ?? null) && <small>{roleOf(player?.role ?? null)!.label}</small>}
+                        </span>
+                        <button
+                          type="button"
+                          className={`cricket-add-player-btn ${added ? "is-ghost" : ""}`.trim()}
+                          aria-pressed={added}
+                          onClick={() => toggle(playerId)}
+                        >
+                          {handOver ? (
+                            <>
+                              <i className="fa-solid fa-people-arrows" aria-hidden="true"></i> Hand over
+                            </>
+                          ) : added ? (
+                            <>
+                              <i className="fa-solid fa-check" aria-hidden="true"></i> Added
+                            </>
+                          ) : (
+                            <>
+                              <i className="fa-solid fa-plus" aria-hidden="true"></i> Add
+                            </>
+                          )}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            ))
+          ) : (
+            <form onSubmit={onSubmit} className="cricket-add-player">
+              <div className="cricket-add-player-row">
+                <InputComp
+                  label="Scorer's Mobile Number"
+                  floating
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="off"
+                  value={mobile}
+                  error={error ?? undefined}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                    setMobile(e.target.value);
+                    setFound(null);
+                    setError(null);
+                  }}
+                />
+                {found ? (
+                  <button type="button" className="cricket-add-player-btn is-ghost" onClick={reset}>
+                    Change
+                  </button>
                 ) : (
-                  <>
-                    <i className="fa-solid fa-plus" aria-hidden="true"></i> Add
-                  </>
+                  <button type="submit" className="cricket-add-player-btn" disabled={!mobile.trim() || looking}>
+                    Next <i className="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                  </button>
                 )}
-              </button>
-            </div>
-          )}
-        </form>
-      )}
+              </div>
+    
+              {found && (
+                <div className="cricket-add-player-card">
+                  <PlayerAvatar name={found.name} photoUrl={found.photoUrl} className="cricket-roster-avatar" />
+                  <span className="cricket-roster-who">
+                    <strong>{found.name}</strong>
+                    {foundRole && <small>{foundRole.label}</small>}
+                  </span>
+                  <button type="submit" className="cricket-add-player-btn">
+                    {handOver ? (
+                      <>
+                        <i className="fa-solid fa-people-arrows" aria-hidden="true"></i> Hand over
+                      </>
+                    ) : (
+                      <>
+                        <i className="fa-solid fa-plus" aria-hidden="true"></i> Add
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </form>
+          )
+        }
+      </SwipePanels>
 
       {scanning && (
         <QrScannerSheet

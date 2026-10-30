@@ -164,8 +164,8 @@ const CONFETTI = Array.from({ length: 18 }, (_, i) => {
     x: Math.round(Math.cos(a) * d),
     y: Math.round(Math.sin(a) * d * 0.8),
     r: (i * 67) % 360,
-    // The brand's flag colours, and white.
-    color: ["var(--brand-amber)", "var(--brand-orange)", "var(--brand-crimson)", "#fff", "var(--brand-amber-bright)", "var(--brand-orange-bright)"][i % 6],
+    // A six's colours (the score card's maroon and gold), and white.
+    color: ["var(--brand-amber)", "#8c262c", "#fff", "var(--brand-amber-bright)", "#541418", "var(--brand-amber-deep)"][i % 6],
   };
 });
 

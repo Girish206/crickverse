@@ -25,6 +25,11 @@
     border-top-left-radius: 20px;
     border-top-right-radius: 20px;
     box-shadow: 0 -10px 28px -6px rgba(var(--primary-rgb), 0.3), 0 -4px 12px rgba(0, 0, 0, 0.12);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  /* Scrolling down (BottomNav.tsx): slid off the bottom, shadow and all. */
+  .cv-bottom-nav.is-hidden {
+    transform: translateY(calc(100% + 40px));
   }
   :root[data-bs-theme="dark"] .cv-bottom-nav {
     background: rgba(15, 16, 18, 0.94);

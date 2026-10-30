@@ -1,0 +1,20 @@
+/* SwipePanels.tsx: only the open tab shows; while swiping, its neighbour
+   comes in beside it (inline styles) and anything off to the side is cut
+   off rather than widening the page. */
+.cv-swipe-panels {
+  position: relative;
+  /* The card stretching round a longer tab swiped in (SwipePanels.tsx). */
+  transition: min-height 0.2s ease;
+}
+.cv-swipe-panels.is-swiping {
+  overflow-x: clip;
+}
+.cv-swipe-panel:not(.is-active) {
+  display: none;
+}
+.cv-swipe-panels.is-swiping .cv-swipe-panel {
+  will-change: transform;
+}
+.cv-swipe-blank {
+  min-height: 60vh;
+}

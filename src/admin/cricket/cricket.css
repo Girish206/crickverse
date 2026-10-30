@@ -1228,7 +1228,8 @@
     padding-right: 6px !important;
   }
   /* The Live tab's card hugs the scorer, leaving the pad as wide as it can be. */
-  .cricket-module .admin-card-body.cricket-live-body {
+  .cricket-module .admin-card-body.cricket-live-body,
+  .cricket-module .admin-card-body.cricket-overs-body {
     padding: 8px;
   }
 }
@@ -1626,6 +1627,21 @@
   font-size: var(--fs-base);
   color: var(--primary);
 }
+/* A decided match: the footer becomes a gold-washed strip running edge to
+   edge along the bottom of the card, so the result stands out. */
+.cricket-hero-foot.is-won {
+  margin: 0 -16px -14px;
+  padding: 11px 16px 12px;
+  border-top: 0;
+  border-bottom-left-radius: inherit;
+  border-bottom-right-radius: inherit;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, #f5b301 18%, transparent), transparent);
+}
+/* Dark mode: the brand red turns muddy on the gold wash, so the result
+   reads in a light gold instead. */
+:root[data-bs-theme="dark"] .cricket-hero-foot.is-won .cricket-hero-headline {
+  color: #ffd66b;
+}
 .cricket-hero-headline.is-result i {
   margin-right: 6px;
   color: #f5b301;
@@ -1751,6 +1767,10 @@
     gap: 10px;
     border-radius: 14px !important;
   }
+  .cricket-hero-foot.is-won {
+    margin: 0 -12px -12px;
+    padding: 10px 12px 11px;
+  }
   .cricket-hero-row {
     gap: 8px;
   }
@@ -1798,8 +1818,19 @@
 .cricket-sheet.is-closing {
   animation: cricket-slide-down 0.2s cubic-bezier(0.32, 0, 0.67, 0) forwards;
 }
+/* Dark: a raised surface with a light top edge over a deeper backdrop, so
+   the sheet stands off the charcoal page instead of blending into it. */
+:root[data-bs-theme="dark"] .cricket-sheet-backdrop {
+  background: rgba(0, 0, 0, 0.62);
+}
 :root[data-bs-theme="dark"] .cricket-sheet {
-  background: var(--adm-surface);
+  background: var(--adm-raised);
+  box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.12), 0 -16px 40px rgba(0, 0, 0, 0.6);
+}
+@media (min-width: 768px) {
+  :root[data-bs-theme="dark"] .cricket-sheet {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 24px 60px rgba(0, 0, 0, 0.6);
+  }
 }
 @media (min-width: 768px) {
   .cricket-sheet-backdrop {
@@ -1883,9 +1914,29 @@
 }
 .cricket-sheet-head h2 {
   flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
   margin: 0;
   font-size: var(--fs-md);
   font-weight: 700;
+}
+.cricket-sheet-count {
+  min-width: 24px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  color: var(--primary);
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+  text-align: center;
+}
+:root[data-bs-theme="dark"] .cricket-sheet-count {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
 }
 .cricket-sheet-icon {
   width: 32px;
@@ -3113,15 +3164,17 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
 :root[data-bs-theme="dark"] .cricket-pill-select-menu li.is-active {
   background: rgba(255, 255, 255, 0.07);
 }
-.cricket-mvp .cricket-chip-choice button,
-.cricket-overs-log .cricket-chip-choice button {
-  padding: 4px 10px;
-  font-size: var(--fs-xs);
-}
-.cricket-mvp .cricket-chip-choice,
-.cricket-overs-log .cricket-chip-choice,
+.cricket-mvp .cricket-pill-select,
+.cricket-overs-log .cricket-pill-select,
 .cricket-squads .cricket-pill-select {
   margin-bottom: 8px !important;
+}
+/* The team picker on the Overs and MVP tabs sits on the right. */
+.cricket-mvp > .cricket-pill-select,
+.cricket-overs-log > .cricket-pill-select {
+  display: flex;
+  width: fit-content;
+  margin-left: auto;
 }
 
 /* MVP */
@@ -3329,6 +3382,76 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
   background: var(--adm-surface);
   border-color: rgba(255, 255, 255, 0.12);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+/* Inside the Overs tab's card: each over a row of three parts — the over
+   (left) and its runs (right) in one tint, framing the balls in a lighter
+   middle — set apart from the card around it and kept short so more overs
+   fit. Both themes share the layout; only these colours change. */
+.cricket-overs-log {
+  --ov-row: #fbf7f6;
+  --ov-side: rgba(var(--primary-rgb), 0.07);
+  --ov-line: rgba(var(--primary-rgb), 0.14);
+  --ov-lift: 0 2px 8px -3px rgba(var(--primary-rgb), 0.16);
+  --ov-ink: var(--primary);
+  --ov-chip: #fff;
+  --ov-chip-line: rgba(var(--primary-rgb), 0.16);
+}
+:root[data-bs-theme="dark"] .cricket-overs-log {
+  --ov-row: rgba(255, 255, 255, 0.035);
+  --ov-side: rgba(255, 255, 255, 0.06);
+  --ov-line: rgba(255, 255, 255, 0.1);
+  --ov-lift: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --ov-ink: #fff;
+  --ov-chip: rgba(255, 255, 255, 0.07);
+  --ov-chip-line: rgba(255, 255, 255, 0.14);
+}
+.cricket-overs-log .cricket-over-cards {
+  gap: 6px;
+}
+.cricket-overs-log .cricket-over-card {
+  border-color: var(--ov-line);
+  border-radius: 12px;
+  background: var(--ov-row);
+  box-shadow: var(--ov-lift);
+}
+.cricket-overs-log .cricket-over-card-num,
+.cricket-overs-log .cricket-over-card-runs {
+  gap: 1px;
+  padding: 3px 4px;
+  background: var(--ov-side);
+  border-color: var(--ov-line);
+}
+.cricket-overs-log .cricket-over-card-num strong,
+.cricket-overs-log .cricket-over-card-runs strong {
+  font-weight: 800;
+  color: var(--ov-ink);
+}
+.cricket-overs-log .cricket-over-card-num small,
+.cricket-overs-log .cricket-over-card-runs small {
+  font-weight: 600;
+  color: var(--muted-color);
+}
+.cricket-overs-log .cricket-over-card-body {
+  gap: 3px;
+  padding: 5px 8px;
+}
+.cricket-overs-log .cricket-over-card-balls-wrap .cricket-this-over-balls {
+  padding: 0;
+  gap: 4px;
+}
+.cricket-overs-log .cricket-over-card .cricket-ball-chip {
+  min-width: 24px;
+  height: 24px;
+  font-size: 0.64rem;
+}
+/* Plain balls (dots, ones, twos): a clean chip with a soft ring. */
+.cricket-overs-log .cricket-ball-chip:not(.is-4, .is-6, .is-W, .is-wide, .is-no-ball) {
+  background: var(--ov-chip);
+  border-color: var(--ov-chip-line);
+}
+.cricket-overs-log .cricket-over-card .cricket-ball-slot-empty {
+  width: 22px;
+  height: 22px;
 }
 .cricket-over-card.is-incomplete {
   border-color: rgba(var(--primary-rgb), 0.35);

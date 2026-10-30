@@ -41,6 +41,8 @@ import { TeamRecordCard } from "./TeamRecordCard";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
+import { useSwipeTabs } from "../../useSwipeTabs";
+import { SwipePanels } from "../../SwipePanels";
 
 type Tab = "info" | "players" | "matches" | "leaderboard" | "stats";
 
@@ -250,6 +252,9 @@ export function SavedTeamPage() {
 
   const requested = params.get("tab") as Tab | null;
   const tab: Tab = requested && TABS.some((t) => t.value === requested) ? requested : "info";
+  const swipeRef = useSwipeTabs(TABS.map((t) => t.value), tab, (value) =>
+    setParams({ tab: value }, { replace: true, state: location.state })
+  );
   const backTo = "/my-teams";
 
   if (isLoading || !team) {
@@ -367,7 +372,7 @@ export function SavedTeamPage() {
           </div>
         </div>
 
-        <div className="cricket-match-tabs" role="tablist" aria-label="Team sections">
+        <div ref={swipeRef} className="cricket-match-tabs" role="tablist" aria-label="Team sections">
           {TABS.map((t) => (
             <button
               key={t.value}
@@ -383,77 +388,83 @@ export function SavedTeamPage() {
         </div>
       </div>
 
-      {tab === "info" && (
-        <ListCard title="">
-          <TeamRecordCard
-            captain={captain}
-            played={completed.length}
-            won={won}
-            lost={lost}
-            tied={completed.length - won - lost}
-            tiedLabel="Tied / NR"
-            facts={[
-              ["Players", team.playerIds.length],
-              ["Matches", matches.length],
-            ]}
-          />
-        </ListCard>
-      )}
+      <SwipePanels swipe={swipeRef} values={TABS.map((t) => t.value)} current={tab} eager>
+        {(tab) => (
+          <>
+            {tab === "info" && (
+              <ListCard title="">
+                <TeamRecordCard
+                  captain={captain}
+                  played={completed.length}
+                  won={won}
+                  lost={lost}
+                  tied={completed.length - won - lost}
+                  tiedLabel="Tied / NR"
+                  facts={[
+                    ["Players", team.playerIds.length],
+                    ["Matches", matches.length],
+                  ]}
+                />
+              </ListCard>
+            )}
 
-      {tab === "players" && (
-        <ListCard>
-          {team.playerIds.length === 0 ? (
-            <div className="admin-empty-state">
-              No players yet{canManage ? " — add them by mobile number or QR code, or send them the invite link." : "."}
-            </div>
-          ) : (
-            <ul className="cricket-roster">
-              {team.playerIds.map((playerId) => (
-                <li key={playerId}>
-                  <RosterPlayer player={playerById.get(playerId)} tags={canManage ? [] : roleTagsFor(team, playerId)} />
-                  {canManage && (
-                    <>
-                      <TeamRoleChips
-                        roles={rolesOf(team)}
-                        playerId={playerId}
-                        playerName={playerById.get(playerId)?.name ?? "Player"}
-                        disabled={setRoles.isPending}
-                        onChange={(roles) => setRoles.mutate({ id: team.id, ...roles })}
-                      />
-                      <button
-                        type="button"
-                        className="cricket-roster-more"
-                        onClick={() => setActionsFor(playerId)}
-                        aria-label={`More for ${playerById.get(playerId)?.name ?? "player"}`}
-                      >
-                        <i className="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i>
-                      </button>
-                    </>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </ListCard>
-      )}
+            {tab === "players" && (
+              <ListCard>
+                {team.playerIds.length === 0 ? (
+                  <div className="admin-empty-state">
+                    No players yet{canManage ? " — add them by mobile number or QR code, or send them the invite link." : "."}
+                  </div>
+                ) : (
+                  <ul className="cricket-roster">
+                    {team.playerIds.map((playerId) => (
+                      <li key={playerId}>
+                        <RosterPlayer player={playerById.get(playerId)} tags={canManage ? [] : roleTagsFor(team, playerId)} />
+                        {canManage && (
+                          <>
+                            <TeamRoleChips
+                              roles={rolesOf(team)}
+                              playerId={playerId}
+                              playerName={playerById.get(playerId)?.name ?? "Player"}
+                              disabled={setRoles.isPending}
+                              onChange={(roles) => setRoles.mutate({ id: team.id, ...roles })}
+                            />
+                            <button
+                              type="button"
+                              className="cricket-roster-more"
+                              onClick={() => setActionsFor(playerId)}
+                              aria-label={`More for ${playerById.get(playerId)?.name ?? "player"}`}
+                            >
+                              <i className="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i>
+                            </button>
+                          </>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </ListCard>
+            )}
 
-      {tab === "matches" && (
-        <ListCard>
-          <MatchesBoard matches={matches} />
-        </ListCard>
-      )}
+            {tab === "matches" && (
+              <ListCard>
+                <MatchesBoard matches={matches} />
+              </ListCard>
+            )}
 
-      {tab === "leaderboard" && (
-        <ListCard>
-          <LeaderboardGrid matches={asTeam} playerIds={team.playerIds} scope="team" />
-        </ListCard>
-      )}
+            {tab === "leaderboard" && (
+              <ListCard>
+                <LeaderboardGrid matches={asTeam} playerIds={team.playerIds} scope="team" />
+              </ListCard>
+            )}
 
-      {tab === "stats" && (
-        <ListCard>
-          <TeamStatsView stats={teamStats(asTeam, 0)} />
-        </ListCard>
-      )}
+            {tab === "stats" && (
+              <ListCard>
+                <TeamStatsView stats={teamStats(asTeam, 0)} />
+              </ListCard>
+            )}
+          </>
+        )}
+      </SwipePanels>
 
       {/* Pinned to the bottom while the Players tab is open. */}
       {showAddBar && (

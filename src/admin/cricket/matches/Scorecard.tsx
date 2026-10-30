@@ -17,6 +17,7 @@ import {
   type NameOf,
 } from "../stats";
 import { NoPlayNote } from "./result/ResultNote";
+import { PillSelect } from "../PillSelect";
 
 export function ScrollableOverBalls({ children, className = "" }: { children: ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -258,20 +259,12 @@ export function BallByBall({ match, nameOf }: { match: CricketMatch; nameOf: Nam
   return (
     <div className="cricket-overs-log">
       {bowled.length > 1 && (
-        <div className="cricket-chip-choice" role="radiogroup" aria-label="Batting side">
-          {bowled.map((inn) => (
-            <button
-              key={inn.battingTeam}
-              type="button"
-              role="radio"
-              aria-checked={inn === innings}
-              className={inn === innings ? "active" : ""}
-              onClick={() => setPicked(inn.battingTeam)}
-            >
-              {match.teams[inn.battingTeam].name}
-            </button>
-          ))}
-        </div>
+        <PillSelect
+          label="Batting side"
+          value={String(innings.battingTeam)}
+          options={bowled.map((inn) => ({ value: String(inn.battingTeam), label: match.teams[inn.battingTeam].name }))}
+          onChange={(value) => setPicked(Number(value))}
+        />
       )}
       <ol className="cricket-over-cards">
         {[...overs].reverse().map((over) => {

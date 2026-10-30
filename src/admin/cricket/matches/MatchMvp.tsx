@@ -4,6 +4,7 @@ import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers"
 import { PlayerAvatar } from "../players/PlayerAvatar";
 import { PlayerLink } from "../players/PlayerProfileSheet";
 import { impactLine, matchAwards, points, type NameOf } from "../stats";
+import { PillSelect } from "../PillSelect";
 
 // The "MVP" tab: everyone who took part, ranked by impact points, with
 // where their points came from.
@@ -20,20 +21,15 @@ export function MatchMvp({ match, nameOf }: { match: CricketMatch; nameOf: NameO
 
   return (
     <div className="cricket-mvp">
-      <div className="cricket-chip-choice" role="radiogroup" aria-label="Team">
-        {[null, 0, 1].map((slot) => (
-          <button
-            key={String(slot)}
-            type="button"
-            role="radio"
-            aria-checked={team === slot}
-            className={team === slot ? "active" : ""}
-            onClick={() => setTeam(slot)}
-          >
-            {slot === null ? "Both teams" : match.teams[slot].name}
-          </button>
-        ))}
-      </div>
+      <PillSelect
+        label="Team"
+        value={team === null ? "both" : String(team)}
+        options={[
+          { value: "both", label: "Both teams" },
+          ...[0, 1].map((slot) => ({ value: String(slot), label: match.teams[slot].name })),
+        ]}
+        onChange={(value) => setTeam(value === "both" ? null : Number(value))}
+      />
 
       <ol className="cricket-mvp-list">
         {rows.map((row) => {

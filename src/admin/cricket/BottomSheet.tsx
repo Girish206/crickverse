@@ -9,6 +9,8 @@ interface BottomSheetProps {
   title: string;
   // Font Awesome class, e.g. "fa-solid fa-person-running".
   icon?: string;
+  // How many the sheet lists, as a small pill beside the title.
+  count?: number | string;
   onClose: () => void;
   children: ReactNode;
   // Pinned under the content — usually the confirm button.
@@ -23,7 +25,16 @@ interface BottomSheetProps {
 // wider screens) — quicker to reach with a thumb than a modal mid-screen.
 // Admin forms (SubmitButton / ModalActions) portal their Cancel/Save buttons
 // into its footer, just as they do inside a DefaultModal.
-export function BottomSheet({ title, icon, onClose, children, footer, fullScreen = false, wide = false }: BottomSheetProps) {
+export function BottomSheet({
+  title,
+  icon,
+  count,
+  onClose,
+  children,
+  footer,
+  fullScreen = false,
+  wide = false,
+}: BottomSheetProps) {
   const [footerSlot, setFooterSlot] = useState<HTMLElement | null>(null);
   const [closing, setClosing] = useState(false);
   const closingRef = useRef(false);
@@ -71,7 +82,10 @@ export function BottomSheet({ title, icon, onClose, children, footer, fullScreen
               <i className={icon} aria-hidden="true"></i>
             </span>
           )}
-          <h2>{title}</h2>
+          <h2>
+            {title}
+            {count !== undefined && <span className="cricket-sheet-count">{count}</span>}
+          </h2>
           <button type="button" className="cricket-sheet-close" onClick={requestClose} aria-label="Close">
             <i className="fa-solid fa-xmark" aria-hidden="true"></i>
           </button>

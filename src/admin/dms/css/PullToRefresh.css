@@ -1,0 +1,54 @@
+/* Pull to refresh (PullToRefresh.tsx): opens above the page as it's pulled
+   down, pushing it along. Phones only. */
+.cv-ptr {
+  display: none;
+}
+
+@media (max-width: 769px) {
+  /* The browser's own pull-to-refresh and bounce would fight ours. */
+  html:has(> body.admin-page) {
+    overscroll-behavior-y: contain;
+  }
+
+  .cv-ptr {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+    transition: height 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .cv-ptr.is-dragging {
+    transition: none;
+  }
+}
+
+.cv-ptr-inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  padding: 0 8px 14px;
+}
+.cv-ptr-ball {
+  flex-shrink: 0;
+  font-size: 1.25rem;
+  color: var(--primary);
+}
+.cv-ptr-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+.cv-ptr-text strong {
+  font-size: var(--fs-sm, 0.875rem);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cv-ptr-text small {
+  font-size: var(--fs-3xs, 0.7rem);
+  color: var(--muted-color);
+}

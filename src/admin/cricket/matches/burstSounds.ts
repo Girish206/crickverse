@@ -1,5 +1,5 @@
-// Sounds for a four, a six or a wicket: a recording of bat on ball for a
-// four or a six (a harder one for a six); made with Web Audio, the stumps
+// Sounds for a four, a six or a wicket, all made with Web Audio: the same
+// bat on ball for a four and a six, then a fanfare of their own; the stumps
 // rattling and a falling "wah-wah" for an out, a quack for a duck.
 // The browser only lets sound play once the page has been clicked or tapped,
 // so before that these stay silent.
@@ -74,60 +74,62 @@ function ring(ac: AudioContext, at: number, freq: number, len: number, peak: num
   osc.stop(at + len + 0.02);
 }
 
-// A real bat hit: a match ball struck on an English willow bat
-let batHit: AudioBuffer | null = null;
-let batHitLoading = false;
+// Bat on ball, the same for a four and a six: a clean willow "tock". The
+// leather's click, the blade ringing at its few wooden notes (each knocked
+// a shade sharp, settling as it dies) and a short low thud from the
+// handle — run through a compressor so it lands with a punch.
+function batHit(ac: AudioContext, at: number) {
+  const out = ac.createDynamicsCompressor();
+  out.threshold.value = -18;
+  out.ratio.value = 4;
+  out.attack.value = 0.001;
+  out.release.value = 0.08;
+  out.connect(ac.destination);
 
-async function ensureBatHit(ac: AudioContext) {
-  if (batHit || batHitLoading) return batHit;
-  batHitLoading = true;
-  try {
-    const res = await fetch("/assets/sounds/bat-hit.wav");
-    if (res.ok) {
-      const data = await res.arrayBuffer();
-      batHit = await ac.decodeAudioData(data);
-    }
-  } catch {
-    // fallback to synthetic batCrack
-  } finally {
-    batHitLoading = false;
-  }
-  return batHit;
+  const voice = (src: AudioNode, attack: number, peak: number, end: number) => {
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(peak, at + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + end);
+    src.connect(g).connect(out);
+  };
+
+  // The click: bright noise, over in a few milliseconds.
+  const click = noise(ac);
+  const clickFilter = ac.createBiquadFilter();
+  clickFilter.type = "highpass";
+  clickFilter.frequency.value = 2500;
+  click.connect(clickFilter);
+  voice(clickFilter, 0.0008, 0.9, 0.018);
+  click.start(at, Math.random() * 0.5);
+  click.stop(at + 0.03);
+
+  // The blade's wooden notes.
+  [
+    [840, 0.55, 0.13],
+    [1380, 0.32, 0.09],
+    [2240, 0.16, 0.06],
+  ].forEach(([freq, peak, len]) => {
+    const osc = ac.createOscillator();
+    osc.frequency.setValueAtTime(freq * 1.04, at);
+    osc.frequency.exponentialRampToValueAtTime(freq, at + 0.02);
+    voice(osc, 0.001, peak, len);
+    osc.start(at);
+    osc.stop(at + len + 0.02);
+  });
+
+  // The thud.
+  const thud = ac.createOscillator();
+  thud.frequency.setValueAtTime(150, at);
+  thud.frequency.exponentialRampToValueAtTime(85, at + 0.09);
+  voice(thud, 0.002, 0.45, 0.1);
+  thud.start(at);
+  thud.stop(at + 0.12);
 }
 
-// The recorded hit; a six a touch deeper and louder than a four.
-function playBatHit(ac: AudioContext, at: number, buf: AudioBuffer, power: number) {
-  const src = ac.createBufferSource();
-  src.buffer = buf;
-  src.playbackRate.value = 1 - power * 0.08;
-  const g = ac.createGain();
-  g.gain.value = 0.85 + power * 0.4;
-  src.connect(g).connect(ac.destination);
-  src.start(at);
-}
-
-// Bat on ball: willow crack + hollow body thump.
-function batCrack(ac: AudioContext, at: number, power: number) {
-  // Initial sharp click of leather meeting wood
-  hiss(ac, at, "bandpass", 3200, 1.2, 0.001, 0.85 + power * 0.35, 0.025);
-  // Deeper wooden bat resonance
-  hiss(ac, at, "lowpass", 600, 1.5, 0.002, 0.6 + power * 0.4, 0.06);
-  // Bat blade harmonics
-  const len = 0.09 + power * 0.05;
-  [[1180, 0.38], [1870, 0.22], [2760, 0.12]].forEach(([f, a], i) =>
-    ring(ac, at, f, len / (1 + i * 0.3), a * (0.9 + power * 0.5)));
-  // Deep body thump
-  ring(ac, at, 180, 0.07, 0.5 + power * 0.3);
-  if (power >= 0.8) {
-    // Sub-bass punch for a monster six
-    tone(ac, at, "sine", 110, 0.12, 0.6, 45);
-  }
-}
-
-// Celebratory fanfare for a FOUR: sharp bat hit + cheerful rising 4-note arpeggio
+// Celebratory fanfare for a FOUR: the bat hit + cheerful rising 4-note arpeggio
 function playFourCelebration(ac: AudioContext, at: number) {
-  if (batHit) playBatHit(ac, at, batHit, 0.6);
-  else batCrack(ac, at, 0.6);
+  batHit(ac, at);
 
   // Joyful rising celebration fanfare: C5 (523Hz) -> E5 (659Hz) -> G5 (784Hz) -> C6 (1046Hz)
   const notes = [
@@ -142,10 +144,9 @@ function playFourCelebration(ac: AudioContext, at: number) {
   });
 }
 
-// Celebratory fanfare for a SIX: thunderous bat smash + triumphant stadium fanfare chords
+// Celebratory fanfare for a SIX: the same bat hit + triumphant stadium fanfare chords
 function playSixCelebration(ac: AudioContext, at: number) {
-  if (batHit) playBatHit(ac, at, batHit, 1.2);
-  batCrack(ac, at, 1.0);
+  batHit(ac, at);
 
   // Stadium celebration shimmer
   hiss(ac, at + 0.15, "bandpass", 1600, 1.5, 0.04, 0.22, 0.85);
@@ -195,8 +196,6 @@ export function playBurstSound(kind: BurstSound) {
   if (ac.state === "suspended") {
     void ac.resume();
   }
-  // Try preloading the hit buffer for next time if not loaded
-  void ensureBatHit(ac);
 
   const t = ac.currentTime + 0.02;
   if (kind === "four") {

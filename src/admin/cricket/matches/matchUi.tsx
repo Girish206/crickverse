@@ -4,10 +4,6 @@ import type { CricketMatch, CricketMatchStatus } from "../../../api/types";
 import { BALL_TYPES } from "../cricketOptions";
 import { formatMatchDate, battingOrder, matchStageLabel, teamInitials, teamScore } from "./matchUtils";
 import { TeamMark } from "../teams/TeamMark";
-import { LiveMatchCard, type LiveMatchCardProps } from "./LiveMatchCard";
-
-export { LiveMatchCard };
-export type { LiveMatchCardProps };
 
 const STATUS_LABELS: Record<CricketMatchStatus, string> = {
   scheduled: "Upcoming",
@@ -29,7 +25,8 @@ export function MatchStatusBadge({ status }: { status: CricketMatchStatus }) {
 // Why a card is shown to this viewer (home page): a ribbon across the top,
 // and "mine" cards are tinted so they stand out from followed ones.
 export interface MatchTag {
-  tone: "mine" | "organising" | "following";
+  // "live": the ribbon MatchCard gives a live match shown for no other reason.
+  tone: "mine" | "organising" | "following" | "live";
   icon: string;
   label: string;
   // Right end of the ribbon, e.g. when an upcoming match starts.
@@ -50,8 +47,8 @@ function MatchCardCentre({ match }: { match: CricketMatch }) {
   );
 }
 
-// The fixture/result card used on every match list; opens the match centre.
-// For live matches, it automatically delegates to the theme-highlighted LiveMatchCard.
+// The one match card, for every status and on every match list (live,
+// upcoming and completed share its look); opens the match centre.
 export function MatchCard(props: {
   match: CricketMatch;
   tournamentName?: string;
@@ -60,10 +57,20 @@ export function MatchCard(props: {
   tag?: MatchTag;
 }) {
   const navigate = useNavigate();
-  if (props.match.status === "live") {
-    return <LiveMatchCard {...props} />;
-  }
-  const { match, tournamentName, footnote, tag } = props;
+  const { match, tournamentName, footnote } = props;
+  // A live card with no reason of its own (match lists) still gets a red
+  // "Live now" ribbon, naming who's batting, so it stands out.
+  const battingNow = match.teams[match.innings[match.innings.length - 1]?.battingTeam ?? -1];
+  const tag: MatchTag | undefined =
+    props.tag ??
+    (match.status === "live"
+      ? {
+          tone: "live",
+          icon: "fa-solid fa-tower-broadcast",
+          label: "Live now",
+          aside: battingNow ? `${battingNow.name} batting` : "Yet to start",
+        }
+      : undefined);
   const open = () => {
     try {
       sessionStorage.removeItem(`view_match_${match.id}`);

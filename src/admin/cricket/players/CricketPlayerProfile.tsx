@@ -1,4 +1,3 @@
-import { useFollowCounts } from "../../../api/hooks/cricket/useCricketFollows";
 import { useCricketPlayerCareer } from "../../../api/hooks/cricket/useCricketPlayers";
 import type { CricketMatch, CricketPlayer, CricketTournament } from "../../../api/types";
 import { roleOf } from "../playerRoles";
@@ -6,6 +5,9 @@ import { PlayerAvatar } from "./PlayerAvatar";
 import { FollowButton } from "../follow/FollowButton";
 import { battingAverage, bestBowling, impactPerMatch, playerStats, points, rate, strikeRate } from "../stats";
 import { Loader } from "../../components/Loader";
+import { Scoreline } from "../me/SummaryBanner";
+import { StatSectionCard, type StatSection } from "../me/StatSectionCard";
+import { ProfileCounts } from "./ProfileCounts";
 
 // Anyone viewing a player's profile (loads that player's matches).
 export function CricketPlayerProfileLoader({ player }: { player: CricketPlayer }) {
@@ -32,15 +34,7 @@ export function CricketPlayerProfile({
   const role = roleOf(player.role);
   const inTournaments = tournaments.filter((t) => t.playerIds.includes(player.id));
   // The whole career: every tournament and friendly match, not one of them.
-  const friendlies = matches.filter((m) => m.tournamentId === null).length;
-  const { data: follows } = useFollowCounts({ kind: "player", targetId: player.id, teamIndex: null });
-  // Under the name, evenly spaced like a social profile.
-  const counts: [string, number | string][] = [
-    [inTournaments.length === 1 ? "Tournament" : "Tournaments", inTournaments.length],
-    [friendlies === 1 ? "Friendly" : "Friendlies", friendlies],
-    [follows?.followers === 1 ? "Follower" : "Followers", follows?.followers ?? "–"],
-    ["Following", follows ? (follows.following ?? 0) : "–"],
-  ];
+  const friendlies = matches.filter((m) => m.tournamentId === null);
 
   const rows = (items: [string, string | number][]) => (
     <dl className="cricket-profile-stats">
@@ -53,26 +47,23 @@ export function CricketPlayerProfile({
     </dl>
   );
 
-  const section = (title: string, icon: string, items: [string, string | number][]) =>
+  // On My Stats each section is a card led by its main figures (see
+  // StatSectionCard); in a sheet, a plain heading over every figure.
+  const section = (part: StatSection) =>
     cards ? (
-      <section className="cricket-stat-card" key={title}>
-        <h4 className="cricket-section-title">
-          <i className={`fa-solid ${icon}`} aria-hidden="true"></i> {title}
-        </h4>
-        {rows(items)}
-      </section>
+      <StatSectionCard key={part.title} section={part} />
     ) : (
-      <div key={title}>
-        <h4 className="cricket-section-title">{title}</h4>
-        {rows(items)}
+      <div key={part.title}>
+        <h4 className="cricket-section-title">{part.title}</h4>
+        {rows(part.items)}
       </div>
     );
 
   return (
     <div className={`cricket-profile ${cards ? "is-cards" : ""}`.trim()}>
-      {/* The Home hero: who they are, their career in four numbers, and
-          their tournaments, friendlies and follows in a line below. */}
-      <section className="cricket-home-hero cricket-profile-hero">
+      {/* The compact hero: who they are, their career in four numbers, and
+          their tournaments, friendlies and follows as the last line. */}
+      <section className="cricket-home-hero cricket-profile-hero cv-hero-compact">
         <div className="cricket-home-hero-top">
           <PlayerAvatar
             name={player.name}
@@ -80,75 +71,103 @@ export function CricketPlayerProfile({
             className="cricket-player-avatar cricket-home-hero-avatar"
           />
           <div className="cricket-home-hero-name">
+            <small>{role ? role.label : "Role not set"}</small>
             <h2>{player.name}</h2>
-            <span className="cricket-home-hero-role">
-              {role ? role.label : "Role not set"}
-            </span>
           </div>
           <FollowButton target={{ kind: "player", targetId: player.id, teamIndex: null }} />
         </div>
-        <div className="cricket-home-hero-stats">
-          {[
+        <Scoreline
+          stats={[
             { label: "Matches", value: s?.matches ?? 0 },
             { label: "Runs", value: s?.runs ?? 0 },
             { label: "Wickets", value: s?.wickets ?? 0 },
             { label: "POTM", value: s?.playerOfMatch ?? 0, title: "Player of the Match" },
-          ].map((n) => (
-            <div key={n.label} title={n.title}>
-              <strong>{n.value}</strong>
-              <small>{n.label}</small>
-            </div>
-          ))}
-        </div>
-        <dl className="cricket-profile-hero-counts">
-          {counts.map(([label, value]) => (
-            <div key={label}>
-              <dd>{value}</dd>
-              <dt>{label}</dt>
-            </div>
-          ))}
-        </dl>
+          ]}
+        />
+        <ProfileCounts player={player} tournaments={inTournaments} friendlies={friendlies} />
       </section>
 
       {!s || s.matches === 0 ? (
         <div className="admin-empty-state">No matches played yet.</div>
       ) : (
         <>
-          <div className={cards ? "cricket-stat-cards" : undefined}>
-            {section("Batting", "fa-baseball-bat-ball", [
-              ["Innings", s.innings],
-              ["Runs", s.runs],
-              ["Highest", `${s.highest}${s.highestNotOut ? "*" : ""}`],
-              ["Average", battingAverage(s)],
-              ["Strike rate", strikeRate(s.runs, s.ballsFaced)],
-              ["Balls faced", s.ballsFaced],
-              ["Not outs", s.notOuts],
-              ["50s / 100s", `${s.fifties} / ${s.hundreds}`],
-              ["4s / 6s", `${s.fours} / ${s.sixes}`],
-              ["Ducks", s.ducks],
-            ])}
-            {section("Bowling", "fa-baseball", [
-              ["Innings", s.bowlingInnings],
-              ["Overs", `${Math.floor(s.ballsBowled / 6)}.${s.ballsBowled % 6}`],
-              ["Wickets", s.wickets],
-              ["Best", bestBowling(s)],
-              ["Economy", rate(s.runsConceded, s.ballsBowled)],
-              ["Average", s.wickets ? (s.runsConceded / s.wickets).toFixed(2) : "–"],
-              ["Maidens", s.maidens],
-              ["3+ wicket hauls", s.threeWickets],
-            ])}
-            {section("Fielding", "fa-hand", [
-              ["Catches", s.catches],
-              ["Stumpings", s.stumpings],
-              ["Run-outs", s.runOuts],
-            ])}
-            {section("Impact points", "fa-bolt", [
-              ["Total (MVP)", points(s.impact)],
-              ["Per match", impactPerMatch(s)],
-              ["Batting", points(s.battingImpact)],
-              ["Bowling", points(s.bowlingImpact)],
-              ["Fielding", points(s.fieldingImpact)],
-            ])}
+          <div className={cards ? "cv-stat-cards" : undefined}>
+            {section({
+              tone: "batting",
+              title: "Batting",
+              icon: "fa-baseball-bat-ball",
+              lead: ["Runs", "Average", "Strike rate"],
+              items: [
+                ["Innings", s.innings],
+                ["Runs", s.runs],
+                ["Highest", `${s.highest}${s.highestNotOut ? "*" : ""}`],
+                ["Average", battingAverage(s)],
+                ["Strike rate", strikeRate(s.runs, s.ballsFaced)],
+                ["Balls faced", s.ballsFaced],
+                ["Not outs", s.notOuts],
+                ["50s / 100s", `${s.fifties} / ${s.hundreds}`],
+                ["4s / 6s", `${s.fours} / ${s.sixes}`],
+                ["Ducks", s.ducks],
+              ],
+              share: {
+                title: "Runs in boundaries",
+                summary: s.runs ? `${Math.round(((s.fours * 4 + s.sixes * 6) / s.runs) * 100)}%` : "–",
+                parts: [
+                  { label: "Fours", value: s.fours * 4, color: "#e8501f" },
+                  { label: "Sixes", value: s.sixes * 6, color: "#ffcd00" },
+                  { label: "Running", value: s.runs - s.fours * 4 - s.sixes * 6, color: "#94a3b8" },
+                ],
+              },
+            })}
+            {section({
+              tone: "bowling",
+              title: "Bowling",
+              icon: "fa-baseball",
+              lead: ["Wickets", "Economy", "Best"],
+              items: [
+                ["Innings", s.bowlingInnings],
+                ["Overs", `${Math.floor(s.ballsBowled / 6)}.${s.ballsBowled % 6}`],
+                ["Wickets", s.wickets],
+                ["Best", bestBowling(s)],
+                ["Economy", rate(s.runsConceded, s.ballsBowled)],
+                ["Average", s.wickets ? (s.runsConceded / s.wickets).toFixed(2) : "–"],
+                ["Maidens", s.maidens],
+                ["3+ wicket hauls", s.threeWickets],
+              ],
+            })}
+            {section({
+              tone: "fielding",
+              title: "Fielding",
+              icon: "fa-hand",
+              lead: ["Catches", "Stumpings", "Run-outs"],
+              items: [
+                ["Catches", s.catches],
+                ["Stumpings", s.stumpings],
+                ["Run-outs", s.runOuts],
+              ],
+            })}
+            {section({
+              tone: "impact",
+              title: "Impact points",
+              icon: "fa-bolt",
+              lead: ["Total (MVP)", "Per match"],
+              items: [
+                ["Total (MVP)", points(s.impact)],
+                ["Per match", impactPerMatch(s)],
+                ["Batting", points(s.battingImpact)],
+                ["Bowling", points(s.bowlingImpact)],
+                ["Fielding", points(s.fieldingImpact)],
+              ],
+              share: {
+                title: "Where the points come from",
+                summary: `${points(s.impact)} pts`,
+                parts: [
+                  { label: "Batting", value: s.battingImpact, color: "#ffcd00", shown: points(s.battingImpact) },
+                  { label: "Bowling", value: s.bowlingImpact, color: "#e8501f", shown: points(s.bowlingImpact) },
+                  { label: "Fielding", value: s.fieldingImpact, color: "#16a34a", shown: points(s.fieldingImpact) },
+                ],
+              },
+            })}
           </div>
         </>
       )}

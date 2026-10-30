@@ -4,6 +4,8 @@ import { pointsTable, type PointsRow } from "../stats";
 import { BottomSheet } from "../BottomSheet";
 import InputComp from "../../dms/components/InputComp";
 import { PillSelect } from "../PillSelect";
+import { useSwipeTabs } from "../../useSwipeTabs";
+import { SwipePanels } from "../../SwipePanels";
 
 // Cricket overs to decimal overs (e.g. 18.2 overs = 18 + 2/6 = 18.333)
 export function parseOversToDecimal(oversVal: number | string): number {
@@ -48,6 +50,7 @@ export function NrrCalculatorSheet({
 
   const hasTournament = tournament && tournament.teams.length >= 2;
   const [tab, setTab] = useState<"tournament" | "custom">(hasTournament ? "tournament" : "custom");
+  const swipeRef = useSwipeTabs(hasTournament ? (["tournament", "custom"] as const) : (["custom"] as const), tab, setTab);
 
   // Tournament simulator state
   const [teamAIdx, setTeamAIdx] = useState<number>(0);
@@ -154,7 +157,7 @@ export function NrrCalculatorSheet({
   return (
     <BottomSheet title="Net Run Rate (NRR) Calculator" icon="fa-solid fa-calculator" onClose={onClose} wide>
       <div className="cricket-squad-toolbar mb-3">
-        <div className="admin-segmented cricket-tabs is-justified" role="tablist">
+        <div ref={swipeRef} className="admin-segmented cricket-tabs is-justified" role="tablist">
           {hasTournament && (
             <button
               type="button"
@@ -170,225 +173,231 @@ export function NrrCalculatorSheet({
         </div>
       </div>
 
-      {tab === "tournament" && hasTournament && (
-        <div className="cricket-nrr-simulator d-flex flex-column gap-3">
-          <div className="row g-2">
-            <div className="col-12 col-sm-6">
-              <label className="cricket-sheet-label mb-1">Your Team</label>
-              <PillSelect
-                label="Your Team"
-                value={String(teamAIdx)}
-                options={tournament.teams.map((team, idx) => {
-                  const row = standings.find((r) => r.teamIndex === idx);
-                  return {
-                    value: String(idx),
-                    label: `${team.name} (NRR: ${row ? (row.nrr >= 0 ? `+${row.nrr.toFixed(3)}` : row.nrr.toFixed(3)) : "0.000"})`,
-                  };
-                })}
-                onChange={(val) => setTeamAIdx(Number(val))}
-                className="w-100"
-              />
-            </div>
-            <div className="col-12 col-sm-6">
-              <label className="cricket-sheet-label mb-1">Target Team to Surpass</label>
-              <PillSelect
-                label="Target Team to Surpass"
-                value={String(teamBIdx)}
-                options={tournament.teams.map((team, idx) => {
-                  const row = standings.find((r) => r.teamIndex === idx);
-                  return {
-                    value: String(idx),
-                    label: `${team.name} (NRR: ${row ? (row.nrr >= 0 ? `+${row.nrr.toFixed(3)}` : row.nrr.toFixed(3)) : "0.000"})`,
-                  };
-                })}
-                onChange={(val) => setTeamBIdx(Number(val))}
-                className="w-100"
-              />
-            </div>
-          </div>
-
-          <div className="d-flex gap-2">
-            <button
-              type="button"
-              className={`cricket-nrr-mode-btn flex-fill ${mode === "chasing" ? "is-active" : ""}`}
-              onClick={() => setMode("chasing")}
-            >
-              <i className="fa-solid fa-baseball-bat-ball" aria-hidden="true"></i> Chasing Target
-            </button>
-            <button
-              type="button"
-              className={`cricket-nrr-mode-btn flex-fill ${mode === "defending" ? "is-active" : ""}`}
-              onClick={() => setMode("defending")}
-            >
-              <i className="fa-solid fa-shield-halved" aria-hidden="true"></i> Defending Total
-            </button>
-          </div>
-
-          <div className="row g-2">
-            <div className="col-6">
-              <InputComp
-                label={mode === "chasing" ? "Opponent Score" : "Your 1st Innings Total"}
-                type="number"
-                value={targetScore}
-                onChange={(e) => setTargetScore(e.target.value)}
-              />
-            </div>
-            <div className="col-6">
-              <InputComp
-                label="Match Overs"
-                type="number"
-                value={scenarioOvers}
-                onChange={(e) => setScenarioOvers(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {simulation && (
-            <div className={`cricket-nrr-compact-card ${simulation.canAchieve ? "is-achievable" : "is-warning"}`}>
-              <div className="cricket-nrr-compact-header">
-                <div className="cricket-nrr-compact-team">
-                  <span className="cricket-nrr-tag">
-                    <i className="fa-solid fa-bullseye me-1" aria-hidden="true"></i> Target Scenario
-                  </span>
-                  <strong className="cricket-nrr-team-name">{tournament.teams[teamAIdx]?.name}</strong>
-                </div>
-                <span className="cricket-nrr-beat-pill">
-                  Beat NRR: <strong>{simulation.targetNrrB >= 0 ? `+${simulation.targetNrrB.toFixed(3)}` : simulation.targetNrrB.toFixed(3)}</strong>
-                </span>
-              </div>
-
-              {simulation.type === "chasing" ? (
-                simulation.canAchieve ? (
-                  <div className="cricket-nrr-compact-body">
-                    <div className="cricket-nrr-compact-condition">
-                      To overtake <strong>{tournament.teams[teamBIdx]?.name}</strong>:
-                    </div>
-                    <div className="cricket-nrr-compact-action">
-                      <span>Chase <strong>{simulation.targetRuns}</strong> in at most</span>
-                      <span className="cricket-nrr-badge">{simulation.reqOversFormatted} ov</span>
-                      <span className="cricket-nrr-sub">
-                        ({oversToTotalBalls(parseOversToDecimal(simulation.reqOversFormatted!))} balls)
-                      </span>
-                    </div>
-                    <div className="cricket-nrr-compact-meta">
-                      <span>
-                        <i className="fa-solid fa-gauge-high text-danger me-1" aria-hidden="true"></i>
-                        Min RRR: <strong>{(simulation.targetRuns / Math.max(0.1, parseOversToDecimal(simulation.reqOversFormatted!))).toFixed(2)} RPO</strong>
-                      </span>
-                      <span className="cricket-nrr-dot">•</span>
-                      <span>Target: <strong>{simulation.targetRuns} runs</strong></span>
-                    </div>
+      <SwipePanels swipe={swipeRef} values={hasTournament ? (["tournament", "custom"] as const) : (["custom"] as const)} current={tab}>
+        {(tab) => (
+          <>
+            {tab === "tournament" && hasTournament && (
+              <div className="cricket-nrr-simulator d-flex flex-column gap-3">
+                <div className="row g-2">
+                  <div className="col-12 col-sm-6">
+                    <label className="cricket-sheet-label mb-1">Your Team</label>
+                    <PillSelect
+                      label="Your Team"
+                      value={String(teamAIdx)}
+                      options={tournament.teams.map((team, idx) => {
+                        const row = standings.find((r) => r.teamIndex === idx);
+                        return {
+                          value: String(idx),
+                          label: `${team.name} (NRR: ${row ? (row.nrr >= 0 ? `+${row.nrr.toFixed(3)}` : row.nrr.toFixed(3)) : "0.000"})`,
+                        };
+                      })}
+                      onChange={(val) => setTeamAIdx(Number(val))}
+                      className="w-100"
+                    />
                   </div>
-                ) : (
-                  <div className="cricket-nrr-compact-warning">
-                    <div className="cricket-nrr-warning-title">
-                      <i className="fa-solid fa-circle-exclamation me-1" aria-hidden="true"></i> Target unreachable in single game
+                  <div className="col-12 col-sm-6">
+                    <label className="cricket-sheet-label mb-1">Target Team to Surpass</label>
+                    <PillSelect
+                      label="Target Team to Surpass"
+                      value={String(teamBIdx)}
+                      options={tournament.teams.map((team, idx) => {
+                        const row = standings.find((r) => r.teamIndex === idx);
+                        return {
+                          value: String(idx),
+                          label: `${team.name} (NRR: ${row ? (row.nrr >= 0 ? `+${row.nrr.toFixed(3)}` : row.nrr.toFixed(3)) : "0.000"})`,
+                        };
+                      })}
+                      onChange={(val) => setTeamBIdx(Number(val))}
+                      className="w-100"
+                    />
+                  </div>
+                </div>
+
+                <div className="d-flex gap-2">
+                  <button
+                    type="button"
+                    className={`cricket-nrr-mode-btn flex-fill ${mode === "chasing" ? "is-active" : ""}`}
+                    onClick={() => setMode("chasing")}
+                  >
+                    <i className="fa-solid fa-baseball-bat-ball" aria-hidden="true"></i> Chasing Target
+                  </button>
+                  <button
+                    type="button"
+                    className={`cricket-nrr-mode-btn flex-fill ${mode === "defending" ? "is-active" : ""}`}
+                    onClick={() => setMode("defending")}
+                  >
+                    <i className="fa-solid fa-shield-halved" aria-hidden="true"></i> Defending Total
+                  </button>
+                </div>
+
+                <div className="row g-2">
+                  <div className="col-6">
+                    <InputComp
+                      label={mode === "chasing" ? "Opponent Score" : "Your 1st Innings Total"}
+                      type="number"
+                      value={targetScore}
+                      onChange={(e) => setTargetScore(e.target.value)}
+                    />
+                  </div>
+                  <div className="col-6">
+                    <InputComp
+                      label="Match Overs"
+                      type="number"
+                      value={scenarioOvers}
+                      onChange={(e) => setScenarioOvers(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {simulation && (
+                  <div className={`cricket-nrr-compact-card ${simulation.canAchieve ? "is-achievable" : "is-warning"}`}>
+                    <div className="cricket-nrr-compact-header">
+                      <div className="cricket-nrr-compact-team">
+                        <span className="cricket-nrr-tag">
+                          <i className="fa-solid fa-bullseye me-1" aria-hidden="true"></i> Target Scenario
+                        </span>
+                        <strong className="cricket-nrr-team-name">{tournament.teams[teamAIdx]?.name}</strong>
+                      </div>
+                      <span className="cricket-nrr-beat-pill">
+                        Beat NRR: <strong>{simulation.targetNrrB >= 0 ? `+${simulation.targetNrrB.toFixed(3)}` : simulation.targetNrrB.toFixed(3)}</strong>
+                      </span>
                     </div>
-                    <small>
-                      A chase of {simulation.targetRuns} in {simulation.maxOvers} ov cannot overtake the target NRR.
+
+                    {simulation.type === "chasing" ? (
+                      simulation.canAchieve ? (
+                        <div className="cricket-nrr-compact-body">
+                          <div className="cricket-nrr-compact-condition">
+                            To overtake <strong>{tournament.teams[teamBIdx]?.name}</strong>:
+                          </div>
+                          <div className="cricket-nrr-compact-action">
+                            <span>Chase <strong>{simulation.targetRuns}</strong> in at most</span>
+                            <span className="cricket-nrr-badge">{simulation.reqOversFormatted} ov</span>
+                            <span className="cricket-nrr-sub">
+                              ({oversToTotalBalls(parseOversToDecimal(simulation.reqOversFormatted!))} balls)
+                            </span>
+                          </div>
+                          <div className="cricket-nrr-compact-meta">
+                            <span>
+                              <i className="fa-solid fa-gauge-high text-danger me-1" aria-hidden="true"></i>
+                              Min RRR: <strong>{(simulation.targetRuns / Math.max(0.1, parseOversToDecimal(simulation.reqOversFormatted!))).toFixed(2)} RPO</strong>
+                            </span>
+                            <span className="cricket-nrr-dot">•</span>
+                            <span>Target: <strong>{simulation.targetRuns} runs</strong></span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="cricket-nrr-compact-warning">
+                          <div className="cricket-nrr-warning-title">
+                            <i className="fa-solid fa-circle-exclamation me-1" aria-hidden="true"></i> Target unreachable in single game
+                          </div>
+                          <small>
+                            A chase of {simulation.targetRuns} in {simulation.maxOvers} ov cannot overtake the target NRR.
+                          </small>
+                        </div>
+                      )
+                    ) : simulation.canAchieve ? (
+                      <div className="cricket-nrr-compact-body">
+                        <div className="cricket-nrr-compact-condition">
+                          After setting <strong>{simulation.scoredRuns} runs</strong> in {simulation.maxOvers} ov:
+                        </div>
+                        <div className="cricket-nrr-compact-action">
+                          <span>Restrict <strong>{tournament.teams[teamBIdx]?.name}</strong> to</span>
+                          <span className="cricket-nrr-badge">&le; {simulation.maxAllowedRuns} runs</span>
+                          <span className="cricket-nrr-sub">({simulation.maxOvers} ov)</span>
+                        </div>
+                        <div className="cricket-nrr-compact-meta">
+                          <span>
+                            <i className="fa-solid fa-shield text-success me-1" aria-hidden="true"></i>
+                            Win by at least: <strong>{simulation.scoredRuns - simulation.maxAllowedRuns} runs</strong>
+                          </span>
+                          <span className="cricket-nrr-dot">•</span>
+                          <span>Max Allowed RR: <strong>{(simulation.maxAllowedRuns / simulation.maxOvers).toFixed(2)} RPO</strong></span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="cricket-nrr-compact-warning">
+                        <div className="cricket-nrr-warning-title">
+                          <i className="fa-solid fa-circle-exclamation me-1" aria-hidden="true"></i> Target unreachable in single game
+                        </div>
+                        <small>
+                          Defending {simulation.scoredRuns} in {simulation.maxOvers} ov cannot overtake the target NRR.
+                        </small>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {tab === "custom" && (
+              <div className="cricket-custom-nrr d-flex flex-column gap-3">
+                <div className="row g-2">
+                  <div className="col-12 col-sm-6 border rounded-3 p-3">
+                    <h5 className="fs-6 fw-bold text-success mb-2">Batting (Runs For)</h5>
+                    <div className="row g-2">
+                      <div className="col-6">
+                        <InputComp
+                          label="Total Runs"
+                          type="number"
+                          value={customRunsFor}
+                          onChange={(e) => setCustomRunsFor(e.target.value)}
+                        />
+                      </div>
+                      <div className="col-6">
+                        <InputComp
+                          label="Overs (e.g. 20 or 18.3)"
+                          type="text"
+                          value={customOversFor}
+                          onChange={(e) => setCustomOversFor(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <small className="text-muted d-block mt-2">
+                      Run Rate: <strong>{customNrr.forRate.toFixed(3)}</strong>
                     </small>
                   </div>
-                )
-              ) : simulation.canAchieve ? (
-                <div className="cricket-nrr-compact-body">
-                  <div className="cricket-nrr-compact-condition">
-                    After setting <strong>{simulation.scoredRuns} runs</strong> in {simulation.maxOvers} ov:
-                  </div>
-                  <div className="cricket-nrr-compact-action">
-                    <span>Restrict <strong>{tournament.teams[teamBIdx]?.name}</strong> to</span>
-                    <span className="cricket-nrr-badge">&le; {simulation.maxAllowedRuns} runs</span>
-                    <span className="cricket-nrr-sub">({simulation.maxOvers} ov)</span>
-                  </div>
-                  <div className="cricket-nrr-compact-meta">
-                    <span>
-                      <i className="fa-solid fa-shield text-success me-1" aria-hidden="true"></i>
-                      Win by at least: <strong>{simulation.scoredRuns - simulation.maxAllowedRuns} runs</strong>
-                    </span>
-                    <span className="cricket-nrr-dot">•</span>
-                    <span>Max Allowed RR: <strong>{(simulation.maxAllowedRuns / simulation.maxOvers).toFixed(2)} RPO</strong></span>
+
+                  <div className="col-12 col-sm-6 border rounded-3 p-3">
+                    <h5 className="fs-6 fw-bold text-danger mb-2">Bowling (Runs Against)</h5>
+                    <div className="row g-2">
+                      <div className="col-6">
+                        <InputComp
+                          label="Runs Conceded"
+                          type="number"
+                          value={customRunsAgainst}
+                          onChange={(e) => setCustomRunsAgainst(e.target.value)}
+                        />
+                      </div>
+                      <div className="col-6">
+                        <InputComp
+                          label="Overs Bowled"
+                          type="text"
+                          value={customOversAgainst}
+                          onChange={(e) => setCustomOversAgainst(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <small className="text-muted d-block mt-2">
+                      Against Rate: <strong>{customNrr.againstRate.toFixed(3)}</strong>
+                    </small>
                   </div>
                 </div>
-              ) : (
-                <div className="cricket-nrr-compact-warning">
-                  <div className="cricket-nrr-warning-title">
-                    <i className="fa-solid fa-circle-exclamation me-1" aria-hidden="true"></i> Target unreachable in single game
+
+                <div className="card text-center p-3 bg-body-tertiary border">
+                  <span className="text-muted small text-uppercase fw-bold">Net Run Rate (NRR)</span>
+                  <div className={`fs-2 fw-black my-1 ${customNrr.nrr >= 0 ? "text-success" : "text-danger"}`}>
+                    {customNrr.nrr >= 0 ? `+${customNrr.nrr.toFixed(3)}` : customNrr.nrr.toFixed(3)}
                   </div>
-                  <small>
-                    Defending {simulation.scoredRuns} in {simulation.maxOvers} ov cannot overtake the target NRR.
+                  <small className="text-muted">
+                    {customNrr.forRate.toFixed(3)} (Batting RR) - {customNrr.againstRate.toFixed(3)} (Bowling RR) ={" "}
+                    {customNrr.nrr.toFixed(3)}
                   </small>
                 </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {tab === "custom" && (
-        <div className="cricket-custom-nrr d-flex flex-column gap-3">
-          <div className="row g-2">
-            <div className="col-12 col-sm-6 border rounded-3 p-3">
-              <h5 className="fs-6 fw-bold text-success mb-2">Batting (Runs For)</h5>
-              <div className="row g-2">
-                <div className="col-6">
-                  <InputComp
-                    label="Total Runs"
-                    type="number"
-                    value={customRunsFor}
-                    onChange={(e) => setCustomRunsFor(e.target.value)}
-                  />
-                </div>
-                <div className="col-6">
-                  <InputComp
-                    label="Overs (e.g. 20 or 18.3)"
-                    type="text"
-                    value={customOversFor}
-                    onChange={(e) => setCustomOversFor(e.target.value)}
-                  />
-                </div>
               </div>
-              <small className="text-muted d-block mt-2">
-                Run Rate: <strong>{customNrr.forRate.toFixed(3)}</strong>
-              </small>
-            </div>
-
-            <div className="col-12 col-sm-6 border rounded-3 p-3">
-              <h5 className="fs-6 fw-bold text-danger mb-2">Bowling (Runs Against)</h5>
-              <div className="row g-2">
-                <div className="col-6">
-                  <InputComp
-                    label="Runs Conceded"
-                    type="number"
-                    value={customRunsAgainst}
-                    onChange={(e) => setCustomRunsAgainst(e.target.value)}
-                  />
-                </div>
-                <div className="col-6">
-                  <InputComp
-                    label="Overs Bowled"
-                    type="text"
-                    value={customOversAgainst}
-                    onChange={(e) => setCustomOversAgainst(e.target.value)}
-                  />
-                </div>
-              </div>
-              <small className="text-muted d-block mt-2">
-                Against Rate: <strong>{customNrr.againstRate.toFixed(3)}</strong>
-              </small>
-            </div>
-          </div>
-
-          <div className="card text-center p-3 bg-body-tertiary border">
-            <span className="text-muted small text-uppercase fw-bold">Net Run Rate (NRR)</span>
-            <div className={`fs-2 fw-black my-1 ${customNrr.nrr >= 0 ? "text-success" : "text-danger"}`}>
-              {customNrr.nrr >= 0 ? `+${customNrr.nrr.toFixed(3)}` : customNrr.nrr.toFixed(3)}
-            </div>
-            <small className="text-muted">
-              {customNrr.forRate.toFixed(3)} (Batting RR) - {customNrr.againstRate.toFixed(3)} (Bowling RR) ={" "}
-              {customNrr.nrr.toFixed(3)}
-            </small>
-          </div>
-        </div>
-      )}
+            )}
+          </>
+        )}
+      </SwipePanels>
     </BottomSheet>
   );
 }

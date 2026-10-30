@@ -144,7 +144,7 @@ export function MatchHero({ match }: MatchHeroProps) {
       {/* Under the scores, the result (or state of play); the details live
           in the Info and Summary tabs. */}
       {match.status !== "scheduled" && (match.resultText || headline) && (
-        <div className="cricket-hero-foot">
+        <div className={`cricket-hero-foot ${match.resultText && match.winner !== null ? "is-won" : ""}`.trim()}>
           {match.resultText ? (
             <span className={`cricket-hero-headline is-result ${match.winner === null ? "is-level" : ""}`.trim()}>
               <i className={`fa-solid ${match.winner === null ? "fa-handshake" : "fa-crown"}`} aria-hidden="true"></i> {match.resultText}

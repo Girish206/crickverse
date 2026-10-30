@@ -3,6 +3,7 @@ import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import BottomNav from "./BottomNav";
 import CricketBackdrop from "./CricketBackdrop";
+import { PullToRefresh } from "./PullToRefresh";
 import { BrandSignature } from "../../components/BrandSignature";
 import { ShareAppSheet } from "../../cricket/ShareMenu";
 import { PlayerQrSheet } from "../../cricket/qr/ShowQrSheets";
@@ -158,6 +159,7 @@ const Layout = ({
                     isSidebarOpen ? "sidebar-open" : "sidebar-closed"
                 } ${isMainScreen ? "" : "is-subpage"}`}
             >
+                <PullToRefresh />
                 {children}
                 {/* Desktop only; phones show it in the menu drawer instead. */}
                 <div className="main-signature">

@@ -1,0 +1,135 @@
+/* The confirm dialogs (confirmDelete.ts): a compact card — a soft icon
+   badge, the title and text, then Cancel and the action side by side. The
+   `!important`s out-rank SweetAlert's own rules and the generic .swal2-*
+   sizing in dms/css/style.css. */
+
+.cv-confirm-backdrop {
+  backdrop-filter: blur(3px);
+}
+
+.swal2-popup.cv-confirm {
+  width: min(340px, calc(100vw - 32px)) !important;
+  padding: 22px 20px 18px !important;
+  border-radius: 20px !important;
+  background: var(--adm-surface, #fff);
+  box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.35);
+}
+
+/* The icon: a tinted circle with the glyph in it, no ring, no animation. */
+.swal2-icon.cv-confirm-icon {
+  width: 56px !important;
+  height: 56px !important;
+  margin: 2px auto 14px !important;
+  border: 0 !important;
+  border-radius: 50%;
+  background: rgba(var(--primary-rgb), 0.1);
+  color: var(--primary) !important;
+  animation: none !important;
+}
+.swal2-icon.cv-confirm-icon .swal2-icon-content {
+  font-size: 1.45rem !important;
+  animation: none !important;
+}
+.cv-confirm.is-danger .swal2-icon.cv-confirm-icon {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626 !important;
+}
+
+.swal2-title.cv-confirm-title {
+  padding: 0 !important;
+  margin: 0 0 6px !important;
+  color: var(--theme-text-dark);
+  font-size: var(--fs-lg) !important;
+  font-weight: 800;
+  line-height: 1.25;
+}
+.swal2-html-container.cv-confirm-text {
+  margin: 0 !important;
+  padding: 0 4px !important;
+  color: var(--muted-color);
+  font-size: var(--fs-sm) !important;
+  line-height: 1.5;
+}
+
+.swal2-actions.cv-confirm-actions {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px !important;
+  width: 100%;
+  margin: 20px 0 0 !important;
+  padding: 0 !important;
+}
+.cv-confirm-btn {
+  margin: 0 !important;
+  min-height: 44px;
+  padding: 0.55em 1em !important;
+  border-radius: 12px;
+  font-size: var(--fs-sm) !important;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.15s ease, background-color 0.15s ease, transform 0.1s ease;
+}
+.cv-confirm-btn:active {
+  transform: scale(0.97);
+}
+.cv-confirm-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.3);
+}
+.cv-confirm-btn.is-confirm {
+  border: 0;
+  background: var(--primary-gradient, var(--primary));
+  color: #fff;
+  box-shadow: 0 6px 14px -6px rgba(var(--primary-rgb), 0.6);
+}
+.cv-confirm-btn.is-confirm:hover {
+  filter: brightness(1.08);
+}
+.cv-confirm.is-danger .cv-confirm-btn.is-confirm {
+  background: #dc2626;
+  box-shadow: 0 6px 14px -6px rgba(220, 38, 38, 0.6);
+}
+.cv-confirm-btn.is-cancel {
+  border: 1.5px solid var(--border-color);
+  background: transparent;
+  color: var(--theme-text-dark);
+}
+.cv-confirm-btn.is-cancel:hover {
+  background: rgba(15, 23, 42, 0.05);
+}
+
+:root[data-bs-theme="dark"] .swal2-popup.cv-confirm {
+  border: 1px solid var(--adm-line);
+  box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.7);
+}
+:root[data-bs-theme="dark"] .swal2-icon.cv-confirm-icon {
+  background: rgba(var(--primary-rgb), 0.18);
+}
+:root[data-bs-theme="dark"] .cv-confirm.is-danger .swal2-icon.cv-confirm-icon {
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171 !important;
+}
+:root[data-bs-theme="dark"] .swal2-title.cv-confirm-title {
+  color: var(--adm-text);
+}
+:root[data-bs-theme="dark"] .swal2-html-container.cv-confirm-text {
+  color: var(--adm-text-2);
+}
+/* The dark theme's night-sky gradient sinks into the card: a brighter
+   maroon (the score card's), lit along the top edge, stands out. */
+:root[data-bs-theme="dark"] .cv-confirm-btn.is-confirm {
+  background: linear-gradient(180deg, #b4423a 0%, #8c262c 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 6px 16px -6px rgba(0, 0, 0, 0.6);
+}
+:root[data-bs-theme="dark"] .cv-confirm.is-danger .cv-confirm-btn.is-confirm {
+  background: linear-gradient(180deg, #ef4444 0%, #c81e1e 100%);
+}
+:root[data-bs-theme="dark"] .cv-confirm-btn.is-cancel {
+  border-color: var(--adm-line-strong);
+  color: var(--adm-text);
+}
+:root[data-bs-theme="dark"] .cv-confirm-btn.is-cancel:hover {
+  background: var(--adm-hover);
+}

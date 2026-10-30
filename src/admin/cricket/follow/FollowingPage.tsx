@@ -17,6 +17,8 @@ import "../../admin.css";
 import "../cricket.css";
 import { Loader } from "../../components/Loader";
 import { TeamMark } from "../teams/TeamMark";
+import { useSwipeTabs, type SwipeRef } from "../../useSwipeTabs";
+import { SwipePanels } from "../../SwipePanels";
 
 type Mode = "following" | "discover";
 
@@ -38,14 +40,16 @@ function Tabs<T extends string>({
   options,
   value,
   onChange,
+  swipeRef,
 }: {
   label: string;
   options: { value: T; label: string }[];
   value: T;
   onChange: (value: T) => void;
+  swipeRef?: SwipeRef;
 }) {
   return (
-    <div className="admin-segmented cricket-tabs" role="tablist" aria-label={label}>
+    <div ref={swipeRef} className="admin-segmented cricket-tabs" role="tablist" aria-label={label}>
       {options.map((o) => (
         <button
           key={o.value}
@@ -106,6 +110,8 @@ export function FollowingPage() {
   const [mode, setMode] = useState<Mode>("following");
   const [kind, setKind] = useState<CricketFollowKind>("tournament");
   const [search, setSearch] = useState("");
+  // Swipes change the kind; Following / Discover is a tap.
+  const kindSwipe = useSwipeTabs(KINDS.map((k) => k.value), kind, setKind);
   const myId = mine?.playerId ?? null;
   const { data: counts } = useFollowCounts({ kind: "player", targetId: myId ?? 0, teamIndex: null }, myId !== null);
 
@@ -163,72 +169,76 @@ export function FollowingPage() {
     }
   }
 
-  const empty =
-    mode === "following"
-      ? `You don't follow any ${KINDS.find((k) => k.value === kind)!.label.toLowerCase()} yet — find some in Discover.`
-      : "Nothing here yet.";
+  // One list per kind, so a swipe brings the next one in beside it.
+  const listFor = (kind: CricketFollowKind) => {
+    const empty =
+      mode === "following"
+        ? `You don't follow any ${KINDS.find((k) => k.value === kind)!.label.toLowerCase()} yet — find some in Discover.`
+        : "Nothing here yet.";
 
-  let list: ReactNode;
-  if (kind === "tournament") {
-    list = tournamentItems.length ? (
-      <div className="cricket-team-cards">
-        {tournamentItems.map((t) => (
-          <FollowCard
-            key={t.id}
-            to={canOpen(t) ? `/tournaments/${t.id}` : null}
-            logo={<TournamentLogo tournament={t} />}
-            title={t.name}
-            detail={[t.city, plural(t.teams.length, "team")].filter(Boolean).join(" · ")}
-            follow={<FollowButton target={{ kind: "tournament", targetId: t.id, teamIndex: null }} />}
-          />
-        ))}
-      </div>
-    ) : null;
-  } else if (kind === "team") {
-    list = teamItems.length ? (
-      <div className="cricket-team-cards">
-        {teamItems.map(({ tournament, team, index }) => (
-          <FollowCard
-            key={`${tournament.id}-${index}`}
-            to={canOpen(tournament) ? `/tournaments/${tournament.id}/teams/${index}` : null}
-            logo={
-              <TeamMark className="cricket-team-card-logo" name={team.name} logoUrl={team.logoUrl} />
-            }
-            title={team.name}
-            detail={`${tournament.name} · ${plural(team.playerIds.length, "player")}`}
-            follow={<FollowButton target={{ kind: "team", targetId: tournament.id, teamIndex: index }} />}
-          />
-        ))}
-      </div>
-    ) : null;
-  } else {
-    list = playerItems.length ? (
-      <div className="cricket-player-grid">
-        {playerItems.map((player) => {
-          const role = roleOf(player.role);
-          return (
-            <div className="cricket-player-row" key={player.id}>
-              <PlayerAvatar name={player.name} photoUrl={player.photoUrl} className="cricket-player-avatar" />
-              <div className="cricket-player-info">
-                <strong>
-                  <PlayerLink playerId={player.id}>{player.name}</PlayerLink>
-                </strong>
-                <small>
-                  {role ? (
-                    role.label
-                  ) : (
-                    "Role not set"
-                  )}
-                </small>
-                {teamOfPlayer.get(player.id) && <small>{teamOfPlayer.get(player.id)}</small>}
+    let list: ReactNode;
+    if (kind === "tournament") {
+      list = tournamentItems.length ? (
+        <div className="cricket-team-cards">
+          {tournamentItems.map((t) => (
+            <FollowCard
+              key={t.id}
+              to={canOpen(t) ? `/tournaments/${t.id}` : null}
+              logo={<TournamentLogo tournament={t} />}
+              title={t.name}
+              detail={[t.city, plural(t.teams.length, "team")].filter(Boolean).join(" · ")}
+              follow={<FollowButton target={{ kind: "tournament", targetId: t.id, teamIndex: null }} />}
+            />
+          ))}
+        </div>
+      ) : null;
+    } else if (kind === "team") {
+      list = teamItems.length ? (
+        <div className="cricket-team-cards">
+          {teamItems.map(({ tournament, team, index }) => (
+            <FollowCard
+              key={`${tournament.id}-${index}`}
+              to={canOpen(tournament) ? `/tournaments/${tournament.id}/teams/${index}` : null}
+              logo={
+                <TeamMark className="cricket-team-card-logo" name={team.name} logoUrl={team.logoUrl} />
+              }
+              title={team.name}
+              detail={`${tournament.name} · ${plural(team.playerIds.length, "player")}`}
+              follow={<FollowButton target={{ kind: "team", targetId: tournament.id, teamIndex: index }} />}
+            />
+          ))}
+        </div>
+      ) : null;
+    } else {
+      list = playerItems.length ? (
+        <div className="cricket-player-grid">
+          {playerItems.map((player) => {
+            const role = roleOf(player.role);
+            return (
+              <div className="cricket-player-row" key={player.id}>
+                <PlayerAvatar name={player.name} photoUrl={player.photoUrl} className="cricket-player-avatar" />
+                <div className="cricket-player-info">
+                  <strong>
+                    <PlayerLink playerId={player.id}>{player.name}</PlayerLink>
+                  </strong>
+                  <small>
+                    {role ? (
+                      role.label
+                    ) : (
+                      "Role not set"
+                    )}
+                  </small>
+                  {teamOfPlayer.get(player.id) && <small>{teamOfPlayer.get(player.id)}</small>}
+                </div>
+                <FollowButton target={{ kind: "player", targetId: player.id, teamIndex: null }} />
               </div>
-              <FollowButton target={{ kind: "player", targetId: player.id, teamIndex: null }} />
-            </div>
-          );
-        })}
-      </div>
-    ) : null;
-  }
+            );
+          })}
+        </div>
+      ) : null;
+    }
+    return list ?? <div className="admin-empty-state">{term ? "Nothing matches your search." : empty}</div>;
+  };
 
   return (
     <ListCard {...FOLLOWING_TITLE}>
@@ -242,7 +252,7 @@ export function FollowingPage() {
       />
       <div className="cricket-follow-toolbar">
         <Tabs label="Show" options={MODES} value={mode} onChange={setMode} />
-        <Tabs label="Kind" options={KINDS} value={kind} onChange={setKind} />
+        <Tabs label="Kind" options={KINDS} value={kind} onChange={setKind} swipeRef={kindSwipe} />
         <input
           type="search"
           className="form-control shadow-none"
@@ -251,7 +261,9 @@ export function FollowingPage() {
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
-      {list ?? <div className="admin-empty-state">{term ? "Nothing matches your search." : empty}</div>}
+      <SwipePanels swipe={kindSwipe} values={KINDS.map((k) => k.value)} current={kind}>
+        {listFor}
+      </SwipePanels>
     </ListCard>
   );
 }

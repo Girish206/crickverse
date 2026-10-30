@@ -4,6 +4,7 @@ import { ProtectedRoute, PublicOnlyRoute, RequireSuperAdmin } from "../admin/Pro
 import { AdminLoginPage } from "../admin/AdminLoginPage";
 import { NotFound } from "../app-shell/NotFound";
 import { RouteError } from "../app-shell/RouteError";
+import { ScrollToTop } from "../app-shell/ScrollToTop";
 
 const page = <T,>(load: () => Promise<T>, pick: (module: T) => ComponentType) => async () => ({
   Component: pick(await load()),
@@ -18,6 +19,7 @@ export const router = createBrowserRouter([
     // screen, the layout itself — shows a friendly full screen instead of
     // React Router's default.
     errorElement: <RouteError full />,
+    Component: ScrollToTop,
     children: [
       {
         element: <PublicOnlyRoute />,

@@ -1069,3 +1069,23 @@
 .sidebar.sidebar-open .sidebar-footer .nav-link:hover {
   transform: none;
 }
+/* Share and Logout as a matched pair: the same outlined button, Share in
+   the brand colour and Logout in red, each filling on hover. */
+.sidebar .sidebar-footer .share-app-btn {
+  border: 1px solid rgba(var(--primary-rgb), 0.25);
+  background: rgba(var(--primary-rgb), 0.06);
+  color: var(--primary) !important;
+}
+.sidebar .sidebar-footer .share-app-btn:hover {
+  background: var(--primary-gradient);
+  border-color: transparent;
+  color: #fff !important;
+}
+.sidebar .sidebar-footer .logout-btn {
+  background: rgba(244, 63, 94, 0.06);
+}
+/* Their icons take the button's colour, not the menu's grey. */
+.sidebar .sidebar-footer .share-app-btn i.icon,
+.sidebar .sidebar-footer .logout-btn i.icon {
+  color: inherit !important;
+}

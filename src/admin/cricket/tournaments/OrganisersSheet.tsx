@@ -8,6 +8,8 @@ import { BottomSheet } from "../BottomSheet";
 import { normalizeMobile } from "../mobile";
 import { roleOf } from "../playerRoles";
 import { PlayerAvatar } from "../players/PlayerAvatar";
+import { useSwipeTabs } from "../../useSwipeTabs";
+import { SwipePanels } from "../../SwipePanels";
 
 // Co-organisers: players who run the tournament alongside its creator —
 // edit it, its teams, format and matches. The sibling of ScorersSheet:
@@ -24,6 +26,7 @@ export function OrganisersSheet({ tournament, onClose }: { tournament: CricketTo
     ...(squads.length > 0 ? [{ value: "squad" as const, label: "From squads", icon: "fa-people-group" }] : []),
     { value: "mobile", label: "Mobile number", icon: "fa-mobile-screen" },
   ];
+  const swipeRef = useSwipeTabs(modes.map((m) => m.value), mode, setMode);
   const [mobile, setMobile] = useState("");
   const [found, setFound] = useState<CricketPlayer | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -110,7 +113,7 @@ export function OrganisersSheet({ tournament, onClose }: { tournament: CricketTo
       </section>
 
       {modes.length > 1 && (
-        <div className="admin-segmented cricket-tabs cricket-scorer-mode" role="tablist" aria-label="Add a co-organiser by">
+        <div ref={swipeRef} className="admin-segmented cricket-tabs cricket-scorer-mode" role="tablist" aria-label="Add a co-organiser by">
           {modes.map((m) => (
             <button
               key={m.value}
@@ -126,79 +129,83 @@ export function OrganisersSheet({ tournament, onClose }: { tournament: CricketTo
         </div>
       )}
 
-      {mode === "squad" ? (
-        squads.map((squad) => (
-          <section key={squad.name} className="cricket-scorer-squad">
-            <h3 className="cricket-add-player-title">{squad.name}</h3>
-            <ul className="cricket-roster">
-              {squad.playerIds.map((playerId) => {
-                const player = playerById.get(playerId);
-                const name = player?.name ?? "Player";
-                const added = ids.includes(playerId);
-                const role = roleOf(player?.role ?? null);
-                return (
-                  <li key={playerId}>
-                    <PlayerAvatar name={name} photoUrl={player?.photoUrl} className="cricket-roster-avatar" />
-                    <span className="cricket-roster-who">
-                      <strong>{name}</strong>
-                      {role && <small>{role.label}</small>}
-                    </span>
-                    <button
-                      type="button"
-                      className={`cricket-add-player-btn ${added ? "is-ghost" : ""}`.trim()}
-                      aria-pressed={added}
-                      onClick={() => toggle(playerId)}
-                    >
-                      <i className={`fa-solid ${added ? "fa-check" : "fa-plus"}`} aria-hidden="true"></i> {added ? "Added" : "Add"}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-        ))
-      ) : (
-        <form onSubmit={onSubmit} className="cricket-add-player">
-          <div className="cricket-add-player-row">
-            <InputComp
-              label="Co-organiser's Mobile Number"
-              floating
-              type="tel"
-              inputMode="tel"
-              autoComplete="off"
-              value={mobile}
-              error={error ?? undefined}
-              onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                setMobile(e.target.value);
-                setFound(null);
-                setError(null);
-              }}
-            />
-            {found ? (
-              <button type="button" className="cricket-add-player-btn is-ghost" onClick={reset}>
-                Change
-              </button>
-            ) : (
-              <button type="submit" className="cricket-add-player-btn" disabled={!mobile.trim() || looking}>
-                Next <i className="fa-solid fa-arrow-right" aria-hidden="true"></i>
-              </button>
-            )}
-          </div>
-
-          {found && (
-            <div className="cricket-add-player-card">
-              <PlayerAvatar name={found.name} photoUrl={found.photoUrl} className="cricket-roster-avatar" />
-              <span className="cricket-roster-who">
-                <strong>{found.name}</strong>
-                {foundRole && <small>{foundRole.label}</small>}
-              </span>
-              <button type="submit" className="cricket-add-player-btn">
-                <i className="fa-solid fa-plus" aria-hidden="true"></i> Add
-              </button>
-            </div>
-          )}
-        </form>
-      )}
+      <SwipePanels swipe={swipeRef} values={modes.map((m) => m.value)} current={mode}>
+        {(mode) =>
+          mode === "squad" ? (
+            squads.map((squad) => (
+              <section key={squad.name} className="cricket-scorer-squad">
+                <h3 className="cricket-add-player-title">{squad.name}</h3>
+                <ul className="cricket-roster">
+                  {squad.playerIds.map((playerId) => {
+                    const player = playerById.get(playerId);
+                    const name = player?.name ?? "Player";
+                    const added = ids.includes(playerId);
+                    const role = roleOf(player?.role ?? null);
+                    return (
+                      <li key={playerId}>
+                        <PlayerAvatar name={name} photoUrl={player?.photoUrl} className="cricket-roster-avatar" />
+                        <span className="cricket-roster-who">
+                          <strong>{name}</strong>
+                          {role && <small>{role.label}</small>}
+                        </span>
+                        <button
+                          type="button"
+                          className={`cricket-add-player-btn ${added ? "is-ghost" : ""}`.trim()}
+                          aria-pressed={added}
+                          onClick={() => toggle(playerId)}
+                        >
+                          <i className={`fa-solid ${added ? "fa-check" : "fa-plus"}`} aria-hidden="true"></i> {added ? "Added" : "Add"}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            ))
+          ) : (
+            <form onSubmit={onSubmit} className="cricket-add-player">
+              <div className="cricket-add-player-row">
+                <InputComp
+                  label="Co-organiser's Mobile Number"
+                  floating
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="off"
+                  value={mobile}
+                  error={error ?? undefined}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                    setMobile(e.target.value);
+                    setFound(null);
+                    setError(null);
+                  }}
+                />
+                {found ? (
+                  <button type="button" className="cricket-add-player-btn is-ghost" onClick={reset}>
+                    Change
+                  </button>
+                ) : (
+                  <button type="submit" className="cricket-add-player-btn" disabled={!mobile.trim() || looking}>
+                    Next <i className="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                  </button>
+                )}
+              </div>
+    
+              {found && (
+                <div className="cricket-add-player-card">
+                  <PlayerAvatar name={found.name} photoUrl={found.photoUrl} className="cricket-roster-avatar" />
+                  <span className="cricket-roster-who">
+                    <strong>{found.name}</strong>
+                    {foundRole && <small>{foundRole.label}</small>}
+                  </span>
+                  <button type="submit" className="cricket-add-player-btn">
+                    <i className="fa-solid fa-plus" aria-hidden="true"></i> Add
+                  </button>
+                </div>
+              )}
+            </form>
+          )
+        }
+      </SwipePanels>
     </BottomSheet>
   );
 }

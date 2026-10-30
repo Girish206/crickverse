@@ -1,4 +1,5 @@
 import { useState, type CSSProperties, type ReactElement, type ReactNode } from "react";
+import { avatarColorFor } from "../avatarColor";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useMyFollows } from "../../../api/hooks/cricket/useCricketFollows";
 import { useTournamentsMatches } from "../../../api/hooks/cricket/useCricketMatches";
@@ -11,7 +12,7 @@ import { HomeRail, HomeSection, LiveCount } from "../HomeSection";
 import { PillSelect } from "../PillSelect";
 import { useTips, type TipStep } from "../TipsTour";
 import { MatchesBoard } from "../matches/CricketMatchesList";
-import { LiveMatchCard, MatchCard, type MatchTag } from "../matches/matchUi";
+import { MatchCard, type MatchTag } from "../matches/matchUi";
 import { teamKeyOf, usePlayerNames } from "../matches/matchUtils";
 import { CricketPlayerProfile } from "../players/CricketPlayerProfile";
 import { battingCard, bowlingCard, oversText, playerOfMatch, playerStats } from "../stats";
@@ -26,6 +27,9 @@ import { Button } from "../../components/Button";
 import { BottomSheet } from "../BottomSheet";
 import { CreateSavedTeamForm } from "../teams/SavedTeamPage";
 import { TeamMark } from "../teams/TeamMark";
+import { BannerCount, FormLine, Scoreline, SummaryBanner, WinRing, type FormResult } from "./SummaryBanner";
+import { useSwipeTabs } from "../../useSwipeTabs";
+import { SwipePanels } from "../../SwipePanels";
 
 // The main menu pages' titles: icon (as in the sidebar) and what each is for.
 type PageTitle = { title: string; icon: string; subtitle: string };
@@ -54,13 +58,13 @@ function useMyCricket(title: PageTitle): { me: CricketMe; fallback: null } | { m
   const { data: me, isLoading } = useCricketMe();
   const { admin } = useAdminAuth();
   if (isLoading || !me) {
-    return { me: null, fallback: <ListCard {...title}><Loader /></ListCard> };
+    return { me: null, fallback: <ListCard {...title} className="cv-me"><Loader /></ListCard> };
   }
   if (!me.player) {
     return {
       me: null,
       fallback: (
-        <ListCard {...title}>
+        <ListCard {...title} className="cv-me">
           <div className="admin-empty-state">
             <p className="mb-2">Your account isn't linked to a player yet.</p>
             <p className="admin-hint mb-0">
@@ -83,7 +87,7 @@ export function MyCricketStats() {
   const { me, fallback } = useMyCricket(TITLES.stats);
   if (!me) return fallback;
   return (
-    <ListCard {...TITLES.stats} plain>
+    <ListCard {...TITLES.stats} plain className="cv-me">
       <CricketPlayerProfile player={me.player!} matches={me.matches} tournaments={me.tournaments} cards />
     </ListCard>
   );
@@ -128,7 +132,16 @@ function startsText(m: CricketMatch) {
   return at.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
 }
 
-// Top of the home page: who I am, and my career in four numbers.
+// My last five completed matches' results, newest first, for my side.
+function formOf(matches: CricketMatch[], playerId: number): FormResult[] {
+  return matches
+    .filter((m) => m.status === "completed" && m.teams.some((t) => t.playerIds.includes(playerId)))
+    .sort((a, b) => playedAt(b) - playedAt(a))
+    .slice(0, 5)
+    .map((m) => (m.winner === null ? "T" : m.teams[m.winner]?.playerIds.includes(playerId) ? "W" : "L"));
+}
+
+// Top of the home page: who I am, my career in four numbers and my form.
 function HomeHero({ me }: { me: CricketMe }) {
   const player = me.player!;
   const stats = playerStats(me.matches).get(player.id);
@@ -137,10 +150,10 @@ function HomeHero({ me }: { me: CricketMe }) {
     { label: "Matches", value: stats?.matches ?? 0 },
     { label: "Runs", value: stats?.runs ?? 0 },
     { label: "Wickets", value: stats?.wickets ?? 0 },
-    { label: "Player of match", value: stats?.playerOfMatch ?? 0 },
+    { label: "POTM", value: stats?.playerOfMatch ?? 0, title: "Player of the Match" },
   ];
   return (
-    <section className="cricket-home-hero" data-tour="hero">
+    <section className="cricket-home-hero cv-hero-compact" data-tour="hero">
       <div className="cricket-home-hero-top">
         <PlayerAvatar
           name={player.name}
@@ -148,26 +161,18 @@ function HomeHero({ me }: { me: CricketMe }) {
           className="cricket-player-avatar cricket-home-hero-avatar"
         />
         <div className="cricket-home-hero-name">
-          <small>{greeting()},</small>
+          <small>
+            {greeting()}
+            {role && <> · {role.label}</>}
+          </small>
           <h1>{player.name}</h1>
-          {role && (
-            <span className="cricket-home-hero-role">
-              {role.label}
-            </span>
-          )}
+          <FormLine form={formOf(me.matches, player.id)} label="Form" />
         </div>
         <Link to="/me" className="cricket-home-hero-link" aria-label="My stats">
           <span>My stats</span> <i className="fa-solid fa-arrow-right" aria-hidden="true"></i>
         </Link>
       </div>
-      <div className="cricket-home-hero-stats">
-        {numbers.map((n) => (
-          <div key={n.label}>
-            <strong>{n.value}</strong>
-            <small>{n.label}</small>
-          </div>
-        ))}
-      </div>
+      <Scoreline stats={numbers} />
     </section>
   );
 }
@@ -265,15 +270,6 @@ function HomeFeed({ me }: { me: CricketMe }) {
       footnote={noteOf(m)}
     />
   );
-  const liveCard = (m: CricketMatch, aside?: string) => (
-    <LiveMatchCard
-      key={m.id}
-      match={m}
-      tournamentName={m.tournamentId === null ? undefined : tournamentNames.get(m.tournamentId)}
-      tag={{ ...tagOf(m), aside }}
-      footnote={noteOf(m)}
-    />
-  );
 
   const live = [
     ...new Map([...mine, ...tournamentLive, ...following].map((m) => [m.id, m])).values(),
@@ -297,7 +293,7 @@ function HomeFeed({ me }: { me: CricketMe }) {
     .slice(0, 2);
 
   return (
-    <div className="cricket-home">
+    <div className="cricket-home is-feed">
       {tips.element}
       <HomeHero me={me} />
 
@@ -308,7 +304,7 @@ function HomeFeed({ me }: { me: CricketMe }) {
           tone="live"
           badge={<LiveCount count={live.length} />}
         >
-          <HomeRail>{live.map((m) => liveCard(m))}</HomeRail>
+          <HomeRail>{live.map((m) => card(m))}</HomeRail>
         </HomeSection>
       )}
 
@@ -410,11 +406,9 @@ function followingMatches(me: CricketMe) {
   return [...byId.values()].sort((a, b) => when(b).localeCompare(when(a)));
 }
 
-// My Matches' banner, in the Home hero's colours: the win rate as a ring and
-// four small tiles (won, lost, tied, Player of the Match) on one row, then
-// the last five results (newest first) in a small line below. The match
-// count is on the All tab just under it.
-type FormResult = "W" | "L" | "T";
+// My Matches' banner: the win rate as a ring, won / lost / tied / Player of
+// the Match beside it, and the last five results (newest first) below. The
+// match count is on the All tab just under it.
 function RecordHero({
   played,
   won,
@@ -428,49 +422,18 @@ function RecordHero({
   potm: number;
   form: FormResult[];
 }) {
-  const winRate = played > 0 ? Math.round((won / played) * 100) : null;
-  const tiles = [
-    { label: "Won", title: "Won", value: won },
-    { label: "Lost", title: "Lost", value: lost },
-    { label: "Tied", title: "Tied or no result", value: played - won - lost },
-    { label: "POTM", title: "Player of the Match", value: potm },
-  ];
   return (
-    <section className="cricket-home-hero cricket-record-hero">
-      <div className="cricket-record-top">
-        <span
-          className="cricket-record-ring"
-          style={{ "--win": `${winRate ?? 0}%` } as CSSProperties}
-          role="img"
-          aria-label={winRate === null ? "No completed matches yet" : `Won ${winRate}% of completed matches`}
-        >
-          <strong>{winRate === null ? "–" : `${winRate}%`}</strong>
-          <small>won</small>
-        </span>
-        <div className="cricket-record-tiles">
-          {tiles.map((tile) => (
-            <div key={tile.label} title={tile.title}>
-              <strong>{tile.value}</strong>
-              <small>{tile.label}</small>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="cricket-record-form-line">
-        <small>Recent form</small>
-        {form.length === 0 ? (
-          <span className="cricket-record-empty">No results yet</span>
-        ) : (
-          <span className="cricket-record-form" aria-label={`Last ${form.length} results, newest first: ${form.join(" ")}`}>
-            {form.map((result, i) => (
-              <span key={i} className={`cricket-record-form-chip is-${result}`} aria-hidden="true">
-                {result}
-              </span>
-            ))}
-          </span>
-        )}
-      </div>
-    </section>
+    <SummaryBanner
+      lead={<WinRing won={won} played={played} />}
+      stats={[
+        { label: "Won", value: won },
+        { label: "Lost", value: lost },
+        { label: "Tied", title: "Tied or no result", value: played - won - lost },
+        { label: "POTM", title: "Player of the Match", value: potm },
+      ]}
+    >
+      <FormLine form={form} />
+    </SummaryBanner>
   );
 }
 
@@ -536,6 +499,7 @@ function MyMatchesFeed({ me }: { me: CricketMe }) {
     <ListCard
       {...TITLES.matches}
       plain
+      className="cv-me"
       action={
         <ShowSelect
           value={show}
@@ -596,11 +560,16 @@ export function MyCricketTournaments() {
       footnote={footnote(tournament)}
     />
   );
+  const shown =
+    show === "mine" ? me.tournaments : show === "organising" ? organisingTournaments(me) : me.followedTournaments;
+  const phases = shown.map((t) => tournamentPhase(t, allMatches));
+  const inPhase = (phase: string) => phases.filter((p) => p === phase).length;
 
   return (
     <ListCard
       {...TITLES.tournaments}
       plain
+      className="cv-me"
       action={
         <ShowSelect
           value={show}
@@ -610,6 +579,18 @@ export function MyCricketTournaments() {
         />
       }
     >
+      {shown.length > 0 && (
+        <SummaryBanner
+          lead={<BannerCount value={shown.length} label={shown.length === 1 ? "Tournament" : "Tournaments"} />}
+          stats={[
+            { label: "Ongoing", value: inPhase("ongoing") },
+            { label: "Upcoming", value: inPhase("upcoming") },
+            { label: "Completed", value: inPhase("completed") },
+            // Only when there are some: four figures beside the count is the most a phone fits.
+            ...(inPhase("setup") > 0 ? [{ label: "Setting up", value: inPhase("setup") }] : []),
+          ]}
+        />
+      )}
       {show === "mine" ? (
         <TournamentsBoard
           key="mine"
@@ -802,53 +783,103 @@ function followedTeams(
   });
 }
 
-// A team's card. Its record counts the completed matches this team won (by
-// teamKeyOf); an opponent's shows my head-to-head against it instead.
-function TeamCard({ team }: { team: MyTeam }) {
-  const navigate = useNavigate();
+// A team's completed matches, and how many it won and lost (by teamKeyOf).
+function teamRecord(team: MyTeam) {
   const played = team.matches.filter((m) => m.status === "completed");
   const won = played.filter((m) => m.winner !== null && teamKeyOf(m, m.winner) === team.key).length;
   const lost = played.filter((m) => m.winner !== null && teamKeyOf(m, m.winner) !== team.key).length;
+  return { played: played.length, won, lost };
+}
+
+const LEAD_ROLES = ["Captain", "Vice-captain", "Wicket-keeper", "Organiser"];
+
+// A team's card: its badge, where it plays and my role in it, then its
+// record (players, matches, won, win rate) and a won / lost bar. An
+// opponent's shows my head-to-head against it instead.
+function TeamCard({ team }: { team: MyTeam }) {
+  const navigate = useNavigate();
+  const { played, won, lost } = teamRecord(team);
   const opponent = team.role === "Opponent";
+  // An opponent's figures are mine against it.
+  const [mineWon, mineLost] = opponent ? [lost, won] : [won, lost];
   // Back on the team / match page returns here.
   const open = () => team.link && navigate(team.link, { state: { from: "/my-teams" } });
+  const stats = [
+    { label: "Players", value: team.playerCount },
+    { label: opponent ? "Met" : "Matches", value: team.matches.length },
+    { label: opponent ? "You won" : "Won", value: mineWon },
+    { label: "Win rate", value: played > 0 ? `${Math.round((mineWon / played) * 100)}%` : "–" },
+  ];
   return (
     <div
-      className="card admin-item-card cricket-tournament-card cricket-my-team-card"
+      className="cv-team-card"
+      style={{ "--team-color": avatarColorFor(team.name) } as CSSProperties}
       role="button"
       tabIndex={0}
       onClick={open}
       onKeyDown={(e) => e.key === "Enter" && open()}
     >
-      <div className="cricket-tour-card-title">
-        <TeamMark className="cricket-picker-avatar cricket-my-team-logo" name={team.name} logoUrl={team.logoUrl} />
-        <span className="cricket-my-team-name">
-          <h3 className="admin-item-card-title">{team.name}</h3>
-          <small className="text-muted">{team.tournamentName ?? (team.saved ? "Your team" : "Friendly matches")}</small>
+      <div className="cv-team-card-head">
+        <TeamMark className="cv-team-card-logo" name={team.name} logoUrl={team.logoUrl} />
+        <span className="cv-team-card-name">
+          <h3>{team.name}</h3>
+          <small>
+            <i className={`fa-solid ${team.tournamentName ? "fa-trophy" : "fa-handshake"}`} aria-hidden="true"></i>
+            <span>{team.tournamentName ?? (team.saved ? "Your team" : "Friendly matches")}</span>
+          </small>
         </span>
-      </div>
-      <div className="cricket-chip-row">
-        <span className={`cricket-status ${["Player", "Opponent", "Following"].includes(team.role) ? "" : "is-ready"}`}>
+        <span
+          className={`cv-team-role ${LEAD_ROLES.includes(team.role) ? "is-lead" : team.role === "Player" ? "" : "is-plain"}`.trim()}
+        >
+          {team.role === "Captain" && <i className="fa-solid fa-star" aria-hidden="true"></i>}
           {team.role}
         </span>
-        <span className="cricket-chip">
-          <i className="fa-solid fa-users" aria-hidden="true"></i> {team.playerCount}
-        </span>
-        <span className="cricket-chip">
-          <i className="fa-solid fa-calendar-days" aria-hidden="true"></i> {team.matches.length} matches
-        </span>
-        {played.length > 0 &&
-          (opponent ? (
-            <span className="cricket-chip" title="Your wins – their wins">
-              <i className="fa-solid fa-scale-balanced" aria-hidden="true"></i> You {lost}–{won}
-            </span>
-          ) : (
-            <span className="cricket-chip">
-              <i className="fa-solid fa-trophy" aria-hidden="true"></i> {won}/{played.length} won
-            </span>
-          ))}
       </div>
+      <dl className="cv-team-stats">
+        {stats.map((s) => (
+          <div key={s.label}>
+            <dt>{s.label}</dt>
+            <dd>{s.value}</dd>
+          </div>
+        ))}
+      </dl>
+      {played > 0 && (
+        <>
+          <div className="cv-team-bar" role="img" aria-label={`${mineWon} won, ${mineLost} lost of ${played}`}>
+            <span style={{ width: `${(mineWon / played) * 100}%` }}></span>
+            <span style={{ width: `${(mineLost / played) * 100}%` }}></span>
+          </div>
+          <div className="cv-team-bar-legend">
+            <span>{mineWon} won</span>
+            {played - mineWon - mineLost > 0 && <span>{played - mineWon - mineLost} tied</span>}
+            <span>{mineLost} lost</span>
+          </div>
+        </>
+      )}
     </div>
+  );
+}
+
+// My Teams' banner for the list on show: how many teams, their matches and
+// my wins and losses with them (against them, for opponents).
+function TeamsBanner({ teams, filter }: { teams: MyTeam[]; filter: TeamFilter }) {
+  const records = teams.map(teamRecord);
+  const sum = (pick: (r: ReturnType<typeof teamRecord>) => number) => records.reduce((n, r) => n + pick(r), 0);
+  const played = sum((r) => r.played);
+  // Against opponents, their losses are my wins.
+  const won = filter === "opponents" ? sum((r) => r.lost) : sum((r) => r.won);
+  const lost = filter === "opponents" ? sum((r) => r.won) : sum((r) => r.lost);
+  const captain = teams.filter((t) => t.role === "Captain").length;
+  return (
+    <SummaryBanner
+      lead={<WinRing won={won} played={played} label={filter === "opponents" ? "you won" : "won"} />}
+      stats={[
+        { label: "Teams", value: teams.length },
+        { label: "Played", value: played, title: "Completed matches" },
+        { label: "Won", value: won },
+        filter === "mine" ? { label: "Captain", title: "Teams you captain", value: captain } : { label: "Lost", value: lost },
+      ]}
+    />
   );
 }
 
@@ -872,6 +903,7 @@ const NO_TEAMS: Record<TeamFilter, ReactNode> = {
 
 export function MyCricketTeams() {
   const [filter, setFilter] = useState<TeamFilter>("mine");
+  const swipeRef = useSwipeTabs(TEAM_FILTERS.map((f) => f.value), filter, setFilter);
   const [creating, setCreating] = useState(false);
   const { me, fallback } = useMyCricket(TITLES.teams);
   const { data: tournaments } = useCricketTournaments();
@@ -893,6 +925,7 @@ export function MyCricketTeams() {
     <ListCard
       {...TITLES.teams}
       plain
+      className="cv-me"
       action={
         <Button variant="primary" onClick={() => setCreating(true)}>
           <i className="fa-solid fa-plus" aria-hidden="true"></i> Create Team
@@ -904,8 +937,9 @@ export function MyCricketTeams() {
           <CreateSavedTeamForm onSaved={() => setCreating(false)} />
         </BottomSheet>
       )}
+      {visible.length > 0 && <TeamsBanner teams={visible} filter={filter} />}
       <div className="cricket-squad-toolbar">
-        <div className="admin-segmented cricket-tabs cricket-text-tabs" role="tablist" aria-label="Teams">
+        <div ref={swipeRef} className="admin-segmented cricket-tabs cricket-text-tabs" role="tablist" aria-label="Teams">
           {TEAM_FILTERS.map((f) => (
             <button
               key={f.value}
@@ -921,15 +955,19 @@ export function MyCricketTeams() {
           ))}
         </div>
       </div>
-      {visible.length === 0 ? (
-        <div className="admin-empty-state">{NO_TEAMS[filter]}</div>
-      ) : (
-        <div className="admin-card-grid">
-          {visible.map((team) => (
-            <TeamCard key={team.key} team={team} />
-          ))}
-        </div>
-      )}
+      <SwipePanels swipe={swipeRef} values={TEAM_FILTERS.map((f) => f.value)} current={filter}>
+        {(filter) =>
+          lists[filter].length === 0 ? (
+            <div className="admin-empty-state">{NO_TEAMS[filter]}</div>
+          ) : (
+            <div className="cv-team-grid">
+              {lists[filter].map((team) => (
+                <TeamCard key={team.key} team={team} />
+              ))}
+            </div>
+          )
+        }
+      </SwipePanels>
     </ListCard>
   );
 }

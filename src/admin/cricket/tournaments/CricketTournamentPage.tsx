@@ -18,6 +18,7 @@ import { confirmAction } from "../../components/confirmDelete";
 import { pointsTable } from "../stats";
 import { AutoNextRounds } from "../format/AutoNextRounds";
 import { ListCard } from "../../components/ListCard";
+import { useSwipeTabs } from "../../useSwipeTabs";
 import { PageHeader } from "../../components/PageHeader";
 import { Button } from "../../components/Button";
 import { BottomSheet } from "../BottomSheet";
@@ -48,6 +49,7 @@ import "../../admin.css";
 import "../cricket.css";
 import { Loader } from "../../components/Loader";
 import { TeamMark } from "../teams/TeamMark";
+import { SwipePanels } from "../../SwipePanels";
 
 type Tab = "info" | "teams" | "matches" | "points" | "stats" | "totals";
 
@@ -189,6 +191,9 @@ export function CricketTournamentPage() {
   const location = useLocation();
   const requested = params.get("tab") as Tab | null;
   const tab: Tab = requested && TABS.some((t) => t.value === requested) ? requested : "info";
+  const swipeRef = useSwipeTabs(TABS.map((t) => t.value), tab, (value) =>
+    setParams({ tab: value }, { replace: true, state: location.state })
+  );
   const { data: matches } = useCricketMatches(id);
   // Players see their tournament read-only; its creator, co-organisers and
   // super admins manage it.
@@ -369,7 +374,7 @@ export function CricketTournamentPage() {
           <TournamentBanner tournament={tournament} matches={matches} />
         </div>
   
-        <div className="cricket-match-tabs" role="tablist" aria-label="Tournament sections" data-tour="tabs">
+        <div ref={swipeRef} className="cricket-match-tabs" role="tablist" aria-label="Tournament sections" data-tour="tabs">
           {TABS.map((t) => (
             <button
               key={t.value}
@@ -389,107 +394,114 @@ export function CricketTournamentPage() {
           check and schedule. */}
       <AutoNextRounds tournamentId={tournament.id} card />
 
-      {tab === "info" && (
-        <ListCard>
-          <TournamentInfo tournament={tournament} matches={matches ?? []} />
-        </ListCard>
-      )}
-
-      {tab === "teams" && !canManage && (
-        <ListCard>
-          {teamCount === 0 ? (
-            <div className="admin-empty-state">The teams haven't been picked yet.</div>
-          ) : (
-            <TeamCards tournament={tournament} matches={matches ?? []} />
-          )}
-        </ListCard>
-      )}
-
-      {tab === "teams" && canManage && (
-        <>
-        <ListCard>
-          {teamCount === 0 ? (
-            <div className="admin-empty-state">No teams yet — create them automatically or add them by hand below.</div>
-          ) : (
-            <>
-              {teamsOutdated && (
-                <div className="admin-banner admin-banner-error mb-3">
-                  The matched sets have changed since the teams were generated. Open the team builder and regenerate to include the changes.
-                </div>
-              )}
-              <TeamCards tournament={tournament} matches={matches ?? []} showKind />
-            </>
-          )}
-        </ListCard>
-
-        <ListCard title="Add Teams">
-          <p className="admin-hint">
-            {canAutoBuild ? "Build balanced teams from matched players, make" : "Make"} a new team and pick its players, or
-            bring in a team from another tournament — or scan a team's QR code.
-          </p>
-          <div className="cricket-add-team-actions">
-            {canAutoBuild && (
-              <Button variant="primary" disabled={addTeams.isPending} onClick={openTeamBuilder}>
-                <i className="fa-solid fa-shuffle" aria-hidden="true"></i> {tournament.generatedAt ? "Team builder" : "Auto create"}
-              </Button>
+      <SwipePanels swipe={swipeRef} values={TABS.map((t) => t.value)} current={tab} eager>
+        {(tab) => (
+          <>
+            {tab === "info" && (
+              <ListCard>
+                <TournamentInfo tournament={tournament} matches={matches ?? []} />
+              </ListCard>
             )}
-            <Button
-              variant={canAutoBuild ? "outline" : "primary"}
-              disabled={teamCount >= MAX_TEAMS}
-              onClick={() => setTeamModal({ kind: "new" })}
-            >
-              <i className="fa-solid fa-plus" aria-hidden="true"></i> New team
-            </Button>
-            <Button variant="outline" disabled={teamCount >= MAX_TEAMS} onClick={() => setTeamModal({ kind: "existing" })}>
-              <i className="fa-solid fa-people-group" aria-hidden="true"></i> Existing team
-            </Button>
-            <Button variant="outline" disabled={teamCount >= MAX_TEAMS} onClick={() => setTeamModal({ kind: "scan" })}>
-              <i className="fa-solid fa-qrcode" aria-hidden="true"></i> Scan team QR
-            </Button>
-          </div>
-        </ListCard>
 
-        </>
-      )}
+            {tab === "teams" && !canManage && (
+              <ListCard>
+                {teamCount === 0 ? (
+                  <div className="admin-empty-state">The teams haven't been picked yet.</div>
+                ) : (
+                  <TeamCards tournament={tournament} matches={matches ?? []} />
+                )}
+              </ListCard>
+            )}
 
-      {tab === "matches" && (
-        <ListCard
-          action={
-            canManage ? (
-              <Button variant="primary" onClick={() => setSchedulingMatch(true)}>
-                <i className="fa-solid fa-plus" aria-hidden="true" style={{ marginRight: 6 }}></i>
-                New Match
-              </Button>
-            ) : undefined
-          }
-        >
-          <MatchesBoard matches={matches ?? []} onNew={canManage ? () => setSchedulingMatch(true) : undefined} />
-        </ListCard>
-      )}
+            {tab === "teams" && canManage && (
+              <>
+              <ListCard>
+                {teamCount === 0 ? (
+                  <div className="admin-empty-state">No teams yet — create them automatically or add them by hand below.</div>
+                ) : (
+                  <>
+                    {teamsOutdated && (
+                      <div className="admin-banner admin-banner-error mb-3">
+                        The matched sets have changed since the teams were generated. Open the team builder and regenerate to include the changes.
+                      </div>
+                    )}
+                    <TeamCards tournament={tournament} matches={matches ?? []} showKind />
+                  </>
+                )}
+              </ListCard>
 
-      {tab === "points" && (
-        <ListCard
-          action={
-            <Button size="sm" variant="outline" onClick={() => setNrrCalcOpen(true)}>
-              <i className="fa-solid fa-calculator me-1" aria-hidden="true"></i> NRR Calculator
-            </Button>
-          }
-        >
-          <FormatView tournament={tournament} matches={matches ?? []} canManage={canManage} />
-        </ListCard>
-      )}
+              <ListCard title="Add Teams">
+                <p className="admin-hint">
+                  {canAutoBuild ? "Build balanced teams from matched players, make" : "Make"} a new team and pick its players, or
+                  bring in a team from another tournament — or scan a team's QR code.
+                </p>
+                <div className="cricket-add-team-actions">
+                  {canAutoBuild && (
+                    <Button variant="primary" disabled={addTeams.isPending} onClick={openTeamBuilder}>
+                      <i className="fa-solid fa-shuffle" aria-hidden="true"></i> {tournament.generatedAt ? "Team builder" : "Auto create"}
+                    </Button>
+                  )}
+                  <Button
+                    variant={canAutoBuild ? "outline" : "primary"}
+                    disabled={teamCount >= MAX_TEAMS}
+                    onClick={() => setTeamModal({ kind: "new" })}
+                  >
+                    <i className="fa-solid fa-plus" aria-hidden="true"></i> New team
+                  </Button>
+                  <Button variant="outline" disabled={teamCount >= MAX_TEAMS} onClick={() => setTeamModal({ kind: "existing" })}>
+                    <i className="fa-solid fa-people-group" aria-hidden="true"></i> Existing team
+                  </Button>
+                  <Button variant="outline" disabled={teamCount >= MAX_TEAMS} onClick={() => setTeamModal({ kind: "scan" })}>
+                    <i className="fa-solid fa-qrcode" aria-hidden="true"></i> Scan team QR
+                  </Button>
+                </div>
+              </ListCard>
 
-      {tab === "stats" && (
-        <ListCard>
-          <LeaderboardGrid matches={matches ?? []} />
-        </ListCard>
-      )}
+              </>
+            )}
 
-      {tab === "totals" && (
-        <ListCard>
-          <TournamentStats matches={matches ?? []} />
-        </ListCard>
-      )}
+            {tab === "matches" && (
+              <ListCard
+                plain
+                action={
+                  canManage ? (
+                    <Button variant="primary" onClick={() => setSchedulingMatch(true)}>
+                      <i className="fa-solid fa-plus" aria-hidden="true" style={{ marginRight: 6 }}></i>
+                      New Match
+                    </Button>
+                  ) : undefined
+                }
+              >
+                <MatchesBoard matches={matches ?? []} onNew={canManage ? () => setSchedulingMatch(true) : undefined} />
+              </ListCard>
+            )}
+
+            {tab === "points" && (
+              <ListCard
+                action={
+                  <Button size="sm" variant="outline" onClick={() => setNrrCalcOpen(true)}>
+                    <i className="fa-solid fa-calculator me-1" aria-hidden="true"></i> NRR Calculator
+                  </Button>
+                }
+              >
+                <FormatView tournament={tournament} matches={matches ?? []} canManage={canManage} />
+              </ListCard>
+            )}
+
+            {tab === "stats" && (
+              <ListCard>
+                <LeaderboardGrid matches={matches ?? []} />
+              </ListCard>
+            )}
+
+            {tab === "totals" && (
+              <ListCard>
+                <TournamentStats matches={matches ?? []} />
+              </ListCard>
+            )}
+          </>
+        )}
+      </SwipePanels>
 
       {schedulingMatch && (
         <BottomSheet

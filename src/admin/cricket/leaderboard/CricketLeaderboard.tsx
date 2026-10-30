@@ -32,6 +32,8 @@ import "../../admin.css";
 import "../cricket.css";
 import { Loader } from "../../components/Loader";
 import { TeamMark } from "../teams/TeamMark";
+import { useSwipeTabs } from "../../useSwipeTabs";
+import { SwipePanels } from "../../SwipePanels";
 
 type Category = "overall" | "batting" | "bowling" | "fielding";
 
@@ -244,11 +246,15 @@ export function LeaderboardGrid({
 function StatsBoards({ rows, matches }: { rows: PlayerStats[]; matches: CricketMatch[] }) {
   const [category, setCategory] = useState<Category>("overall");
   const [title, setTitle] = useState(BOARDS[0].title);
-  const boards = BOARDS.filter((board) => board.category === category);
-  const board = boards.find((b) => b.title === title) ?? boards[0];
+  const pickCategory = (value: Category) => {
+    setCategory(value);
+    setTitle(BOARDS.find((b) => b.category === value)!.title);
+  };
+  // Swipes on the boards change category; elsewhere they're the page's.
+  const swipeRef = useSwipeTabs(CATEGORIES.map((c) => c.value), category, pickCategory, ".cricket-stats");
   return (
     <section className="cricket-stats">
-      <div className="admin-segmented cricket-tabs cricket-stats-tabs" role="tablist" aria-label="Stat category">
+      <div ref={swipeRef} className="admin-segmented cricket-tabs cricket-stats-tabs" role="tablist" aria-label="Stat category">
         {CATEGORIES.map((c) => (
           <button
             key={c.value}
@@ -256,27 +262,35 @@ function StatsBoards({ rows, matches }: { rows: PlayerStats[]; matches: CricketM
             role="tab"
             aria-selected={category === c.value}
             className={category === c.value ? "active" : ""}
-            onClick={() => {
-              setCategory(c.value);
-              setTitle(BOARDS.find((b) => b.category === c.value)!.title);
-            }}
+            onClick={() => pickCategory(c.value)}
           >
             {c.label}
           </button>
         ))}
       </div>
-      <div className="cricket-stats-head">
-        <h2 className="cricket-section-title mb-0">
-          <i className={`fa-solid ${board.icon}`} aria-hidden="true"></i> {board.title}
-        </h2>
-        <PillSelect
-          label="Leaderboard"
-          value={board.title}
-          options={boards.map((b) => ({ value: b.title, label: b.title }))}
-          onChange={setTitle}
-        />
-      </div>
-      <BoardList board={board} rows={rows} limit={10} matches={matches} />
+      <SwipePanels swipe={swipeRef} values={CATEGORIES.map((c) => c.value)} current={category}>
+        {(category) => {
+          // A category swiped in shows its first board.
+          const boards = BOARDS.filter((board) => board.category === category);
+          const board = boards.find((b) => b.title === title) ?? boards[0];
+          return (
+            <>
+              <div className="cricket-stats-head">
+                <h2 className="cricket-section-title mb-0">
+                  <i className={`fa-solid ${board.icon}`} aria-hidden="true"></i> {board.title}
+                </h2>
+                <PillSelect
+                  label="Leaderboard"
+                  value={board.title}
+                  options={boards.map((b) => ({ value: b.title, label: b.title }))}
+                  onChange={setTitle}
+                />
+              </div>
+              <BoardList board={board} rows={rows} limit={10} matches={matches} />
+            </>
+          );
+        }}
+      </SwipePanels>
     </section>
   );
 }

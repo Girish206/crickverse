@@ -8,6 +8,7 @@ import "../admin/dms/global.css";
 import "../admin/cricket/cricket-matches.css";
 import "../app-shell/app-shell.css";
 import "./public.css";
+import { PullToRefresh } from "../admin/dms/layout/PullToRefresh";
 
 // The frame of a shared match / tournament page for someone signed out: a
 // slim CricDesk bar with sign-in, the page, then an invitation to the app.
@@ -28,7 +29,10 @@ export function PublicShell({ children }: { children: ReactNode }) {
           Sign in
         </Link>
       </header>
-      <main className="cv-public-main">{children}</main>
+      <main className="cv-public-main">
+        <PullToRefresh />
+        {children}
+      </main>
       <footer className="cv-public-foot">
         <div className="cv-public-cta card">
           <div>

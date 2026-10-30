@@ -8,11 +8,13 @@ import { BottomSheet } from "../BottomSheet";
 import SelectInput from "../../dms/components/SelectInput";
 import { CricketKpis } from "../CricketKpis";
 import { CricketMatchForm } from "./CricketMatchForm";
-import { LiveMatchCard, MatchCard } from "./matchUi";
+import { MatchCard } from "./matchUi";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
 import { Loader } from "../../components/Loader";
+import { useSwipeTabs } from "../../useSwipeTabs";
+import { SwipePanels } from "../../SwipePanels";
 
 type Filter = "all" | CricketMatchStatus;
 
@@ -41,9 +43,10 @@ export function MatchesBoard({
   counts?: boolean;
 }) {
   const [filter, setFilter] = useState<Filter>("all");
+  const swipeRef = useSwipeTabs(FILTERS.map((f) => f.value), filter, setFilter);
   // Order in 'all': Live first, then upcoming (ascending), then completed (descending).
   const statusRank = (m: CricketMatch) => (m.status === "live" ? 0 : m.status === "scheduled" ? 1 : 2);
-  const sortMatches = (a: CricketMatch, b: CricketMatch) => {
+  const sortMatches = (filter: Filter) => (a: CricketMatch, b: CricketMatch) => {
     if (filter === "all") {
       const rankA = statusRank(a);
       const rankB = statusRank(b);
@@ -64,13 +67,14 @@ export function MatchesBoard({
     return (b.scheduledAt ?? b.createdAt).localeCompare(a.scheduledAt ?? a.createdAt);
   };
 
-  const visible = matches
-    .filter((match) => filter === "all" || match.status === filter || (filter === "completed" && match.status === "abandoned"))
-    .sort(sortMatches);
   const countOf = (value: Filter) =>
     matches.filter((m) => value === "all" || m.status === value || (value === "completed" && m.status === "abandoned")).length;
-  const list =
-    visible.length === 0 ? (
+  // One per tab, so a swipe shows the next tab's list coming in.
+  const listFor = (filter: Filter) => {
+    const visible = matches
+      .filter((match) => filter === "all" || match.status === filter || (filter === "completed" && match.status === "abandoned"))
+      .sort(sortMatches(filter));
+    return visible.length === 0 ? (
       <div className="admin-empty-state">
         {matches.length === 0 ? "No matches scheduled yet." : "No matches here."}
         {onNew && matches.length === 0 && (
@@ -83,29 +87,21 @@ export function MatchesBoard({
       </div>
     ) : (
       <div className="cricket-match-grid">
-        {visible.map((match) =>
-          match.status === "live" ? (
-            <LiveMatchCard
-              key={match.id}
-              match={match}
-              tournamentName={match.tournamentId === null ? undefined : tournamentNames?.get(match.tournamentId)}
-              footnote={footnote?.(match)}
-            />
-          ) : (
-            <MatchCard
-              key={match.id}
-              match={match}
-              tournamentName={match.tournamentId === null ? undefined : tournamentNames?.get(match.tournamentId)}
-              footnote={footnote?.(match)}
-            />
-          ),
-        )}
+        {visible.map((match) => (
+          <MatchCard
+            key={match.id}
+            match={match}
+            tournamentName={match.tournamentId === null ? undefined : tournamentNames?.get(match.tournamentId)}
+            footnote={footnote?.(match)}
+          />
+        ))}
       </div>
     );
+  };
   return (
     <>
       <div className="cricket-squad-toolbar">
-        <div className="admin-segmented cricket-tabs cricket-text-tabs" role="tablist" aria-label="Match status">
+        <div ref={swipeRef} className="admin-segmented cricket-tabs cricket-text-tabs" role="tablist" aria-label="Match status">
           {FILTERS.map((f) => (
             <button
               key={f.value}
@@ -121,7 +117,9 @@ export function MatchesBoard({
           ))}
         </div>
       </div>
-      {list}
+      <SwipePanels swipe={swipeRef} values={FILTERS.map((f) => f.value)} current={filter}>
+        {listFor}
+      </SwipePanels>
     </>
   );
 }

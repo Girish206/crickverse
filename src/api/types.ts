@@ -119,6 +119,13 @@ export interface CricketMyFollows {
   follows: CricketFollow[];
 }
 
+// GET /follows/lists: who follows the target and, for a player, what they
+// follow, newest first.
+export interface CricketFollowLists {
+  followers: CricketFollow[];
+  following: CricketFollow[];
+}
+
 export interface CricketFollowCounts {
   followers: number;
   // Players only: how many they follow.
@@ -427,6 +434,9 @@ export interface CricketMatch {
   // 0 or 1; null for a tie or no result.
   winner: number | null;
   resultText: string | null;
+  // When it finished (completed or abandoned); null while it's on. Missing
+  // on matches finished before it was recorded.
+  completedAt?: string | null;
   // How a result entered by hand was decided (null/missing = played out).
   resultMethod?: CricketResultMethod | null;
   // The chase's target after a rain cut (null = first innings + 1).

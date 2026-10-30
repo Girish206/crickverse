@@ -41,6 +41,17 @@ export function teamInitials(name: string) {
   return letters.toUpperCase();
 }
 
+// A finished match's details (ground, date, match type) can still be fixed
+// for a day after it ends; the API holds to the same window. Older matches
+// go by their last ball.
+const EDIT_AFTER_FINISH_MS = 24 * 60 * 60 * 1000;
+export function editableAfterFinish(match: CricketMatch, now = Date.now()) {
+  if (match.status !== "completed" && match.status !== "abandoned") return false;
+  const lastBall = Math.max(0, ...match.innings.flatMap((innings) => innings.balls.map((ball) => (ball.at ? Date.parse(ball.at) : 0))));
+  const ended = match.completedAt ? Date.parse(match.completedAt) : lastBall;
+  return ended > 0 && now - ended <= EDIT_AFTER_FINISH_MS;
+}
+
 export function formatMatchDate(value: string | null) {
   if (!value) return "Date not set";
   return new Date(value).toLocaleString(undefined, {

@@ -42,6 +42,8 @@ import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
 import { Loader } from "../../components/Loader";
+import { useSwipeTabs } from "../../useSwipeTabs";
+import { SwipePanels } from "../../SwipePanels";
 
 type Tab = "info" | "players" | "matches" | "leaderboard" | "stats";
 
@@ -102,6 +104,9 @@ export function CricketTeamPage() {
   const fromMyTeams = (location.state as { from?: string } | null)?.from === "/my-teams";
   const requested = params.get("tab") as Tab | null;
   const tab: Tab = requested && TABS.some((t) => t.value === requested) ? requested : "info";
+  const swipeRef = useSwipeTabs(TABS.map((t) => t.value), tab, (value) =>
+    setParams({ tab: value }, { replace: true, state: location.state })
+  );
   const { admin } = useAdminAuth();
   const { data: me } = useCricketMe();
   const canManage = canManageTournament(admin, tournament, me?.player?.id);
@@ -261,7 +266,7 @@ export function CricketTeamPage() {
           </div>
         </div>
 
-        <div className="cricket-match-tabs" role="tablist" aria-label="Team sections" data-tour="tabs">
+        <div ref={swipeRef} className="cricket-match-tabs" role="tablist" aria-label="Team sections" data-tour="tabs">
           {TABS.map((t) => (
             <button
               key={t.value}
@@ -277,83 +282,89 @@ export function CricketTeamPage() {
         </div>
       </div>
 
-      {tab === "info" && (
-        <ListCard title="">
-          <TeamRecordCard
-            captain={team.captainId != null ? playerById.get(team.captainId) : undefined}
-            played={record?.played ?? 0}
-            won={record?.won ?? 0}
-            lost={record?.lost ?? 0}
-            tied={(record?.tied ?? 0) + (record?.noResult ?? 0)}
-            tiedLabel="Tied / NR"
-            facts={[
-              [
-                "Tournament",
-                <Link key="tournament" to={`/tournaments/${id}`} className="cricket-info-link">
-                  {tournament.name} <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
-                </Link>,
-              ],
-              ["Position", record && record.played > 0 ? `${position + 1} of ${standings.length}` : "—"],
-              ["Points", record?.points ?? 0],
-              ["Net run rate", record ? (record.nrr >= 0 ? "+" : "") + record.nrr.toFixed(3) : "—"],
-              ["Players", team.playerIds.length],
-            ]}
-          />
-        </ListCard>
-      )}
+      <SwipePanels swipe={swipeRef} values={TABS.map((t) => t.value)} current={tab} eager>
+        {(tab) => (
+          <>
+            {tab === "info" && (
+              <ListCard title="">
+                <TeamRecordCard
+                  captain={team.captainId != null ? playerById.get(team.captainId) : undefined}
+                  played={record?.played ?? 0}
+                  won={record?.won ?? 0}
+                  lost={record?.lost ?? 0}
+                  tied={(record?.tied ?? 0) + (record?.noResult ?? 0)}
+                  tiedLabel="Tied / NR"
+                  facts={[
+                    [
+                      "Tournament",
+                      <Link key="tournament" to={`/tournaments/${id}`} className="cricket-info-link">
+                        {tournament.name} <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                      </Link>,
+                    ],
+                    ["Position", record && record.played > 0 ? `${position + 1} of ${standings.length}` : "—"],
+                    ["Points", record?.points ?? 0],
+                    ["Net run rate", record ? (record.nrr >= 0 ? "+" : "") + record.nrr.toFixed(3) : "—"],
+                    ["Players", team.playerIds.length],
+                  ]}
+                />
+              </ListCard>
+            )}
 
-      {tab === "players" && (
-        <ListCard>
-          {team.playerIds.length === 0 ? (
-            <div className="admin-empty-state">No players in this team yet.</div>
-          ) : (
-            <ul className="cricket-roster">
-              {team.playerIds.map((playerId) => (
-                <li key={playerId}>
-                  <RosterPlayer player={playerById.get(playerId)} tags={canManage ? [] : roleTagsFor(team, playerId)} />
-                  {canManage && (
-                    <TeamRoleChips
-                      roles={rolesOf(team)}
-                      playerId={playerId}
-                      playerName={playerById.get(playerId)?.name ?? "Player"}
-                      disabled={setRoles.isPending}
-                      onChange={(roles) => setRoles.mutate({ id, index: teamIndex, ...roles })}
-                    />
-                  )}
-                  {canManage && (
-                    <button
-                      type="button"
-                      className="cricket-roster-more"
-                      onClick={() => setActionsFor(playerId)}
-                      aria-label={`More for ${playerById.get(playerId)?.name ?? "player"}`}
-                    >
-                      <i className="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i>
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </ListCard>
-      )}
+            {tab === "players" && (
+              <ListCard>
+                {team.playerIds.length === 0 ? (
+                  <div className="admin-empty-state">No players in this team yet.</div>
+                ) : (
+                  <ul className="cricket-roster">
+                    {team.playerIds.map((playerId) => (
+                      <li key={playerId}>
+                        <RosterPlayer player={playerById.get(playerId)} tags={canManage ? [] : roleTagsFor(team, playerId)} />
+                        {canManage && (
+                          <TeamRoleChips
+                            roles={rolesOf(team)}
+                            playerId={playerId}
+                            playerName={playerById.get(playerId)?.name ?? "Player"}
+                            disabled={setRoles.isPending}
+                            onChange={(roles) => setRoles.mutate({ id, index: teamIndex, ...roles })}
+                          />
+                        )}
+                        {canManage && (
+                          <button
+                            type="button"
+                            className="cricket-roster-more"
+                            onClick={() => setActionsFor(playerId)}
+                            aria-label={`More for ${playerById.get(playerId)?.name ?? "player"}`}
+                          >
+                            <i className="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i>
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </ListCard>
+            )}
 
-      {tab === "matches" && (
-        <ListCard>
-          <MatchesBoard matches={teamMatches} />
-        </ListCard>
-      )}
+            {tab === "matches" && (
+              <ListCard>
+                <MatchesBoard matches={teamMatches} />
+              </ListCard>
+            )}
 
-      {tab === "leaderboard" && (
-        <ListCard>
-          <LeaderboardGrid matches={teamMatches} playerIds={team.playerIds} scope="team" />
-        </ListCard>
-      )}
+            {tab === "leaderboard" && (
+              <ListCard>
+                <LeaderboardGrid matches={teamMatches} playerIds={team.playerIds} scope="team" />
+              </ListCard>
+            )}
 
-      {tab === "stats" && (
-        <ListCard>
-          <TeamStatsView stats={teamStats(teamMatches, teamIndex)} />
-        </ListCard>
-      )}
+            {tab === "stats" && (
+              <ListCard>
+                <TeamStatsView stats={teamStats(teamMatches, teamIndex)} />
+              </ListCard>
+            )}
+          </>
+        )}
+      </SwipePanels>
 
       {/* Pinned to the bottom while the Players tab is open. */}
       {showAddBar && (
