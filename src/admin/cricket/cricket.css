@@ -818,14 +818,6 @@
   .cricket-scorer-score {
     font-size: var(--fs-xl);
   }
-  .cricket-rate-pill {
-    padding: 3px 8px;
-    min-width: 48px;
-  }
-  .cricket-chase-line {
-    padding: 5px 10px;
-    font-size: var(--fs-xs);
-  }
   .cricket-crease {
     gap: 5px;
     padding: 7px;
@@ -1323,6 +1315,142 @@
     border-radius: 9px !important;
     white-space: nowrap !important;
     background: var(--adm-surface, #fff);
+  }
+}
+
+/* Live scorer on phones: tight enough that the score card, chase line,
+   batters and bowler all sit above the dock without scrolling. */
+.cricket-scorer-top {
+  display: flex;
+  flex-direction: column;
+  gap: inherit;
+}
+@media (max-width: 560px) {
+  .cricket-scorer-page .cricket-scorer {
+    gap: 6px;
+  }
+  /* Score card: a little tighter, the score still the biggest thing on screen. */
+  .cricket-scorer-page .cricket-scorer-head-top {
+    padding: 8px 12px 0;
+  }
+  .cricket-scorer-page .cricket-scorer-score-row {
+    padding: 4px 12px 8px;
+  }
+  .cricket-scorer-head .cricket-scorer-score {
+    font-size: calc(var(--fs-2xl) * 1.1);
+  }
+  .cricket-scorer-page .cricket-scorer-stat {
+    padding: 5px 6px;
+  }
+  .cricket-scorer-page .cricket-crease-section-header {
+    padding: 4px 10px;
+  }
+  .cricket-scorer-page .cricket-crease-player-row {
+    gap: 8px;
+    padding: 6px 10px;
+  }
+  .cricket-scorer-page .cricket-crease-meta-line {
+    margin-top: 1px;
+  }
+  .cricket-scorer-dock .cricket-this-over {
+    min-height: 32px;
+  }
+  .cricket-scorer-dock .cricket-pad-main .cricket-pad-btn {
+    min-height: 42px;
+  }
+  /* The side column sets the pad's height: four rows of icon + label. */
+  .cricket-scorer-dock .cricket-pad-side .cricket-pad-btn {
+    min-height: 0;
+    gap: 0;
+    padding: 2px;
+  }
+  .cricket-scorer-dock .cricket-pad-side .cricket-pad-btn .cricket-pad-art {
+    width: 14px;
+    height: 14px;
+  }
+  .cricket-scorer-dock .cricket-pad-side .cricket-pad-btn span {
+    font-size: 0.66rem;
+  }
+}
+
+/* While scoring on phones and tablets, the scorer is one screen under the
+   fixed header, in two halves: the top (score card, batters, bowler) and the
+   dock (this over + pad). Flex shares the height between them — nothing to
+   measure, nothing scrolls. Extra height on taller screens goes half to the
+   pad (bigger buttons, up to half the screen) and half to the rows, whose
+   avatars and figures grow with it. With players to pick (.is-fit is off)
+   it's the ordinary scrolling page. */
+@media (max-width: 900px) {
+  html:has(.cricket-scorer-page .cricket-scorer.is-fit),
+  html:has(.cricket-scorer-page .cricket-scorer.is-fit) body {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  .cricket-scorer-page .cricket-scorer.is-fit {
+    --cv-scorer-gutter: max(10px, env(safe-area-inset-left), env(safe-area-inset-right));
+    position: fixed;
+    top: calc(var(--cv-header-h) + env(safe-area-inset-top));
+    right: 0;
+    bottom: 0;
+    left: 0;
+    max-width: 720px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px var(--cv-scorer-gutter) 0;
+  }
+  /* The top half never shrinks below its content (every row shows); on a
+     short screen it's the pad that gives way, down to its minimum. All the
+     flex bases are `auto` so the content's height counts. */
+  .cricket-scorer.is-fit .cricket-scorer-top {
+    flex: 1 0 auto;
+    gap: 6px;
+  }
+  .cricket-scorer.is-fit .cricket-crease-card {
+    flex: 1 0 auto;
+  }
+  /* Batting has two rows to bowling's one; every row gets the same height. */
+  .cricket-scorer.is-fit .cricket-crease-section {
+    flex: 1 0 auto;
+  }
+  .cricket-scorer.is-fit .cricket-crease-section:first-child {
+    flex-grow: 2;
+  }
+  .cricket-scorer.is-fit .cricket-crease-players {
+    flex: 1 0 auto;
+  }
+  .cricket-scorer.is-fit .cricket-crease-players > .cricket-crease-player-row,
+  .cricket-scorer.is-fit .cricket-crease-section > .cricket-crease-player-row {
+    flex: 1 0 auto;
+  }
+  .cricket-scorer.is-fit .cricket-crease-avatar {
+    width: clamp(30px, 4.6dvh, 46px);
+    height: clamp(30px, 4.6dvh, 46px);
+  }
+  .cricket-scorer.is-fit .cricket-crease-name {
+    font-size: clamp(var(--fs-sm), 2dvh, var(--fs-lg));
+  }
+  .cricket-scorer.is-fit .cricket-crease-runs {
+    font-size: clamp(1.05rem, 2.6dvh, 1.5rem);
+  }
+  /* The dock: in the column now (not fixed), edge to edge, the pad filling it. */
+  .cricket-scorer.is-fit .cricket-scorer-dock {
+    position: static;
+    flex: 1 1 auto;
+    max-height: 50dvh;
+    margin: 0 calc(-1 * var(--cv-scorer-gutter));
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    border-bottom: 0;
+    border-radius: 20px 20px 0 0;
+  }
+  .cricket-scorer.is-fit .cricket-pad-container {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  /* Run buttons only; the extras keep their small labels. */
+  .cricket-scorer.is-fit .cricket-pad-main .cricket-pad-btn:not(.is-extra):not(.is-wicket) {
+    font-size: clamp(1.15rem, 2.8dvh, 1.6rem);
   }
 }
 

@@ -1,7 +1,5 @@
 import { ballsPerOverOf, type CricketMatch } from "../../../api/types";
-import { avatarColorFor } from "../avatarColor";
 import { PlayerLink } from "../players/PlayerProfileSheet";
-import { TeamMark } from "../teams/TeamMark";
 import {
   battingCard,
   bowlingCard,
@@ -16,6 +14,7 @@ import {
 import { Commentary } from "./Commentary";
 import { MatchAwards } from "./MatchAwards";
 import { ResultBanner } from "./result/ResultNote";
+import { ScoreHead } from "./ScoreHead";
 
 // The read-only "Live" tab for players: the score, who's in, then
 // commentary on the last two overs (the Overs tab has them all). The awards (top performers) wait
@@ -43,64 +42,25 @@ export function LiveView({ match, nameOf }: { match: CricketMatch; nameOf: NameO
 
   return (
     <div className="cricket-scorer">
-      <div className="cricket-scorer-head">
-        <div className="cricket-scorer-head-main">
-          <TeamMark
-            className="cricket-scorer-team-logo"
-            name={match.teams[innings.battingTeam].name}
-            logoUrl={match.teams[innings.battingTeam].logoUrl}
-            color={avatarColorFor(match.teams[innings.battingTeam].name)}
-          />
-          <div className="cricket-scorer-head-info">
-            <div className="cricket-scorer-team-row">
-              <span className="cricket-scorer-team">{match.teams[innings.battingTeam].name}</span>
-              <span className="cricket-scorer-innings-tag">
-                {match.innings.length === 2 ? "2nd Inn" : "1st Inn"}
-              </span>
-            </div>
-            <div className="cricket-scorer-score-row">
-              <strong className="cricket-scorer-score">
-                {summary.runs}/{summary.wickets}
-              </strong>
-              <span className="cricket-scorer-overs">
-                ({summary.overs} / {match.overs} ov)
-              </span>
-            </div>
-          </div>
-        </div>
-        <div className="cricket-scorer-rates">
-          <span className="cricket-rate-pill">
-            <small>CRR</small>
-            <strong>{rate(summary.runs, summary.legalBalls, perOver)}</strong>
-          </span>
-          {chase && (
-            <>
-              <span className="cricket-rate-pill is-target">
-                <small>Target</small>
-                <strong>{chase.target}</strong>
-              </span>
-              <span className="cricket-rate-pill">
-                <small>RRR</small>
-                <strong>{chase.requiredRate}</strong>
-              </span>
-            </>
-          )}
-        </div>
-      </div>
+      <ScoreHead
+        data={{
+          team: match.teams[innings.battingTeam].name,
+          logoUrl: match.teams[innings.battingTeam].logoUrl,
+          inningsTag: match.innings.length === 2 ? "2nd Inn" : "1st Inn",
+          score: `${summary.runs}/${summary.wickets}`,
+          overs: summary.overs,
+          maxOvers: match.overs,
+          crr: rate(summary.runs, summary.legalBalls, perOver),
+          chase,
+          // Before the chase's first ball, the banner below says what's needed.
+          need: chase && innings.balls.length > 0 ? { runs: chase.need, balls: chase.ballsLeft } : null,
+        }}
+      />
       {/* The next ball can't get the batter out (bar a run-out): a no-ball
           was just bowled. */}
       {freeHit && (
         <div className="cricket-free-hit" role="status">
           <i className="fa-solid fa-bolt" aria-hidden="true"></i> FREE HIT
-        </div>
-      )}
-      {chase && innings.balls.length > 0 && (
-        <div className="cricket-chase-line">
-          <i className="fa-solid fa-bullseye" aria-hidden="true"></i>
-          <span>
-            Need <strong>{Math.max(chase.need, 0)}</strong> run{chase.need === 1 ? "" : "s"} from{" "}
-            <strong>{chase.ballsLeft}</strong> ball{chase.ballsLeft === 1 ? "" : "s"}
-          </span>
         </div>
       )}
       {chase && innings.balls.length === 0 && (

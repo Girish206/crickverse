@@ -21,11 +21,10 @@ import {
 import { Button } from "../../components/Button";
 import { confirmAction } from "../../components/confirmDelete";
 import { BottomSheet } from "../BottomSheet";
-import { avatarColorFor } from "../avatarColor";
 import { PlayerAvatar } from "../players/PlayerAvatar";
-import { TeamMark } from "../teams/TeamMark";
 import { OutArt } from "./OutArt";
 import { PlayerPicker, type PickItem } from "./PlayerPicker";
+import { ScoreHead, type ScoreHeadData } from "./ScoreHead";
 import { ScrollableOverBalls } from "./Scorecard";
 import { usePlayerPhotos } from "./matchUtils";
 import { ShotGround, shotZoneAt } from "./ShotMap";
@@ -416,13 +415,14 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   );
 
   // After a pick, move straight on to the next empty slot; the last one
-  // saves them all — no confirm step.
+  // saves them all — no confirm step, except at the innings break, where
+  // the second innings waits for its Start button.
   function pick(slot: Slot, id: number) {
     const next = { ...picks, [slot]: id };
     setPicks(next);
     const nextSlot = emptySlots.find((s) => s !== slot && next[s] === null) ?? null;
     setPickerFor(nextSlot);
-    if (!nextSlot) savePlayers(next);
+    if (!nextSlot && !inningsBreak) savePlayers(next);
     checkPromptStyle(slot, id);
   }
   const thisOver = oversOf(innings, perOver).at(-1);
@@ -718,6 +718,32 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   const inningsBreak = chase !== null && innings.balls.length === 0 && needsPlayers;
   const firstInnings = inningsSummary(match.innings[0], perOver);
 
+  // What the score card shows. TEMP: in dev, ?cardTest=1 swaps in worst-case
+  // values (long name, big score, wide rates) to check the card's layout.
+  const cardTest = import.meta.env.DEV && new URLSearchParams(window.location.search).has("cardTest");
+  const head: ScoreHeadData = cardTest
+    ? {
+        team: "Chennai Super Kings Legends XI",
+        inningsTag: "2nd Inn",
+        score: "245/10",
+        overs: "19.4",
+        maxOvers: 20,
+        crr: "12.47",
+        chase: { target: 312, requiredRate: "186.00" },
+        need: { runs: 67, balls: 2 },
+      }
+    : {
+        team: match.teams[innings.battingTeam].name,
+        logoUrl: match.teams[innings.battingTeam].logoUrl,
+        inningsTag: match.innings.length === 2 ? "2nd Inn" : "1st Inn",
+        score: `${summary.runs}/${summary.wickets}`,
+        overs: summary.overs,
+        maxOvers: match.overs,
+        crr: rate(summary.runs, summary.legalBalls, perOver),
+        chase,
+        need: chase && { runs: chase.need, balls: chase.ballsLeft },
+      };
+
   // On phones the dock is fixed to the bottom of the screen; the page keeps
   // that much room free below the card (--cv-dock-h) so nothing hides behind it.
   const dockRef = useRef<HTMLDivElement>(null);
@@ -732,9 +758,18 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
       root.style.removeProperty("--cv-dock-h");
     };
   }, [inningsBreak]);
+  // While the two halves fit the screen the page doesn't scroll (see
+  // cricket.css), so bring it back to the top in case it had.
+  useEffect(() => {
+    if (!needsPlayers) window.scrollTo(0, 0);
+  }, [needsPlayers]);
 
   return (
-    <div className="cricket-scorer">
+    // .is-fit: on phones and tablets, the scorer fills the screen in two
+    // halves (see cricket.css) — except while players are being picked.
+    <div className={`cricket-scorer${needsPlayers ? "" : " is-fit"}`}>
+      {/* Top half: score, chase and who's in. */}
+      <div className="cricket-scorer-top">
       {inningsBreak && chase && (
         <section className="cricket-break">
           <span className="cricket-break-eyebrow">
@@ -759,59 +794,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
         </section>
       )}
       {!inningsBreak && (
-      <div className="cricket-scorer-head">
-        <div className="cricket-scorer-head-main">
-          <TeamMark
-            className="cricket-scorer-team-logo"
-            name={match.teams[innings.battingTeam].name}
-            logoUrl={match.teams[innings.battingTeam].logoUrl}
-            color={avatarColorFor(match.teams[innings.battingTeam].name)}
-          />
-          <div className="cricket-scorer-head-info">
-            <div className="cricket-scorer-team-row">
-              <span className="cricket-scorer-team">{match.teams[innings.battingTeam].name}</span>
-              <span className="cricket-scorer-innings-tag">
-                {match.innings.length === 2 ? "2nd Inn" : "1st Inn"}
-              </span>
-            </div>
-            <div className="cricket-scorer-score-row">
-              <strong className="cricket-scorer-score">
-                {summary.runs}/{summary.wickets}
-              </strong>
-              <span className="cricket-scorer-overs">
-                ({summary.overs} / {match.overs} ov)
-              </span>
-            </div>
-          </div>
-        </div>
-        <div className="cricket-scorer-rates">
-          <span className="cricket-rate-pill">
-            <small>CRR</small>
-            <strong>{rate(summary.runs, summary.legalBalls, perOver)}</strong>
-          </span>
-          {chase && (
-            <>
-              <span className="cricket-rate-pill is-target">
-                <small>Target</small>
-                <strong>{chase.target}</strong>
-              </span>
-              <span className="cricket-rate-pill">
-                <small>RRR</small>
-                <strong>{chase.requiredRate}</strong>
-              </span>
-            </>
-          )}
-        </div>
-      </div>
-      )}
-      {chase && !inningsBreak && (
-        <div className="cricket-chase-line">
-          <i className="fa-solid fa-bullseye" aria-hidden="true"></i>
-          <span>
-            Need <strong>{Math.max(chase.need, 0)}</strong> run{chase.need === 1 ? "" : "s"} from{" "}
-            <strong>{chase.ballsLeft}</strong> ball{chase.ballsLeft === 1 ? "" : "s"}
-          </span>
-        </div>
+      <ScoreHead data={head} />
       )}
       {needsPlayers ? (
         <section className="cricket-panel cricket-pickers">
@@ -848,6 +831,17 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
               );
             })}
           </div>
+          {inningsBreak && (
+            <button
+              type="button"
+              className="btn btn-primary w-100"
+              onClick={() => savePlayers(picks)}
+              disabled={busy || emptySlots.some((slot) => picks[slot] === null)}
+            >
+              <i className="fa-solid fa-play me-2" aria-hidden="true"></i>
+              Start 2nd innings
+            </button>
+          )}
           {innings.strikerId === null && innings.nonStrikerId !== null && availableBatters.length === 0 && (
             <p className="admin-hint">No batters left — end the innings.</p>
           )}
@@ -865,7 +859,6 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
       ) : null}
 
       {!inningsBreak && (
-      <>
       <div className="cricket-crease-card">
         {/* Batters section */}
         <div className="cricket-crease-section">
@@ -1147,7 +1140,11 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
           </button>
         </div>
       </div>
+      )}
+      </div>
 
+      {!inningsBreak && (
+      <>
       {/* Animated Popover for Previous Overs History */}
       {prevOversOpen &&
         (() => {

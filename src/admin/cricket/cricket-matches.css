@@ -1220,16 +1220,13 @@
 }
 
 /* Live scorer */
-/* Live scorer header: rich gradient with flat subtle shadow (no heavy drop shadow) */
+/* Live score card (ScoreHead.tsx), broadcast style: the batting side, the
+   score with the overs as a bar, then a strip of rates along the bottom. */
 .cricket-scorer-head {
   position: relative;
   overflow: hidden;
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
+  flex-direction: column;
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-top: 1px solid rgba(255, 255, 255, 0.35);
   border-bottom: 3px solid rgba(var(--brand-amber-rgb), 0.85);
@@ -1243,183 +1240,144 @@
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-top: 1px solid rgba(255, 255, 255, 0.35);
   box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5), 0 0 16px -4px rgba(168, 54, 47, 0.35);
-  color: #fff;
 }
-:root[data-bs-theme="dark"] .cricket-scorer-team-logo {
-  border-color: #fff;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25), 0 2px 6px rgba(0, 0, 0, 0.3);
-}
-:root[data-bs-theme="dark"] .cricket-scorer-innings-tag {
-  background: rgba(255, 255, 255, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: #fff;
-}
-:root[data-bs-theme="dark"] .cricket-scorer-overs {
-  background: rgba(0, 0, 0, 0.28);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: rgba(255, 255, 255, 0.95);
-}
-:root[data-bs-theme="dark"] .cricket-rate-pill {
-  background: rgba(0, 0, 0, 0.28);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #fff;
-}
-:root[data-bs-theme="dark"] .cricket-rate-pill small {
-  color: rgba(255, 255, 255, 0.85);
-}
-.cricket-scorer-head-main {
+.cricket-scorer-head-top {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
-  flex: 1;
+  padding: 10px 14px 0;
 }
 .cricket-scorer-team-logo {
   flex: none;
-  width: 38px;
-  height: 38px;
+  width: 30px;
+  height: 30px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
   border: 2px solid #fff;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25), 0 2px 6px rgba(0, 0, 0, 0.15);
-  font-size: var(--fs-xs);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2), 0 2px 6px rgba(0, 0, 0, 0.2);
+  font-size: var(--fs-2xs);
   font-weight: 800;
   line-height: 1;
   color: #fff;
 }
-.cricket-scorer-head-info {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.cricket-scorer-team-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-}
+/* The name takes the row; a long one ends in "…" before the innings tag. */
 .cricket-scorer-team {
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.95);
+  font-size: var(--fs-sm);
+  font-weight: 800;
+  color: #fff;
 }
 .cricket-scorer-innings-tag {
   flex: none;
-  padding: 1px 7px;
+  padding: 1px 8px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.16);
   border: 1px solid rgba(255, 255, 255, 0.25);
   color: #fff;
   font-size: 0.58rem;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 .cricket-scorer-score-row {
   display: flex;
-  align-items: baseline;
-  gap: 6px;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 6px 14px 10px;
 }
 .cricket-scorer-score {
-  font-size: calc(var(--fs-2xl) * 1.15);
+  font-size: calc(var(--fs-2xl) * 1.3);
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   color: #fff;
 }
 .cricket-scorer-overs {
+  padding-bottom: 2px;
+  white-space: nowrap;
   font-size: var(--fs-xs);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: rgba(255, 255, 255, 0.95);
+  color: rgba(255, 255, 255, 0.7);
+}
+.cricket-scorer-overs strong {
+  font-size: var(--fs-base);
+  font-weight: 800;
+  color: #fff;
+}
+/* The strip: equal cells (one in the first innings, three in a chase). */
+.cricket-scorer-stats {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(0, 0, 0, 0.25);
-  padding: 2px 7px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
 }
-.cricket-scorer-rates {
+.cricket-scorer-stat {
   display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.cricket-rate-pill {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
+  align-items: baseline;
   justify-content: center;
-  min-width: 54px;
-  padding: 4px 9px;
-  border-radius: 11px;
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  background: rgba(0, 0, 0, 0.28);
-  backdrop-filter: blur(8px);
-  line-height: 1.15;
-  box-shadow: none;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px 8px;
+  white-space: nowrap;
 }
-.cricket-rate-pill small {
-  font-size: 0.56rem;
+.cricket-scorer-stat + .cricket-scorer-stat {
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+.cricket-scorer-stat small {
+  font-size: 0.58rem;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.65);
 }
-.cricket-rate-pill strong {
+.cricket-scorer-stat strong {
   font-size: var(--fs-sm);
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  color: #fff;
-}
-.cricket-rate-pill.is-target {
-  background: rgba(var(--brand-amber-rgb), 0.28);
-  border-color: rgba(var(--brand-amber-rgb), 0.55);
-}
-.cricket-rate-pill.is-target small {
-  color: rgba(255, 255, 255, 0.9);
-}
-.cricket-rate-pill.is-target {
-  background: rgba(var(--brand-amber-rgb), 0.12);
-  border-color: rgba(var(--brand-amber-rgb), 0.35);
-}
-.cricket-rate-pill.is-target small {
-  color: var(--brand-amber);
-}
-.cricket-rate-pill strong {
-  font-size: var(--fs-xs);
   font-weight: 900;
   font-variant-numeric: tabular-nums;
   color: #fff;
 }
-.cricket-rate-pill.is-target {
-  border-color: rgba(255, 205, 0, 0.7);
-  background: rgba(255, 205, 0, 0.22);
-  box-shadow: 0 2px 8px rgba(255, 205, 0, 0.25);
+.cricket-scorer-stat.is-target {
+  background: rgba(255, 205, 0, 0.14);
 }
-.cricket-rate-pill.is-target small {
+.cricket-scorer-stat.is-target small {
   color: #ffe680;
 }
-.cricket-rate-pill.is-target strong {
+.cricket-scorer-stat.is-target strong {
   color: #ffd83d;
 }
-.cricket-chase-line {
+/* Bottom layer in a chase: runs needed from the balls left. */
+.cricket-scorer-need {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(var(--secondary-rgb), 0.28);
-  background: rgba(var(--secondary-rgb), 0.1);
-  color: var(--theme-text-dark);
+  justify-content: center;
+  gap: 7px;
+  padding: 5px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.4);
   font-size: var(--fs-xs);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
 }
-.cricket-chase-line i {
-  color: var(--primary);
+.cricket-scorer-need i {
+  color: #ffd83d;
+}
+.cricket-scorer-need strong {
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
 }
 /* The innings break: the first innings' total, the target to chase, then
    the pickers for the openers and opening bowler. */
