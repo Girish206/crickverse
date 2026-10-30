@@ -5,9 +5,10 @@ import { PlayerAvatar } from "../players/PlayerAvatar";
 import { PlayerLink } from "../players/PlayerProfileSheet";
 import { impactLine, matchAwards, points, type NameOf } from "../stats";
 import { PillSelect } from "../PillSelect";
+import { MvpPointsHelp } from "./MvpPointsGuide";
 
-// The "MVP" tab: everyone who took part, ranked by impact points, with
-// where their points came from.
+// The "MVP" tab: everyone who took part, ranked by MVP points, with where
+// their points came from.
 export function MatchMvp({ match, nameOf }: { match: CricketMatch; nameOf: NameOf }) {
   const [team, setTeam] = useState<number | null>(null);
   const { data: players } = useCricketPlayers();
@@ -21,15 +22,18 @@ export function MatchMvp({ match, nameOf }: { match: CricketMatch; nameOf: NameO
 
   return (
     <div className="cricket-mvp">
-      <PillSelect
-        label="Team"
-        value={team === null ? "both" : String(team)}
-        options={[
-          { value: "both", label: "Both teams" },
-          ...[0, 1].map((slot) => ({ value: String(slot), label: match.teams[slot].name })),
-        ]}
-        onChange={(value) => setTeam(value === "both" ? null : Number(value))}
-      />
+      <div className="cricket-mvp-head">
+        <PillSelect
+          label="Team"
+          value={team === null ? "both" : String(team)}
+          options={[
+            { value: "both", label: "Both teams" },
+            ...[0, 1].map((slot) => ({ value: String(slot), label: match.teams[slot].name })),
+          ]}
+          onChange={(value) => setTeam(value === "both" ? null : Number(value))}
+        />
+        <MvpPointsHelp />
+      </div>
 
       <ol className="cricket-mvp-list">
         {rows.map((row) => {
@@ -39,7 +43,6 @@ export function MatchMvp({ match, nameOf }: { match: CricketMatch; nameOf: NameO
             row.batting ? `Bat ${points(row.batting)}` : null,
             row.bowling ? `Bowl ${points(row.bowling)}` : null,
             row.fielding ? `Field ${points(row.fielding)}` : null,
-            row.winBonus ? `Win +${points(row.winBonus)}` : null,
           ].filter(Boolean);
           return (
             <li key={row.playerId} className={`cricket-mvp-row ${rank === 1 ? "is-top" : ""}`}>
@@ -65,16 +68,6 @@ export function MatchMvp({ match, nameOf }: { match: CricketMatch; nameOf: NameO
           );
         })}
       </ol>
-
-      <details className="cricket-mvp-help">
-        <summary>How MVP points work</summary>
-        <p className="admin-hint mb-0">
-          Batting: runs, boundaries, milestones (25 / 50 / 100) and strike rate against the match's par. Bowling: 20 per
-          wicket (more for top-order and set batters), hauls, dots, maidens and economy against par. Fielding: 8 per catch,
-          10 per stumping or run-out. The winning side gets +10%. The top performer from the winning side is player of the
-          match unless the organiser picks someone else.
-        </p>
-      </details>
     </div>
   );
 }

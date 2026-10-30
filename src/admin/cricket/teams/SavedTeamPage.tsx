@@ -311,7 +311,7 @@ export function SavedTeamPage() {
               path={`/teams/saved/${team.id}`}
               title={team.name}
               image={team.logoUrl ?? undefined}
-              text={`${team.name} on CricDesk`}
+              text={`${team.name} on RunMitra`}
             />
             {canManage && (
               <>
@@ -350,7 +350,7 @@ export function SavedTeamPage() {
           <div className="cricket-th">
             <div className="cricket-th-cover" style={{ backgroundImage: `url(${bannerFor({ id: team.id, bannerUrl: null })})` }} />
             <div className="cricket-th-identity">
-              <TeamBadge name={team.name} logoUrl={team.logoUrl} />
+              <TeamBadge name={team.name} logoUrl={team.logoUrl} viewable />
               <div className="cricket-th-title">
                 <h1>{team.name}</h1>
                 <div className="cricket-th-meta">

@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import type { CricketMatch, CricketTournament } from "../../../api/types";
 import { championOf, makeResolver } from "../format/formatEngine";
 import { bannerFor } from "./tournamentArt";
@@ -205,15 +205,34 @@ export function parseTournamentSeries(name: string): { seriesName: string; seaso
   return { seriesName: trimmed, seasonLabel: null };
 }
 
+// When a tournament is (or was) on, for putting seasons in order.
+const startOf = (t: CricketTournament) => t.startDate ?? t.createdAt;
+
+// The series a tournament belongs to and its season: the organiser's own
+// series name and season when set, else read from its name ("KPL Season 2").
+// A season with no label goes by its year.
+export function seriesOf(t: CricketTournament) {
+  const parsed = parseTournamentSeries(t.name);
+  const name = t.seriesName?.trim() || parsed.seriesName;
+  const season = t.season?.trim() || (t.seriesName ? null : parsed.seasonLabel) || startOf(t).slice(0, 4);
+  return { name, key: name.toLowerCase(), season };
+}
+
+// Every season of a series, newest first.
+export const seasonsOf = (tournaments: CricketTournament[], key: string) =>
+  tournaments.filter((t) => seriesOf(t).key === key).sort((a, b) => startOf(b).localeCompare(startOf(a)));
+
+export const seriesPath = (name: string) => `/series/${encodeURIComponent(name)}`;
+
 function TournamentSeriesGroup({
   group,
   renderCard,
 }: {
-  group: { seriesName: string; items: { tournament: CricketTournament; seasonLabel: string | null }[] };
+  group: { seriesName: string; items: { tournament: CricketTournament; seasonLabel: string }[] };
   renderCard: (t: CricketTournament) => ReactNode;
 }) {
   const sorted = useMemo(() => {
-    return [...group.items].sort((a, b) => b.tournament.id - a.tournament.id);
+    return [...group.items].sort((a, b) => startOf(b.tournament).localeCompare(startOf(a.tournament)));
   }, [group.items]);
 
   const [activeId, setActiveId] = useState<number>(sorted[0].tournament.id);
@@ -229,9 +248,10 @@ function TournamentSeriesGroup({
   return (
     <div className="cricket-tour-series-group">
       <div className="cricket-tour-series-bar">
-        <span className="cricket-tour-series-title">
+        <Link to={seriesPath(group.seriesName)} className="cricket-tour-series-title" title="All seasons and series stats">
           <i className="fa-solid fa-layer-group me-1" aria-hidden="true"></i> {group.seriesName}
-        </span>
+          <i className="fa-solid fa-chevron-right ms-1" aria-hidden="true"></i>
+        </Link>
         <div ref={seasonSwipeRef} className="cricket-tour-series-pills" role="tablist">
           {sorted.map((item) => (
             <button
@@ -243,7 +263,7 @@ function TournamentSeriesGroup({
                 setActiveId(item.tournament.id);
               }}
             >
-              {item.seasonLabel ?? `S${item.tournament.id}`}
+              {item.seasonLabel}
             </button>
           ))}
         </div>
@@ -271,14 +291,13 @@ export function TournamentsBoard({
   // One list per tab, so a swipe brings the next one in beside it.
   const listFor = (filter: Filter) => {
     const visible = tournaments.filter((t) => filter === "all" || tournamentPhase(t, matches) === filter);
-    const grouped = new Map<string, { seriesName: string; items: { tournament: CricketTournament; seasonLabel: string | null }[] }>();
+    const grouped = new Map<string, { seriesName: string; items: { tournament: CricketTournament; seasonLabel: string }[] }>();
     for (const t of visible) {
-      const { seriesName, seasonLabel } = parseTournamentSeries(t.name);
-      const key = seriesName.toLowerCase();
+      const { name, key, season } = seriesOf(t);
       if (!grouped.has(key)) {
-        grouped.set(key, { seriesName, items: [] });
+        grouped.set(key, { seriesName: name, items: [] });
       }
-      grouped.get(key)!.items.push({ tournament: t, seasonLabel });
+      grouped.get(key)!.items.push({ tournament: t, seasonLabel: season });
     }
     return visible.length === 0 ? (
       <div className="admin-empty-state">{tournaments.length === 0 ? empty : "No tournaments here."}</div>

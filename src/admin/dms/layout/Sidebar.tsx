@@ -6,6 +6,7 @@ import { BrandSignature } from "../../components/BrandSignature";
 import { useCricketMe } from "../../../api/hooks/cricket/useCricketPlayers";
 import { formatMobile } from "../../cricket/mobile";
 import { PlayerAvatar } from "../../cricket/players/PlayerAvatar";
+import { AppIcon, type AppIconName } from "../../AppIcon";
 
 const Sidebar = ({
     activeSubItem,
@@ -42,33 +43,33 @@ const Sidebar = ({
             items: [
                 ...(admin?.isSuperAdmin
                     ? []
-                    : [{ id: "cricket-home", label: "Home", icon: "fa-solid fa-house", link: "/", submenu: [] }]),
-                { id: "cricket-me", label: "My Stats", icon: "fa-solid fa-id-card", link: "/me", submenu: [] },
+                    : [{ id: "cricket-home", label: "Home", icon: "home" as AppIconName, link: "/", submenu: [] }]),
+                { id: "cricket-me", label: "My Stats", icon: "stats" as AppIconName, link: "/me", submenu: [] },
                 {
                     id: "cricket-my-matches",
                     label: "My Matches",
-                    icon: "fa-solid fa-baseball-bat-ball",
+                    icon: "matches" as AppIconName,
                     link: "/my-matches",
                     submenu: [],
                 },
                 {
                     id: "cricket-my-tournaments",
                     label: "My Tournaments",
-                    icon: "fa-solid fa-medal",
+                    icon: "tournaments" as AppIconName,
                     link: "/my-tournaments",
                     submenu: [],
                 },
                 {
                     id: "cricket-my-teams",
                     label: "My Teams",
-                    icon: "fa-solid fa-people-group",
+                    icon: "teams" as AppIconName,
                     link: "/my-teams",
                     submenu: [],
                 },
                 {
                     id: "cricket-following",
                     label: "Following",
-                    icon: "fa-solid fa-star",
+                    icon: "following" as AppIconName,
                     link: "/following",
                     submenu: [],
                 },
@@ -82,42 +83,42 @@ const Sidebar = ({
                           {
                               id: "cricket-dashboard",
                               label: "Dashboard",
-                              icon: "fa-solid fa-chart-pie",
+                              icon: "dashboard" as AppIconName,
                               link: "/dashboard",
                               submenu: [],
                           },
                           {
                               id: "cricket-tournaments",
                               label: "Tournaments",
-                              icon: "fa-solid fa-trophy",
+                              icon: "tournaments" as AppIconName,
                               link: "/tournaments",
                               submenu: [],
                           },
                           {
                               id: "cricket-matches",
                               label: "Matches",
-                              icon: "fa-solid fa-calendar-days",
+                              icon: "fixtures" as AppIconName,
                               link: "/matches",
                               submenu: [],
                           },
                           {
                               id: "cricket-players",
                               label: "Players",
-                              icon: "fa-solid fa-users",
+                              icon: "players" as AppIconName,
                               link: "/players",
                               submenu: [],
                           },
                           {
                               id: "cricket-leaderboard",
                               label: "Leaderboard",
-                              icon: "fa-solid fa-ranking-star",
+                              icon: "leaderboard" as AppIconName,
                               link: "/leaderboard",
                               submenu: [],
                           },
                           {
                               id: "cricket-database",
                               label: "Database",
-                              icon: "fa-solid fa-database",
+                              icon: "database" as AppIconName,
                               link: "/database",
                               submenu: [],
                           },
@@ -184,13 +185,8 @@ const Sidebar = ({
             {/* Phones only: the drawer's own header, in place of the
                 floating collapse button. */}
             <div className="sidebar-mobile-head">
-                <div className="navbar-logo-box">
-                    <img src="/favicon.svg" alt="" className="img-fluid" />
-                </div>
-                <div className="sidebar-mobile-who">
-                    <span className="cv-wordmark">
-                        Cric<em>Desk</em>
-                    </span>
+                <div className="sidebar-mobile-logo">
+                    <img src="/logo.svg" alt="RunMitra" />
                 </div>
                 <button
                     type="button"
@@ -289,10 +285,10 @@ const Sidebar = ({
                     type="button"
                     onClick={onShareApp}
                     className={`share-app-btn nav-link ${!isSidebarOpen ? "justify-content-center" : ""}`}
-                    title={!isSidebarOpen ? "Share CricDesk" : undefined}
+                    title={!isSidebarOpen ? "Share RunMitra" : undefined}
                 >
-                    <i className="fa-solid fa-share-nodes icon"></i>
-                    {isSidebarOpen && <span>Share CricDesk</span>}
+                    <AppIcon name="share" className="icon" />
+                    {isSidebarOpen && <span>Share RunMitra</span>}
                 </button>
                 <Link
                     to="#"
@@ -303,7 +299,7 @@ const Sidebar = ({
                     className={`logout-btn nav-link ${!isSidebarOpen ? "justify-content-center" : ""}`}
                     title={!isSidebarOpen ? "Logout" : undefined}
                 >
-                    <i className="fa-solid fa-right-from-bracket icon"></i>
+                    <AppIcon name="logout" className="icon" />
                     {isSidebarOpen && <span>Logout</span>}
                 </Link>
                 {showSignature && <BrandSignature small />}

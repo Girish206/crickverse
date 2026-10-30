@@ -8,7 +8,7 @@ import { confirmAction } from "../../components/confirmDelete";
 // that proves the number is theirs.
 function inviteText(invite: PlayerInviteCode) {
   return (
-    `Hi ${invite.name}! You're on CricDesk — see your runs, wickets and matches.\n` +
+    `Hi ${invite.name}! You're on RunMitra — see your runs, wickets and matches.\n` +
     `Sign in at ${window.location.origin}/login with your mobile number and enter this invite code: ${invite.code}`
   );
 }
@@ -49,7 +49,7 @@ function InviteCode({ invite, mobile }: { invite: PlayerInviteCode; mobile?: str
   );
 }
 
-// "Invite to CricDesk": whoever added a player (an organiser or captain)
+// "Invite to RunMitra": whoever added a player (an organiser or captain)
 // gets the code the player needs to claim their account, and sends it.
 export function PlayerInvite({ playerId, mobile }: { playerId: number; mobile?: string | null }) {
   const invite = usePlayerInvite();
@@ -64,7 +64,7 @@ export function PlayerInvite({ playerId, mobile }: { playerId: number; mobile?: 
         onClick={() => invite.mutate(playerId, { onError: (err) => setError(messageFor(err)) })}
       >
         <i className="fa-solid fa-paper-plane" aria-hidden="true"></i>
-        {invite.isPending ? "Getting code..." : "Invite to CricDesk"}
+        {invite.isPending ? "Getting code..." : "Invite to RunMitra"}
       </button>
       {error && <small className="cricket-invite-note">{error}</small>}
     </div>

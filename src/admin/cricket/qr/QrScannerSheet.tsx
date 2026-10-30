@@ -13,7 +13,7 @@ export type ScanReply = Status | void;
 
 const KIND_LABEL = { player: "a player's", team: "a team's" } as const;
 
-// Scans CricDesk QR codes with the back camera (or from a photo of one),
+// Scans RunMitra QR codes with the back camera (or from a photo of one),
 // passing on the ones of the kinds asked for. The scanner library loads
 // only when the sheet opens.
 export function QrScannerSheet({
@@ -44,7 +44,7 @@ export function QrScannerSheet({
     if (busy.current || (last.current?.text === text && now - last.current.at < 3000)) return;
     last.current = { text, at: now };
     const target = parseQr(text);
-    if (!target) return setStatus({ tone: "error", text: "That isn't a CricDesk QR code" });
+    if (!target) return setStatus({ tone: "error", text: "That isn't a RunMitra QR code" });
     if (!accept.includes(target.kind)) {
       return setStatus({ tone: "error", text: `That's ${KIND_LABEL[target.kind]} code — scan ${accept.map((k) => KIND_LABEL[k]).join(" or ")} instead` });
     }

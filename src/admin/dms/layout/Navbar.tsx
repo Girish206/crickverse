@@ -12,7 +12,7 @@ interface NavbarProps {
     isSidebarOpen: boolean;
     isDark: boolean;
     toggleTheme: () => void;
-    // Opens the "Share CricDesk" sheet (Layout).
+    // Opens the "Share RunMitra" sheet (Layout).
     onShareApp: () => void;
 }
 
@@ -82,16 +82,13 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar, isDark, toggleTheme, onS
                         </Link>
 
                         <div className="navbar-brand-container d-flex align-items-center">
-                            <div className="navbar-logo-box">
-                                <img src="/favicon.svg" alt="CricDesk" className="img-fluid" />
-                            </div>
-                            <div className="navbar-brand-info ms-2 d-none d-sm-flex" style={{ flexDirection: "column", lineHeight: 1.3 }}>
-                                <span style={{ fontSize: "var(--fs-md)", whiteSpace: "nowrap" }}>
-                                    <span className="cv-wordmark">
-                                        Cric<em>Desk</em>
-                                    </span>
-                                </span>
-                            </div>
+                            {/* The logo with the name beside it; the narrowest
+                                phones get the mark alone, so it never crowds
+                                the buttons on the right. */}
+                            <picture>
+                                <source media="(min-width: 360px)" srcSet="/logo.svg" />
+                                <img src="/logo-mark.svg" alt="RunMitra" className="navbar-logo" />
+                            </picture>
                         </div>
                     </div>
 
@@ -158,7 +155,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar, isDark, toggleTheme, onS
                                     <span className="navbar-user-dropdown-icon">
                                         <i className="fa-solid fa-share-nodes" aria-hidden="true"></i>
                                     </span>
-                                    <span className="navbar-user-dropdown-label">Share CricDesk</span>
+                                    <span className="navbar-user-dropdown-label">Share RunMitra</span>
                                     <i className="fa-solid fa-chevron-right navbar-user-dropdown-chevron" aria-hidden="true"></i>
                                 </button>
                                 <div className="navbar-user-dropdown-divider"></div>

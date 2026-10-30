@@ -19,11 +19,11 @@ export type PushBlocker = "unsupported" | "no-worker" | "no-key" | "denied" | nu
 
 export const PUSH_BLOCKER_TEXT: Record<Exclude<PushBlocker, null>, string> = {
   unsupported:
-    "This browser can't show notifications. On an iPhone, add CricDesk to your Home Screen and open it from there.",
+    "This browser can't show notifications. On an iPhone, add RunMitra to your Home Screen and open it from there.",
   "no-worker": "Notifications work in the installed app / on the live site.",
   "no-key": "Notifications aren't set up on the server yet.",
   denied:
-    "Notifications are blocked for CricDesk. Allow them in your browser's site settings (the icon beside the address) or your phone's app settings, then try again.",
+    "Notifications are blocked for RunMitra. Allow them in your browser's site settings (the icon beside the address) or your phone's app settings, then try again.",
 };
 
 // A reason turning them on failed, worded for people (shown as is).

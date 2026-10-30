@@ -286,7 +286,7 @@ function ProfileSettings({ player }: { player: CricketPlayer | null }) {
             : []),
           {
             icon: "fa-solid fa-share-nodes",
-            label: "Share CricDesk",
+            label: "Share RunMitra",
             description: "Send the app to friends",
             onClick: () => setSharingApp(true),
           },

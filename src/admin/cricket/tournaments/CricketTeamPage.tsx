@@ -190,7 +190,7 @@ export function CricketTeamPage() {
               path={`/tournaments/${id}/teams/${teamIndex}`}
               title={team.name}
               image={team.logoUrl ?? undefined}
-              text={`${team.name} · ${tournament.name} on CricDesk`}
+              text={`${team.name} · ${tournament.name} on RunMitra`}
               items={
                 team.playerIds.length > 0
                   ? [{
@@ -239,7 +239,7 @@ export function CricketTeamPage() {
           <div className="cricket-th">
             <div className="cricket-th-cover" style={{ backgroundImage: `url(${bannerFor(tournament)})` }} />
             <div className="cricket-th-identity">
-              <TeamBadge name={team.name} logoUrl={team.logoUrl} />
+              <TeamBadge name={team.name} logoUrl={team.logoUrl} viewable />
               <div className="cricket-th-title">
                 <h1>{team.name}</h1>
                 <div className="cricket-th-meta">

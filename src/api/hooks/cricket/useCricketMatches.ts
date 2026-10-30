@@ -303,6 +303,14 @@ export function useEndCricketInnings() {
   return useMatchMutation((id: number) => apiClient.post(url(id, "/end-innings")));
 }
 
+// Rain: the batting side's overs from now on, or null for no more play in
+// this innings (see recordInterruption on the API).
+export function useCricketInterruption() {
+  return useMatchMutation(({ id, overs }: { id: number; overs: number | null }) =>
+    apiClient.post(url(id, "/interruption"), { overs }),
+  );
+}
+
 export function useAbandonCricketMatch() {
   return useMatchMutation((id: number) => apiClient.post(url(id, "/abandon")));
 }

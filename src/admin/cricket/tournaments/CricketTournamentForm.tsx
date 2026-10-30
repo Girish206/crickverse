@@ -76,6 +76,8 @@ export function useImagePick(current: string | null | undefined) {
 export function tournamentInputOf(t: CricketTournament): CricketTournamentInput {
   return {
     name: t.name,
+    seriesName: t.seriesName ?? null,
+    season: t.season ?? null,
     city: t.city,
     ground: t.ground,
     organiserName: t.organiserName,
@@ -113,6 +115,8 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
   const start = existing ?? previous;
 
   const [name, setName] = useState(existing?.name ?? "");
+  const [seriesName, setSeriesName] = useState(existing?.seriesName ?? "");
+  const [season, setSeason] = useState(existing?.season ?? "");
   const [city, setCity] = useState(start?.city ?? "");
   const [ground, setGround] = useState(start?.ground ?? "");
   const [organiserName, setOrganiserName] = useState(start?.organiserName ?? admin?.name ?? "");
@@ -226,6 +230,8 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
     }
     const input = {
       name: name.trim(),
+      seriesName: seriesName.trim() || null,
+      season: season.trim() || null,
       city: city.trim(),
       ground: ground.trim(),
       organiserName: organiserName.trim(),
@@ -266,6 +272,13 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
       clear("city");
     },
     icon: "fa-solid fa-city",
+  });
+  // The series already in use, so a new season joins the same one.
+  const seriesSuggest = useSuggestions({
+    value: seriesName,
+    suggestions: [...new Set((tournaments ?? []).flatMap((t) => (t.seriesName ? [t.seriesName] : [])))],
+    onPick: setSeriesName,
+    icon: "fa-solid fa-layer-group",
   });
   const groundSuggest = useSuggestions({
     value: ground,
@@ -321,7 +334,26 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
       <div className="cricket-app-form cricket-tour-form">
         <h2 className="cricket-app-group-title">Tournament</h2>
         <div className="cricket-tour-fields">
-          <InputComp label="Tournament / series name" required value={name} error={errors.name} maxLength={150} onChange={text(setName, "name")} />
+          <InputComp label="Tournament name" required value={name} error={errors.name} maxLength={150} onChange={text(setName, "name")} />
+          <div className="cricket-form-row">
+            <InputComp
+              label="Series (optional)"
+              value={seriesName}
+              maxLength={100}
+              {...seriesSuggest.inputProps}
+              onChange={(e) => setSeriesName(e.target.value)}
+            />
+            {seriesSuggest.menu}
+            <InputComp
+              label="Season (e.g. 2025, Season 3)"
+              value={season}
+              maxLength={40}
+              onChange={(e) => setSeason(e.target.value)}
+            />
+          </div>
+          <small className="admin-hint d-block">
+            Seasons with the same series name are grouped together, with their combined stats on the series page.
+          </small>
           <div className="cricket-form-row">
             <InputComp
               label="City"

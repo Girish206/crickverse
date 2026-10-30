@@ -11,7 +11,7 @@ import "./public.css";
 import { PullToRefresh } from "../admin/dms/layout/PullToRefresh";
 
 // The frame of a shared match / tournament page for someone signed out: a
-// slim CricDesk bar with sign-in, the page, then an invitation to the app.
+// slim RunMitra bar with sign-in, the page, then an invitation to the app.
 // It uses the app's theme (light/dark as the device or saved choice says).
 export function PublicShell({ children }: { children: ReactNode }) {
   useAdminBodyClass();
@@ -21,9 +21,9 @@ export function PublicShell({ children }: { children: ReactNode }) {
   return (
     <div className="cv-public">
       <header className="cv-public-bar">
-        <Link to="/login" state={{ from }} className="cv-public-brand" aria-label="CricDesk">
+        <Link to="/login" state={{ from }} className="cv-public-brand" aria-label="RunMitra">
           <img src="/favicon.svg" alt="" />
-          <span>CricDesk</span>
+          <span>RunMitra</span>
         </Link>
         <Link to="/login" state={{ from }} className="cv-public-signin">
           Sign in
@@ -40,7 +40,7 @@ export function PublicShell({ children }: { children: ReactNode }) {
             <span>Ball-by-ball scoring, tournaments and player stats — free.</span>
           </div>
           <Link to="/login" state={{ from }} className="cv-public-cta-btn">
-            Get CricDesk
+            Get RunMitra
           </Link>
         </div>
         <BrandSignature small />

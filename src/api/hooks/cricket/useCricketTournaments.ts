@@ -17,6 +17,8 @@ import type {
 
 export interface CricketTournamentInput {
   name: string;
+  seriesName?: string | null;
+  season?: string | null;
   city: string | null;
   ground: string | null;
   organiserName: string | null;

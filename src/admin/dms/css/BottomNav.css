@@ -62,7 +62,7 @@
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-.cv-bottom-tab i {
+.cv-bottom-tab .app-icon {
   font-size: 1.05rem;
   transition: transform 0.15s ease;
 }
@@ -74,7 +74,7 @@
   text-align: center;
   overflow-wrap: break-word;
 }
-.cv-bottom-tab:active i {
+.cv-bottom-tab:active .app-icon {
   transform: scale(0.9);
 }
 .cv-bottom-tab.is-active {

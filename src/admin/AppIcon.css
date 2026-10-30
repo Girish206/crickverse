@@ -1,0 +1,34 @@
+/* RunMitra's navigation icons (AppIcon.tsx): sized like the text around
+   them, with the soft fill shown only on the current item. */
+.app-icon {
+  width: 1.2em;
+  height: 1.2em;
+  flex: none;
+  overflow: visible;
+}
+.app-icon .ai-fill {
+  fill: currentColor;
+  fill-opacity: 0;
+  stroke: none;
+  transition: fill-opacity 0.2s ease;
+}
+.cv-bottom-tab.is-active .app-icon .ai-fill,
+.sidebar .nav-item.active > .nav-link .app-icon .ai-fill {
+  fill-opacity: 0.22;
+}
+/* The open sidebar draws each icon as a 36px tile: the drawing sits inside
+   it with room around, the way a font glyph did. */
+.sidebar-open .nav-link .app-icon.icon {
+  box-sizing: border-box;
+  padding: 8px;
+}
+/* Share and Logout: text-sized, not stretched to the button. */
+.sidebar .sidebar-footer .app-icon.icon {
+  width: 1.25em !important;
+  height: 1.25em !important;
+  min-width: 0 !important;
+  padding: 0;
+}
+.cv-bottom-tab.is-active .app-icon {
+  stroke-width: 2;
+}

@@ -10,7 +10,8 @@ export type ScoreHeadData = {
   overs: string;
   maxOvers: number;
   crr: string;
-  chase: { target: number; requiredRate: string } | null;
+  // dlsPar: what ties the chase if rain stopped play now (rain-hit matches).
+  chase: { target: number; requiredRate: string; dlsPar?: number | null } | null;
   // The chase's bottom line: runs still needed from the balls left.
   need: { runs: number; balls: number } | null;
 };
@@ -53,6 +54,12 @@ export function ScoreHead({ data }: { data: ScoreHeadData }) {
               <small>RRR</small>
               <strong>{data.chase.requiredRate}</strong>
             </span>
+            {data.chase.dlsPar != null && (
+              <span className="cricket-scorer-stat" title="DLS par score if play stopped now">
+                <small>DLS par</small>
+                <strong>{data.chase.dlsPar}</strong>
+              </span>
+            )}
           </>
         )}
       </div>

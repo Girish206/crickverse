@@ -210,7 +210,7 @@
   overflow: visible !important;
 }
 
-.sidebar-close .nav-link i.icon {
+.sidebar-close .nav-link .icon {
   margin: 0 !important;
   padding: 0 !important;
   width: auto !important;
@@ -222,7 +222,7 @@
   text-align: center !important;
 }
 
-.sidebar .nav-link i.icon {
+.sidebar .nav-link .icon {
   font-size: var(--fs-lg);
   width: 24px;
   min-width: 24px;
@@ -290,7 +290,7 @@
 }
 
 /* Icon Highlight on Hover (Both Modes) */
-.sidebar .nav-link:hover i.icon {
+.sidebar .nav-link:hover .icon {
   color: var(--primary-dark-1) !important;
   filter: drop-shadow(0 0 5px rgba(var(--primary-rgb), 0.15));
 }
@@ -302,7 +302,7 @@
   font-weight: 700 !important;
 }
 
-.sidebar .nav-item.active>.nav-link i.icon {
+.sidebar .nav-item.active>.nav-link .icon {
   color: var(--primary-dark-1) !important;
 }
 
@@ -416,7 +416,7 @@
   text-decoration: none !important;
 }
 
-.logout-btn i {
+.logout-btn .icon {
   font-size: var(--fs-md);
 }
 
@@ -427,7 +427,7 @@
   box-shadow: 0 8px 20px rgba(244, 63, 94, 0.2);
 }
 
-/* "Share CricDesk", above Logout. */
+/* "Share RunMitra", above Logout. */
 .share-app-btn {
   width: 100%;
   display: flex !important;
@@ -443,7 +443,7 @@
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
-.share-app-btn i {
+.share-app-btn .icon {
   font-size: var(--fs-md);
 }
 .share-app-btn:hover {
@@ -474,25 +474,21 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 18px 16px 14px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    padding: 16px 12px 8px 16px;
   }
 
-  .sidebar-mobile-who {
+  /* The full logo, mark and name in one image. */
+  .sidebar-mobile-logo {
     display: flex;
-    flex-direction: column;
+    align-items: center;
     min-width: 0;
-    flex: 1;
-    line-height: 1.3;
+    margin-right: auto;
   }
 
-  .sidebar-mobile-who .cv-wordmark {
-    font-size: var(--fs-md);
-    white-space: nowrap;
-  }
-
-  .sidebar-mobile-who .cv-wordmark-kn {
-    margin-top: 3px;
+  .sidebar-mobile-logo img {
+    display: block;
+    height: 40px;
+    max-width: 100%;
   }
 
   /* Dotted rule between the drawer header and the menu. */
@@ -570,7 +566,7 @@
   gap: 12px;
 }
 
-.sidebar-open .nav-link i.icon {
+.sidebar-open .nav-link .icon {
   width: 36px;
   min-width: 36px;
   height: 36px;
@@ -583,7 +579,7 @@
   transform: translateX(3px);
 }
 
-.sidebar-open .nav-link:hover i.icon {
+.sidebar-open .nav-link:hover .icon {
   background: rgba(var(--primary-rgb), 0.14);
   filter: none;
 }
@@ -592,7 +588,7 @@
   background: rgba(var(--primary-rgb), 0.09) !important;
 }
 
-.sidebar-open .nav-item.active > .nav-link i.icon {
+.sidebar-open .nav-item.active > .nav-link .icon {
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark-1) 100%);
   color: #ffffff !important;
   box-shadow: 0 6px 14px -4px rgba(var(--primary-rgb), 0.55);
@@ -679,7 +675,7 @@
   pointer-events: none;
 }
 
-.sidebar.sidebar-open .nav-item.active > .nav-link i.icon {
+.sidebar.sidebar-open .nav-item.active > .nav-link .icon {
   animation: cv-nav-glow 2.6s ease-in-out infinite;
 }
 
@@ -712,7 +708,7 @@
 @media (prefers-reduced-motion: reduce) {
   .sidebar.sidebar-open .nav-item.active > .nav-link,
   .sidebar.sidebar-open .nav-item.active > .nav-link::after,
-  .sidebar.sidebar-open .nav-item.active > .nav-link i.icon {
+  .sidebar.sidebar-open .nav-item.active > .nav-link .icon {
     animation: none;
   }
 }
@@ -788,136 +784,69 @@
   }
 }
 
-/* ---------- Drawer header: brand band ----------
-   A brand-gradient strip with a light sheen passing over it and a seamed
-   ball watermark tucked into the corner. */
+/* ---------- Drawer header: logo card ----------
+   A light card with a brand-gradient rim (flag red → orange → yellow), a
+   warm glow in the far corner and a seamed ball watermark. The rim sets it
+   apart from the sidebar; the plain middle keeps the logo readable. */
 @media (max-width: 769px) {
   .sidebar.sidebar-open .sidebar-mobile-head {
+    --cv-head-fill: #ffffff;
+    --cv-head-glow: rgba(255, 205, 0, 0.2);
     overflow: hidden;
-    margin: 10px 10px 4px;
-    padding: 14px 12px;
-    border: none;
+    margin: 12px 12px 4px;
+    padding: 10px 10px 10px 14px;
+    border: 1.5px solid transparent;
     border-radius: 18px;
-    background: linear-gradient(
-      125deg,
-      var(--primary) 0%,
-      var(--primary-dark-1) 55%,
-      var(--brand-crimson-deep, var(--primary-dark-2)) 100%
-    );
-    background-size: 160% 160%;
-    box-shadow: 0 10px 24px -10px rgba(var(--primary-rgb), 0.7);
-    animation: cv-head-drift 9s ease-in-out infinite alternate;
-  }
-
-  /* Sheen */
-  .sidebar.sidebar-open .sidebar-mobile-head::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      100deg,
-      transparent 35%,
-      rgba(255, 255, 255, 0.22) 50%,
-      transparent 65%
-    );
-    transform: translateX(-100%);
-    animation: cv-nav-sweep 4.5s ease-in-out infinite;
-    pointer-events: none;
+    background:
+      radial-gradient(circle at 100% 0%, var(--cv-head-glow), transparent 55%) padding-box,
+      linear-gradient(var(--cv-head-fill), var(--cv-head-fill)) padding-box,
+      linear-gradient(
+        120deg,
+        var(--brand-crimson, #c9443b) 0%,
+        var(--brand-orange, #e8501f) 50%,
+        var(--brand-amber, #ffcd00) 100%
+      ) border-box;
+    box-shadow: 0 10px 22px -14px rgba(var(--primary-rgb), 0.55);
   }
 
   /* Ball watermark */
   .sidebar.sidebar-open .sidebar-mobile-head::after {
     content: "";
     position: absolute;
-    right: 34px;
-    bottom: -26px;
-    width: 76px;
-    height: 76px;
-    background-color: rgba(255, 255, 255, 0.16);
+    right: 46px;
+    bottom: -30px;
+    width: 72px;
+    height: 72px;
+    background-color: rgba(var(--primary-rgb), 0.08);
     -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='black' stroke-linecap='round'%3E%3Ccircle cx='50' cy='50' r='46' stroke-width='4'/%3E%3Cpath d='M30 9c14 24 14 58 0 82M70 9c-14 24-14 58 0 82' stroke-width='3'/%3E%3Cpath d='M27 20l8-3M30 32l8-2M31 44l8-1M31 56l8 1M30 68l8 2M27 80l8 3M73 20l-8-3M70 32l-8-2M69 44l-8-1M69 56l-8 1M70 68l-8 2M73 80l-8 3' stroke-width='2.5'/%3E%3C/svg%3E") no-repeat center / contain;
     mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='black' stroke-linecap='round'%3E%3Ccircle cx='50' cy='50' r='46' stroke-width='4'/%3E%3Cpath d='M30 9c14 24 14 58 0 82M70 9c-14 24-14 58 0 82' stroke-width='3'/%3E%3Cpath d='M27 20l8-3M30 32l8-2M31 44l8-1M31 56l8 1M30 68l8 2M27 80l8 3M73 20l-8-3M70 32l-8-2M69 44l-8-1M69 56l-8 1M70 68l-8 2M73 80l-8 3' stroke-width='2.5'/%3E%3C/svg%3E") no-repeat center / contain;
-    animation: cv-ball-spin 24s linear infinite;
     pointer-events: none;
   }
 
+  /* Above the watermark */
   .sidebar.sidebar-open .sidebar-mobile-head > * {
     position: relative;
     z-index: 1;
   }
 
-  .sidebar.sidebar-open .sidebar-mobile-head .navbar-logo-box {
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 12px;
-    padding: 5px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-  }
-
-  .sidebar.sidebar-open .sidebar-mobile-head .cv-wordmark,
-  .sidebar.sidebar-open .sidebar-mobile-head .cv-wordmark em {
-    color: #ffffff;
-  }
-
-  .sidebar.sidebar-open .sidebar-mobile-head .cv-wordmark em,
-  .sidebar.sidebar-open .sidebar-mobile-head .cv-wordmark-kn {
-    color: var(--brand-amber, #ffd166);
-  }
-
   .sidebar.sidebar-open .sidebar-mobile-head .sidebar-mobile-close {
-    background: rgba(255, 255, 255, 0.18);
-    color: #ffffff;
+    background: rgba(var(--primary-rgb), 0.08);
+    color: var(--primary);
   }
 
   .sidebar.sidebar-open .sidebar-mobile-head .sidebar-mobile-close:active {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(var(--primary-rgb), 0.16);
   }
-}
 
-@keyframes cv-head-drift {
-  from { background-position: 0% 50%; }
-  to { background-position: 100% 50%; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sidebar.sidebar-open .sidebar-mobile-head,
-  .sidebar.sidebar-open .sidebar-mobile-head::before,
-  .sidebar.sidebar-open .sidebar-mobile-head::after {
-    animation: none;
-  }
-}
-
-/* Dark theme: --primary-dark-1 is a lighter tint here, so the light band
-   washes out to peach. Use the home hero's charcoal → maroon instead. */
-@media (max-width: 769px) {
+  /* Dark theme: a raised charcoal middle, same rim. */
   :root[data-bs-theme="dark"] .sidebar.sidebar-open .sidebar-mobile-head {
-    background: var(--hero-gradient);
-    background-size: 160% 160%;
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    box-shadow:
-      0 10px 26px -14px rgba(0, 0, 0, 0.7),
-      inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  }
-
-  :root[data-bs-theme="dark"] .sidebar.sidebar-open .sidebar-mobile-head::before {
-    background: linear-gradient(
-      100deg,
-      transparent 35%,
-      rgba(255, 255, 255, 0.1) 50%,
-      transparent 65%
-    );
+    --cv-head-fill: var(--brand-navy-raised, #2a2e37);
+    --cv-head-glow: rgba(232, 80, 31, 0.16);
+    box-shadow: 0 10px 24px -14px rgba(0, 0, 0, 0.8);
   }
 
   :root[data-bs-theme="dark"] .sidebar.sidebar-open .sidebar-mobile-head::after {
-    background-color: rgba(var(--primary-rgb), 0.28);
-  }
-
-  :root[data-bs-theme="dark"] .sidebar.sidebar-open .sidebar-mobile-head .navbar-logo-box {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: none;
-  }
-
-  :root[data-bs-theme="dark"] .sidebar.sidebar-open .sidebar-mobile-head .cv-wordmark {
-    color: #f3f4f6;
+    background-color: rgba(255, 255, 255, 0.06);
   }
 
   :root[data-bs-theme="dark"] .sidebar.sidebar-open .sidebar-mobile-head .sidebar-mobile-close {
@@ -1058,7 +987,7 @@
   border-radius: 11px;
   font-size: var(--fs-sm);
 }
-.sidebar.sidebar-open .sidebar-footer .nav-link i.icon {
+.sidebar.sidebar-open .sidebar-footer .nav-link .icon {
   width: auto;
   min-width: 0;
   height: auto;
@@ -1085,7 +1014,7 @@
   background: rgba(244, 63, 94, 0.06);
 }
 /* Their icons take the button's colour, not the menu's grey. */
-.sidebar .sidebar-footer .share-app-btn i.icon,
-.sidebar .sidebar-footer .logout-btn i.icon {
+.sidebar .sidebar-footer .share-app-btn .icon,
+.sidebar .sidebar-footer .logout-btn .icon {
   color: inherit !important;
 }

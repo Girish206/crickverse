@@ -23,7 +23,7 @@ function scoringBreakdown(innings: CricketInnings) {
   return { ...counts, boundaryRuns, extras };
 }
 
-// The "Insights" tab: awards and impact points, runs per over side by side,
+// The "Insights" tab: awards and MVP points, runs per over side by side,
 // how each side scored and (when shots were marked) the shot map.
 export function MatchInsights({ match, nameOf }: { match: CricketMatch; nameOf: NameOf }) {
   if (!match.innings.some((innings) => innings.balls.length > 0)) {

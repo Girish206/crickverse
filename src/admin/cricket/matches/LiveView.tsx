@@ -65,7 +65,7 @@ export function LiveView({ match, nameOf }: { match: CricketMatch; nameOf: NameO
       )}
       {chase && innings.balls.length === 0 && (
         <div className="admin-banner admin-banner-success">
-          Innings break — {match.teams[innings.battingTeam].name} need {chase.target} to win{chase.revised && " (revised target)"}.
+          Innings break — {match.teams[innings.battingTeam].name} need {chase.target} to win{chase.revised && (match.interruptions?.length ? " (DLS)" : " (revised target)")}.
         </div>
       )}
 

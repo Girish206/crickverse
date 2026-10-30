@@ -329,7 +329,7 @@ function inningsCommentary(match: CricketMatch, innings: CricketInnings, nameOf:
     target === null ? null : (
       <>
         <strong>{team}</strong> need <strong>{target}</strong> run{target === 1 ? "" : "s"} from {match.overs * perOver} balls to win
-        {match.revisedTarget != null && " (revised target)"}
+        {match.revisedTarget != null && (match.interruptions?.length ? " (DLS)" : " (revised target)")}
       </>
     );
   const notes = arrivals(innings, nameOf, live, opening, perOver);

@@ -207,12 +207,15 @@ function GroupTables({
               qualify={phase.qualify}
               settled={isGroupDone(phase, group, matches)}
               matches={groupTableMatches(format, phase, group, matches)}
+              nrrHelp={false}
+              note={
+                <small className="admin-hint d-block mt-1">
+                  {played} of {expectedMatches(phase, group)} matches played
+                  {phase.qualify > 0 && ` · top ${phase.qualify} go through`}
+                  {phase.carryPoints && " · includes results against each other from the earlier round"}
+                </small>
+              }
             />
-            <small className="admin-hint d-block mt-1">
-              {played} of {expectedMatches(phase, group)} matches played
-              {phase.qualify > 0 && ` · top ${phase.qualify} go through`}
-              {phase.carryPoints && " · includes results against each other from the earlier round"}
-            </small>
           </div>
         );
       })}

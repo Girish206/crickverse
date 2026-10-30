@@ -2,8 +2,8 @@ import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
 import { useCricketTournaments } from "../../../api/hooks/cricket/useCricketTournaments";
-import { useFollowCounts, useMyFollows } from "../../../api/hooks/cricket/useCricketFollows";
-import type { CricketFollowKind, CricketTournament } from "../../../api/types";
+import { useFollowCounts, useFollowLists, useMyFollows } from "../../../api/hooks/cricket/useCricketFollows";
+import type { CricketFollowKind, CricketPlayer, CricketTournament } from "../../../api/types";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { ListCard } from "../../components/ListCard";
 import { CricketKpis } from "../CricketKpis";
@@ -20,17 +20,15 @@ import { TeamMark } from "../teams/TeamMark";
 import { useSwipeTabs, type SwipeRef } from "../../useSwipeTabs";
 import { SwipePanels } from "../../SwipePanels";
 
-type Mode = "following" | "discover";
+// What they follow, by kind, then who follows them. Finding new things to
+// follow is the global search's job.
+type Tab = CricketFollowKind | "followers";
 
-const MODES: { value: Mode; label: string }[] = [
-  { value: "following", label: "Following" },
-  { value: "discover", label: "Discover" },
-];
-
-const KINDS: { value: CricketFollowKind; label: string }[] = [
+const TABS: { value: Tab; label: string }[] = [
   { value: "tournament", label: "Tournaments" },
   { value: "team", label: "Teams" },
   { value: "player", label: "Players" },
+  { value: "followers", label: "Followers" },
 ];
 
 const plural = (count: number, word: string) => `${count} ${word}${count === 1 ? "" : "s"}`;
@@ -100,20 +98,20 @@ const FOLLOWING_TITLE = {
   subtitle: "Keep up with the players, teams and tournaments you care about",
 };
 
-// The players, teams and tournaments the signed-in player follows, and
-// (Discover) everything else they could follow.
+// The players, teams and tournaments the signed-in player follows, and the
+// players who follow them.
 export function FollowingPage() {
   const { admin } = useAdminAuth();
   const { data: mine, isLoading } = useMyFollows();
   const { data: players } = useCricketPlayers();
   const { data: tournaments } = useCricketTournaments();
-  const [mode, setMode] = useState<Mode>("following");
-  const [kind, setKind] = useState<CricketFollowKind>("tournament");
+  const [tab, setTab] = useState<Tab>("tournament");
   const [search, setSearch] = useState("");
-  // Swipes change the kind; Following / Discover is a tap.
-  const kindSwipe = useSwipeTabs(KINDS.map((k) => k.value), kind, setKind);
+  const swipe = useSwipeTabs(TABS.map((t) => t.value), tab, setTab);
   const myId = mine?.playerId ?? null;
-  const { data: counts } = useFollowCounts({ kind: "player", targetId: myId ?? 0, teamIndex: null }, myId !== null);
+  const me = { kind: "player", targetId: myId ?? 0, teamIndex: null } as const;
+  const { data: counts } = useFollowCounts(me, myId !== null);
+  const { data: lists } = useFollowLists(me, myId !== null);
 
   if (isLoading || !mine) {
     return (
@@ -146,17 +144,18 @@ export function FollowingPage() {
 
   const term = search.trim().toLowerCase();
   const matches = (...texts: string[]) => !term || texts.some((text) => text.toLowerCase().includes(term));
-  const shown = (followed: boolean) => (mode === "following" ? followed : true);
-
   const tournamentItems = (tournaments ?? []).filter(
-    (t) => shown(isFollowed("tournament", t.id)) && matches(t.name, t.city ?? ""),
+    (t) => isFollowed("tournament", t.id) && matches(t.name, t.city ?? ""),
   );
   const teamItems = (tournaments ?? [])
     .flatMap((tournament) => tournament.teams.map((team, index) => ({ tournament, team, index })))
-    .filter(({ tournament, team, index }) => shown(isFollowed("team", tournament.id, index)) && matches(team.name, tournament.name));
-  const playerItems = (players ?? []).filter(
-    (p) => p.id !== myId && shown(isFollowed("player", p.id)) && matches(p.name),
-  );
+    .filter(({ tournament, team, index }) => isFollowed("team", tournament.id, index) && matches(team.name, tournament.name));
+  const playerItems = (players ?? []).filter((p) => p.id !== myId && isFollowed("player", p.id) && matches(p.name));
+  const playerById = new Map((players ?? []).map((p) => [p.id, p]));
+  const followerItems = (lists?.followers ?? []).flatMap((f) => {
+    const p = playerById.get(f.followerId);
+    return p && matches(p.name) ? [p] : [];
+  });
 
   // Names repeat, so each player also shows a team they're in (the
   // tournament's newest first).
@@ -169,12 +168,33 @@ export function FollowingPage() {
     }
   }
 
-  // One list per kind, so a swipe brings the next one in beside it.
-  const listFor = (kind: CricketFollowKind) => {
+  const playerGrid = (items: CricketPlayer[]) => (
+    <div className="cricket-player-grid">
+      {items.map((player) => {
+        const role = roleOf(player.role);
+        return (
+          <div className="cricket-player-row" key={player.id}>
+            <PlayerAvatar name={player.name} photoUrl={player.photoUrl} className="cricket-player-avatar" />
+            <div className="cricket-player-info">
+              <strong>
+                <PlayerLink playerId={player.id}>{player.name}</PlayerLink>
+              </strong>
+              <small>{role ? role.label : "Role not set"}</small>
+              {teamOfPlayer.get(player.id) && <small>{teamOfPlayer.get(player.id)}</small>}
+            </div>
+            <FollowButton target={{ kind: "player", targetId: player.id, teamIndex: null }} />
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  // One list per tab, so a swipe brings the next one in beside it.
+  const listFor = (kind: Tab) => {
     const empty =
-      mode === "following"
-        ? `You don't follow any ${KINDS.find((k) => k.value === kind)!.label.toLowerCase()} yet — find some in Discover.`
-        : "Nothing here yet.";
+      kind === "followers"
+        ? "No one follows you yet."
+        : `You don't follow any ${TABS.find((t) => t.value === kind)!.label.toLowerCase()} yet — search for them from the top bar.`;
 
     let list: ReactNode;
     if (kind === "tournament") {
@@ -209,33 +229,10 @@ export function FollowingPage() {
           ))}
         </div>
       ) : null;
+    } else if (kind === "player") {
+      list = playerItems.length ? playerGrid(playerItems) : null;
     } else {
-      list = playerItems.length ? (
-        <div className="cricket-player-grid">
-          {playerItems.map((player) => {
-            const role = roleOf(player.role);
-            return (
-              <div className="cricket-player-row" key={player.id}>
-                <PlayerAvatar name={player.name} photoUrl={player.photoUrl} className="cricket-player-avatar" />
-                <div className="cricket-player-info">
-                  <strong>
-                    <PlayerLink playerId={player.id}>{player.name}</PlayerLink>
-                  </strong>
-                  <small>
-                    {role ? (
-                      role.label
-                    ) : (
-                      "Role not set"
-                    )}
-                  </small>
-                  {teamOfPlayer.get(player.id) && <small>{teamOfPlayer.get(player.id)}</small>}
-                </div>
-                <FollowButton target={{ kind: "player", targetId: player.id, teamIndex: null }} />
-              </div>
-            );
-          })}
-        </div>
-      ) : null;
+      list = !lists ? <Loader /> : followerItems.length ? playerGrid(followerItems) : null;
     }
     return list ?? <div className="admin-empty-state">{term ? "Nothing matches your search." : empty}</div>;
   };
@@ -251,8 +248,7 @@ export function FollowingPage() {
         ]}
       />
       <div className="cricket-follow-toolbar">
-        <Tabs label="Show" options={MODES} value={mode} onChange={setMode} />
-        <Tabs label="Kind" options={KINDS} value={kind} onChange={setKind} swipeRef={kindSwipe} />
+        <Tabs label="Show" options={TABS} value={tab} onChange={setTab} swipeRef={swipe} />
         <input
           type="search"
           className="form-control shadow-none"
@@ -261,7 +257,7 @@ export function FollowingPage() {
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
-      <SwipePanels swipe={kindSwipe} values={KINDS.map((k) => k.value)} current={kind}>
+      <SwipePanels swipe={swipe} values={TABS.map((t) => t.value)} current={tab}>
         {listFor}
       </SwipePanels>
     </ListCard>

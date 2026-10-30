@@ -70,7 +70,16 @@ export function TournamentBanner({ tournament: t, matches }: { tournament: Crick
           )}
         </div>
       </div>
-      {viewing && <ImageViewer src={viewing.src} alt={viewing.alt} round={viewing.round} onClose={() => setViewing(null)} />}
+      {viewing && (
+        <ImageViewer
+          src={viewing.src}
+          alt={viewing.alt}
+          title={t.name}
+          subtitle={viewing.round ? "Tournament logo" : "Tournament banner"}
+          round={viewing.round}
+          onClose={() => setViewing(null)}
+        />
+      )}
     </div>
   );
 }

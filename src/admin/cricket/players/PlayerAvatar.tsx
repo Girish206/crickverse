@@ -30,7 +30,16 @@ export function PlayerAvatar({
           onError={() => setBroken(true)}
           {...(viewable ? viewerTrigger(() => setViewing(true)) : {})}
         />
-        {viewing && <ImageViewer src={photoUrl} alt={`${name}'s photo`} round onClose={() => setViewing(false)} />}
+        {viewing && (
+          <ImageViewer
+            src={photoUrl}
+            alt={`${name}'s photo`}
+            title={name}
+            subtitle="Profile photo"
+            round
+            onClose={() => setViewing(false)}
+          />
+        )}
       </>
     );
   }

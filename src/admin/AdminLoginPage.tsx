@@ -15,7 +15,7 @@ type Step = "identify" | "password" | "setPassword" | "register";
 
 const COPY: Record<Step, { heading: string; subtitle: string; submit: string; loading: string }> = {
   identify: {
-    heading: "Welcome to CricDesk",
+    heading: "Welcome to RunMitra",
     subtitle: "Every ball. Every stat. Enter your mobile number to get started.",
     submit: "Next",
     loading: "Checking...",
@@ -40,7 +40,7 @@ const COPY: Record<Step, { heading: string; subtitle: string; submit: string; lo
   },
 };
 
-// CricDesk sign-in and sign-up on one screen: the mobile number first (the
+// RunMitra sign-in and sign-up on one screen: the mobile number first (the
 // field says so, but an organiser's email works there too), then a password
 // for an existing account, the invite code and a new password for a
 // team-added player who has none yet (the code proves the number is theirs),

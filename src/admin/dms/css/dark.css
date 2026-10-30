@@ -255,9 +255,6 @@
   :root[data-bs-theme="dark"] .sidebar {
     background: var(--adm-surface) !important;
   }
-  :root[data-bs-theme="dark"] .sidebar-mobile-head {
-    border-bottom-color: var(--adm-line);
-  }
   :root[data-bs-theme="dark"] .sidebar-mobile-close {
     background: var(--adm-raised);
     color: var(--adm-text);
@@ -559,7 +556,7 @@
 }
 /* Active menu item: the light theme's primary → primary-dark-1 tile turns
    salmon here (dark-1 mixes towards white), so use the maroon gradient. */
-:root[data-bs-theme="dark"] .sidebar-open .nav-item.active > .nav-link i.icon {
+:root[data-bs-theme="dark"] .sidebar-open .nav-item.active > .nav-link .icon {
   background: var(--primary-gradient);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }

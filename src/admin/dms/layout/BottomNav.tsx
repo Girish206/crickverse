@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { useSwipeTabs } from "../../useSwipeTabs";
+import { AppIcon, type AppIconName } from "../../AppIcon";
 import "../css/BottomNav.css";
 
 interface Tab {
     to: string;
     label: string;
-    icon: string;
+    icon: AppIconName;
 }
 
 // Phones only (BottomNav.css): the main screens a thumb reaches most, as a
@@ -18,17 +19,17 @@ const BottomNav = ({ onMore }: { onMore: () => void }) => {
 
     const tabs: Tab[] = admin?.isSuperAdmin
         ? [
-              { to: "/dashboard", label: "Home", icon: "fa-solid fa-chart-pie" },
-              { to: "/tournaments", label: "Tournaments", icon: "fa-solid fa-trophy" },
-              { to: "/matches", label: "Matches", icon: "fa-solid fa-calendar-days" },
-              { to: "/players", label: "Players", icon: "fa-solid fa-users" },
+              { to: "/dashboard", label: "Home", icon: "dashboard" },
+              { to: "/tournaments", label: "Tournaments", icon: "tournaments" },
+              { to: "/matches", label: "Matches", icon: "fixtures" },
+              { to: "/players", label: "Players", icon: "players" },
           ]
         : [
-              { to: "/", label: "Home", icon: "fa-solid fa-house" },
-              { to: "/my-matches", label: "Matches", icon: "fa-solid fa-baseball-bat-ball" },
-              { to: "/my-tournaments", label: "Tournaments", icon: "fa-solid fa-medal" },
-              { to: "/my-teams", label: "My Teams", icon: "fa-solid fa-people-group" },
-              { to: "/me", label: "My Stats", icon: "fa-solid fa-chart-simple" },
+              { to: "/", label: "Home", icon: "home" },
+              { to: "/my-matches", label: "Matches", icon: "matches" },
+              { to: "/my-tournaments", label: "Tournaments", icon: "tournaments" },
+              { to: "/my-teams", label: "My Teams", icon: "teams" },
+              { to: "/me", label: "My Stats", icon: "stats" },
           ];
 
     const { pathname } = useLocation();
@@ -58,13 +59,13 @@ const BottomNav = ({ onMore }: { onMore: () => void }) => {
         <nav ref={swipeRef} className={`cv-bottom-nav ${hidden ? "is-hidden" : ""}`} aria-label="Main" data-tour="nav">
             {tabs.map((tab) => (
                 <NavLink key={tab.to} to={tab.to} end={tab.to === "/"} className={({ isActive }) => `cv-bottom-tab ${isActive ? "is-active" : ""}`}>
-                    <i className={tab.icon} aria-hidden="true"></i>
+                    <AppIcon name={tab.icon} />
                     <span>{tab.label}</span>
                 </NavLink>
             ))}
             {admin?.isSuperAdmin && (
                 <button type="button" className="cv-bottom-tab" onClick={onMore}>
-                    <i className="fa-solid fa-bars" aria-hidden="true"></i>
+                    <AppIcon name="more" />
                     <span>More</span>
                 </button>
             )}

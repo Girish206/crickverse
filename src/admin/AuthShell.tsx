@@ -30,11 +30,11 @@ export function AuthShell({
       <div className="admin-login-stack animated fadeInUp">
         <div className="admin-login-intro">
           <div className="admin-login-logo-ring">
-            <img src="/favicon.svg" alt="CricDesk" className="admin-login-logo" />
+            <img src="/favicon.svg" alt="RunMitra" className="admin-login-logo" />
           </div>
 
           <span className="admin-login-badge">
-            CricDesk
+            RunMitra
           </span>
           <h1 className="admin-login-heading">{heading}</h1>
           <p className="admin-login-subtitle">{subtitle}</p>

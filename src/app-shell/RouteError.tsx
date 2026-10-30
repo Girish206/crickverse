@@ -23,13 +23,13 @@ export function RouteError({ full = false }: { full?: boolean }) {
     <main className={`cv-shell-msg${full ? " is-full" : ""}`} role="alert">
       <img src="/favicon.svg" alt="" className="cv-shell-msg-logo" />
       {reloading ? (
-        <h1>Updating CricDesk…</h1>
+        <h1>Updating RunMitra…</h1>
       ) : (
         <>
           <h1>Something went wrong</h1>
           <p>
             {chunk
-              ? "A new version of CricDesk is out. Reload to get it."
+              ? "A new version of RunMitra is out. Reload to get it."
               : "This page hit a problem. Reloading usually fixes it."}
           </p>
           <div className="cv-shell-msg-actions">

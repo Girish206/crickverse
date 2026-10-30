@@ -117,12 +117,12 @@
 }
 
 /* Navbar Branding Styles */
-.navbar-logo-box {
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* The logo, mark and name side by side; the mark alone on the narrowest
+   phones (Navbar.tsx swaps the image). */
+.navbar-logo {
+  display: block;
+  height: 40px;
+  width: auto;
 }
 
 .navbar-brand-name {
@@ -755,9 +755,9 @@
     font-size: var(--fs-lg) !important;
   }
 
-  .navbar-logo-box {
-    width: 36px;
-    height: 36px;
+  /* A size down on phones, so it fits beside the buttons */
+  .navbar-logo {
+    height: 30px;
   }
 
   .navbar-module-switcher-btn {
@@ -777,6 +777,13 @@
   .navbar-user-chip .user-avatar {
     width: 30px !important;
     height: 30px !important;
+  }
+}
+
+/* The mark alone (Navbar.tsx), at the buttons' height */
+@media (max-width: 359px) {
+  .navbar-logo {
+    height: 36px;
   }
 }
 

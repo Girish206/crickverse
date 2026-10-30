@@ -755,7 +755,7 @@ export function CricketMatchPage() {
         {handingOver && (
           <ScorersSheet
             title="Change scorer"
-            note="Pick who scores next — from either squad, or by mobile number. They need to have signed in to CrickVerse; you'll follow the live view."
+            note="Pick who scores next — from either squad, or by mobile number. They need to have signed in to RunMitra; you'll follow the live view."
             scorerIds={match.scorerIds}
             squads={match.teams}
             saving={false}

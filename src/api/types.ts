@@ -162,9 +162,23 @@ export interface CricketMatchSet {
   playerIds: number[];
 }
 
+// A stoppage that cut an innings' overs or ended it (see dls.ts).
+export interface CricketInterruption {
+  innings: number;
+  balls: number;
+  wickets: number;
+  ballsLeftBefore: number;
+  ballsLeftAfter: number;
+  at: string;
+}
+
 export interface CricketTournament {
   id: number;
   name: string;
+  // A recurring tournament's seasons share a series name; each has its own
+  // season label (see seriesOf). Null on tournaments made before these.
+  seriesName?: string | null;
+  season?: string | null;
   // The squad picked from the shared player list; only they can be matched.
   playerIds: number[];
   // One per team; players are empty until teams are generated.
@@ -441,6 +455,10 @@ export interface CricketMatch {
   resultMethod?: CricketResultMethod | null;
   // The chase's target after a rain cut (null = first innings + 1).
   revisedTarget?: number | null;
+  // Rain stoppages the scorer recorded (they set revisedTarget by DLS), and
+  // the overs per side before the first one.
+  interruptions?: CricketInterruption[] | null;
+  scheduledOvers?: number | null;
   // Balls an over (null = 6; The Hundred plays 5).
   ballsPerOver?: number | null;
   // Most overs one bowler may bowl (null = no limit).

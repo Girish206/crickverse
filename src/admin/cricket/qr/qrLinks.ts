@@ -1,4 +1,4 @@
-// What CricDesk's QR codes hold: ordinary links, so a phone's own camera
+// What RunMitra's QR codes hold: ordinary links, so a phone's own camera
 // opens them too. A player's code opens their profile (/p/<id>) and carries
 // a short-lived signed token (?t=) that lets a scanner add them to a team; a
 // team's is its join link (/join/<code>).

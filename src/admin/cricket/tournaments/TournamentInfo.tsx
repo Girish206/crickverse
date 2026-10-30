@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
+import { useCricketTournaments } from "../../../api/hooks/cricket/useCricketTournaments";
 import type { CricketMatch, CricketTournament } from "../../../api/types";
 import { BallTypeBadge } from "../CricketChoices";
 import { CATEGORIES, labelOf, MATCH_TYPES, PITCH_TYPES } from "../cricketOptions";
@@ -6,6 +8,7 @@ import { OrganiserCard } from "../OrganiserCard";
 import { usePlayerNames, usePlayerPhotos } from "../matches/matchUtils";
 import { PlayerAvatar } from "../players/PlayerAvatar";
 import { PlayerLink } from "../players/PlayerProfileSheet";
+import { seasonsOf, seriesOf, seriesPath } from "./TournamentCard";
 
 const dateText = (value: string) =>
   new Date(value)
@@ -33,7 +36,21 @@ function ScorerChips({ playerIds }: { playerIds: number[] }) {
 export function TournamentInfo({ tournament: t, matches }: { tournament: CricketTournament; matches: CricketMatch[] }) {
   const completed = matches.filter((m) => m.status === "completed").length;
   const venue = [t.ground, t.city].filter(Boolean).join(", ");
+  // Part of a series: named as one, or other seasons share its name.
+  const { data: tournaments } = useCricketTournaments();
+  const series = seriesOf(t);
+  const inSeries = Boolean(t.seriesName) || seasonsOf(tournaments ?? [], series.key).length > 1;
   const rows: [string, ReactNode][] = [
+    ...(inSeries
+      ? ([
+          [
+            "Series",
+            <Link key="series" to={seriesPath(series.name)} className="cricket-info-link">
+              {series.name} · {series.season}
+            </Link>,
+          ],
+        ] as [string, ReactNode][])
+      : []),
     [
       "Dates",
       t.startDate

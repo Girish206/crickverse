@@ -1,4 +1,4 @@
-# CricDesk
+# RunMitra
 
 Cricket tournaments, live scoring and stats. A Girish Creations project.
 

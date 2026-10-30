@@ -142,7 +142,7 @@ export function FriendlyTeamPage() {
               style={{ backgroundImage: `url(${bannerFor({ id: nameSeed(key), bannerUrl: null })})` }}
             />
             <div className="cricket-th-identity">
-              <TeamMark className="cricket-tour-logo" name={displayName} logoUrl={latest.logoUrl} />
+              <TeamMark className="cricket-tour-logo" name={displayName} logoUrl={latest.logoUrl} viewable />
               <div className="cricket-th-title">
                 <h1>{displayName}</h1>
                 <div className="cricket-th-meta">

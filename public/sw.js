@@ -1,4 +1,4 @@
-// CricDesk service worker: makes the app installable and lets it open
+// RunMitra service worker: makes the app installable and lets it open
 // offline. Kept small on purpose:
 // - pages (navigations): network first, so a new deploy shows at once;
 //   offline, the last copy of the app's page (index.html) is used.
@@ -101,7 +101,7 @@ self.addEventListener("push", (event) => {
   } catch {
     data = { body: event.data ? event.data.text() : "" };
   }
-  const title = data.title || "CricDesk";
+  const title = data.title || "RunMitra";
   event.waitUntil(
     self.registration.showNotification(title, {
       body: data.body || "",
@@ -113,7 +113,7 @@ self.addEventListener("push", (event) => {
   );
 });
 
-// A tap opens the match: in a CricDesk tab already open (brought to the
+// A tap opens the match: in a RunMitra tab already open (brought to the
 // front and sent there), or else in a new window.
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();

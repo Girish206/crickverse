@@ -4,8 +4,10 @@ import { toast } from "sonner";
 import {
   isStaleScore,
   useAbandonCricketMatch,
+  useCricketInterruption,
   useAddCricketBall,
   useEndCricketInnings,
+  useEditCricketBall,
   usePendingBall,
   useSetCricketCurrentPlayers,
   useUndoCricketBall,
@@ -32,6 +34,7 @@ import { AddPlayerSheet } from "./scorer/AddPlayerSheet";
 import { CorrectBallSheet } from "./scorer/CorrectBallSheet";
 import { EndChaseSheet } from "./scorer/EndChaseSheet";
 import { PenaltySheet } from "./scorer/PenaltySheet";
+import { RainSheet } from "./scorer/RainSheet";
 import { RunChoice } from "./scorer/RunChoice";
 import "./scorer/scorer.css";
 import {
@@ -205,6 +208,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   const chase = innings === match.innings[1] ? chaseInfo(match) : null;
 
   const setPlayers = useSetCricketCurrentPlayers();
+  const editBall = useEditCricketBall();
   const { data: allPlayers } = useCricketPlayers();
   const updatePlayerStyle = useUpdateCricketPlayerStyle();
   const [promptStyleQueue, setPromptStyleQueue] = useState<
@@ -242,7 +246,8 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   const undoBall = useUndoCricketBall();
   const endInnings = useEndCricketInnings();
   const abandon = useAbandonCricketMatch();
-  const busy = setPlayers.isPending || addBall.isPending || undoBall.isPending || endInnings.isPending || abandon.isPending;
+  const interruption = useCricketInterruption();
+  const busy = setPlayers.isPending || editBall.isPending || interruption.isPending || addBall.isPending || undoBall.isPending || endInnings.isPending || abandon.isPending;
 
   // Sends a ball. If another phone got there first the match refreshes
   // itself, so say so gently rather than as an error.
@@ -287,6 +292,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   const [noBallByes, setNoBallByes] = useState<"bye" | "leg-bye" | null>(null);
   const [noBallFreeHit, setNoBallFreeHit] = useState<boolean>(true);
   const [penaltyOpen, setPenaltyOpen] = useState(false);
+  const [rainOpen, setRainOpen] = useState(false);
   // Correcting a ball: the one tapped, or null to choose from the list.
   const [correcting, setCorrecting] = useState<{ ballIndex: number | null } | null>(null);
   const [addingPlayer, setAddingPlayer] = useState(false);
@@ -404,9 +410,32 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
           ? { ...item, disabled: true, tag: "Bowled last over" }
           : { ...item, disabled: false, tag: undefined },
     );
+  // Changing the bowler once the over has started asks why: a wrong pick
+  // moves the over's balls so far to the right bowler; an injured bowler
+  // (or one taken off) keeps their figures and someone else finishes it.
+  const [askingWhy, setAskingWhy] = useState(false);
+  const [wrongBowler, setWrongBowler] = useState(false);
+  const currentOver = Math.floor(legal.length / perOver);
+  const thisOverBalls: number[] = [];
+  {
+    let count = 0;
+    innings.balls.forEach((ball, index) => {
+      if (Math.floor(count / perOver) === currentOver && !ball.noDelivery) thisOverBalls.push(index);
+      if (isLegal(ball)) count++;
+    });
+  }
+  function startBowlerChange() {
+    if (thisOverBalls.length > 0) setAskingWhy(true);
+    else setChanging("bowlerId");
+  }
   function change(slot: Slot, id: number) {
     setChanging(null);
-    setPlayers.mutate({ id: match.id, [slot]: id });
+    if (slot === "bowlerId" && wrongBowler && thisOverBalls.length > 0) {
+      setWrongBowler(false);
+      editBall.mutate({ id: match.id, inningsIndex: match.innings.length - 1, ballIndex: thisOverBalls[0], bowlerId: id });
+    } else {
+      setPlayers.mutate({ id: match.id, [slot]: id });
+    }
     checkPromptStyle(slot, id);
   }
   // Batting on alone, only the one batter is needed.
@@ -1044,7 +1073,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
             type="button"
             className="cricket-crease-player-row is-bowler-row"
             disabled={innings.bowlerId === null || busy}
-            onClick={() => setChanging("bowlerId")}
+            onClick={startBowlerChange}
             title={innings.bowlerId === null ? undefined : "Change bowler"}
           >
             <span className="cricket-crease-avatar-wrap">
@@ -1557,7 +1586,9 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
                 disabled={busy || innings[slot] === null}
                 onClick={() => {
                   onCloseSettings();
-                  setChanging(slot);
+                  // The bowler goes through the same "why?" step as tapping them.
+                  if (slot === "bowlerId") startBowlerChange();
+                  else setChanging(slot);
                 }}
               >
                 <i className={`fa-solid ${icon}`} aria-hidden="true"></i>
@@ -1658,6 +1689,22 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
             <button
               type="button"
               className="cricket-settings-item"
+              disabled={busy || pendingBall !== null}
+              onClick={() => {
+                onCloseSettings();
+                setRainOpen(true);
+              }}
+            >
+              <i className="fa-solid fa-cloud-showers-heavy" aria-hidden="true"></i>
+              <span>
+                Rain interruption (DLS)
+                <small>Cut the overs or stop play; the target is worked out by Duckworth-Lewis</small>
+              </span>
+              <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
+            </button>
+            <button
+              type="button"
+              className="cricket-settings-item"
               disabled={busy}
               onClick={() => {
                 onCloseSettings();
@@ -1689,6 +1736,17 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
             </button>
           </div>
         </BottomSheet>
+      )}
+
+      {rainOpen && (
+        <RainSheet
+          match={match}
+          busy={busy}
+          onClose={() => setRainOpen(false)}
+          onRecord={(overs) =>
+            interruption.mutate({ id: match.id, overs }, { onSuccess: () => setRainOpen(false) })
+          }
+        />
       )}
 
       {penaltyOpen && (
@@ -1884,12 +1942,69 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
         />
       )}
 
+      {askingWhy && innings.bowlerId !== null && (
+        <BottomSheet title="Change bowler" icon="fa-solid fa-baseball" onClose={() => setAskingWhy(false)}>
+          <p className="cricket-sheet-context">
+            <strong>{nameOf(innings.bowlerId)}</strong> has bowled {thisOverBalls.length} ball
+            {thisOverBalls.length === 1 ? "" : "s"} of this over. Why the change?
+          </p>
+          <div className="cricket-settings-list">
+            {[
+              {
+                wrong: true,
+                icon: "fa-solid fa-user-pen",
+                label: "Wrong bowler picked",
+                description: "Someone else has been bowling this over. Its balls so far move to them.",
+              },
+              {
+                wrong: false,
+                icon: "fa-solid fa-user-injured",
+                label: "Injured or taken off",
+                description: `Someone else finishes the over. ${nameOf(innings.bowlerId)} keeps the balls bowled so far.`,
+              },
+            ].map((option) => (
+              <button
+                key={option.label}
+                type="button"
+                className="cricket-settings-item"
+                onClick={() => {
+                  setAskingWhy(false);
+                  setWrongBowler(option.wrong);
+                  setChanging("bowlerId");
+                }}
+              >
+                <i className={option.icon} aria-hidden="true"></i>
+                <span>
+                  {option.label}
+                  <small>{option.description}</small>
+                </span>
+                <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
+              </button>
+            ))}
+          </div>
+        </BottomSheet>
+      )}
+
       {changing && innings[changing] !== null && (
         <PlayerPicker
           key={`change-${changing}`}
-          title={changing === "bowlerId" ? "Change bowler" : changing === "strikerId" ? "Change striker" : "Change non-striker"}
+          title={
+            changing === "bowlerId"
+              ? wrongBowler
+                ? "Who bowled this over?"
+                : "Change bowler"
+              : changing === "strikerId"
+                ? "Change striker"
+                : "Change non-striker"
+          }
           hint={
-            changing === "bowlerId" ? (
+            changing === "bowlerId" && wrongBowler ? (
+              <>
+                <i className="fa-solid fa-user-pen" aria-hidden="true"></i> The {thisOverBalls.length} ball
+                {thisOverBalls.length === 1 ? "" : "s"} bowled so far this over move from{" "}
+                <strong>{nameOf(innings.bowlerId)}</strong> to who you pick.
+              </>
+            ) : changing === "bowlerId" ? (
               <>
                 <i className="fa-solid fa-baseball" aria-hidden="true"></i> Who finishes the over for{" "}
                 <strong>{nameOf(innings.bowlerId)}</strong>? Their figures so far stay with them.
@@ -1907,7 +2022,10 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
           nameOf={nameOf}
           selectedId={null}
           onPick={(id) => change(changing, id)}
-          onClose={() => setChanging(null)}
+          onClose={() => {
+            setChanging(null);
+            setWrongBowler(false);
+          }}
         />
       )}
 
@@ -1939,7 +2057,12 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
               "tap where the ball went to record it"
             )}
           </p>
-          <ShotGround marker={shotSpot} onPick={tapShot} label="Tap where the ball went" />
+          <ShotGround
+            marker={shotSpot}
+            onPick={tapShot}
+            leftHanded={allPlayers?.find((p) => p.id === innings.strikerId)?.battingStyle === "left-hand"}
+            label="Tap where the ball went"
+          />
           {!pendingShot.wicketType && (
             <div className="d-flex justify-content-center mt-2">
               <button type="button" className="cricket-shot-toggle" role="switch" aria-checked={smallShotsOn} onClick={toggleSmallShots}>

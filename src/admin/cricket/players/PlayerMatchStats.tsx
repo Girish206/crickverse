@@ -16,7 +16,7 @@ import {
 } from "../stats";
 
 // One player's part in one match: each innings they batted or bowled in,
-// their fielding, impact points and any award — the profile sheet's
+// their fielding, MVP points and any award — the profile sheet's
 // "This Match" view.
 export function PlayerMatchStats({ player, match }: { player: CricketPlayer; match: CricketMatch }) {
   const nameOf = usePlayerNames();
@@ -153,13 +153,12 @@ export function PlayerMatchStats({ player, match }: { player: CricketPlayer; mat
             </div>
           )}
           <div>
-            {title("fa-bolt", "Impact points", rank ? `#${rank} of ${awards.rows.length}` : undefined)}
+            {title("fa-bolt", "MVP points", rank ? `#${rank} of ${awards.rows.length}` : undefined)}
             {rows([
               ["Total (MVP)", points(row.total)],
               ["Batting", points(row.batting)],
               ["Bowling", points(row.bowling)],
               ["Fielding", points(row.fielding)],
-              ...(row.winBonus ? [["Win bonus", `+${points(row.winBonus)}`] as [string, string]] : []),
             ])}
           </div>
         </>

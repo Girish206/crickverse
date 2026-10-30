@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent } from "react";
+import { useState, type KeyboardEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useCricketMatches } from "../../../api/hooks/cricket/useCricketMatches";
 import { useCricketTournaments } from "../../../api/hooks/cricket/useCricketTournaments";
@@ -9,6 +9,8 @@ import { AwardCard } from "../matches/AwardCard";
 import { PlayerAvatar } from "../players/PlayerAvatar";
 import { PlayerLink } from "../players/PlayerProfileSheet";
 import { PillSelect } from "../PillSelect";
+import { MvpPointsHelp } from "../matches/MvpPointsGuide";
+import { NrrGuide } from "./NrrGuide";
 import { BALL_TYPES, MATCH_TYPES } from "../cricketOptions";
 import {
   battingAverage,
@@ -70,8 +72,8 @@ const BOARDS: Board[] = [
     icon: "fa-hands",
     category: "fielding",
     rank: (rows) =>
-      rows.filter((s) => dismissals(s) > 0).sort((a, b) => b.fieldingImpact - a.fieldingImpact || dismissals(b) - dismissals(a)),
-    value: (s) => points(s.fieldingImpact),
+      rows.filter((s) => dismissals(s) > 0).sort((a, b) => dismissals(b) - dismissals(a) || b.fieldingImpact - a.fieldingImpact),
+    value: (s) => dismissals(s),
     detail: (s) => `${s.catches} ct · ${s.stumpings} st · ${s.runOuts} ro`,
   },
   {
@@ -207,7 +209,7 @@ export function LeaderboardGrid({
     { title: `Player of the ${scope}`, board: board("MVP"), label: "MVP", featured: true },
     { title: "Top run scorer", board: board("Most Runs"), label: "Runs" },
     { title: "Top wicket taker", board: board("Most Wickets"), label: "Wkts" },
-    { title: "Best fielder", board: board("Best Fielder"), label: "Pts" },
+    { title: "Best fielder", board: board("Best Fielder"), label: "Dis" },
   ]
     .map((award) => ({ ...award, top: award.board.rank(rows)[0] }))
     .filter((award) => award.top);
@@ -286,6 +288,7 @@ function StatsBoards({ rows, matches }: { rows: PlayerStats[]; matches: CricketM
                   onChange={setTitle}
                 />
               </div>
+              {board.title === "MVP" && <MvpPointsHelp className="mb-2" />}
               <BoardList board={board} rows={rows} limit={10} matches={matches} />
             </>
           );
@@ -370,7 +373,7 @@ const fieldingText = (row: ImpactRow) =>
     .join(" · ");
 
 // A match's figures for the board's category: "54* (32)", "3/18 (4.0)",
-// "2 ct · 1 ro", or impact points overall.
+// "2 ct · 1 ro", or MVP points overall.
 function figure(row: ImpactRow, category: Category) {
   if (category === "batting" && row.bat) return `${row.bat.runs}${row.bat.out ? "" : "*"} (${row.bat.balls})`;
   if (category === "bowling" && row.bowl) return `${row.bowl.wickets}/${row.bowl.runs} (${oversText(row.bowl.legalBalls)})`;
@@ -404,8 +407,12 @@ vs {match.teams[1 - row.team].name}</span>
 export function PointsTable({ tournament, matches }: { tournament: CricketTournament; matches: CricketMatch[] }) {
   return (
     <div className="cricket-standings">
-      <StandingsTable rows={pointsTable(tournament, matches)} teams={tournament.teams} matches={matches.filter(countsForTable)} />
-      <p className="admin-hint mt-2 mb-0">Win 2 points, tie or no result 1. NRR counts an all-out side as facing its full overs.</p>
+      <StandingsTable
+        rows={pointsTable(tournament, matches)}
+        teams={tournament.teams}
+        matches={matches.filter(countsForTable)}
+        note={<p className="admin-hint mt-2 mb-0">Win 2 points, tie or no result 1. NRR follows the ICC rules.</p>}
+      />
     </div>
   );
 }
@@ -419,6 +426,8 @@ export function StandingsTable({
   qualify = 0,
   settled = false,
   matches,
+  note,
+  nrrHelp = true,
 }: {
   rows: PointsRow[];
   // The tournament's teams, for their logos.
@@ -426,6 +435,10 @@ export function StandingsTable({
   qualify?: number;
   settled?: boolean;
   matches?: CricketMatch[];
+  // A line right under the table (e.g. matches played), above the NRR help.
+  note?: ReactNode;
+  // The "How NRR is worked out" link under it (off where the page has its own).
+  nrrHelp?: boolean;
 }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const inTable = new Set(rows.map((row) => row.teamIndex));
@@ -434,6 +447,7 @@ export function StandingsTable({
   const tiedClass = rows.some((row) => row.tied > 0) ? undefined : "is-optional";
   const noResultClass = rows.some((row) => row.noResult > 0) ? undefined : "is-optional";
   return (
+    <>
     <div className="cricket-standings-scroll">
       <table className="cricket-standings-table">
         <thead>
@@ -499,6 +513,9 @@ export function StandingsTable({
         </tbody>
       </table>
     </div>
+    {note}
+    {matches && nrrHelp && <NrrGuide rows={rows} matches={own} />}
+    </>
   );
 }
 

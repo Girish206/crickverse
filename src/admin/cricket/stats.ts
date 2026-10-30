@@ -1,4 +1,5 @@
 import type { CricketBall, CricketInnings, CricketMatch, CricketMatchStage, CricketTournament } from "../../api/types";
+import { liveDlsPar } from "./dls";
 import { ballsPerOverOf } from "../../api/types";
 
 // Everything shown on scorecards, points tables and leaderboards is derived
@@ -284,13 +285,16 @@ export function fallOfWickets(innings: CricketInnings, perOver = 6) {
 export function chaseInfo(match: CricketMatch) {
   if (match.innings.length < 2) return null;
   const perOver = ballsPerOverOf(match);
-  const target = match.revisedTarget ?? inningsSummary(match.innings[0]).runs + 1;
+  const firstInnings = inningsSummary(match.innings[0]).runs;
+  const target = match.revisedTarget ?? firstInnings + 1;
   const now = inningsSummary(match.innings[1]);
   const ballsLeft = match.overs * perOver - now.legalBalls;
   const need = target - now.runs;
   return {
     target,
     revised: match.revisedTarget != null,
+    // Rain-affected: the par score if play stopped now.
+    dlsPar: liveDlsPar(match, firstInnings, now),
     need,
     ballsLeft,
     requiredRate: rate(Math.max(need, 0), ballsLeft, perOver),
@@ -445,8 +449,9 @@ export function playerStats(matches: CricketMatch[]): Map<number, PlayerStats> {
   return stats;
 }
 
+// Runs per dismissal; never dismissed has no average, shown as "–" like the official scorecards.
 export const battingAverage = (s: PlayerStats) =>
-  s.innings - s.notOuts > 0 ? (s.runs / (s.innings - s.notOuts)).toFixed(2) : s.runs ? "∞" : "–";
+  s.innings - s.notOuts > 0 ? (s.runs / (s.innings - s.notOuts)).toFixed(2) : "–";
 
 export const points = (n: number) => (Math.round(n * 10) / 10).toString();
 
@@ -486,9 +491,87 @@ export const isKnockoutStage = (stage: CricketMatchStage | null) => stage !== nu
 // Knockouts and friendlies don't count towards a points table.
 export const countsForTable = (match: CricketMatch) => !isKnockoutStage(match.stage) && match.stage !== "friendly";
 
-// Win 2, tie / no result 1. Net run rate counts an all-out side as having
-// faced its full quota of overs, as the standard rule does. Only matches
-// between two of the given teams count.
+// ===== Net run rate =====
+// The ICC's rules (playing conditions, "Net Run Rate"): runs scored per
+// over faced, less runs conceded per over bowled, over a team's matches.
+//  - An all-out side counts as having faced its full quota of overs: the
+//    overs it was due in that innings, after any rain cut.
+//  - When the chase had a revised target (rain), the side batting first is
+//    credited with the target less one, off the overs the chase was given;
+//    when rain ended the chase and par decided it, with the par score off
+//    the overs the chase had faced.
+//  - No results, and matches awarded (walkover, forfeit, conceded), don't
+//    count.
+
+export interface NrrSide {
+  runs: number;
+  balls: number;
+  // Why the figures aren't simply the innings as played, if they aren't.
+  note: string | null;
+}
+
+export interface NrrMatchLine {
+  match: CricketMatch;
+  // Per side (0 / 1 as in match.teams): what they made and faced.
+  sides: [NrrSide, NrrSide];
+}
+
+const AWARDED = new Set(["walkover", "forfeit", "concede"]);
+
+// The balls each innings was due: the first innings' after any cut to it,
+// the chase's as the match has them now.
+function inningsQuota(match: CricketMatch, index: number) {
+  const perOver = ballsPerOverOf(match);
+  if (index === 1) return match.overs * perOver;
+  const cuts = (match.interruptions ?? []).filter((i) => i.innings === 0);
+  const last = cuts[cuts.length - 1];
+  if (last) return last.balls + last.ballsLeftAfter;
+  // Only the chase was cut: the first innings had the overs the match began with.
+  return (match.scheduledOvers ?? match.overs) * perOver;
+}
+
+// A finished match's part in NRR, or null when it takes no part.
+export function nrrLine(match: CricketMatch): NrrMatchLine | null {
+  if (match.status !== "completed" || match.innings.length === 0) return null;
+  if (match.resultMethod && AWARDED.has(match.resultMethod)) return null;
+  const perOver = ballsPerOverOf(match);
+  const overs = (balls: number) => oversText(balls, perOver);
+  const sides: [NrrSide, NrrSide] = [
+    { runs: 0, balls: 0, note: null },
+    { runs: 0, balls: 0, note: null },
+  ];
+  match.innings.forEach((innings, index) => {
+    const summary = inningsSummary(innings);
+    const quota = inningsQuota(match, index);
+    const allOut = summary.wickets >= wicketsToEnd(match, innings);
+    const side = sides[innings.battingTeam];
+    side.runs = summary.runs;
+    side.balls = allOut ? quota : summary.legalBalls;
+    if (allOut && summary.legalBalls < quota) side.note = `All out — counted as the full ${overs(quota)} overs`;
+  });
+  // A revised target: the side batting first is credited with what the
+  // chase was set (target less one, i.e. par) off the chase's overs.
+  if (match.innings.length === 2 && match.revisedTarget != null) {
+    const [first, second] = match.innings;
+    const chase = sides[second.battingTeam];
+    const lastCut = (match.interruptions ?? []).at(-1);
+    const endedByRain = match.resultMethod === "dls" && lastCut?.innings === 1 && lastCut.ballsLeftAfter === 0;
+    const credited = sides[first.battingTeam];
+    credited.runs = match.revisedTarget - 1;
+    credited.balls = endedByRain ? inningsSummary(second).legalBalls : inningsQuota(match, 1);
+    credited.note = endedByRain
+      ? `Rain ended the chase — credited with the DLS par of ${credited.runs} off the ${overs(credited.balls)} overs faced`
+      : `Revised target — credited with ${credited.runs} (target less one) off the chase's ${overs(credited.balls)} overs`;
+    if (endedByRain && !chase.note) chase.note = "Innings ended by rain";
+  }
+  return { match, sides };
+}
+
+// Runs per over, from balls.
+export const runsPerOver = (runs: number, balls: number) => (balls ? (runs * 6) / balls : 0);
+
+// Win 2, tie / no result 1; NRR as above. Only matches between two of the
+// given teams count.
 export function standings(teams: { teamIndex: number; name: string }[], matches: CricketMatch[]): PointsRow[] {
   const rows = new Map<number, PointsRow>(
     teams.map(({ teamIndex, name }) => [
@@ -530,18 +613,16 @@ export function standings(teams: { teamIndex: number; name: string }[], matches:
       rows.get(match.teams[match.winner].teamIndex)!.won += 1;
       rows.get(match.teams[1 - match.winner].teamIndex)!.lost += 1;
     }
-    for (const innings of match.innings) {
-      const summary = inningsSummary(innings);
-      const batting = match.teams[innings.battingTeam];
-      const allOut = summary.wickets >= wicketsToEnd(match, innings);
-      const balls = allOut ? match.overs * ballsPerOverOf(match) : summary.legalBalls;
-      const bat = runFor.get(batting.teamIndex)!;
-      const bowl = runFor.get(match.teams[1 - innings.battingTeam].teamIndex)!;
-      bat.runs += summary.runs;
-      bat.balls += balls;
-      bowl.against += summary.runs;
-      bowl.ballsAgainst += balls;
-    }
+    const line = nrrLine(match);
+    if (!line) continue;
+    line.sides.forEach((side, slot) => {
+      const bat = runFor.get(match.teams[slot].teamIndex)!;
+      const bowl = runFor.get(match.teams[1 - slot].teamIndex)!;
+      bat.runs += side.runs;
+      bat.balls += side.balls;
+      bowl.against += side.runs;
+      bowl.ballsAgainst += side.balls;
+    });
   }
   const result = [...rows.values()];
   result.forEach((row) => {
@@ -551,9 +632,7 @@ export function standings(teams: { teamIndex: number; name: string }[], matches:
     row.ballsFor = r.balls;
     row.runsAgainst = r.against;
     row.ballsAgainst = r.ballsAgainst;
-    const forRate = r.balls ? (r.runs * 6) / r.balls : 0;
-    const againstRate = r.ballsAgainst ? (r.against * 6) / r.ballsAgainst : 0;
-    row.nrr = forRate - againstRate;
+    row.nrr = runsPerOver(r.runs, r.balls) - runsPerOver(r.against, r.ballsAgainst);
   });
   // Level on points, net run rate and wins: their results against each other.
   const headToHead = (x: PointsRow, y: PointsRow) => {
@@ -769,20 +848,19 @@ export function tournamentStats(matches: CricketMatch[]): TournamentStats {
   return t;
 }
 
-// ===== Impact points =====
-// One number per player per match that weighs batting, bowling and fielding
-// against how the match went, so a quick 30 in a low-scoring game counts for
-// more than a slow 30 in a run-fest. Player of the match, best batter, best
-// bowler and the MVP tables are all picked from these.
-//
-// Batting:  1 per run, +1 per four, +2 per six, +4 at 25, +8 more at 50,
-//           +16 more at 100; half a point per run scored above (or below,
-//           after 6 balls) the match's par rate; -4 for a duck.
-// Bowling:  20 per wicket, +4 if it was a top-order batter, +4 if they had
-//           25+; +6 / +12 / +20 for 3 / 4 / 5 wickets; 1 per dot, 8 per
-//           maiden; 0.75 per run saved (or leaked) against the par economy.
-// Fielding: 8 per catch, 10 per stumping or run-out.
-// Winning side: +10% on top.
+// ===== MVP points =====
+// The IPL's Most Valuable Player tally: points for the moments that swing a
+// game, the same for every match. Player of the match (unless the organiser
+// picks one) and the MVP tables come from these; best batter / bowler /
+// fielder go by their figures (see matchAwards).
+export const MVP_POINTS = {
+  four: 2.5,
+  six: 3.5,
+  wicket: 3.5,
+  dot: 1,
+  catch: 2.5,
+  stumping: 2.5,
+} as const;
 
 export interface ImpactRow {
   playerId: number;
@@ -791,10 +869,9 @@ export interface ImpactRow {
   batting: number;
   bowling: number;
   fielding: number;
-  winBonus: number;
   total: number;
   bat: { runs: number; balls: number; fours: number; sixes: number; out: boolean } | null;
-  bowl: { wickets: number; runs: number; legalBalls: number; maidens: number } | null;
+  bowl: { wickets: number; runs: number; legalBalls: number; maidens: number; dots: number } | null;
   catches: number;
   stumpings: number;
   runOuts: number;
@@ -813,7 +890,6 @@ export function matchImpact(match: CricketMatch): ImpactRow[] {
         batting: 0,
         bowling: 0,
         fielding: 0,
-        winBonus: 0,
         total: 0,
         bat: null,
         bowl: null,
@@ -827,40 +903,11 @@ export function matchImpact(match: CricketMatch): ImpactRow[] {
   };
   match.teams.forEach((team) => team.playerIds.forEach(of));
 
-  const cards = match.innings.map((innings) => ({ innings, batting: battingCard(innings), bowling: bowlingCard(innings) }));
-  // Par for this match: what an average ball went for, off the bat and against the bowler.
-  let batRuns = 0;
-  let faced = 0;
-  let conceded = 0;
-  let legal = 0;
-  for (const card of cards) {
-    for (const row of card.batting) {
-      batRuns += row.runs;
-      faced += row.balls;
-    }
-    for (const row of card.bowling) {
-      conceded += row.runs;
-      legal += row.legalBalls;
-    }
-  }
-  const batPar = faced ? batRuns / faced : 1;
-  const bowlPar = legal ? conceded / legal : 1;
-
-  for (const { innings, batting, bowling } of cards) {
-    const position = new Map(batting.map((row, index) => [row.playerId, index]));
-    const finalRuns = new Map(batting.map((row) => [row.playerId, row.runs]));
-
-    for (const card of batting) {
+  for (const innings of match.innings) {
+    for (const card of battingCard(innings)) {
       const row = of(card.playerId);
       const out = card.outBall !== null && isWicket(card.outBall);
-      let points = card.runs + card.fours + card.sixes * 2;
-      if (card.runs >= 25) points += 4;
-      if (card.runs >= 50) points += 8;
-      if (card.runs >= 100) points += 16;
-      const tempo = (card.runs - card.balls * batPar) * 0.5;
-      if (tempo > 0 || card.balls >= 6) points += tempo;
-      if (out && card.runs === 0) points -= 4;
-      row.batting += points;
+      row.batting += card.fours * MVP_POINTS.four + card.sixes * MVP_POINTS.six;
       const bat = row.bat ?? { runs: 0, balls: 0, fours: 0, sixes: 0, out: false };
       row.bat = {
         runs: bat.runs + card.runs,
@@ -871,62 +918,51 @@ export function matchImpact(match: CricketMatch): ImpactRow[] {
       };
     }
 
-    for (const card of bowling) {
+    for (const card of bowlingCard(innings)) {
       const row = of(card.playerId);
-      let points = card.dots + card.maidens * 8 + (card.legalBalls * bowlPar - card.runs) * 0.75;
-      if (card.wickets >= 3) points += 6;
-      if (card.wickets >= 4) points += 6;
-      if (card.wickets >= 5) points += 8;
-      row.bowling += points;
-      const bowl = row.bowl ?? { wickets: 0, runs: 0, legalBalls: 0, maidens: 0 };
+      row.bowling += card.wickets * MVP_POINTS.wicket + card.dots * MVP_POINTS.dot;
+      const bowl = row.bowl ?? { wickets: 0, runs: 0, legalBalls: 0, maidens: 0, dots: 0 };
       row.bowl = {
         wickets: bowl.wickets + card.wickets,
         runs: bowl.runs + card.runs,
         legalBalls: bowl.legalBalls + card.legalBalls,
         maidens: bowl.maidens + card.maidens,
+        dots: bowl.dots + card.dots,
       };
     }
 
+    // Run-outs are counted for the scorecard but, as in the IPL tally,
+    // earn no points.
     for (const ball of innings.balls) {
-      if (creditsBowler(ball) && ball.dismissedId !== null) {
-        let points = 20;
-        if ((position.get(ball.dismissedId) ?? 99) < 4) points += 4;
-        if ((finalRuns.get(ball.dismissedId) ?? 0) >= 25) points += 4;
-        of(ball.bowlerId).bowling += points;
-      }
       if (ball.fielderId === null) continue;
       const fielder = of(ball.fielderId);
       if (isCatch(ball)) {
         fielder.catches += 1;
-        fielder.fielding += 8;
+        fielder.fielding += MVP_POINTS.catch;
       } else if (ball.wicketType === "stumped") {
         fielder.stumpings += 1;
-        fielder.fielding += 10;
+        fielder.fielding += MVP_POINTS.stumping;
       } else if (ball.wicketType === "run-out") {
-        // Two fielders share it: 6 each, against 10 for one alone.
         fielder.runOuts += 1;
-        fielder.fielding += ball.secondFielderId ? 6 : 10;
-        if (ball.secondFielderId) {
-          const second = of(ball.secondFielderId);
-          second.runOuts += 1;
-          second.fielding += 6;
-        }
+        if (ball.secondFielderId) of(ball.secondFielderId).runOuts += 1;
       }
     }
   }
 
   for (const row of rows.values()) {
-    const base = row.batting + row.bowling + row.fielding;
-    const winBonus = match.winner === row.team && base > 0 ? base * 0.1 : 0;
     row.batting = round1(row.batting);
     row.bowling = round1(row.bowling);
     row.fielding = round1(row.fielding);
-    row.winBonus = round1(winBonus);
-    row.total = round1(base + winBonus);
+    row.total = round1(row.batting + row.bowling + row.fielding);
   }
-  // Best first; level on points goes to the winning side.
+  // Best first; level on points goes to the winning side, then more runs
+  // and wickets.
+  const contribution = (row: ImpactRow) => (row.bat?.runs ?? 0) + (row.bowl?.wickets ?? 0) * 20;
   return [...rows.values()].sort(
-    (a, b) => b.total - a.total || Number(b.team === match.winner) - Number(a.team === match.winner),
+    (a, b) =>
+      b.total - a.total ||
+      Number(b.team === match.winner) - Number(a.team === match.winner) ||
+      contribution(b) - contribution(a),
   );
 }
 
@@ -975,15 +1011,16 @@ export function matchAwards(match: CricketMatch): MatchAwards {
     rows,
     playerOfMatch: picked ?? auto,
     autoPicked: !picked && auto !== null,
+    // Most runs (quicker breaks a tie); most wickets (cheaper breaks a tie).
     bestBatter: topBy(
       rows.filter((row) => row.bat && row.bat.runs > 0),
-      (row) => row.batting,
       (row) => row.bat!.runs,
+      (row) => -row.bat!.balls,
     ),
     bestBowler: topBy(
-      rows.filter((row) => row.bowl && row.bowl.legalBalls > 0),
-      (row) => row.bowling,
+      rows.filter((row) => row.bowl && row.bowl.legalBalls > 0 && (row.bowl.wickets > 0 || row.bowl.dots > 0)),
       (row) => row.bowl!.wickets,
+      (row) => -row.bowl!.runs,
     ),
     bestFielder: topBy(
       rows.filter((row) => dismissalsBy(row) > 0),

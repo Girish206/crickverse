@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import BottomNav from "./BottomNav";
@@ -75,6 +75,17 @@ const Layout = ({
             }
         }
     };
+
+    // While the phone drawer is open the page behind it stays put; only the
+    // drawer's own menu scrolls. Same breakpoint as the drawer's CSS.
+    const drawerOpen = isMainScreen && isSidebarOpen;
+    useEffect(() => {
+        if (!drawerOpen || !window.matchMedia("(max-width: 769px)").matches) return;
+        document.body.style.overflow = "hidden";
+        return () => {
+            document.body.style.overflow = "";
+        };
+    }, [drawerOpen]);
 
     // The phone drawer sits above sheets, so it closes first.
     const shareApp = () => {

@@ -15,7 +15,7 @@ import { sameTarget, useMyFollows } from "../../../api/hooks/cricket/useCricketF
 import { useCricketMe } from "../../../api/hooks/cricket/useCricketPlayers";
 import { isGeneratedTeam, type CricketFollowTarget, type CricketMatch, type CricketTournament } from "../../../api/types";
 import { confirmAction } from "../../components/confirmDelete";
-import { pointsTable } from "../stats";
+import { countsForTable, pointsTable } from "../stats";
 import { AutoNextRounds } from "../format/AutoNextRounds";
 import { ListCard } from "../../components/ListCard";
 import { useSwipeTabs } from "../../useSwipeTabs";
@@ -38,6 +38,7 @@ import { TournamentInfo } from "./TournamentInfo";
 import { TournamentStats } from "./TournamentStats";
 import { ShareFixturesSheet, upcomingFixtures } from "./ShareFixturesSheet";
 import { NrrCalculatorSheet } from "./NrrCalculatorSheet";
+import { NrrGuide } from "../leaderboard/NrrGuide";
 import { FollowButton, useFollowMenuItem } from "../follow/FollowButton";
 import { SettingsMenu } from "../SettingsMenu";
 import { ScorersSheet } from "../ScorersSheet";
@@ -60,7 +61,7 @@ type TeamModal = { kind: "new" } | { kind: "existing" } | { kind: "scan" };
 
 // Same underlined, sticky tabs as the match page.
 const TABS: { value: Tab; label: string }[] = [
-  { value: "info", label: "Info" },
+  { value: "info", label: "Profile" },
   { value: "matches", label: "Matches" },
   { value: "teams", label: "Teams" },
   { value: "points", label: "Standings" },
@@ -124,7 +125,7 @@ const TOURNAMENT_TIPS: TipStep[] = [
   {
     target: "tabs",
     title: "Everything about the tournament",
-    text: "Switch between Info, Matches, Teams, Standings, the Leaderboard and Stats. Swipe the tabs sideways to see them all.",
+    text: "Switch between Profile, Matches, Teams, Standings, the Leaderboard and Stats. Swipe the tabs sideways to see them all.",
   },
   {
     target: "settings",
@@ -190,7 +191,7 @@ export function CricketTournamentPage() {
   const [params, setParams] = useSearchParams();
   const location = useLocation();
   const requested = params.get("tab") as Tab | null;
-  const tab: Tab = requested && TABS.some((t) => t.value === requested) ? requested : "info";
+  const tab: Tab = requested && TABS.some((t) => t.value === requested) ? requested : "matches";
   const swipeRef = useSwipeTabs(TABS.map((t) => t.value), tab, (value) =>
     setParams({ tab: value }, { replace: true, state: location.state })
   );
@@ -479,9 +480,20 @@ export function CricketTournamentPage() {
             {tab === "points" && (
               <ListCard
                 action={
-                  <Button size="sm" variant="outline" onClick={() => setNrrCalcOpen(true)}>
-                    <i className="fa-solid fa-calculator me-1" aria-hidden="true"></i> NRR Calculator
-                  </Button>
+                  <div className="cricket-standings-actions">
+                    <Button size="sm" variant="outline" onClick={() => setNrrCalcOpen(true)}>
+                      <i className="fa-solid fa-calculator me-1" aria-hidden="true"></i> NRR Calculator
+                    </Button>
+                    <NrrGuide
+                      rows={pointsTable(tournament, matches ?? [])}
+                      matches={(matches ?? []).filter(countsForTable)}
+                      button={(open) => (
+                        <Button size="sm" variant="outline" onClick={open}>
+                          <i className="fa-solid fa-circle-question me-1" aria-hidden="true"></i> How NRR works
+                        </Button>
+                      )}
+                    />
+                  </div>
                 }
               >
                 <FormatView tournament={tournament} matches={matches ?? []} canManage={canManage} />
@@ -523,12 +535,12 @@ export function CricketTournamentPage() {
           heading="Share tournament"
           path={`/tournaments/${tournament.id}`}
           title={tournament.name}
-          text={`${tournament.name} on CricDesk`}
+          text={`${tournament.name} on RunMitra`}
           image={logoFor(tournament)}
           note={
             isPublic
               ? "Anyone with the link can see it, even without signing in."
-              : "People need to sign in to CricDesk to open this link."
+              : "People need to sign in to RunMitra to open this link."
           }
           items={
             hasFixtures

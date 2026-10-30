@@ -1,7 +1,7 @@
 {
   "id": "/",
-  "name": "CricDesk",
-  "short_name": "CricDesk",
+  "name": "RunMitra",
+  "short_name": "RunMitra",
   "description": "Cricket tournaments, live scoring and stats.",
   "start_url": "/",
   "scope": "/",

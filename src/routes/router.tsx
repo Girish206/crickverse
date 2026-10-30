@@ -91,6 +91,11 @@ export const router = createBrowserRouter([
                     path: "tournaments/:id/teams/:team",
                     lazy: page(() => import("../admin/cricket/tournaments/CricketTeamPage"), (m) => m.CricketTeamPage),
                   },
+                  // Every season of a recurring tournament, with their stats together.
+                  {
+                    path: "series/:name",
+                    lazy: page(() => import("../admin/cricket/tournaments/SeriesPage"), (m) => m.SeriesPage),
+                  },
                   {
                     path: "teams/friendly/:name",
                     lazy: page(() => import("../admin/cricket/teams/FriendlyTeamPage"), (m) => m.FriendlyTeamPage),

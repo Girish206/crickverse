@@ -8,7 +8,7 @@ import { usePlayerPhotos } from "./matchUtils";
 
 // Organiser's override of the player of the match: a one-line summary with
 // a "Change" button that opens a tap-friendly list of players from the winning
-// team (or both if tied), ranked by impact, with "Auto" (winning team's top impact) first.
+// team (or both if tied), ranked by MVP points, with "Auto" (winning team's top scorer) first.
 export function PotmPicker({ match, nameOf }: { match: CricketMatch; nameOf: NameOf }) {
   const [open, setOpen] = useState(false);
   const setPlayerOfMatch = useSetCricketPlayerOfMatch();
@@ -57,7 +57,7 @@ export function PotmPicker({ match, nameOf }: { match: CricketMatch; nameOf: Nam
                 ? " · Picked by you"
                 : winningTeamName
                   ? ` · Auto (${winningTeamName})`
-                  : " · Auto (top impact)"}
+                  : " · Auto (top MVP points)"}
             </small>
           </strong>
         </div>
@@ -80,7 +80,7 @@ export function PotmPicker({ match, nameOf }: { match: CricketMatch; nameOf: Nam
                 <span className="cricket-potm-who">
                   <strong>Auto</strong>
                   <small>
-                    Top impact{winningTeamName ? ` (${winningTeamName})` : ""}
+                    Top MVP points{winningTeamName ? ` (${winningTeamName})` : ""}
                     {auto !== null ? ` · ${nameOf(auto)}` : ""}
                   </small>
                 </span>

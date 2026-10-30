@@ -62,9 +62,9 @@ export function AddPlayerByMobile({
     if (!trimmed) return setError("Enter the player's name");
     try {
       const created = await createPlayer.mutateAsync({ name: trimmed, role: null, mobile: lookup.mobile });
-      // A number that's already on CricDesk keeps its own name.
+      // A number that's already on RunMitra keeps its own name.
       if (created.name.trim().toLowerCase() !== trimmed.toLowerCase()) {
-        toast.info(`Already on CricDesk as ${created.name} — added as them`);
+        toast.info(`Already on RunMitra as ${created.name} — added as them`);
       }
       add(created);
     } catch {
@@ -124,7 +124,7 @@ export function AddPlayerByMobile({
               {foundRole && ` · ${foundRole.label}`}
             </small>
             {blocked && <small className="cricket-add-player-blocked">{blocked}</small>}
-            {!blocked && <small>Already on CricDesk as {found.name} — added as them</small>}
+            {!blocked && <small>Already on RunMitra as {found.name} — added as them</small>}
           </span>
           {!blocked && (
             <button type="button" className="cricket-add-player-btn" onClick={() => add(found)}>

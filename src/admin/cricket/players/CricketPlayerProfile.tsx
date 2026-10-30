@@ -148,7 +148,7 @@ export function CricketPlayerProfile({
             })}
             {section({
               tone: "impact",
-              title: "Impact points",
+              title: "MVP points",
               icon: "fa-bolt",
               lead: ["Total (MVP)", "Per match"],
               items: [

@@ -45,14 +45,14 @@ export function ShareMenu(props: ShareSheetProps) {
   );
 }
 
-// Inviting someone to the app itself (the menus' "Share CricDesk").
+// Inviting someone to the app itself (the menus' "Share RunMitra").
 export function ShareAppSheet({ onClose }: { onClose: () => void }) {
   return (
     <ShareSheet
-      heading="Share CricDesk"
+      heading="Share RunMitra"
       path="/"
-      title="CricDesk"
-      text="Score matches ball by ball, run tournaments and track your cricket stats on CricDesk. Join me:"
+      title="RunMitra"
+      text="Score matches ball by ball, run tournaments and track your cricket stats on RunMitra. Join me:"
       image="/favicon.svg"
       onClose={onClose}
     />

@@ -219,6 +219,13 @@
       left: 0;
       background: rgba(0, 0, 0, 0.4);
       z-index: 9999 !important;
+      /* Scrolling the drawer's menu never carries through to the page. */
+      overscroll-behavior: contain;
+      touch-action: pan-y;
+   }
+
+   .sidebar-mobile .scrollable-content {
+      overscroll-behavior: contain;
    }
 
    /* Mobile sidebar container - Wrapper should be transparent */

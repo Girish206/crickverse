@@ -91,7 +91,7 @@ export function MatchHero({ match }: MatchHeroProps) {
     const chase = match.innings.length === 2 ? chaseInfo(match) : null;
     const batting = match.teams[current.battingTeam].name;
     if (chase && current.balls.length === 0) {
-      headline = `Innings break — ${batting} need ${chase.target} to win${chase.revised ? " (revised target)" : ""}`;
+      headline = `Innings break — ${batting} need ${chase.target} to win${chase.revised ? (match.interruptions?.length ? " (DLS)" : " (revised target)") : ""}`;
     } else if (chase) {
       headline = `${batting} need ${Math.max(chase.need, 0)} run${chase.need === 1 ? "" : "s"} from ${chase.ballsLeft} ball${chase.ballsLeft === 1 ? "" : "s"}`;
     } else {

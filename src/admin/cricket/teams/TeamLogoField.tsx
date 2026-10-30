@@ -49,6 +49,6 @@ export function TeamLogoField({ pick }: { pick: ReturnType<typeof useImagePick> 
 }
 
 // A team page's round badge: its logo, or its initial on its colour.
-export function TeamBadge({ name, logoUrl }: { name: string; logoUrl?: string | null }) {
-  return <TeamMark className="cricket-tour-logo" name={name} logoUrl={logoUrl} />;
+export function TeamBadge({ name, logoUrl, viewable = false }: { name: string; logoUrl?: string | null; viewable?: boolean }) {
+  return <TeamMark className="cricket-tour-logo" name={name} logoUrl={logoUrl} viewable={viewable} />;
 }

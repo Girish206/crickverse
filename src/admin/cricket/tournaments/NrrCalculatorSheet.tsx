@@ -17,21 +17,61 @@ export function parseOversToDecimal(oversVal: number | string): number {
   return completed + Math.min(balls, 5) / 6;
 }
 
-// Decimal overs back to cricket overs string (e.g. 18.3333 -> "18.2")
-export function decimalToOvers(dec: number): string {
-  if (dec <= 0 || !isFinite(dec)) return "0.0";
-  const completed = Math.floor(dec);
-  const fraction = dec - completed;
-  const balls = Math.round(fraction * 6);
-  if (balls >= 6) return `${completed + 1}.0`;
-  return `${completed}.${balls}`;
-}
+const signed = (n: number) => (n >= 0 ? `+${n.toFixed(3)}` : n.toFixed(3));
+const oversFromBalls = (balls: number) => `${Math.floor(balls / 6)}.${balls % 6}`;
 
-// Total balls from decimal overs
-export function oversToTotalBalls(dec: number): number {
-  const completed = Math.floor(dec);
-  const balls = Math.round((dec - completed) * 6);
-  return completed * 6 + balls;
+// The answer card under each calculator: one big figure, what it means, and
+// the numbers behind it.
+function NrrResult({
+  good,
+  kicker,
+  chip,
+  label,
+  value,
+  unit,
+  sub,
+  stats,
+}: {
+  good: boolean;
+  kicker?: string;
+  chip?: string;
+  label: string;
+  value: string;
+  unit?: string;
+  sub: string;
+  stats: [string, string][];
+}) {
+  return (
+    <section className={`cricket-nrr-result ${good ? "is-good" : "is-warn"}`} aria-live="polite">
+      {(kicker || chip) && (
+        <header className="cricket-nrr-result-head">
+          {kicker && (
+            <span className="cricket-nrr-result-kicker">
+              <i className={`fa-solid ${good ? "fa-arrow-trend-up" : "fa-circle-exclamation"}`} aria-hidden="true"></i>
+              {kicker}
+            </span>
+          )}
+          {chip && <span className="cricket-nrr-result-chip">{chip}</span>}
+        </header>
+      )}
+      <div className="cricket-nrr-result-hero">
+        <span className="cricket-nrr-result-label">{label}</span>
+        <strong className="cricket-nrr-result-value">
+          {value}
+          {unit && <small> {unit}</small>}
+        </strong>
+        <span className="cricket-nrr-result-sub">{sub}</span>
+      </div>
+      <dl className="cricket-nrr-result-stats">
+        {stats.map(([k, v]) => (
+          <div key={k}>
+            <dt>{k}</dt>
+            <dd>{v}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
 }
 
 export function NrrCalculatorSheet({
@@ -111,23 +151,22 @@ export function NrrCalculatorSheet({
       const newAgainstRate = newOversAgainst > 0 ? newRunsAgainst / newOversAgainst : 0;
 
       // Required (newRunsFor / (baseOfA + X)) > targetNrrB + newAgainstRate
+      // NRR has to finish strictly above the target, so the chase must end a
+      // whole ball inside the break-even point (rounding could tip it over).
       const reqForRate = targetNrrB + newAgainstRate;
-      let reqOvers = 0;
-      let canAchieve = false;
-
-      if (reqForRate > 0) {
-        reqOvers = newRunsFor / reqForRate - baseOfA;
-        if (reqOvers > 0 && reqOvers <= maxOvers) {
-          canAchieve = true;
-        }
-      }
+      const reqBalls = reqForRate > 0 ? Math.ceil((newRunsFor / reqForRate - baseOfA) * 6) - 1 : 0;
+      const maxBalls = Math.round(maxOvers * 6);
+      const balls = Math.min(reqBalls, maxBalls);
 
       return {
         type: "chasing" as const,
         targetRuns: runs + 1,
         maxOvers,
-        reqOversFormatted: canAchieve ? decimalToOvers(reqOvers) : null,
-        canAchieve,
+        reqBalls: balls,
+        anyWin: reqBalls >= maxBalls,
+        // Chasing faster than the overs allow is always fine; it only fails
+        // when even the very first ball would be too late.
+        canAchieve: balls > 0,
         targetNrrB,
       };
     } else {
@@ -143,12 +182,14 @@ export function NrrCalculatorSheet({
       const maxAllowedAgainstRate = newForRate - targetNrrB;
       const maxAllowedRuns = Math.floor(maxAllowedAgainstRate * newOversAgainst - baseRaA);
 
+      // They still have to win, so the cap is never above one short of the total.
       return {
         type: "defending" as const,
         scoredRuns: runs,
         maxOvers,
-        maxAllowedRuns: Math.max(0, maxAllowedRuns),
-        canAchieve: maxAllowedRuns >= 0 && maxAllowedRuns < runs,
+        maxAllowedRuns: Math.max(0, Math.min(maxAllowedRuns, runs - 1)),
+        anyWin: maxAllowedRuns >= runs - 1,
+        canAchieve: maxAllowedRuns >= 0 && runs > 0,
         targetNrrB,
       };
     }
@@ -250,81 +291,56 @@ export function NrrCalculatorSheet({
                 </div>
 
                 {simulation && (
-                  <div className={`cricket-nrr-compact-card ${simulation.canAchieve ? "is-achievable" : "is-warning"}`}>
-                    <div className="cricket-nrr-compact-header">
-                      <div className="cricket-nrr-compact-team">
-                        <span className="cricket-nrr-tag">
-                          <i className="fa-solid fa-bullseye me-1" aria-hidden="true"></i> Target Scenario
-                        </span>
-                        <strong className="cricket-nrr-team-name">{tournament.teams[teamAIdx]?.name}</strong>
-                      </div>
-                      <span className="cricket-nrr-beat-pill">
-                        Beat NRR: <strong>{simulation.targetNrrB >= 0 ? `+${simulation.targetNrrB.toFixed(3)}` : simulation.targetNrrB.toFixed(3)}</strong>
-                      </span>
-                    </div>
-
-                    {simulation.type === "chasing" ? (
-                      simulation.canAchieve ? (
-                        <div className="cricket-nrr-compact-body">
-                          <div className="cricket-nrr-compact-condition">
-                            To overtake <strong>{tournament.teams[teamBIdx]?.name}</strong>:
-                          </div>
-                          <div className="cricket-nrr-compact-action">
-                            <span>Chase <strong>{simulation.targetRuns}</strong> in at most</span>
-                            <span className="cricket-nrr-badge">{simulation.reqOversFormatted} ov</span>
-                            <span className="cricket-nrr-sub">
-                              ({oversToTotalBalls(parseOversToDecimal(simulation.reqOversFormatted!))} balls)
-                            </span>
-                          </div>
-                          <div className="cricket-nrr-compact-meta">
-                            <span>
-                              <i className="fa-solid fa-gauge-high text-danger me-1" aria-hidden="true"></i>
-                              Min RRR: <strong>{(simulation.targetRuns / Math.max(0.1, parseOversToDecimal(simulation.reqOversFormatted!))).toFixed(2)} RPO</strong>
-                            </span>
-                            <span className="cricket-nrr-dot">•</span>
-                            <span>Target: <strong>{simulation.targetRuns} runs</strong></span>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="cricket-nrr-compact-warning">
-                          <div className="cricket-nrr-warning-title">
-                            <i className="fa-solid fa-circle-exclamation me-1" aria-hidden="true"></i> Target unreachable in single game
-                          </div>
-                          <small>
-                            A chase of {simulation.targetRuns} in {simulation.maxOvers} ov cannot overtake the target NRR.
-                          </small>
-                        </div>
-                      )
-                    ) : simulation.canAchieve ? (
-                      <div className="cricket-nrr-compact-body">
-                        <div className="cricket-nrr-compact-condition">
-                          After setting <strong>{simulation.scoredRuns} runs</strong> in {simulation.maxOvers} ov:
-                        </div>
-                        <div className="cricket-nrr-compact-action">
-                          <span>Restrict <strong>{tournament.teams[teamBIdx]?.name}</strong> to</span>
-                          <span className="cricket-nrr-badge">&le; {simulation.maxAllowedRuns} runs</span>
-                          <span className="cricket-nrr-sub">({simulation.maxOvers} ov)</span>
-                        </div>
-                        <div className="cricket-nrr-compact-meta">
-                          <span>
-                            <i className="fa-solid fa-shield text-success me-1" aria-hidden="true"></i>
-                            Win by at least: <strong>{simulation.scoredRuns - simulation.maxAllowedRuns} runs</strong>
-                          </span>
-                          <span className="cricket-nrr-dot">•</span>
-                          <span>Max Allowed RR: <strong>{(simulation.maxAllowedRuns / simulation.maxOvers).toFixed(2)} RPO</strong></span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="cricket-nrr-compact-warning">
-                        <div className="cricket-nrr-warning-title">
-                          <i className="fa-solid fa-circle-exclamation me-1" aria-hidden="true"></i> Target unreachable in single game
-                        </div>
-                        <small>
-                          Defending {simulation.scoredRuns} in {simulation.maxOvers} ov cannot overtake the target NRR.
-                        </small>
-                      </div>
-                    )}
-                  </div>
+                  <NrrResult
+                    good={simulation.canAchieve}
+                    kicker={`To go above ${tournament.teams[teamBIdx]?.name ?? "them"}`}
+                    chip={`NRR to beat ${signed(simulation.targetNrrB)}`}
+                    {...(simulation.type === "chasing"
+                      ? simulation.canAchieve
+                        ? {
+                            label: `${tournament.teams[teamAIdx]?.name} must chase ${simulation.targetRuns} within`,
+                            value: oversFromBalls(simulation.reqBalls),
+                            unit: "ov",
+                            sub: simulation.anyWin ? "Any win in the overs is enough" : `${simulation.reqBalls} balls or fewer`,
+                          }
+                        : {
+                            label: `Chasing ${simulation.targetRuns}`,
+                            value: "Not enough",
+                            sub: `Even the quickest possible chase leaves the NRR below ${signed(simulation.targetNrrB)}.`,
+                          }
+                      : simulation.canAchieve
+                        ? {
+                            label: `After ${simulation.scoredRuns} in ${simulation.maxOvers} ov, hold the opponent to`,
+                            value: String(simulation.maxAllowedRuns),
+                            unit: "runs",
+                            sub: simulation.anyWin
+                              ? "Any win is enough"
+                              : `Win by ${simulation.scoredRuns - simulation.maxAllowedRuns} runs or more`,
+                          }
+                        : {
+                            label: `Defending ${simulation.scoredRuns}`,
+                            value: "Not enough",
+                            sub: `Even bowling the opponent out for 0 leaves the NRR below ${signed(simulation.targetNrrB)}.`,
+                          })}
+                    stats={[
+                      [`${tournament.teams[teamAIdx]?.name} now`, signed(teamARow?.nrr ?? 0)],
+                      ...(simulation.type === "chasing"
+                        ? ([
+                            ["Target", String(simulation.targetRuns)],
+                            [
+                              "Req. run rate",
+                              simulation.canAchieve ? ((simulation.targetRuns * 6) / simulation.reqBalls).toFixed(2) : "–",
+                            ],
+                          ] as [string, string][])
+                        : ([
+                            ["Total", String(simulation.scoredRuns)],
+                            [
+                              "Max opp. RR",
+                              simulation.canAchieve ? (simulation.maxAllowedRuns / simulation.maxOvers).toFixed(2) : "–",
+                            ],
+                          ] as [string, string][])),
+                    ]}
+                  />
                 )}
               </div>
             )}
@@ -383,16 +399,16 @@ export function NrrCalculatorSheet({
                   </div>
                 </div>
 
-                <div className="card text-center p-3 bg-body-tertiary border">
-                  <span className="text-muted small text-uppercase fw-bold">Net Run Rate (NRR)</span>
-                  <div className={`fs-2 fw-black my-1 ${customNrr.nrr >= 0 ? "text-success" : "text-danger"}`}>
-                    {customNrr.nrr >= 0 ? `+${customNrr.nrr.toFixed(3)}` : customNrr.nrr.toFixed(3)}
-                  </div>
-                  <small className="text-muted">
-                    {customNrr.forRate.toFixed(3)} (Batting RR) - {customNrr.againstRate.toFixed(3)} (Bowling RR) ={" "}
-                    {customNrr.nrr.toFixed(3)}
-                  </small>
-                </div>
+                <NrrResult
+                  good={customNrr.nrr >= 0}
+                  label="Net run rate"
+                  value={signed(customNrr.nrr)}
+                  sub="Batting run rate minus bowling run rate"
+                  stats={[
+                    ["Batting RR", customNrr.forRate.toFixed(3)],
+                    ["Bowling RR", customNrr.againstRate.toFixed(3)],
+                  ]}
+                />
               </div>
             )}
           </>

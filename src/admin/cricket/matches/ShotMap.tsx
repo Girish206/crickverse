@@ -1,5 +1,6 @@
 import { useState, type MouseEvent } from "react";
 import type { CricketMatch } from "../../../api/types";
+import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
 import { PillSelect } from "../PillSelect";
 import { isWicket, type NameOf } from "../stats";
 
@@ -8,6 +9,9 @@ import { isWicket, type NameOf } from "../stats";
 // the right (see CricketBall). The ground is drawn the TV way round, from
 // behind the bowler: the keeper and fine leg at the top, long on / long off
 // at the bottom, the off side on the left — the stored spot turned half way.
+// A left-hander's off side is on the other side of the ground, so for them
+// the whole drawing is mirrored; stored spots stay off-side-positive either
+// way, so zones and saved shots mean the same for both hands.
 
 export interface Shot {
   x: number;
@@ -85,11 +89,12 @@ const LABELS: [string, number, number][] = [
 ];
 
 const R = 100;
-// A stored spot (or one at an angle and distance, as stored) on the drawing.
-const onScreen = (x: number, y: number) => ({ x: -x * R, y: -y * R });
-const toSvg = (angle: number, distance: number) => {
+// A stored spot (or one at an angle and distance, as stored) on the drawing;
+// mirror is -1 for a left-hander.
+const onScreen = (x: number, y: number, mirror = 1) => ({ x: -x * R * mirror, y: -y * R });
+const toSvg = (angle: number, distance: number, mirror = 1) => {
   const rad = (angle * Math.PI) / 180;
-  return onScreen(Math.sin(rad) * distance, -Math.cos(rad) * distance);
+  return onScreen(Math.sin(rad) * distance, -Math.cos(rad) * distance, mirror);
 };
 
 const shotClass = (shot: Shot) => (shot.wicket ? "is-wicket" : shot.runs >= 6 ? "is-six" : shot.runs === 4 ? "is-four" : "is-run");
@@ -101,14 +106,17 @@ interface ShotGroundProps {
   // Makes the ground tappable; gets the spot as -1..1 x / y.
   onPick?: (x: number, y: number) => void;
   label?: string;
+  // Draws the ground the way round it is for a left-handed batter.
+  leftHanded?: boolean;
 }
 
-export function ShotGround({ shots = [], marker, onPick, label = "Cricket ground" }: ShotGroundProps) {
+export function ShotGround({ shots = [], marker, onPick, label = "Cricket ground", leftHanded = false }: ShotGroundProps) {
+  const mirror = leftHanded ? -1 : 1;
   function handleClick(e: MouseEvent<SVGSVGElement>) {
     if (!onPick) return;
     const box = e.currentTarget.getBoundingClientRect();
     // Turned back from the drawing to the stored way round.
-    let x = -(((e.clientX - box.left) / box.width) * 220 - 110) / R;
+    let x = (-mirror * (((e.clientX - box.left) / box.width) * 220 - 110)) / R;
     let y = -(((e.clientY - box.top) / box.height) * 220 - 110) / R;
     // A tap past the rope counts as on it.
     const distance = Math.hypot(x, y);
@@ -127,20 +135,20 @@ export function ShotGround({ shots = [], marker, onPick, label = "Cricket ground
       <circle className="cricket-shot-field" r={R} />
       <circle className="cricket-shot-inner" r={INNER * R} />
       {DIVISIONS.map(({ angle, to }) => {
-        const from = toSvg(angle, DIVISION_FROM);
-        const end = toSvg(angle, to);
+        const from = toSvg(angle, DIVISION_FROM, mirror);
+        const end = toSvg(angle, to, mirror);
         return <line key={angle} className="cricket-shot-division" x1={from.x} y1={from.y} x2={end.x} y2={end.y} />;
       })}
       <line className="cricket-shot-axis" x1={0} y1={-R} x2={0} y2={R} />
       <rect className="cricket-shot-pitch" x={-4} y={-13} width={8} height={26} rx={1.5} />
       <text className="cricket-shot-side" x={-R + 4} y={-R + 10}>
-        Off
+        {leftHanded ? "Leg" : "Off"}
       </text>
       <text className="cricket-shot-side" x={R - 4} y={-R + 10} textAnchor="end">
-        Leg
+        {leftHanded ? "Off" : "Leg"}
       </text>
       {LABELS.map(([name, angle, distance]) => {
-        const at = toSvg(angle, distance);
+        const at = toSvg(angle, distance, mirror);
         return (
           <text key={name} className="cricket-shot-label" x={at.x} y={at.y} textAnchor="middle">
             {name}
@@ -148,7 +156,7 @@ export function ShotGround({ shots = [], marker, onPick, label = "Cricket ground
         );
       })}
       {shots.map((shot, i) => {
-        const at = onScreen(shot.x, shot.y);
+        const at = onScreen(shot.x, shot.y, mirror);
         return (
           <g key={i} className={`cricket-shot ${shotClass(shot)}`}>
             <line x1={0} y1={0} x2={at.x} y2={at.y} />
@@ -158,8 +166,8 @@ export function ShotGround({ shots = [], marker, onPick, label = "Cricket ground
       })}
       {marker && (
         <g className="cricket-shot is-marker">
-          <line x1={0} y1={0} x2={onScreen(marker.x, marker.y).x} y2={onScreen(marker.x, marker.y).y} />
-          <circle cx={onScreen(marker.x, marker.y).x} cy={onScreen(marker.x, marker.y).y} r={4} />
+          <line x1={0} y1={0} x2={onScreen(marker.x, marker.y, mirror).x} y2={onScreen(marker.x, marker.y, mirror).y} />
+          <circle cx={onScreen(marker.x, marker.y, mirror).x} cy={onScreen(marker.x, marker.y, mirror).y} r={4} />
         </g>
       )}
     </svg>
@@ -198,11 +206,17 @@ export function MatchShotMap({ match, nameOf }: { match: CricketMatch; nameOf: N
   );
   const [inningsIndex, setInningsIndex] = useState(() => Math.max(0, marked.findLastIndex((shots) => shots.length)));
   const [batter, setBatter] = useState("all");
+  const { data: players } = useCricketPlayers();
   if (!marked.some((shots) => shots.length)) return null;
 
   const all = marked[inningsIndex] ?? [];
   const batterIds = [...new Set(all.map((shot) => shot.batterId))];
   const shots = batter === "all" ? all : all.filter((shot) => String(shot.batterId) === batter);
+  // Mirrored for a left-hander, or when every batter shown is one; a mix of
+  // hands is drawn the right-hander's way (off side still means off side).
+  const leftHanded =
+    shots.length > 0 &&
+    shots.every((shot) => players?.find((p) => p.id === shot.batterId)?.battingStyle === "left-hand");
   const runsByZone = new Map<string, number>();
   for (const shot of shots) runsByZone.set(shot.zone, (runsByZone.get(shot.zone) ?? 0) + shot.runs);
   const topZones = [...runsByZone.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
@@ -238,7 +252,7 @@ export function MatchShotMap({ match, nameOf }: { match: CricketMatch; nameOf: N
         />
       </div>
       <div className="cricket-shot-view">
-        <ShotGround shots={shots} label={`Shot map: ${shots.length} shots`} />
+        <ShotGround shots={shots} leftHanded={leftHanded} label={`Shot map: ${shots.length} shots`} />
         <ShotLegend />
         {topZones.length > 0 && (
           <ul className="cricket-shot-zones">

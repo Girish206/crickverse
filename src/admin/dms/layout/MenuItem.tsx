@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import ReactDOM from "react-dom";
+import { AppIcon, type AppIconName } from "../../AppIcon";
 
 type SubItem = {
     id: string;
@@ -16,7 +17,7 @@ type MenuItemProps = {
     mainItem: {
         id: string;
         label: string;
-        icon: string;
+        icon: AppIconName;
         link: string;
         submenu?: SubItem[];
     };
@@ -31,7 +32,7 @@ const TooltipPortal = ({
     visible,
 }: {
     label: string;
-    icon: string;
+    icon: AppIconName;
     anchorRef: React.RefObject<HTMLAnchorElement | null>;
     visible: boolean;
 }) => {
@@ -106,7 +107,9 @@ const TooltipPortal = ({
                 flexShrink: 0,
                 borderRadius: "9px 0 0 9px",
             }}>
-                <i className={`${icon}`} style={{ color: "rgba(255,255,255,0.9)", fontSize: "var(--fs-sm)" }} />
+                <span style={{ display: "flex", color: "rgba(255,255,255,0.9)", fontSize: "var(--fs-sm)" }}>
+                    <AppIcon name={icon} />
+                </span>
             </div>
             {/* Label */}
             <div style={{
@@ -165,7 +168,7 @@ export const MenuItem = ({
                 }}
                 onMouseLeave={() => setTooltipVisible(false)}
             >
-                {mainItem.icon && <i className={`${mainItem.icon} icon`}></i>}
+                <AppIcon name={mainItem.icon} className="icon" />
                 {isSidebarOpen && <span>{mainItem.label}</span>}
                 {isSidebarOpen && hasSubmenu && (
                     <i

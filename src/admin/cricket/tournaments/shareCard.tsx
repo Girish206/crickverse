@@ -135,7 +135,7 @@ export async function drawCardFrame(
   ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
   ctx.font = `600 24px ${FONT}`;
   ctx.textAlign = "center";
-  ctx.fillText("CRICDESK", mid, height - 38);
+  ctx.fillText("RUNMITRA", mid, height - 38);
   ctx.textAlign = "left";
 
   return { canvas, ctx };

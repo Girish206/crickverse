@@ -44,8 +44,8 @@ function HeroFigures({ row, perOver }: { row: ImpactRow; perOver: number }) {
   );
 }
 
-// Player of the match and best batter / bowler / fielder, picked from the
-// impact points (see matchImpact in stats.ts). The full ranking is the MVP tab.
+// Player of the match (top MVP points, see matchImpact in stats.ts) and best
+// batter / bowler / fielder by their figures. The full ranking is the MVP tab.
 export function MatchAwards({ match, nameOf }: { match: CricketMatch; nameOf: NameOf }) {
   const photoOf = usePlayerPhotos();
   const awards = matchAwards(match);
@@ -60,7 +60,7 @@ export function MatchAwards({ match, nameOf }: { match: CricketMatch; nameOf: Na
             icon: "fa-medal",
             row: awards.playerOfMatch,
             score: (row: ImpactRow) => row.total,
-            note: awards.autoPicked ? "Top impact" : "Picked by admin",
+            note: awards.autoPicked ? "Top MVP points" : "Picked by admin",
             featured: true,
           },
         ]

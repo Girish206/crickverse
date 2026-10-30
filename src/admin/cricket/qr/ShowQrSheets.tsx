@@ -56,7 +56,7 @@ export function TeamInviteSheet({ team, name, onClose }: { team: InviteTeam; nam
   const reset = useResetTeamInviteCode(team);
   const code = invite?.code;
   const url = code ? teamJoinUrl(code) : "";
-  const message = `Join ${name} on CricDesk — open this link and tap Join:\n${url}`;
+  const message = `Join ${name} on RunMitra — open this link and tap Join:\n${url}`;
 
   async function copy() {
     try {
@@ -69,7 +69,7 @@ export function TeamInviteSheet({ team, name, onClose }: { team: InviteTeam; nam
 
   async function share() {
     try {
-      await navigator.share({ title: `Join ${name}`, text: `Join ${name} on CricDesk`, url });
+      await navigator.share({ title: `Join ${name}`, text: `Join ${name} on RunMitra`, url });
     } catch (err) {
       if ((err as Error).name !== "AbortError") toast.error("Couldn't share the link");
     }

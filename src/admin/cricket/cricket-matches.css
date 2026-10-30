@@ -2528,161 +2528,121 @@
   box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.3);
 }
 
-/* Compact NRR Result Scenario Card */
-.cricket-nrr-compact-card {
-  position: relative;
-  border-radius: 14px;
-  padding: 12px 14px;
-  background: linear-gradient(135deg, rgba(22, 163, 74, 0.08) 0%, rgba(22, 163, 74, 0.02) 100%), var(--adm-surface, #fff);
-  border: 1.5px solid rgba(22, 163, 74, 0.35);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+/* NRR result card: one big answer, a line on what it means, and the
+   numbers behind it in a strip along the bottom. */
+.cricket-nrr-result {
+  --nrr-tone-rgb: 22, 163, 74;
+  --nrr-tone: #15803d;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--adm-surface, #fff);
+  border: 1px solid rgba(var(--nrr-tone-rgb), 0.3);
+  box-shadow: 0 6px 18px rgba(var(--nrr-tone-rgb), 0.1);
 }
-.cricket-nrr-compact-card.is-warning {
-  background: linear-gradient(135deg, rgba(var(--brand-amber-rgb), 0.08) 0%, rgba(var(--brand-amber-rgb), 0.02) 100%), var(--adm-surface, #fff);
-  border-color: rgba(var(--brand-amber-rgb), 0.35);
+.cricket-nrr-result.is-warn {
+  --nrr-tone-rgb: var(--brand-amber-rgb);
+  --nrr-tone: #b45309;
 }
-.cricket-nrr-compact-header {
+.cricket-nrr-result-head {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   flex-wrap: wrap;
+  padding: 10px 14px;
+  background: rgba(var(--nrr-tone-rgb), 0.1);
+  border-bottom: 1px solid rgba(var(--nrr-tone-rgb), 0.18);
 }
-.cricket-nrr-compact-team {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.cricket-nrr-tag {
+.cricket-nrr-result-kicker {
   display: inline-flex;
   align-items: center;
-  font-size: 0.72rem;
-  font-weight: 700;
+  gap: 6px;
+  min-width: 0;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--nrr-tone);
+}
+.cricket-nrr-result-chip {
   padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(220, 38, 38, 0.12);
-  color: #dc2626;
-  border: 1px solid rgba(220, 38, 38, 0.22);
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-.cricket-nrr-team-name {
-  font-size: var(--fs-md, 0.95rem);
-  font-weight: 800;
+  background: var(--adm-surface, #fff);
+  border: 1px solid rgba(var(--nrr-tone-rgb), 0.25);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
   color: var(--theme-text-dark);
+  white-space: nowrap;
 }
-.cricket-nrr-beat-pill {
-  font-size: 0.75rem;
-  font-family: var(--bs-font-monospace, monospace);
-  padding: 2px 8px;
-  border-radius: 6px;
-  background: rgba(100, 116, 139, 0.12);
-  color: var(--muted-color);
-  border: 1px solid rgba(100, 116, 139, 0.2);
-}
-.cricket-nrr-compact-body {
+.cricket-nrr-result-hero {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-}
-.cricket-nrr-compact-condition {
-  font-size: 0.78rem;
-  color: var(--muted-color);
-}
-.cricket-nrr-compact-condition strong {
-  color: var(--theme-text-dark);
-}
-.cricket-nrr-compact-action {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  flex-wrap: wrap;
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--theme-text-dark);
-  font-variant-numeric: tabular-nums;
-}
-.cricket-nrr-compact-action strong {
-  font-weight: 800;
-}
-.cricket-nrr-badge {
-  display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
-  border-radius: 6px;
-  background: #16a34a;
-  color: #fff;
-  font-size: 0.95rem;
-  font-weight: 800;
-  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.3);
+  gap: 2px;
+  padding: 16px 14px 14px;
+  text-align: center;
 }
-.cricket-nrr-sub {
+.cricket-nrr-result-label {
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--muted-color);
 }
-.cricket-nrr-compact-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  font-size: 0.75rem;
-  color: var(--muted-color);
-  margin-top: 2px;
+.cricket-nrr-result-value {
+  font-size: 2.1rem;
+  line-height: 1.1;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--nrr-tone);
 }
-.cricket-nrr-compact-meta strong {
+.cricket-nrr-result-value small {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--muted-color);
+}
+.cricket-nrr-result-sub {
+  font-size: 0.78rem;
+  color: var(--muted-color);
+  max-width: 34ch;
+}
+.cricket-nrr-result-stats {
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  margin: 0;
+  border-top: 1px dashed var(--border-color);
+}
+.cricket-nrr-result-stats > div {
+  min-width: 0;
+  padding: 9px 8px;
+  text-align: center;
+}
+.cricket-nrr-result-stats > div + div {
+  border-left: 1px dashed var(--border-color);
+}
+.cricket-nrr-result-stats dt {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted-color);
+}
+.cricket-nrr-result-stats dd {
+  margin: 2px 0 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
   color: var(--theme-text-dark);
 }
-.cricket-nrr-dot {
-  opacity: 0.5;
+:root[data-bs-theme="dark"] .cricket-nrr-result {
+  --nrr-tone: #4ade80;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
 }
-.cricket-nrr-compact-warning {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.cricket-nrr-warning-title {
-  font-weight: 700;
-  color: #d97706;
-  font-size: 0.85rem;
-}
-
-/* Dark mode overrides */
-:root[data-bs-theme="dark"] .cricket-nrr-compact-card {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.12) 0%, rgba(34, 197, 94, 0.02) 100%), var(--adm-surface, #20232a);
-  border-color: rgba(34, 197, 94, 0.35);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-}
-:root[data-bs-theme="dark"] .cricket-nrr-compact-card.is-warning {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(245, 158, 11, 0.02) 100%), var(--adm-surface, #20232a);
-  border-color: rgba(245, 158, 11, 0.35);
-}
-:root[data-bs-theme="dark"] .cricket-nrr-tag {
-  background: rgba(239, 68, 68, 0.2);
-  color: #f87171;
-  border-color: rgba(239, 68, 68, 0.35);
-}
-:root[data-bs-theme="dark"] .cricket-nrr-team-name {
-  color: #f8fafc;
-}
-:root[data-bs-theme="dark"] .cricket-nrr-beat-pill {
-  background: rgba(255, 255, 255, 0.08);
-  color: #94a3b8;
-  border-color: rgba(255, 255, 255, 0.14);
-}
-:root[data-bs-theme="dark"] .cricket-nrr-badge {
-  background: #22c55e;
-  color: #052e16;
-  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.35);
-}
-:root[data-bs-theme="dark"] .cricket-nrr-compact-action {
-  color: #f8fafc;
-}
-:root[data-bs-theme="dark"] .cricket-nrr-warning-title {
-  color: #fbbf24;
+:root[data-bs-theme="dark"] .cricket-nrr-result.is-warn {
+  --nrr-tone: #fbbf24;
 }
 .cricket-pill-select.w-100 {
   display: flex;
