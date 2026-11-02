@@ -133,7 +133,7 @@ export function CricketMatchPage() {
     }
   }, [onScoreScreen, isViewingMatch, match?.status, canManage, seat.mine, match?.id, navigate]);
 
-  // Same tabs as CricHeroes. "Live" is the scorer for the organiser and a
+  // "Live" is the scorer for the organiser and a
   // read-only view for players; once it's over it becomes "Summary". An
   // upcoming match only has Info and Squads — editing and setup start from
   // the bottom action bar.

@@ -852,11 +852,11 @@ export function tournamentStats(matches: CricketMatch[]): TournamentStats {
 }
 
 // ===== MVP points =====
-// Built on CricHeroes' MVP method: every run counts, and a wicket is worth more
+// The MVP method: every run counts, and a wicket is worth more
 // in a longer match and for a higher batter. Instead of pace bonuses, batters
 // and bowlers gain or lose points for the runs they make or give away against
 // par (the match's rate). Weighting each ball's points by its Pressure Index,
-// as CricHeroes' MVP 2.0 does, is turned off for now: see the commented code
+// is turned off for now: see the commented code
 // below and in matchImpact to bring it back.
 // Player of the match (unless the organiser picks one), best batter / bowler
 // and the MVP tables come from these; best fielder goes by points and
@@ -903,13 +903,13 @@ export function mvpRules(match: MvpMatchLength) {
 
 // Pressure Index: turned off for now, kept here to bring back (see matchImpact).
 // // A competitive scoring rate for the match's length, in runs a ball. Sets the
-// // score a side batting first is measured against (T20: 162, as CricHeroes uses).
+// // score a side batting first is measured against (T20: 162).
 // const competitiveRate = (overs: number) =>
 //   overs <= 7 ? 1.7 : overs <= 12 ? 1.55 : overs <= 20 ? 1.35 : overs <= 35 ? 1.1 : overs <= 50 ? 0.95 : 0.6;
 // 
 // // How hard the moment is for the batting side, 0 (calm) to 100 (extreme), from
 // // the runs still needed against par for the balls left, and the wickets gone.
-// // Tuned to CricHeroes' published T20 examples: 35 from 15 with 4 wickets left
+// // Tuned to these T20 examples: 35 from 15 with 4 wickets left
 // // is 68, 20 from 9 is 52, and 20 from 8 with 3 left is 81.
 // function pressureIndex(
 //   match: CricketMatch,

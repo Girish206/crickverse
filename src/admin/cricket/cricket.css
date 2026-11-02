@@ -1017,7 +1017,7 @@
   }
 }
 
-/* ===== Scorecard, CricHeroes style =====
+/* ===== Scorecard =====
    Selectors are doubled up (:root … table.cricket-table) to beat the admin's
    global table.css / dark.css rules, which use !important. */
 .cricket-innings {

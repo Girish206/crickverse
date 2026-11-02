@@ -219,7 +219,7 @@ export function MvpPointsTable() {
   return (
     <div className="cricket-mvp-guide">
       <p className="cricket-mvp-guide-lead">
-        MVP points are based on the CricHeroes method, with some changes of our own. Every run counts, and a wicket is worth
+        Every run counts, and a wicket is worth
         more in a longer match and for a higher batter. Tap any row to see how it works, with an example.
         {/* With pressure back on, add: The points below are normal values: they go up in a hard moment and down in an easy
             one (see How hard the moment is). */}

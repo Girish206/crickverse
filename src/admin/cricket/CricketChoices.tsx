@@ -42,7 +42,7 @@ export function ChipChoice<T extends string>({
   );
 }
 
-// The round ball pickers from the CricHeroes form.
+// The round ball pickers.
 export function BallTypeChoice({
   value,
   onChange,

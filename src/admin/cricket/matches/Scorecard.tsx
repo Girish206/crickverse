@@ -55,7 +55,7 @@ export function ScrollableOverBalls({ children, className = "" }: { children: Re
   );
 }
 
-// Per-innings scorecard in the CricHeroes style: a coloured bar with the
+// Per-innings scorecard: a coloured bar with the
 // team and score (tap to collapse), batters with how they got out under
 // their name, then extras, total, fall of wickets and the bowlers.
 export function Scorecard({ match, nameOf }: { match: CricketMatch; nameOf: NameOf }) {
