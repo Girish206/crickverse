@@ -3178,12 +3178,14 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
 }
 .cricket-mvp .cricket-pill-select,
 .cricket-overs-log .cricket-pill-select,
-.cricket-squads .cricket-pill-select {
+.cricket-squads .cricket-pill-select,
+.cricket-match-commentary .cricket-pill-select {
   margin-bottom: 8px !important;
 }
-/* The team picker on the Overs and MVP tabs sits on the right. */
+/* The team picker on the Overs, MVP and Commentary tabs sits on the right. */
 .cricket-mvp > .cricket-pill-select,
-.cricket-overs-log > .cricket-pill-select {
+.cricket-overs-log > .cricket-pill-select,
+.cricket-match-commentary > .cricket-pill-select {
   display: flex;
   width: fit-content;
   margin-left: auto;

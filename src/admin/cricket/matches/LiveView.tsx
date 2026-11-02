@@ -70,7 +70,7 @@ export function LiveView({ match, nameOf }: { match: CricketMatch; nameOf: NameO
       )}
 
       {/* Who's in, Cricbuzz style: Batter R B 4s 6s SR, then Bowler O M R W
-          ECO, on one grid so every column lines up. */}
+          ECO 0s NB WD, each on its own grid so its columns line up. */}
       <section className="cricket-crease is-table">
         <div className="cricket-crease-head">
           <span>Batter</span>
@@ -98,7 +98,7 @@ export function LiveView({ match, nameOf }: { match: CricketMatch; nameOf: NameO
           );
         })}
         {innings.bowlerId !== null && (
-          <>
+          <div className="cricket-crease-bowler">
             <div className="cricket-crease-head">
               <span>Bowler</span>
               <span>O</span>
@@ -106,6 +106,9 @@ export function LiveView({ match, nameOf }: { match: CricketMatch; nameOf: NameO
               <span>R</span>
               <span>W</span>
               <span>ECO</span>
+              <span>0s</span>
+              <span>NB</span>
+              <span>WD</span>
             </div>
             <div className="cricket-crease-row">
               <span className="cricket-crease-name">
@@ -116,8 +119,11 @@ export function LiveView({ match, nameOf }: { match: CricketMatch; nameOf: NameO
               <span>{bowlerRow?.runs ?? 0}</span>
               <span className="cricket-crease-main">{bowlerRow?.wickets ?? 0}</span>
               <span>{rate(bowlerRow?.runs ?? 0, bowlerRow?.legalBalls ?? 0, perOver)}</span>
+              <span>{bowlerRow?.dots ?? 0}</span>
+              <span>{bowlerRow?.noBalls ?? 0}</span>
+              <span>{bowlerRow?.wides ?? 0}</span>
             </div>
-          </>
+          </div>
         )}
       </section>
 

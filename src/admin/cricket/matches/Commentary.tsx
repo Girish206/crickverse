@@ -273,14 +273,28 @@ function noteRows(notes: Note[], key: string) {
 // in play. Once the chase is under way (its openers or bowler picked), the
 // end of the first innings carries on below it, after an innings-break line.
 // Each over opens with a card (bowler, runs, the score after it, its balls)
-// over its balls, with boundaries and wickets picked out.
-export function Commentary({ match, nameOf, legalBalls = 9 }: { match: CricketMatch; nameOf: NameOf; legalBalls?: number }) {
+// over its balls, with boundaries and wickets picked out. The Commentary tab
+// asks for every ball (`legalBalls` of Infinity), optionally only while one
+// side batted (`battingTeam`).
+export function Commentary({
+  match,
+  nameOf,
+  legalBalls = 9,
+  battingTeam = null,
+}: {
+  match: CricketMatch;
+  nameOf: NameOf;
+  legalBalls?: number;
+  battingTeam?: number | null;
+}) {
   const current = match.innings[match.innings.length - 1];
   if (!current) return null;
   const live = !current.closed && match.status === "live";
   const started =
     current.balls.length > 0 || (live && [current.strikerId, current.nonStrikerId, current.bowlerId].some((id) => id !== null));
-  const shown = started ? [...match.innings].reverse() : match.innings.slice(0, -1).reverse();
+  const shown = (started ? [...match.innings].reverse() : match.innings.slice(0, -1).reverse()).filter(
+    (innings) => battingTeam === null || innings.battingTeam === battingTeam,
+  );
   const blocks = shown.flatMap((innings) => {
     const block = inningsCommentary(match, innings, nameOf, legalBalls, innings === current && live);
     return block ? [{ innings, block }] : [];
@@ -292,12 +306,15 @@ export function Commentary({ match, nameOf, legalBalls = 9 }: { match: CricketMa
     <section className="cricket-commentary">
       <h2 className="cricket-section-title">
         <i className="fa-solid fa-microphone-lines" aria-hidden="true"></i> Commentary
-        {only && only !== current && <small> · {match.teams[only.battingTeam].name}&apos;s innings</small>}
+        {only && (only !== current || battingTeam !== null) && (
+          <small> · {match.teams[only.battingTeam].name}&apos;s innings</small>
+        )}
       </h2>
       {blocks.map(({ innings, block }, i) => {
         const summary = inningsSummary(innings, ballsPerOverOf(match));
         return (
-          <div key={innings.battingTeam} className="cricket-commentary-innings">
+          // A super over gives each side a second innings.
+          <div key={match.innings.indexOf(innings)} className="cricket-commentary-innings">
             {i > 0 && (
               <div className="cricket-commentary-break">
                 <span>

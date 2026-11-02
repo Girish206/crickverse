@@ -35,6 +35,7 @@ import { PotmPicker } from "./PotmPicker";
 import { MatchInfo } from "./MatchInfo";
 import { MatchInsights } from "./MatchInsights";
 import { LiveView } from "./LiveView";
+import { MatchCommentary } from "./MatchCommentary";
 import { MatchMvp } from "./MatchMvp";
 import { MatchSquads } from "./MatchSquads";
 import { RescheduleSheet } from "./RescheduleSheet";
@@ -50,13 +51,13 @@ import { Loader } from "../../components/Loader";
 import { SwipePanels } from "../../SwipePanels";
 import { MatchPlayerProfiles } from "../players/PlayerProfileSheet";
 
-type Tab = "info" | "live" | "scorecard" | "insights" | "overs" | "squads" | "mvp";
+type Tab = "info" | "live" | "scorecard" | "commentary" | "insights" | "overs" | "squads" | "mvp";
 
 const MATCH_TIPS: TipStep[] = [
   {
     target: "tabs",
     title: "Follow the match",
-    text: "Live has the score ball by ball; Scorecard, Insights, Overs and MVP fill in as it's played. Swipe the tabs to see them all.",
+    text: "Live has the score ball by ball; Scorecard, Commentary, Insights, Overs and MVP fill in as it's played. Swipe the tabs to see them all.",
   },
   {
     target: "match-settings",
@@ -144,6 +145,7 @@ export function CricketMatchPage() {
       { value: "info", label: "Info" },
       { value: "live", label: over ? "Summary" : "Live" },
       { value: "scorecard", label: "Scorecard" },
+      { value: "commentary", label: "Commentary" },
       { value: "insights", label: "Insights" },
       { value: "overs", label: "Overs" },
       { value: "squads", label: "Squads" },
@@ -648,6 +650,7 @@ export function CricketMatchPage() {
                       </div>
                     ))}
                   {tab === "scorecard" && <Scorecard match={match} nameOf={nameOf} />}
+                  {tab === "commentary" && <MatchCommentary match={match} nameOf={nameOf} />}
                   {tab === "insights" && <MatchInsights match={match} nameOf={nameOf} />}
                   {tab === "overs" && <BallByBall match={match} nameOf={nameOf} />}
                   {tab === "squads" && <MatchSquads match={match} tournament={tournament} nameOf={nameOf} />}

@@ -74,7 +74,10 @@ export function BowlerOversPopover({
                 <span>M</span>
                 <span>R</span>
                 <span>W</span>
-                <span>Econ</span>
+                <span>Eco</span>
+                <span>0s</span>
+                <span>NB</span>
+                <span>WD</span>
               </div>
               {rows.map((row) => {
                 const left = overLimit === null ? null : Math.max(0, overLimit - oversUsed(row.playerId));
@@ -96,6 +99,9 @@ export function BowlerOversPopover({
                     <span>{row.runs}</span>
                     <span>{row.wickets}</span>
                     <span>{rate(row.runs, row.legalBalls, perOver)}</span>
+                    <span>{row.dots}</span>
+                    <span>{row.noBalls}</span>
+                    <span>{row.wides}</span>
                   </div>
                 );
               })}

@@ -868,7 +868,7 @@ export const MVP_POINTS = {
 } as const;
 
 // By the match's overs per side: `upTo` is the longest match each row covers.
-const MVP_WICKET_VALUES = [
+export const MVP_WICKET_VALUES = [
   { upTo: 7, runsPerWicket: 12, maidensPerWicket: 1 },
   { upTo: 12, runsPerWicket: 14, maidensPerWicket: 2 },
   { upTo: 16, runsPerWicket: 16, maidensPerWicket: 2 },

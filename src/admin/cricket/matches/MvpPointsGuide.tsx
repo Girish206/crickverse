@@ -1,11 +1,25 @@
 import { useState } from "react";
 import { BottomSheet } from "../BottomSheet";
-import { MVP_POINTS, mvpRules, wicketPoints } from "../stats";
+import { MVP_POINTS, MVP_WICKET_VALUES, mvpRules, wicketPoints } from "../stats";
 
 // Wicket values change with the match's length, so the guide shows a T20's.
 const T20 = mvpRules({ matchType: "limited-overs", overs: 20 });
 const shown = (n: number) => `+${Number(n.toFixed(2))}`;
 const haul = (wickets: number) => MVP_POINTS.hauls.find((tier) => tier.wickets === wickets)?.points ?? 0;
+// One row of "By match length": a top-order wicket, maidens to a wicket, pace bonus.
+const lengthRow = (label: string, rules: ReturnType<typeof mvpRules>) => ({
+  label,
+  icon: "fa-ruler",
+  note: `${Number(wicketPoints(rules).toFixed(2))} · ${rules.maidensPerWicket} · ${Math.round(rules.strikeRateBonus * 100)}%`,
+});
+const LENGTH_ROWS = [
+  ...MVP_WICKET_VALUES.map((row, i) => {
+    const from = i === 0 ? 1 : MVP_WICKET_VALUES[i - 1].upTo + 1;
+    const label = row.upTo === Infinity ? `${from}+ overs` : `${from} to ${row.upTo} overs`;
+    return lengthRow(label, mvpRules({ matchType: "limited-overs", overs: row.upTo }));
+  }),
+  lengthRow("Test match", mvpRules({ matchType: "test", overs: 90 })),
+];
 
 // What each thing a player does is worth, grouped the way the MVP rows
 // split their points. `points` is left out where it depends on the match.
@@ -21,7 +35,13 @@ const GROUPS: {
     icon: "fa-baseball-bat-ball",
     items: [
       { label: `Every ${MVP_POINTS.runsPerPoint} runs`, icon: "fa-person-running", points: "+1" },
-      { label: "Scoring as fast as the team or faster", icon: "fa-gauge-high", note: "Bonus" },
+      { label: "Four, counted as 4 runs (no extra)", icon: "fa-4", points: shown(4 / MVP_POINTS.runsPerPoint) },
+      { label: "Six, counted as 6 runs (no extra)", icon: "fa-6", points: shown(6 / MVP_POINTS.runsPerPoint) },
+      {
+        label: "Scoring as fast as the team or faster",
+        icon: "fa-gauge-high",
+        note: `Run points × their rate ÷ team's × ${T20.strikeRateBonus * 100}%`,
+      },
     ],
   },
   {
@@ -36,7 +56,11 @@ const GROUPS: {
       { label: "5 wickets in an innings", icon: "fa-layer-group", points: shown(haul(5)) },
       { label: "10 wickets in an innings", icon: "fa-layer-group", points: shown(haul(10)) },
       { label: "Maiden over", icon: "fa-circle", points: shown(wicketPoints(T20) / T20.maidensPerWicket) },
-      { label: "Conceding as slowly as the team or slower", icon: "fa-gauge-high", note: "Bonus" },
+      {
+        label: "Conceding no faster than the team",
+        icon: "fa-gauge-high",
+        note: `Team's rate ÷ theirs × ${T20.strikeRateBonus * 100}%`,
+      },
     ],
   },
   {
@@ -48,6 +72,12 @@ const GROUPS: {
       { label: "Direct-hit run-out", icon: "fa-bolt", note: "The whole wicket" },
       { label: "Run-out by two fielders", icon: "fa-people-arrows", note: "Half each" },
     ],
+  },
+  {
+    title: "By match length: wicket pts · maidens to a wicket · pace %",
+    tone: "is-bowling",
+    icon: "fa-ruler",
+    items: LENGTH_ROWS,
   },
 ];
 
@@ -87,11 +117,6 @@ export function MvpPointsTable() {
         </section>
       ))}
       <ul className="cricket-mvp-guide-notes">
-        <li>
-          <i className="fa-solid fa-ruler" aria-hidden="true"></i>
-          An opener's wicket is worth 12 runs in a match of up to 7 overs, rising to 27 in a 51 to 99 over match, and 25 in
-          a Test. In a T20 it's 18.
-        </li>
         <li>
           <i className="fa-solid fa-medal" aria-hidden="true"></i>
           Player of the match is the winning side's best if they're in the top three on MVP points, otherwise the top
