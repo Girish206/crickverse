@@ -44,8 +44,9 @@ function HeroFigures({ row, perOver }: { row: ImpactRow; perOver: number }) {
   );
 }
 
-// Player of the match (top MVP points, see matchImpact in stats.ts) and best
-// batter / bowler / fielder by their figures. The full ranking is the MVP tab.
+// Player and fighter of the match (by MVP points, see matchImpact in stats.ts)
+// and best batter / bowler / fielder by their figures. The full ranking is the
+// MVP tab.
 export function MatchAwards({ match, nameOf }: { match: CricketMatch; nameOf: NameOf }) {
   const photoOf = usePlayerPhotos();
   const awards = matchAwards(match);
@@ -67,6 +68,13 @@ export function MatchAwards({ match, nameOf }: { match: CricketMatch; nameOf: Na
       : !finished
         ? [{ title: "MVP so far", icon: "fa-star", row: awards.rows[0], score: (row: ImpactRow) => row.total, featured: true }]
         : []),
+    {
+      title: "Fighter of the match",
+      icon: "fa-shield-halved",
+      row: awards.fighterOfMatch,
+      score: (row) => row.total,
+      note: "Best from the losing side",
+    },
     { title: "Best batter", icon: "fa-baseball-bat-ball", row: awards.bestBatter, score: (row) => row.batting },
     { title: "Best bowler", icon: "fa-baseball", row: awards.bestBowler, score: (row) => row.bowling },
     { title: "Best fielder", icon: "fa-hands", row: awards.bestFielder, score: (row) => row.fielding },

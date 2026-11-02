@@ -31,6 +31,7 @@ import { ScrollableOverBalls } from "./Scorecard";
 import { usePlayerPhotos } from "./matchUtils";
 import { ShotGround, shotZoneAt } from "./ShotMap";
 import { AddPlayerSheet } from "./scorer/AddPlayerSheet";
+import { BowlerOversPopover } from "./scorer/BowlerOversPopover";
 import { CorrectBallSheet } from "./scorer/CorrectBallSheet";
 import { EndChaseSheet } from "./scorer/EndChaseSheet";
 import { PenaltySheet } from "./scorer/PenaltySheet";
@@ -485,6 +486,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   const showOver = !overJustEnded || (overEndPending && overPromptSeen === overKey) ? thisOver : undefined;
   const [prevOversOpen, setPrevOversOpen] = useState(false);
   const [prevOversClosing, setPrevOversClosing] = useState(false);
+  const [bowlersOpen, setBowlersOpen] = useState(false);
   const [ballsOverflow, setBallsOverflow] = useState({ left: false, right: false });
 
   function closePrevOvers() {
@@ -1066,6 +1068,15 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
                   })()}
                 </span>
               </button>
+              <button
+                type="button"
+                className="cricket-prev-overs-trigger-btn"
+                onClick={() => setBowlersOpen(true)}
+                title="View overs bowled by each bowler"
+              >
+                <i className="fa-solid fa-baseball" aria-hidden="true"></i>
+                <span>Bowlers{bowling.length > 0 ? ` (${bowling.length})` : ""}</span>
+              </button>
             </div>
           </div>
 
@@ -1304,6 +1315,18 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
             document.body,
           );
         })()}
+
+      {bowlersOpen && (
+        <BowlerOversPopover
+          rows={bowling}
+          currentBowlerId={innings.bowlerId}
+          perOver={perOver}
+          overLimit={overLimit}
+          oversUsed={(bowlerId) => oversBowled(innings, bowlerId, perOver)}
+          nameOf={nameOf}
+          onClose={() => setBowlersOpen(false)}
+        />
+      )}
 
       {/* Fixed to the bottom of the screen on phones. */}
       <div className="cricket-scorer-dock" ref={dockRef}>

@@ -849,18 +849,52 @@ export function tournamentStats(matches: CricketMatch[]): TournamentStats {
 }
 
 // ===== MVP points =====
-// The IPL's Most Valuable Player tally: points for the moments that swing a
-// game, the same for every match. Player of the match (unless the organiser
-// picks one) and the MVP tables come from these; best batter / bowler /
-// fielder go by their figures (see matchAwards).
+// CricHeroes' Most Valuable Player method, as it stands after its published
+// updates (no par-score bonus, no strike-rate penalties): every run counts,
+// and a wicket is worth more in a longer match and for a higher batter.
+// Player of the match (unless the organiser picks one) and the MVP tables
+// come from these; best batter / bowler / fielder go by their figures (see
+// matchAwards).
 export const MVP_POINTS = {
-  four: 2.5,
-  six: 3.5,
-  wicket: 3.5,
-  dot: 1,
-  catch: 2.5,
-  stumping: 2.5,
+  runsPerPoint: 10,
+  // On top of the bowler's full points for a catch or stumping.
+  fielderShare: 0.2,
+  // Best haul in an innings, biggest first.
+  hauls: [
+    { wickets: 10, points: 1.5 },
+    { wickets: 5, points: 1 },
+    { wickets: 3, points: 0.5 },
+  ],
 } as const;
+
+// By the match's overs per side: `upTo` is the longest match each row covers.
+const MVP_WICKET_VALUES = [
+  { upTo: 7, runsPerWicket: 12, maidensPerWicket: 1 },
+  { upTo: 12, runsPerWicket: 14, maidensPerWicket: 2 },
+  { upTo: 16, runsPerWicket: 16, maidensPerWicket: 2 },
+  { upTo: 20, runsPerWicket: 18, maidensPerWicket: 2 },
+  { upTo: 26, runsPerWicket: 20, maidensPerWicket: 2 },
+  { upTo: 40, runsPerWicket: 22, maidensPerWicket: 3 },
+  { upTo: 50, runsPerWicket: 25, maidensPerWicket: 3 },
+  { upTo: Infinity, runsPerWicket: 27, maidensPerWicket: 6 },
+];
+
+type MvpMatchLength = Pick<CricketMatch, "matchType" | "overs"> & { scheduledOvers?: number | null };
+
+export function mvpRules(match: MvpMatchLength) {
+  if (match.matchType === "test") return { runsPerWicket: 25, maidensPerWicket: 6, strikeRateBonus: 0.02 };
+  // A rain-cut match keeps the value of the match it set out to be.
+  const overs = match.scheduledOvers ?? match.overs;
+  const { runsPerWicket, maidensPerWicket } = MVP_WICKET_VALUES.find((row) => overs <= row.upTo)!;
+  const strikeRateBonus = overs <= 20 ? 0.08 : overs <= 35 ? 0.06 : overs <= 50 ? 0.04 : 0.02;
+  return { runsPerWicket, maidensPerWicket, strikeRateBonus };
+}
+
+// Points for dismissing the batter at `position` (1 = opener).
+export function wicketPoints(rules: ReturnType<typeof mvpRules>, position = 1) {
+  const strength = position <= 4 ? 1 : position <= 8 ? 0.8 : 0.6;
+  return (rules.runsPerWicket * strength) / MVP_POINTS.runsPerPoint;
+}
 
 export interface ImpactRow {
   playerId: number;
@@ -877,9 +911,11 @@ export interface ImpactRow {
   runOuts: number;
 }
 
-const round1 = (n: number) => Math.round(n * 10) / 10;
+const round2 = (n: number) => Math.round(n * 100) / 100;
 
 export function matchImpact(match: CricketMatch): ImpactRow[] {
+  const rules = mvpRules(match);
+  const perOver = ballsPerOverOf(match);
   const rows = new Map<number, ImpactRow>();
   const of = (playerId: number) => {
     let row = rows.get(playerId);
@@ -904,10 +940,18 @@ export function matchImpact(match: CricketMatch): ImpactRow[] {
   match.teams.forEach((team) => team.playerIds.forEach(of));
 
   for (const innings of match.innings) {
-    for (const card of battingCard(innings)) {
+    const total = inningsSummary(innings, perOver);
+    const teamRate = total.legalBalls > 0 ? total.runs / total.legalBalls : 0;
+    const battingOrder = battingCard(innings);
+
+    for (const card of battingOrder) {
       const row = of(card.playerId);
       const out = card.outBall !== null && isWicket(card.outBall);
-      row.batting += card.fours * MVP_POINTS.four + card.sixes * MVP_POINTS.six;
+      const base = card.runs / MVP_POINTS.runsPerPoint;
+      const batRate = card.balls > 0 ? card.runs / card.balls : 0;
+      // A bonus for keeping up with the team; no penalty for falling behind.
+      const paceBonus = teamRate > 0 && batRate >= teamRate ? (batRate / teamRate) * rules.strikeRateBonus * base : 0;
+      row.batting += base + paceBonus;
       const bat = row.bat ?? { runs: 0, balls: 0, fours: 0, sixes: 0, out: false };
       row.bat = {
         runs: bat.runs + card.runs,
@@ -918,9 +962,14 @@ export function matchImpact(match: CricketMatch): ImpactRow[] {
       };
     }
 
-    for (const card of bowlingCard(innings)) {
+    for (const card of bowlingCard(innings, perOver)) {
       const row = of(card.playerId);
-      row.bowling += card.wickets * MVP_POINTS.wicket + card.dots * MVP_POINTS.dot;
+      const haul = MVP_POINTS.hauls.find((tier) => card.wickets >= tier.wickets)?.points ?? 0;
+      const bowlRate = card.legalBalls > 0 ? card.runs / card.legalBalls : 0;
+      // Nothing conceded has no rate to compare: maidens reward that instead.
+      const paceBonus = bowlRate > 0 && bowlRate <= teamRate ? (teamRate / bowlRate) * rules.strikeRateBonus : 0;
+      const maidenBonus = (card.maidens * wicketPoints(rules)) / rules.maidensPerWicket;
+      row.bowling += haul + paceBonus + maidenBonus;
       const bowl = row.bowl ?? { wickets: 0, runs: 0, legalBalls: 0, maidens: 0, dots: 0 };
       row.bowl = {
         wickets: bowl.wickets + card.wickets,
@@ -931,29 +980,41 @@ export function matchImpact(match: CricketMatch): ImpactRow[] {
       };
     }
 
-    // Run-outs are counted for the scorecard but, as in the IPL tally,
-    // earn no points.
     for (const ball of innings.balls) {
+      const dismissed = ball.dismissedId ?? ball.batterId;
+      const position = battingOrder.findIndex((card) => card.playerId === dismissed) + 1;
+      const value = wicketPoints(rules, position);
+      const mankad = ball.wicketType === "run-out" && ball.noDelivery;
+      if (creditsBowler(ball) || mankad) of(ball.bowlerId).bowling += value;
+
       if (ball.fielderId === null) continue;
       const fielder = of(ball.fielderId);
       if (isCatch(ball)) {
         fielder.catches += 1;
-        fielder.fielding += MVP_POINTS.catch;
+        fielder.fielding += value * MVP_POINTS.fielderShare;
       } else if (ball.wicketType === "stumped") {
         fielder.stumpings += 1;
-        fielder.fielding += MVP_POINTS.stumping;
+        fielder.fielding += value * MVP_POINTS.fielderShare;
       } else if (ball.wicketType === "run-out") {
         fielder.runOuts += 1;
-        if (ball.secondFielderId) of(ball.secondFielderId).runOuts += 1;
+        if (ball.secondFielderId) {
+          // Two fielders split the wicket.
+          const second = of(ball.secondFielderId);
+          second.runOuts += 1;
+          second.fielding += value / 2;
+          fielder.fielding += value / 2;
+        } else if (!mankad) {
+          fielder.fielding += value;
+        }
       }
     }
   }
 
   for (const row of rows.values()) {
-    row.batting = round1(row.batting);
-    row.bowling = round1(row.bowling);
-    row.fielding = round1(row.fielding);
-    row.total = round1(row.batting + row.bowling + row.fielding);
+    row.batting = round2(row.batting);
+    row.bowling = round2(row.bowling);
+    row.fielding = round2(row.fielding);
+    row.total = round2(row.batting + row.bowling + row.fielding);
   }
   // Best first; level on points goes to the winning side, then more runs
   // and wickets.
@@ -977,6 +1038,8 @@ export interface MatchAwards {
   playerOfMatch: ImpactRow | null;
   // True when it's the top impact score rather than the admin's pick.
   autoPicked: boolean;
+  // The losing side's best, if in the top three and not player of the match.
+  fighterOfMatch: ImpactRow | null;
   bestBatter: ImpactRow | null;
   bestBowler: ImpactRow | null;
   bestFielder: ImpactRow | null;
@@ -991,12 +1054,13 @@ function topBy(rows: ImpactRow[], score: (row: ImpactRow) => number, tie: (row: 
   return best;
 }
 
-// Automatic Player of the Match: top impact score from the winning team (or top overall if tied / no result).
+// Automatic Player of the Match: the winning side's best if they're in the top
+// three on MVP points, else the top scorer overall, whichever side they're on.
 export function autoPlayerOfMatch(match: CricketMatch, rows?: ImpactRow[]): ImpactRow | null {
   if (match.status !== "completed") return null;
   const list = (rows ?? matchImpact(match)).filter(tookPart);
   if (match.winner !== null) {
-    const winning = list.find((row) => row.team === match.winner);
+    const winning = list.slice(0, 3).find((row) => row.team === match.winner);
     if (winning) return winning;
   }
   return list[0] ?? null;
@@ -1007,10 +1071,16 @@ export function matchAwards(match: CricketMatch): MatchAwards {
   const rows = everyone.filter(tookPart);
   const picked = everyone.find((row) => row.playerId === match.playerOfMatchId);
   const auto = autoPlayerOfMatch(match, rows);
+  const playerOfMatch = picked ?? auto;
+  const fighter =
+    match.status === "completed" && match.winner !== null
+      ? rows.slice(0, 3).find((row) => row.team !== match.winner)
+      : undefined;
   return {
     rows,
-    playerOfMatch: picked ?? auto,
+    playerOfMatch,
     autoPicked: !picked && auto !== null,
+    fighterOfMatch: fighter && fighter.playerId !== playerOfMatch?.playerId ? fighter : null,
     // Most runs (quicker breaks a tie); most wickets (cheaper breaks a tie).
     bestBatter: topBy(
       rows.filter((row) => row.bat && row.bat.runs > 0),
@@ -1030,7 +1100,7 @@ export function matchAwards(match: CricketMatch): MatchAwards {
   };
 }
 
-// The admin's pick, else (once the match is over) the top impact score from the winning team.
+// The admin's pick, else (once the match is over) the automatic one above.
 export function playerOfMatch(match: CricketMatch): number | null {
   if (match.playerOfMatchId !== null) return match.playerOfMatchId;
   return autoPlayerOfMatch(match)?.playerId ?? null;

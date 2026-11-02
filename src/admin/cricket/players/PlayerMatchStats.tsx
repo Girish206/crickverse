@@ -28,6 +28,7 @@ export function PlayerMatchStats({ player, match }: { player: CricketPlayer; mat
   const rank = row ? awards.rows.indexOf(row) + 1 : null;
   const badges = [
     awards.playerOfMatch?.playerId === player.id && match.status === "completed" && "Player of the Match",
+    awards.fighterOfMatch?.playerId === player.id && "Fighter of the Match",
     awards.bestBatter?.playerId === player.id && "Best Batter",
     awards.bestBowler?.playerId === player.id && "Best Bowler",
     awards.bestFielder?.playerId === player.id && "Best Fielder",
