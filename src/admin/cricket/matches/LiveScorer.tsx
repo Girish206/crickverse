@@ -31,7 +31,7 @@ import { ScrollableOverBalls } from "./Scorecard";
 import { usePlayerPhotos } from "./matchUtils";
 import { ShotGround, shotZoneAt } from "./ShotMap";
 import { AddPlayerSheet } from "./scorer/AddPlayerSheet";
-import { BowlerOversPopover } from "./scorer/BowlerOversPopover";
+import { BowlerOversTable } from "./scorer/BowlerOversTable";
 import { CorrectBallSheet } from "./scorer/CorrectBallSheet";
 import { EndChaseSheet } from "./scorer/EndChaseSheet";
 import { PenaltySheet } from "./scorer/PenaltySheet";
@@ -154,6 +154,9 @@ type Delivery = (typeof DELIVERIES)[number]["value"];
 
 // Overs a bowler has had a part in (as the server counts them against a
 // bowler's limit).
+// How many overs the bowlers & overs sheet starts with.
+const LAST_OVERS_SHOWN = 3;
+
 function oversBowled(innings: CricketInnings, bowlerId: number, perOver: number) {
   const overs = new Set<number>();
   let legal = 0;
@@ -486,7 +489,8 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   const showOver = !overJustEnded || (overEndPending && overPromptSeen === overKey) ? thisOver : undefined;
   const [prevOversOpen, setPrevOversOpen] = useState(false);
   const [prevOversClosing, setPrevOversClosing] = useState(false);
-  const [bowlersOpen, setBowlersOpen] = useState(false);
+  // The sheet shows the last few overs until asked for them all.
+  const [allOversShown, setAllOversShown] = useState(false);
   const [ballsOverflow, setBallsOverflow] = useState({ left: false, right: false });
 
   function closePrevOvers() {
@@ -556,7 +560,20 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   // Undo is offered right where the next player is chosen too — e.g. to
   // take back the last ball of an over before picking the new bowler.
   const canUndo = innings.balls.length + (match.innings.length - 1) > 0;
-  function undo() {
+  async function undo() {
+    // With no ball bowled in the chase there's no ball to take back: this
+    // drops the second innings and reopens the first, so it asks first.
+    if (
+      innings.balls.length === 0 &&
+      !(await confirmAction(
+        "Go back to the 1st innings?",
+        "The 1st innings reopens with its score as it is, and this chase's target and players are cleared.",
+        "Go back",
+        "fa-solid fa-rotate-left",
+      ))
+    ) {
+      return;
+    }
     setPickerFor(null);
     setOverPromptSeen(null);
     // A wicket recorded again on the same ball asks for the batter again.
@@ -798,7 +815,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   return (
     // .is-fit: on phones and tablets, the scorer fills the screen in two
     // halves (see cricket.css) — except while players are being picked.
-    <div className={`cricket-scorer${needsPlayers ? "" : " is-fit"}`}>
+    <div className={`cricket-scorer${needsPlayers ? "" : " is-fit"}${inningsBreak ? " is-break" : ""}`}>
       {/* Top half: score, chase and who's in. */}
       <div className="cricket-scorer-top">
       {inningsBreak && chase && (
@@ -814,14 +831,20 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
             <small>({firstInnings.overs} ov)</small>
           </p>
           <div className="cricket-break-target">
-            <small>Target</small>
+            <small>{match.teams[innings.battingTeam].name} need</small>
             <strong>{chase.target}</strong>
+            <small>run{chase.target === 1 ? "" : "s"} to win</small>
           </div>
-          <p className="cricket-break-need">
-            {match.teams[innings.battingTeam].name} need <strong>{chase.target}</strong> run{chase.target === 1 ? "" : "s"} from{" "}
-            <strong>{chase.ballsLeft}</strong> balls
-          </p>
-          <span className="cricket-break-rate">Required rate {chase.requiredRate}</span>
+          <div className="cricket-break-stats">
+            <span>
+              <strong>{oversText(chase.ballsLeft, perOver)}</strong>
+              <small>Overs</small>
+            </span>
+            <span>
+              <strong>{chase.requiredRate}</strong>
+              <small>Req. rate</small>
+            </span>
+          </div>
         </section>
       )}
       {!inningsBreak && (
@@ -831,9 +854,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
         <section className="cricket-panel cricket-pickers">
           <h2 className="cricket-section-title">
             {innings.balls.length === 0
-              ? inningsBreak
-                ? `${match.teams[innings.battingTeam].name} — openers and opening bowler`
-                : "Openers and opening bowler"
+              ? "Openers and opening bowler"
               : innings.bowlerId === null && !incomingDue
                 ? `End of over ${oversText(legal.length, perOver)} — choose the next bowler`
                 : "Next batter in"}
@@ -850,9 +871,13 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
                   className={`cricket-slot ${chosen !== null ? "is-chosen" : ""}`}
                   onClick={() => setPickerFor(slot)}
                 >
-                  <span className="cricket-slot-icon">
-                    <i className={`fa-solid ${icon}`} aria-hidden="true"></i>
-                  </span>
+                  {chosen !== null ? (
+                    <PlayerAvatar key={chosen} name={nameOf(chosen)} photoUrl={photoOf(chosen)} className="cricket-slot-photo" viewable={false} />
+                  ) : (
+                    <span className="cricket-slot-icon">
+                      <i className={`fa-solid ${icon}`} aria-hidden="true"></i>
+                    </span>
+                  )}
                   <span className="cricket-slot-text">
                     <small>{label}</small>
                     <strong>{chosen !== null ? nameOf(chosen) : `Choose ${label.toLowerCase()}`}</strong>
@@ -862,17 +887,6 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
               );
             })}
           </div>
-          {inningsBreak && (
-            <button
-              type="button"
-              className="btn btn-primary w-100"
-              onClick={() => savePlayers(picks)}
-              disabled={busy || emptySlots.some((slot) => picks[slot] === null)}
-            >
-              <i className="fa-solid fa-play me-2" aria-hidden="true"></i>
-              Start 2nd innings
-            </button>
-          )}
           {innings.strikerId === null && innings.nonStrikerId !== null && availableBatters.length === 0 && (
             <p className="admin-hint">No batters left — end the innings.</p>
           )}
@@ -881,7 +895,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
               <i className="fa-solid fa-stopwatch" aria-hidden="true"></i> Timed out or absent hurt?
             </button>
           )}
-          {canUndo && (
+          {canUndo && !inningsBreak && (
             <button type="button" className="cricket-undo-link" onClick={undo} disabled={busy}>
               <i className="fa-solid fa-rotate-left" aria-hidden="true"></i> Undo last ball
             </button>
@@ -1044,9 +1058,12 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
                 if (ext.legByes > 0) extParts.push(`${ext.legByes}lb`);
                 if (ext.penalty > 0) extParts.push(`${ext.penalty}p`);
                 return (
-                  <span className="cricket-crease-econ-badge" title="Innings extras">
+                  <span
+                    className="cricket-crease-econ-badge"
+                    title={`Innings extras${extParts.length > 0 ? `: ${extParts.join(", ")}` : ""}`}
+                  >
                     Extras {ext.total}
-                    {extParts.length > 0 ? ` (${extParts.join(", ")})` : ""}
+                    {extParts.length > 0 && <span className="cricket-crease-extras-detail"> ({extParts.join(", ")})</span>}
                   </span>
                 );
               })()}
@@ -1054,28 +1071,14 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
                 type="button"
                 className="cricket-prev-overs-trigger-btn"
                 onClick={() => {
+                  setAllOversShown(false);
                   setPrevOversClosing(false);
                   setPrevOversOpen(true);
                 }}
-                title="View previous overs history"
-              >
-                <i className="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
-                <span>
-                  Prev overs
-                  {(() => {
-                    const allOversCount = oversOf(innings, perOver).length;
-                    return allOversCount > 0 ? ` (${allOversCount})` : "";
-                  })()}
-                </span>
-              </button>
-              <button
-                type="button"
-                className="cricket-prev-overs-trigger-btn"
-                onClick={() => setBowlersOpen(true)}
-                title="View overs bowled by each bowler"
+                title="View the bowlers and the last overs"
               >
                 <i className="fa-solid fa-baseball" aria-hidden="true"></i>
-                <span>Bowlers{bowling.length > 0 ? ` (${bowling.length})` : ""}</span>
+                <span>Bowlers</span>
               </button>
             </div>
           </div>
@@ -1183,13 +1186,30 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
       )}
       </div>
 
+      {inningsBreak && (
+        <div className="cricket-action-bar cricket-break-actions">
+          <button type="button" className="cricket-sheet-undo" onClick={undo} disabled={busy}>
+            <i className="fa-solid fa-rotate-left" aria-hidden="true"></i> Back to 1st Inn
+          </button>
+          <button
+            type="button"
+            className="cricket-sheet-submit cricket-break-start"
+            onClick={() => savePlayers(picks)}
+            disabled={busy || emptySlots.some((slot) => picks[slot] === null)}
+          >
+            <i className="fa-solid fa-play" aria-hidden="true"></i> Start 2nd Inn
+          </button>
+        </div>
+      )}
+
       {!inningsBreak && (
       <>
-      {/* Animated Popover for Previous Overs History */}
+      {/* Animated popover: the bowlers, then the last overs. */}
       {prevOversOpen &&
         (() => {
           const allOvers = oversOf(innings, perOver);
           const reversedOvers = [...allOvers].reverse();
+          const shownOvers = allOversShown ? reversedOvers : reversedOvers.slice(0, LAST_OVERS_SHOWN);
 
           let cumR = 0;
           let cumW = 0;
@@ -1209,7 +1229,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
                 className={`cricket-popover-card${prevOversClosing ? " is-closing" : ""}`}
                 role="dialog"
                 aria-modal="true"
-                aria-label="Overs History"
+                aria-label="Bowlers"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="cricket-popover-handle-wrap" aria-hidden="true">
@@ -1217,8 +1237,8 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
                 </div>
                 <div className="cricket-popover-header">
                   <span className="cricket-prev-overs-title">
-                    <i className="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
-                    <span>Overs History ({allOvers.length})</span>
+                    <i className="fa-solid fa-baseball" aria-hidden="true"></i>
+                    <span>Bowlers ({bowling.length})</span>
                   </span>
                   <button
                     type="button"
@@ -1237,8 +1257,20 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
                       <span>No deliveries bowled in this innings yet.</span>
                     </div>
                   ) : (
+                    <>
+                    <BowlerOversTable
+                      rows={bowling}
+                      currentBowlerId={innings.bowlerId}
+                      perOver={perOver}
+                      overLimit={overLimit}
+                      oversUsed={(bowlerId) => oversBowled(innings, bowlerId, perOver)}
+                      nameOf={nameOf}
+                    />
+                    <h3 className="cricket-popover-section">
+                      {allOversShown || allOvers.length <= LAST_OVERS_SHOWN ? `Overs (${allOvers.length})` : `Last ${LAST_OVERS_SHOWN} overs`}
+                    </h3>
                     <div className="cricket-prev-overs-list">
-                      {reversedOvers.map((over) => {
+                      {shownOvers.map((over) => {
                         const overWkts = over.balls.filter(isWicket).length;
                         const scoreAtEnd = overScores.get(over.number)?.score;
                         const legalBalls = over.balls.filter(isLegal).length;
@@ -1308,6 +1340,13 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
                         );
                       })}
                     </div>
+                    {/* Tapping a ball corrects it, so the older ones stay in reach. */}
+                    {!allOversShown && allOvers.length > LAST_OVERS_SHOWN && (
+                      <button type="button" className="cricket-popover-more" onClick={() => setAllOversShown(true)}>
+                        Show all {allOvers.length} overs
+                      </button>
+                    )}
+                    </>
                   )}
                 </div>
               </div>
@@ -1316,25 +1355,24 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
           );
         })()}
 
-      {bowlersOpen && (
-        <BowlerOversPopover
-          rows={bowling}
-          currentBowlerId={innings.bowlerId}
-          perOver={perOver}
-          overLimit={overLimit}
-          oversUsed={(bowlerId) => oversBowled(innings, bowlerId, perOver)}
-          nameOf={nameOf}
-          onClose={() => setBowlersOpen(false)}
-        />
-      )}
-
       {/* Fixed to the bottom of the screen on phones. */}
       <div className="cricket-scorer-dock" ref={dockRef}>
-      <div className="cricket-this-over">
-        <span className="cricket-this-over-label">
-          <span>{overEndPending ? "Last" : "This"}</span>
-          <span>over</span>
-        </span>
+      {/* The next ball's a free hit: said here rather than on a line of its own, so
+          the pad keeps its height on a short screen. */}
+      <div className={`cricket-this-over${freeHit && !needsPlayers ? " is-free-hit" : ""}`}>
+        {freeHit && !needsPlayers ? (
+          <span className="cricket-this-over-label" role="status" title="Only a run-out gets the batter out">
+            <span>
+              <i className="fa-solid fa-bolt" aria-hidden="true"></i> Free
+            </span>
+            <span>hit</span>
+          </span>
+        ) : (
+          <span className="cricket-this-over-label">
+            <span>{overEndPending ? "Last" : "This"}</span>
+            <span>over</span>
+          </span>
+        )}
         <div
           className={`cricket-this-over-balls-wrap${ballsOverflow.left ? " has-left-shadow" : ""}${ballsOverflow.right ? " has-right-shadow" : ""}`}
         >
@@ -1395,12 +1433,6 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
               <i className="fa-solid fa-xmark" aria-hidden="true"></i>
             </button>
           </div>
-        </div>
-      )}
-
-      {freeHit && !needsPlayers && (
-        <div className="cricket-free-hit" role="status">
-          <i className="fa-solid fa-bolt" aria-hidden="true"></i> Free hit <small>only a run-out gets the batter out</small>
         </div>
       )}
 

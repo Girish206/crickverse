@@ -19,14 +19,14 @@ import "../admin/cricket/cricket.css";
 import { useSwipeTabs } from "../admin/useSwipeTabs";
 import { SwipePanels } from "../admin/SwipePanels";
 
-type Tab = "info" | "live" | "scorecard" | "commentary" | "insights" | "overs" | "squads" | "mvp";
+type Tab = "info" | "live" | "scorecard" | "commentary" | "insights" | "overs" | "squads" | "mvp" | "heroes";
 
 // What a signed-out visitor sees is the score; the rest is a reason to sign in.
-const LOCKED_TABS: ReadonlySet<Tab> = new Set(["commentary", "insights", "overs", "squads", "mvp"]);
+const LOCKED_TABS: ReadonlySet<Tab> = new Set(["commentary", "insights", "overs", "squads", "mvp", "heroes"]);
 
 // /matches/:id for someone signed out (a shared link to a public match):
 // the same tabs a signed-in follower sees on CricketMatchPage, read-only.
-// Info, Live and Scorecard are open; Commentary, Insights, Overs, Squads and MVP ask
+// Info, Live and Scorecard are open; Commentary, Insights, Overs, Squads, MVP and Heroes ask
 // them to sign in (LOCKED_TABS). While live it follows along every few
 // seconds (usePublicMatch).
 export function PublicMatchPage({ id }: { id: number }) {
@@ -86,6 +86,7 @@ function MatchView({ data: { match, tournament, players } }: { data: PublicMatch
         { value: "overs", label: "Overs" },
         { value: "squads", label: "Squads" },
         { value: "mvp", label: "MVP" },
+        { value: "heroes", label: "Heroes" },
       ];
   const fallback: Tab = upcoming ? "info" : "live";
   const requested = params.get("tab") as Tab | null;
@@ -182,7 +183,7 @@ function SignInToSee({ label, tab }: { label: string; tab: Tab }) {
     <div className="cv-pm-locked">
       <i className="fa-solid fa-lock cv-public-lock" aria-hidden="true"></i>
       <h2>Sign in to see {label}</h2>
-      <p>Full commentary, insights, ball-by-ball overs, squads and the MVP are for signed-in fans. It's free, and you'll come straight back here.</p>
+      <p>Full commentary, insights, ball-by-ball overs, squads, the MVP and heroes are for signed-in fans. It's free, and you'll come straight back here.</p>
       <Link to="/login" state={{ from }} className="cv-shell-btn is-primary">
         <i className="fa-solid fa-right-to-bracket" aria-hidden="true"></i> Sign in
       </Link>

@@ -25,10 +25,10 @@
   --adm-text-2: #d1d5db;
 
   /* Brand: the lighter maroon — the plain one is too dark to read on the
-     charcoal. Buttons and highlights use the night-sky maroon gradient. */
+     charcoal. Buttons and highlights use the night maroon gradient. */
   --primary: var(--brand-maroon-bright);
   --primary-rgb: var(--brand-maroon-bright-rgb);
-  --primary-gradient: var(--brand-gradient-sky-night);
+  --primary-gradient: var(--brand-gradient-maroon-night);
   --hero-gradient: linear-gradient(135deg, #781c22 0%, #521317 50%, #320c10 100%);
   --secondary: var(--brand-amber-bright);
 

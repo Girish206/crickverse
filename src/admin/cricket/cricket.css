@@ -1228,8 +1228,7 @@
     padding-right: 6px !important;
   }
   /* The Live tab's card hugs the scorer, leaving the pad as wide as it can be. */
-  .cricket-module .admin-card-body.cricket-live-body,
-  .cricket-module .admin-card-body.cricket-overs-body {
+  .cricket-module .admin-card-body.cricket-live-body {
     padding: 8px;
   }
 }
@@ -2323,6 +2322,13 @@
   opacity: 0.5;
 }
 
+/* Greyed out, not a faded maroon, until all three players are picked. */
+.cricket-break-start:disabled {
+  opacity: 1;
+  background: var(--border-color);
+  color: var(--muted-color);
+}
+
 /* End-of-over sheet: summary + Cancel / Start next over */
 .cricket-sheet-actions {
   display: grid;
@@ -3177,14 +3183,12 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
   background: rgba(255, 255, 255, 0.07);
 }
 .cricket-mvp .cricket-pill-select,
-.cricket-overs-log .cricket-pill-select,
 .cricket-squads .cricket-pill-select,
 .cricket-match-commentary .cricket-pill-select {
   margin-bottom: 8px !important;
 }
-/* The team picker on the Overs, MVP and Commentary tabs sits on the right. */
+/* The team picker on the MVP and Commentary tabs sits on the right. */
 .cricket-mvp > .cricket-pill-select,
-.cricket-overs-log > .cricket-pill-select,
 .cricket-match-commentary > .cricket-pill-select {
   display: flex;
   width: fit-content;
@@ -3370,6 +3374,102 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
   font-weight: 600;
   color: var(--theme-text-dark);
 }
+.cricket-mvp-guide-label small {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--muted-color);
+}
+/* A guide row: tap to open its explanation and example. */
+.cricket-mvp-guide-item {
+  flex: 1;
+  min-width: 0;
+}
+.cricket-mvp-guide-item summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+}
+.cricket-mvp-guide-item summary::-webkit-details-marker {
+  display: none;
+}
+.cricket-mvp-guide-chevron {
+  flex: none;
+  font-size: 0.65rem;
+  color: var(--muted-color);
+  transition: transform 0.15s ease;
+}
+.cricket-mvp-guide-item[open] .cricket-mvp-guide-chevron {
+  transform: rotate(180deg);
+}
+.cricket-mvp-guide-more {
+  margin-top: 8px;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--muted-color);
+}
+.cricket-mvp-guide-more p {
+  margin: 0;
+}
+.cricket-mvp-guide-example {
+  margin-top: 6px !important;
+  padding: 7px 10px;
+  border-radius: 8px;
+  background: rgba(var(--primary-rgb), 0.06);
+  color: var(--theme-text-dark);
+  white-space: pre-line;
+}
+.cricket-mvp-guide-intro {
+  margin: 0;
+  padding: 9px 12px;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--muted-color);
+}
+/* A player's points, tapped to see where they came from. */
+.cricket-mvp-points-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.cricket-mvp-points-btn small i {
+  font-size: 0.55rem;
+}
+.cricket-mvp-row {
+  cursor: pointer;
+}
+.cricket-mvp-row .cricket-mvp-points-btn {
+  min-width: 44px;
+  min-height: 44px;
+  justify-content: center;
+}
+.cricket-mvp-row .cricket-mvp-points-btn small {
+  white-space: nowrap;
+}
+.cricket-mvp-breakdown-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(var(--primary-rgb), 0.06);
+  font-weight: 700;
+  color: var(--theme-text-dark);
+}
+.cricket-mvp-breakdown-total small {
+  margin-left: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted-color);
+}
 .cricket-mvp-guide-group strong {
   font-size: 1.05rem;
   font-weight: 900;
@@ -3491,123 +3591,126 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
 }
 
 /* Overs */
+/* The Overs tab runs past the page's side gutter on phones and tablets, leaving
+   just enough edge for the cards' rounded corners. */
+@media (max-width: 769px) {
+  .cricket-overs-log {
+    margin-inline: calc(50% - 50vw);
+    padding-inline: 4px;
+  }
+}
+/* The Overs tab's three equal buttons: each side, and both. */
+.admin-segmented.cricket-tabs.cricket-overs-sides {
+  display: flex;
+  width: 100%;
+  margin-bottom: 8px;
+  overflow-x: visible;
+}
+.admin-segmented.cricket-tabs.cricket-overs-sides button {
+  flex: 1 1 0;
+  width: 0;
+  min-width: 0;
+  justify-content: center;
+  padding-inline: 8px;
+}
+.cricket-overs-sides button span {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* With both sides showing, each innings under its team and total. */
+.cricket-overs-innings + .cricket-overs-innings {
+  margin-top: 14px;
+}
+.cricket-overs-innings-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 2px 6px;
+  font-size: var(--fs-sm);
+  font-weight: 800;
+  color: var(--theme-text-dark);
+}
+.cricket-overs-innings-head span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cricket-overs-innings-head strong {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+.cricket-overs-innings-head small {
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  color: var(--muted-color);
+}
+/* The Overs tab: each over a row of three parts, the over (left) and its runs
+   (right) in a soft tint of the brand colour, framing its balls on a plain
+   middle so their colours stand out. */
 .cricket-over-cards {
   margin: 0;
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 .cricket-over-card {
   display: flex;
   align-items: stretch;
+  min-width: 0;
   border: 1px solid var(--border-color);
-  border-radius: 14px;
+  border-radius: 12px;
   background: var(--adm-surface, #fff);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   overflow: hidden;
 }
-:root[data-bs-theme="dark"] .cricket-over-card {
-  background: var(--adm-surface);
-  border-color: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-}
-/* Inside the Overs tab's card: each over a row of three parts — the over
-   (left) and its runs (right) in one tint, framing the balls in a lighter
-   middle — set apart from the card around it and kept short so more overs
-   fit. Both themes share the layout; only these colours change. */
-.cricket-overs-log {
-  --ov-row: #fbf7f6;
-  --ov-side: rgba(var(--primary-rgb), 0.07);
-  --ov-line: rgba(var(--primary-rgb), 0.14);
-  --ov-lift: 0 2px 8px -3px rgba(var(--primary-rgb), 0.16);
-  --ov-ink: var(--primary);
-  --ov-chip: #fff;
-  --ov-chip-line: rgba(var(--primary-rgb), 0.16);
-}
-:root[data-bs-theme="dark"] .cricket-overs-log {
-  --ov-row: rgba(255, 255, 255, 0.035);
-  --ov-side: rgba(255, 255, 255, 0.06);
-  --ov-line: rgba(255, 255, 255, 0.1);
-  --ov-lift: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --ov-ink: #fff;
-  --ov-chip: rgba(255, 255, 255, 0.07);
-  --ov-chip-line: rgba(255, 255, 255, 0.14);
-}
-.cricket-overs-log .cricket-over-cards {
-  gap: 6px;
-}
-.cricket-overs-log .cricket-over-card {
-  border-color: var(--ov-line);
-  border-radius: 12px;
-  background: var(--ov-row);
-  box-shadow: var(--ov-lift);
-}
-.cricket-overs-log .cricket-over-card-num,
-.cricket-overs-log .cricket-over-card-runs {
-  gap: 1px;
-  padding: 3px 4px;
-  background: var(--ov-side);
-  border-color: var(--ov-line);
-}
-.cricket-overs-log .cricket-over-card-num strong,
-.cricket-overs-log .cricket-over-card-runs strong {
-  font-weight: 800;
-  color: var(--ov-ink);
-}
-.cricket-overs-log .cricket-over-card-num small,
-.cricket-overs-log .cricket-over-card-runs small {
-  font-weight: 600;
-  color: var(--muted-color);
-}
-.cricket-overs-log .cricket-over-card-body {
-  gap: 3px;
-  padding: 5px 8px;
-}
-.cricket-overs-log .cricket-over-card-balls-wrap .cricket-this-over-balls {
-  padding: 0;
-  gap: 4px;
-}
-.cricket-overs-log .cricket-over-card .cricket-ball-chip {
-  min-width: 24px;
-  height: 24px;
-  font-size: 0.64rem;
-}
-/* Plain balls (dots, ones, twos): a clean chip with a soft ring. */
-.cricket-overs-log .cricket-ball-chip:not(.is-4, .is-6, .is-W, .is-wide, .is-no-ball) {
-  background: var(--ov-chip);
-  border-color: var(--ov-chip-line);
-}
-.cricket-overs-log .cricket-over-card .cricket-ball-slot-empty {
-  width: 22px;
-  height: 22px;
-}
 .cricket-over-card.is-incomplete {
-  border-color: rgba(var(--primary-rgb), 0.35);
-  border-left: 3.5px solid var(--primary);
+  border-left: 3px solid var(--primary);
 }
 .cricket-over-card.is-live-over {
-  border-color: rgba(var(--brand-crimson-rgb, 201, 68, 59), 0.45);
-  border-left: 3.5px solid var(--brand-crimson, #c9443b);
-  box-shadow: 0 4px 14px -2px rgba(var(--primary-rgb), 0.16);
+  border-left: 3px solid var(--brand-crimson, #c9443b);
 }
-.cricket-over-card-num {
+.cricket-over-card-num,
+.cricket-over-card-runs {
   flex: none;
-  width: 58px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 1px;
-  padding: 6px 4px;
-  border-right: 1px solid var(--border-color);
+  padding: 3px 4px;
+  background: rgba(var(--primary-rgb), 0.15);
   font-size: var(--fs-sm);
   line-height: 1.15;
-  color: var(--theme-text-dark);
+  color: var(--primary);
 }
-.cricket-over-card-num small {
+:root[data-bs-theme="dark"] .cricket-over-card-num,
+:root[data-bs-theme="dark"] .cricket-over-card-runs {
+  background: rgba(255, 255, 255, 0.09);
+  color: #fff;
+}
+.cricket-over-card-num {
+  width: 58px;
+}
+.cricket-over-card-runs {
+  width: 48px;
+}
+.cricket-over-card-num strong,
+.cricket-over-card-runs strong {
+  font-weight: 800;
+}
+.cricket-over-card-runs strong {
+  font-size: var(--fs-base);
+}
+.cricket-over-card-num small,
+.cricket-over-card-runs small {
   font-size: var(--fs-2xs);
-  color: var(--muted-color);
+  font-weight: 600;
+  color: var(--theme-text-dark);
 }
 .cricket-over-card-sub-badge {
   margin-top: 2px;
@@ -3615,13 +3718,13 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
   border-radius: 999px;
   font-size: 0.54rem;
   font-weight: 800;
-  background: rgba(var(--primary-rgb), 0.1);
+  background: var(--adm-surface, #fff);
   color: var(--primary);
   white-space: nowrap;
 }
-.cricket-over-card-sub-badge.is-live {
-  background: rgba(220, 38, 38, 0.12);
-  color: #dc2626;
+:root[data-bs-theme="dark"] .cricket-over-card-sub-badge {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
 }
 .cricket-over-card-body {
   flex: 1;
@@ -3629,8 +3732,8 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 5px;
-  padding: 7px 10px;
+  gap: 3px;
+  padding: 5px 8px;
 }
 .cricket-over-card-top {
   display: flex;
@@ -3640,13 +3743,13 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
   min-width: 0;
 }
 .cricket-over-card-who {
+  flex: 1;
+  min-width: 0;
   font-size: var(--fs-xs);
   color: var(--muted-color);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  flex: 1;
-  min-width: 0;
 }
 .cricket-over-incomplete-badge {
   flex-shrink: 0;
@@ -3680,42 +3783,36 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
   background: currentColor;
   animation: cricket-th-pulse 1.2s ease-in-out infinite;
 }
+/* The balls, with an unfinished over's label beside them, so the names above
+   get the whole line. */
+.cricket-over-card-balls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+}
+.cricket-over-card-balls-wrap {
+  flex: 1;
+  min-width: 0;
+}
 .cricket-over-card-balls-wrap .cricket-this-over-balls {
-  padding: 2px 0;
-  gap: 5px;
+  padding: 0;
+  gap: 4px;
 }
 .cricket-over-card .cricket-ball-chip {
-  min-width: 26px;
-  height: 26px;
+  min-width: 24px;
+  height: 24px;
   padding: 0 5px;
   border-radius: 50%;
-  font-size: 0.68rem;
+  font-size: 0.64rem;
   font-weight: 800;
   flex-shrink: 0;
 }
 .cricket-over-card .cricket-ball-slot-empty {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   flex-shrink: 0;
-}
-.cricket-over-card-runs {
-  flex: none;
-  width: 48px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  line-height: 1.15;
-  background: rgba(var(--primary-rgb), 0.06);
-  border-left: 1px solid var(--border-color);
-  color: var(--theme-text-dark);
-}
-.cricket-over-card-runs strong {
-  font-size: var(--fs-base);
-}
-.cricket-over-card-runs small {
-  font-size: var(--fs-3xs);
-  color: var(--muted-color);
 }
 
 /* Tighter match screens: tabs, info, awards, recent overs */
@@ -4003,6 +4100,38 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
 }
 .cricket-award-grid::-webkit-scrollbar {
   display: none;
+}
+/* The Heroes tab: the same cards as the Summary tab's row, one below the other
+   at full width. The photo keeps the same proportions (210 tall by 300 wide),
+   up to a height that still fits on a wide screen. */
+.cricket-heroes-grid {
+  container-type: inline-size;
+  grid-auto-flow: row;
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-columns: auto;
+  overflow-x: visible;
+  scroll-snap-type: none;
+}
+.cricket-heroes-grid .cricket-award-photo {
+  height: min(70cqw, 380px);
+}
+/* The signed-in player's own row on a leaderboard. */
+.cricket-board-list li.is-me,
+.cricket-stats .cricket-board-list li.is-me {
+  background: rgba(var(--primary-rgb), 0.12);
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+.cricket-board-you {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.4;
+  vertical-align: middle;
 }
 .cricket-award {
   display: flex;
@@ -7346,6 +7475,243 @@ tbody tr:first-child .cricket-standings-rank {
 }
 .cricket-leaderboard-filters .cricket-pill-select {
   max-width: 100%;
+}
+
+/* Leaderboard: the MVP board's help and compare buttons, ticking players to
+   compare (the bar stays in reach, above the phone tab bar), and the sheet
+   setting them side by side. */
+.cricket-mvp-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.cricket-mvp-help-btn.is-active,
+.cricket-mvp-help-btn.is-active:hover {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.cricket-mvp-help-btn:disabled {
+  opacity: 0.5;
+}
+.cricket-compare-check {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(var(--primary-rgb), 0.35);
+  border-radius: 50%;
+  font-size: 0.7rem;
+  color: #fff;
+}
+.cricket-board-list li.is-picked .cricket-compare-check {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.cricket-stats .cricket-board-list li.is-picked {
+  background: rgba(var(--primary-rgb), 0.08);
+}
+.cricket-board-list li.is-unpickable {
+  opacity: 0.5;
+}
+.cricket-board-list li.is-unpickable .cricket-board-row {
+  cursor: not-allowed;
+}
+.cricket-compare-bar {
+  position: sticky;
+  bottom: 8px;
+  transition: bottom 0.25s ease;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  /* A little wider than the list it floats over. */
+  margin: 10px -8px 0;
+  padding: 8px 10px;
+  border: 1px solid rgba(var(--primary-rgb), 0.25);
+  border-radius: 14px;
+  background: var(--bs-body-bg, #fff);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--theme-text-dark);
+}
+.cricket-compare-bar > span {
+  flex: 1;
+  min-width: 0;
+}
+.cricket-compare-bar small {
+  display: block;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--muted-color);
+}
+.cricket-compare-cancel {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(var(--primary-rgb), 0.08);
+  color: var(--primary);
+}
+/* Clears the phone tab bar only while it's showing: it slides away on
+   scrolling down, and sub-pages don't have one. */
+@media (max-width: 769px) {
+  .layout-wrapper:has(.cv-bottom-nav:not(.is-hidden)) .cricket-compare-bar {
+    bottom: calc(70px + env(safe-area-inset-bottom));
+  }
+}
+.cricket-mvp-compare {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--fs-sm);
+}
+/* :root table: past the app's own table styling (pink, uppercase headers). */
+:root table.cricket-mvp-compare th,
+:root table.cricket-mvp-compare td {
+  padding: 8px 6px !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  background: transparent !important;
+  overflow-wrap: anywhere;
+  text-transform: none;
+  letter-spacing: 0;
+}
+:root table.cricket-mvp-compare td {
+  text-align: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--theme-text-dark) !important;
+}
+.cricket-mvp-compare td small {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--muted-color);
+}
+:root table.cricket-mvp-compare tbody th {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--muted-color) !important;
+}
+/* -10px: the sheet body's own top padding, so nothing shows above the names. */
+:root table.cricket-mvp-compare thead th {
+  position: sticky;
+  top: -10px;
+  z-index: 1;
+  padding-block: 12px 10px !important;
+  /* Opaque, as rows scroll under it. */
+  background: color-mix(in srgb, var(--primary) 7%, var(--bs-body-bg, #fff)) !important;
+  border-bottom: 2px solid rgba(var(--primary-rgb), 0.3) !important;
+  vertical-align: top !important;
+  text-align: center;
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  color: var(--theme-text-dark) !important;
+}
+:root table.cricket-mvp-compare thead .cricket-board-avatar {
+  width: 40px;
+  height: 40px;
+}
+/* Up to two lines, so a long name can't push the row taller. */
+.cricket-mvp-compare-name {
+  display: -webkit-box;
+  margin-top: 8px;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+:root table.cricket-mvp-compare .is-total th,
+:root table.cricket-mvp-compare .is-total td {
+  font-weight: 900;
+  color: var(--theme-text-dark) !important;
+}
+:root table.cricket-mvp-compare .is-total td {
+  font-size: var(--fs-md);
+}
+.cricket-mvp-compare .is-batting {
+  --guide-rgb: var(--brand-orange-rgb);
+}
+.cricket-mvp-compare .is-bowling {
+  --guide-rgb: var(--brand-navy-rgb);
+}
+.cricket-mvp-compare .is-fielding {
+  --guide-rgb: 22, 163, 74;
+}
+/* Batting, Bowling, Fielding: a band opening each section, the rows under it
+   indented and smaller. */
+:root table.cricket-mvp-compare .is-group th,
+:root table.cricket-mvp-compare .is-group td {
+  padding-block: 11px !important;
+  border-top: 3px solid rgb(var(--guide-rgb)) !important;
+  background: rgba(var(--guide-rgb), 0.16) !important;
+  font-size: var(--fs-sm);
+  font-weight: 900;
+  color: rgb(var(--guide-rgb)) !important;
+}
+:root table.cricket-mvp-compare .is-group th {
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.cricket-mvp-compare-crown {
+  margin-right: 5px;
+  font-size: 0.72rem;
+  color: #d99a00;
+}
+:root[data-bs-theme="dark"] .cricket-mvp-compare-crown {
+  color: #f5b301;
+}
+:root table.cricket-mvp-compare .is-source th {
+  padding-left: 16px !important;
+  font-weight: 500;
+}
+:root table.cricket-mvp-compare .is-source td {
+  font-size: var(--fs-xs);
+}
+/* The bowling navy is unreadable on a dark sheet: plain text, tinted row. */
+:root[data-bs-theme="dark"] table.cricket-mvp-compare .is-group th,
+:root[data-bs-theme="dark"] table.cricket-mvp-compare .is-group td {
+  border-top-color: rgba(255, 255, 255, 0.35) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: var(--theme-text-dark) !important;
+}
+/* Last, so a row's leader and the rest show in the totals and group rows too:
+   the most points on a light green, everyone else dimmed. */
+:root table.cricket-mvp-compare td.is-lead {
+  background: rgba(22, 163, 74, 0.14) !important;
+  color: #15803d !important;
+  font-weight: 800;
+}
+:root table.cricket-mvp-compare td.is-trail {
+  color: var(--muted-color) !important;
+  font-weight: 500;
+}
+/* On a band, dimmed the same way but still bold enough to read as its total. */
+:root table.cricket-mvp-compare .is-group td.is-trail {
+  font-weight: 700;
+}
+.cricket-mvp-compare td.is-trail small {
+  opacity: 0.75;
+}
+:root[data-bs-theme="dark"] table.cricket-mvp-compare td.is-lead {
+  background: rgba(22, 163, 74, 0.24) !important;
+  color: #4ade80 !important;
+}
+:root[data-bs-theme="dark"] table.cricket-mvp-compare td.is-trail {
+  color: var(--muted-color) !important;
 }
 
 /* A tournament the viewer can't open yet: its name and a Follow button. */

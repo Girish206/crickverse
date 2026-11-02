@@ -31,7 +31,8 @@ import { canManageTournament } from "../canManage";
 import { useCricketMatches } from "../../../api/hooks/cricket/useCricketMatches";
 import { MatchesBoard } from "../matches/CricketMatchesList";
 import { CricketMatchForm } from "../matches/CricketMatchForm";
-import { LeaderboardGrid } from "../leaderboard/CricketLeaderboard";
+import { LeaderboardGrid, TournamentHeroes } from "../leaderboard/CricketLeaderboard";
+import { useMvpLock } from "../matches/useMvpLock";
 import { FormatView } from "../format/FormatView";
 import { TournamentBanner } from "./TournamentBanner";
 import { TournamentInfo } from "./TournamentInfo";
@@ -52,7 +53,7 @@ import { Loader } from "../../components/Loader";
 import { TeamMark } from "../teams/TeamMark";
 import { SwipePanels } from "../../SwipePanels";
 
-type Tab = "info" | "teams" | "matches" | "points" | "stats" | "totals";
+type Tab = "info" | "teams" | "matches" | "points" | "heroes" | "stats" | "totals";
 
 // How the teams are filled: generated from matched sets, or built by hand
 // (new teams or copies of other tournaments' teams).
@@ -64,7 +65,8 @@ const TABS: { value: Tab; label: string }[] = [
   { value: "info", label: "Profile" },
   { value: "matches", label: "Matches" },
   { value: "teams", label: "Teams" },
-  { value: "points", label: "Standings" },
+  { value: "points", label: "Points Table" },
+  { value: "heroes", label: "Heroes" },
   { value: "stats", label: "Leaderboard" },
   { value: "totals", label: "Stats" },
 ];
@@ -125,7 +127,7 @@ const TOURNAMENT_TIPS: TipStep[] = [
   {
     target: "tabs",
     title: "Everything about the tournament",
-    text: "Switch between Profile, Matches, Teams, Standings, the Leaderboard and Stats. Swipe the tabs sideways to see them all.",
+    text: "Switch between Profile, Matches, Teams, Points Table, Heroes, the Leaderboard and Stats. Swipe the tabs sideways to see them all.",
   },
   {
     target: "settings",
@@ -202,6 +204,7 @@ export function CricketTournamentPage() {
   const { data: me } = useCricketMe();
   const followItem = useFollowMenuItem({ kind: "tournament", targetId: id, teamIndex: null });
   const canManage = canManageTournament(admin, tournament, me?.player?.id);
+  useMvpLock(matches, canManage);
   const tips = useTips("tournament", TOURNAMENT_TIPS, Boolean(tournament));
 
   const backTo = admin?.isSuperAdmin ? "/tournaments" : "/my-tournaments";
@@ -497,6 +500,12 @@ export function CricketTournamentPage() {
                 }
               >
                 <FormatView tournament={tournament} matches={matches ?? []} canManage={canManage} />
+              </ListCard>
+            )}
+
+            {tab === "heroes" && (
+              <ListCard>
+                <TournamentHeroes matches={matches ?? []} />
               </ListCard>
             )}
 

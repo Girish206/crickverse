@@ -86,7 +86,7 @@ function OptionRow<T extends number | boolean>({
 // Picks how the tournament is played — a preset (league + IPL playoffs,
 // groups + super league, knockout, series...), its options, the groups or
 // the draw — and when the opening matches are, then makes them. Opened from
-// the Standings tab.
+// the Points Table tab.
 export function CricketFormatPage() {
   const id = Number(useParams().id);
   const { data: tournament, isLoading } = useCricketTournament(id);
@@ -110,7 +110,7 @@ export function CricketFormatPage() {
   if (isLoading || loadingMatches || problem) {
     return (
       <>
-        <PageHeader title="Tournament Format" back={backTo} backLabel="Back to standings" />
+        <PageHeader title="Tournament Format" back={backTo} backLabel="Back to points table" />
         {isLoading || loadingMatches ? (
           <Loader page />
         ) : (
@@ -281,7 +281,7 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
 
   return (
     <div className="cricket-page cricket-format-page">
-      <PageHeader title="Tournament Format" subtitle={tournament.name} back={backTo} backLabel="Back to standings" />
+      <PageHeader title="Tournament Format" subtitle={tournament.name} back={backTo} backLabel="Back to points table" />
 
       <ListCard title="1. Format" subtitle={`${teamCount} teams`}>
         <div className="cricket-preset-grid" role="radiogroup" aria-label="Format">

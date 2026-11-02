@@ -335,8 +335,7 @@ export function useReopenCricketMatch() {
 }
 
 // Corrects an earlier ball: its fielders, the kind of a bowler's
-// dismissal, its runs (by an even number), boundary or not, or the over's
-// bowler.
+// dismissal, its runs, boundary or not, or the over's bowler.
 export interface CricketBallEdit {
   runs?: number;
   fielderId?: number | null;

@@ -59,12 +59,13 @@
   --brand-maroon-bright: #d06a60;
   --brand-maroon-bright-rgb: 208, 106, 96;
   --brand-gradient-maroon: linear-gradient(120deg, #3a1214 0%, #5a1d1c 55%, #7a2420 100%);
+  /* The dark theme's fill: starts where the light one ends, so buttons stand
+     off the charcoal page and cards and white text stays readable. */
+  --brand-gradient-maroon-night: linear-gradient(120deg, #7a2420 0%, #933029 55%, #ad4034 100%);
 
   /* Night sky (the stock tournament banner-4): charcoal into deep maroon,
-     for the large hero / cover surfaces. The -night one is a step lighter
-     (more maroon) so it stands off the dark theme's charcoal page and cards. */
+     for the large hero / cover surfaces. */
   --brand-gradient-sky: linear-gradient(120deg, #0f1012 0%, #24111a 45%, #3a1214 100%);
-  --brand-gradient-sky-night: linear-gradient(120deg, #26181b 0%, #3a1519 45%, #561a1b 100%);
   --brand-gradient-vivid: linear-gradient(120deg, var(--brand-crimson) 0%, var(--brand-orange) 55%, var(--brand-amber) 100%);
   --brand-gradient-text: linear-gradient(100deg, var(--brand-crimson-deep) 0%, #d1400f 50%, var(--brand-amber-deep) 100%);
   --brand-gradient-text-night: linear-gradient(

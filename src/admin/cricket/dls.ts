@@ -63,15 +63,20 @@ export const minResultBalls = (scheduledOvers: number) =>
   (scheduledOvers >= 50 ? 20 : scheduledOvers >= 20 ? 5 : Math.ceil(scheduledOvers / 4)) * 6;
 
 // The chase's par score if play stopped now: what the chasing side needs to
-// tie had the rest of their overs been lost at this point. Null when no
-// rain has touched the match.
+// tie had the rest of their overs been lost at this point. Null before the
+// first ball, and in a Test, which has no overs per side to lose.
 export function liveDlsPar(
-  match: { overs: number; scheduledOvers?: number | null; interruptions?: Interruption[] | null },
+  match: {
+    overs: number;
+    matchType?: string | null;
+    scheduledOvers?: number | null;
+    interruptions?: Interruption[] | null;
+  },
   firstInnings: number,
   chase: { legalBalls: number; wickets: number },
 ) {
+  if (match.matchType === "test" || chase.legalBalls === 0) return null;
   const interruptions = match.interruptions ?? [];
-  if (interruptions.length === 0) return null;
   const { r1, r2 } = dlsResources(
     match.scheduledOvers ?? match.overs,
     chaseStartBalls(interruptions, match.overs),

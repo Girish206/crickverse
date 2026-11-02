@@ -1,6 +1,7 @@
 import { ballsPerOverOf, type CricketMatch } from "../../../api/types";
 import { impactLine, matchAwards, oversText, points, type ImpactRow, type NameOf } from "../stats";
 import { AwardCard } from "./AwardCard";
+import { MvpPointsButton } from "./MvpBreakdown";
 import { usePlayerPhotos } from "./matchUtils";
 
 interface Award {
@@ -14,7 +15,7 @@ interface Award {
 
 // The scorecard-style figures: 23(15) 2·4s 1·6s | 3.0-1-10-3, then any
 // fielding. Falls back to the plain impact line when the player did neither.
-function HeroFigures({ row, perOver }: { row: ImpactRow; perOver: number }) {
+export function HeroFigures({ row, perOver }: { row: ImpactRow; perOver: number }) {
   const { bat, bowl } = row;
   const bowled = bowl && bowl.legalBalls > 0;
   const fielding = [
@@ -44,9 +45,8 @@ function HeroFigures({ row, perOver }: { row: ImpactRow; perOver: number }) {
   );
 }
 
-// Player and fighter of the match (by MVP points, see matchImpact in stats.ts)
-// and best batter / bowler / fielder by their figures. The full ranking is the
-// MVP tab.
+// Player and fighter of the match and best batter / bowler / fielder, all by
+// MVP points (see matchImpact in stats.ts). The full ranking is the MVP tab.
 export function MatchAwards({ match, nameOf }: { match: CricketMatch; nameOf: NameOf }) {
   const photoOf = usePlayerPhotos();
   const awards = matchAwards(match);
@@ -99,7 +99,11 @@ export function MatchAwards({ match, nameOf }: { match: CricketMatch; nameOf: Na
               team={match.teams[card.row!.team]?.name}
               line={<HeroFigures row={card.row!} perOver={ballsPerOverOf(match)} />}
               pointsLabel={card.featured ? "MVP" : "Pts"}
-              points={points(card.score(card.row!))}
+              points={
+                <MvpPointsButton row={card.row!} name={nameOf(card.row!.playerId)}>
+                  {points(card.score(card.row!))}
+                </MvpPointsButton>
+              }
               note={card.note}
               featured={card.featured}
             />

@@ -5,12 +5,15 @@ import { PlayerAvatar } from "../players/PlayerAvatar";
 import { PlayerLink } from "../players/PlayerProfileSheet";
 import { impactLine, matchAwards, points, type NameOf } from "../stats";
 import { PillSelect } from "../PillSelect";
+import { MvpBreakdownSheet } from "./MvpBreakdown";
 import { MvpPointsHelp } from "./MvpPointsGuide";
 
 // The "MVP" tab: everyone who took part, ranked by MVP points, with where
 // their points came from.
 export function MatchMvp({ match, nameOf }: { match: CricketMatch; nameOf: NameOf }) {
   const [team, setTeam] = useState<number | null>(null);
+  // Whose points are being explained: tapping anywhere on a row opens them.
+  const [explaining, setExplaining] = useState<number | null>(null);
   const { data: players } = useCricketPlayers();
   const photoOf = (playerId: number) => players?.find((player) => player.id === playerId)?.photoUrl;
   const awards = matchAwards(match);
@@ -19,6 +22,7 @@ export function MatchMvp({ match, nameOf }: { match: CricketMatch; nameOf: NameO
   }
   const rows = awards.rows.filter((row) => team === null || row.team === team);
   const potmId = awards.playerOfMatch?.playerId ?? null;
+  const explained = awards.rows.find((row) => row.playerId === explaining);
 
   return (
     <div className="cricket-mvp">
@@ -45,7 +49,11 @@ export function MatchMvp({ match, nameOf }: { match: CricketMatch; nameOf: NameO
             row.fielding ? `Field ${points(row.fielding)}` : null,
           ].filter(Boolean);
           return (
-            <li key={row.playerId} className={`cricket-mvp-row ${rank === 1 ? "is-top" : ""}`}>
+            <li
+              key={row.playerId}
+              className={`cricket-mvp-row ${rank === 1 ? "is-top" : ""}`}
+              onClick={() => setExplaining(row.playerId)}
+            >
               <span className="cricket-mvp-rank">{rank}</span>
               <PlayerAvatar name={name} photoUrl={photoOf(row.playerId)} className="cricket-mvp-avatar" />
               <span className="cricket-mvp-body">
@@ -60,14 +68,24 @@ export function MatchMvp({ match, nameOf }: { match: CricketMatch; nameOf: NameO
                 </small>
                 {parts.length > 0 && <small className="cricket-mvp-split">{parts.join(" · ")}</small>}
               </span>
-              <span className="cricket-mvp-total">
+              <button
+                type="button"
+                className="cricket-mvp-points-btn cricket-mvp-total"
+                aria-label={`See where ${name}'s points came from`}
+                title="See where these points came from"
+              >
                 {points(row.total)}
-                <small>pts</small>
-              </span>
+                <small>
+                  pts <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                </small>
+              </button>
             </li>
           );
         })}
       </ol>
+      {explained && (
+        <MvpBreakdownSheet row={explained} name={nameOf(explained.playerId)} onClose={() => setExplaining(null)} />
+      )}
     </div>
   );
 }

@@ -38,12 +38,14 @@ const timeLabel = (value: string) => new Date(value).toLocaleTimeString(undefine
 
 // The live and upcoming matches in order, grouped by day (undated ones
 // last), then each knockout phase's playoffs not scheduled yet, with the
-// teams known so far ("1st, League" / "Winner Q1" until then).
-export function upcomingFixtures(tournament: CricketTournament, matches: CricketMatch[]): FixtureDay[] {
+// teams known so far ("1st, League" / "Winner Q1" until then). With a
+// `teamIndex`, only that team's: a playoff counts once the team is through.
+export function upcomingFixtures(tournament: CricketTournament, matches: CricketMatch[], teamIndex?: number): FixtureDay[] {
   const ordered = [...matches].sort(byDate);
   const days: FixtureDay[] = [];
   ordered.forEach((match, i) => {
     if (match.status !== "scheduled" && match.status !== "live") return;
+    if (teamIndex !== undefined && !match.teams.some((t) => t.teamIndex === teamIndex)) return;
     const label = match.scheduledAt ? dayLabel(match.scheduledAt) : "Date to be announced";
     if (days[days.length - 1]?.label !== label) days.push({ label, fixtures: [] });
     days[days.length - 1].fixtures.push({
@@ -64,6 +66,7 @@ export function upcomingFixtures(tournament: CricketTournament, matches: Cricket
     if (phase.kind !== "knockout") return;
     const fixtures = phase.slots
       .filter((slot) => !slotMatch(slot.code, matches))
+      .filter((slot) => teamIndex === undefined || resolve(slot.home) === teamIndex || resolve(slot.away) === teamIndex)
       .map((slot) => {
         const side = (source: typeof slot.home): FixtureSide => {
           const index = resolve(source);
@@ -78,8 +81,9 @@ export function upcomingFixtures(tournament: CricketTournament, matches: Cricket
   return days;
 }
 
-// "Tournament fixtures:", then each day and its matches.
-function fixturesText(tournamentName: string, days: FixtureDay[]) {
+// "Tournament fixtures:" (or "Team fixtures, Tournament:"), then each day and
+// its matches.
+function fixturesText(heading: string, days: FixtureDay[]) {
   const blocks = days.map((day) => {
     const lines = day.fixtures.map((f) => {
       const when = f.live ? "LIVE" : f.time;
@@ -89,7 +93,7 @@ function fixturesText(tournamentName: string, days: FixtureDay[]) {
     });
     return `${day.label}\n${lines.join("\n")}`;
   });
-  return `🏏 ${tournamentName} fixtures:\n\n${blocks.join("\n\n")}`;
+  return `🏏 ${heading}:\n\n${blocks.join("\n\n")}`;
 }
 
 const DAY_H = 60;
@@ -100,15 +104,15 @@ const SIDE = 60;
 // The fixtures card: the frame's header, then each day with a row per
 // match — number, stage and time on the left, the two teams facing off.
 // As tall as the list needs (at least square).
-async function drawFixturesCard(tournament: CricketTournament, days: FixtureDay[]) {
+async function drawFixturesCard(tournament: CricketTournament, days: FixtureDay[], heading: string, pillLabel: string) {
   const count = days.reduce((sum, day) => sum + day.fixtures.length, 0);
   const contentH = days.reduce((sum, day) => sum + DAY_H + day.fixtures.length * (ROW_H + ROW_GAP), 0);
   const height = Math.max(1080, CARD_TOP + contentH + 100);
   const { canvas, ctx } = await drawCardFrame(
     tournament,
     height,
-    "Fixtures",
-    "UPCOMING",
+    heading,
+    pillLabel,
     `${count} MATCH${count === 1 ? "" : "ES"}`,
   );
 
@@ -206,24 +210,41 @@ async function drawFixturesCard(tournament: CricketTournament, days: FixtureDay[
   return canvasBlob(canvas);
 }
 
+// The whole tournament's fixtures, or with `teamIndex` just that team's.
 export function ShareFixturesSheet({
   tournament,
   matches,
+  teamIndex,
   onClose,
 }: {
   tournament: CricketTournament;
   matches: CricketMatch[];
+  teamIndex?: number;
   onClose: () => void;
 }) {
-  const days = upcomingFixtures(tournament, matches);
-  const draw = useCallback(() => drawFixturesCard(tournament, upcomingFixtures(tournament, matches)), [tournament, matches]);
+  const team = teamIndex === undefined ? undefined : tournament.teams[teamIndex];
+  const days = upcomingFixtures(tournament, matches, teamIndex);
+  const draw = useCallback(
+    () =>
+      team
+        ? // The team's own logo heads its card, when it has one.
+          drawFixturesCard(
+            { ...tournament, logoUrl: team.logoUrl || tournament.logoUrl },
+            upcomingFixtures(tournament, matches, teamIndex),
+            team.name,
+            "FIXTURES",
+          )
+        : drawFixturesCard(tournament, upcomingFixtures(tournament, matches), "Fixtures", "UPCOMING"),
+    [tournament, matches, team, teamIndex],
+  );
+  const name = team?.name ?? tournament.name;
   return (
     <ShareCardSheet
-      title="Share fixtures"
-      shareTitle={`${tournament.name} fixtures`}
+      title={team ? `Share ${team.name} fixtures` : "Share fixtures"}
+      shareTitle={`${name} fixtures`}
       what="fixtures"
-      fileName={`${tournament.name.replace(/[^\w]+/g, "-").toLowerCase()}-fixtures.png`}
-      text={fixturesText(tournament.name, days)}
+      fileName={`${name.replace(/[^\w]+/g, "-").toLowerCase()}-fixtures.png`}
+      text={fixturesText(team ? `${team.name} fixtures, ${tournament.name}` : `${tournament.name} fixtures`, days)}
       draw={draw}
       onClose={onClose}
     />

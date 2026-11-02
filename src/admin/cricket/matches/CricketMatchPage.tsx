@@ -36,7 +36,9 @@ import { MatchInfo } from "./MatchInfo";
 import { MatchInsights } from "./MatchInsights";
 import { LiveView } from "./LiveView";
 import { MatchCommentary } from "./MatchCommentary";
+import { MatchHeroes } from "./MatchHeroes";
 import { MatchMvp } from "./MatchMvp";
+import { useMvpLock } from "./useMvpLock";
 import { MatchSquads } from "./MatchSquads";
 import { RescheduleSheet } from "./RescheduleSheet";
 import { existingInput } from "./CricketMatchForm";
@@ -51,13 +53,13 @@ import { Loader } from "../../components/Loader";
 import { SwipePanels } from "../../SwipePanels";
 import { MatchPlayerProfiles } from "../players/PlayerProfileSheet";
 
-type Tab = "info" | "live" | "scorecard" | "commentary" | "insights" | "overs" | "squads" | "mvp";
+type Tab = "info" | "live" | "scorecard" | "commentary" | "insights" | "overs" | "squads" | "mvp" | "heroes";
 
 const MATCH_TIPS: TipStep[] = [
   {
     target: "tabs",
     title: "Follow the match",
-    text: "Live has the score ball by ball; Scorecard, Commentary, Insights, Overs and MVP fill in as it's played. Swipe the tabs to see them all.",
+    text: "Live has the score ball by ball; Scorecard, Commentary, Insights, Overs, MVP and Heroes fill in as it's played. Swipe the tabs to see them all.",
   },
   {
     target: "match-settings",
@@ -96,6 +98,7 @@ export function CricketMatchPage() {
   const { data: me } = useCricketMe();
   const access = matchAccess(admin, match, tournament, me?.player?.id);
   const canManage = access !== null;
+  useMvpLock(match ? [match] : undefined, canManage);
   const organiser = access === "organise";
   // Several people may be allowed to score, but only one does at a time:
   // the first to open the Live tab, until they hand it over or stop. The
@@ -150,6 +153,7 @@ export function CricketMatchPage() {
       { value: "overs", label: "Overs" },
       { value: "squads", label: "Squads" },
       { value: "mvp", label: "MVP" },
+      { value: "heroes", label: "Heroes" },
     ];
   // Opens on Live / Summary; an upcoming match has only Info and Squads.
   const fallback: Tab = upcoming ? "info" : "live";
@@ -598,7 +602,9 @@ export function CricketMatchPage() {
               {(tab) => (
                 <ListCard
                   title=""
-                  bodyClassName={tab === "live" ? "cricket-live-body" : tab === "overs" ? "cricket-overs-body" : undefined}
+                  bodyClassName={tab === "live" ? "cricket-live-body" : undefined}
+                  // No card round the overs, so they use the page's full width.
+                  plain={tab === "overs"}
                 >
                   {tab === "info" && <MatchInfo match={match} tournament={tournament} />}
                   {tab === "live" &&
@@ -655,6 +661,7 @@ export function CricketMatchPage() {
                   {tab === "overs" && <BallByBall match={match} nameOf={nameOf} />}
                   {tab === "squads" && <MatchSquads match={match} tournament={tournament} nameOf={nameOf} />}
                   {tab === "mvp" && <MatchMvp match={match} nameOf={nameOf} />}
+                  {tab === "heroes" && <MatchHeroes match={match} nameOf={nameOf} />}
                 </ListCard>
               )}
             </SwipePanels>

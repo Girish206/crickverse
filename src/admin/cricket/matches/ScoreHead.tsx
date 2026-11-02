@@ -10,10 +10,17 @@ export type ScoreHeadData = {
   overs: string;
   maxOvers: number;
   crr: string;
-  // dlsPar: what ties the chase if rain stopped play now (rain-hit matches).
-  chase: { target: number; requiredRate: string; dlsPar?: number | null } | null;
+  // dlsPar: what ties the chase if play stopped now; dlsMargin: the runs the
+  // chasing side are ahead of it (behind if negative).
+  chase: { target: number; requiredRate: string; dlsPar?: number | null; dlsMargin?: number | null } | null;
   // The chase's bottom line: runs still needed from the balls left.
   need: { runs: number; balls: number } | null;
+};
+
+const dlsStanding = (margin: number) => {
+  const runs = Math.abs(margin);
+  if (runs === 0) return "Level";
+  return `${runs} run${runs === 1 ? "" : "s"} ${margin > 0 ? "ahead" : "behind"}`;
 };
 
 // The live score card (the scorer and the Live tab), broadcast style: the
@@ -54,12 +61,6 @@ export function ScoreHead({ data }: { data: ScoreHeadData }) {
               <small>RRR</small>
               <strong>{data.chase.requiredRate}</strong>
             </span>
-            {data.chase.dlsPar != null && (
-              <span className="cricket-scorer-stat" title="DLS par score if play stopped now">
-                <small>DLS par</small>
-                <strong>{data.chase.dlsPar}</strong>
-              </span>
-            )}
           </>
         )}
       </div>
@@ -70,6 +71,17 @@ export function ScoreHead({ data }: { data: ScoreHeadData }) {
             Need <strong>{Math.max(data.need.runs, 0)}</strong> run{data.need.runs === 1 ? "" : "s"} from{" "}
             <strong>{data.need.balls}</strong> ball{data.need.balls === 1 ? "" : "s"}
           </span>
+        </div>
+      )}
+      {data.need && data.chase?.dlsPar != null && (
+        <div
+          className={`cricket-scorer-dls${(data.chase.dlsMargin ?? 0) < 0 ? " is-behind" : ""}`}
+          title="The DLS score that ties the match if play stopped now"
+        >
+          <span>
+            DLS par <strong>{data.chase.dlsPar}</strong>
+          </span>
+          {data.chase.dlsMargin != null && <b>{dlsStanding(data.chase.dlsMargin)}</b>}
         </div>
       )}
     </div>

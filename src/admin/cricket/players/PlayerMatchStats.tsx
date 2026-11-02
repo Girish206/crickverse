@@ -2,6 +2,7 @@ import { ballsPerOverOf, type CricketMatch, type CricketPlayer } from "../../../
 import { roleOf } from "../playerRoles";
 import { PlayerAvatar } from "./PlayerAvatar";
 import { Scoreline } from "../me/SummaryBanner";
+import { MvpSources } from "../matches/MvpBreakdown";
 import { usePlayerNames } from "../matches/matchUtils";
 import {
   battingCard,
@@ -161,6 +162,7 @@ export function PlayerMatchStats({ player, match }: { player: CricketPlayer; mat
               ["Bowling", points(row.bowling)],
               ["Fielding", points(row.fielding)],
             ])}
+            <MvpSources row={row} />
           </div>
         </>
       )}

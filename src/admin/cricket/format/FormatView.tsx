@@ -36,7 +36,7 @@ const STATE_LABEL: Record<PhaseState, string> = {
   done: "Completed",
 };
 
-// The Standings tab: the format phase by phase — group tables with their
+// The Points Table tab: the format phase by phase — group tables with their
 // qualification line, the knockout bracket, a series' scoreline — and the
 // champion once it's decided. Without a format, the one points table (and,
 // for organisers, a way to set one up).

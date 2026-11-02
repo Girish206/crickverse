@@ -30,6 +30,7 @@ import { PlayerLink } from "../players/PlayerProfileSheet";
 import { LeaderboardGrid } from "../leaderboard/CricketLeaderboard";
 import { oversText, pointsTable, rate, strikeRate, teamStats, type TeamStats } from "../stats";
 import { AddTeamPlayersSheet } from "./AddTeamPlayersSheet";
+import { ShareFixturesSheet, upcomingFixtures } from "./ShareFixturesSheet";
 import { ShareSquadSheet } from "./ShareSquadSheet";
 import { ShareMenu } from "../ShareMenu";
 import { useTips, type TipStep } from "../TipsTour";
@@ -63,8 +64,8 @@ const TEAM_TIPS: TipStep[] = [
   },
   {
     target: "share",
-    title: "Share the squad",
-    text: "Send the team's link, or share the squad as a picture with every player's photo and role.",
+    title: "Share the team",
+    text: "Send the team's link, or share its squad or upcoming fixtures as a picture.",
   },
   {
     target: "settings",
@@ -93,6 +94,7 @@ export function CricketTeamPage() {
   // The team's join link and QR code, for players to add themselves.
   const [inviting, setInviting] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [sharingFixtures, setSharingFixtures] = useState(false);
   // Player whose "Move / swap" sheet is open.
   const [moving, setMoving] = useState<number | null>(null);
   // Player whose "⋮" sheet (move / swap, remove) is open.
@@ -137,6 +139,7 @@ export function CricketTeamPage() {
   const standings = pointsTable(tournament, matches ?? []);
   const position = standings.findIndex((row) => row.teamIndex === teamIndex);
   const record = standings[position];
+  const hasFixtures = upcomingFixtures(tournament, matches ?? [], teamIndex).length > 0;
 
   async function handleRemove() {
     if (
@@ -191,16 +194,24 @@ export function CricketTeamPage() {
               title={team.name}
               image={team.logoUrl ?? undefined}
               text={`${team.name} · ${tournament.name} on RunMitra`}
-              items={
-                team.playerIds.length > 0
+              items={[
+                ...(team.playerIds.length > 0
                   ? [{
                       icon: "fa-solid fa-users",
                       label: "Squad card",
                       description: "The players with their photos and roles as a picture",
                       onClick: () => setSharing(true),
                     }]
-                  : []
-              }
+                  : []),
+                ...(hasFixtures
+                  ? [{
+                      icon: "fa-solid fa-calendar-days",
+                      label: "Fixtures card",
+                      description: "The team's upcoming matches as a picture",
+                      onClick: () => setSharingFixtures(true),
+                    }]
+                  : []),
+              ]}
             />
             {/* The team's join QR code and link, for players to add themselves. */}
             {canAddPlayers && (
@@ -383,6 +394,15 @@ export function CricketTeamPage() {
 
       {sharing && (
         <ShareSquadSheet tournament={tournament} team={team} playerById={playerById} onClose={() => setSharing(false)} />
+      )}
+
+      {sharingFixtures && (
+        <ShareFixturesSheet
+          tournament={tournament}
+          matches={matches ?? []}
+          teamIndex={teamIndex}
+          onClose={() => setSharingFixtures(false)}
+        />
       )}
 
       {inviting && (

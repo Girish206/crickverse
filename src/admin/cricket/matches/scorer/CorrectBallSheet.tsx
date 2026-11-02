@@ -32,9 +32,9 @@ interface CorrectBallSheetProps {
 }
 
 // Fixes an earlier ball of this innings without undoing everything after
-// it: the fielder, the kind of a bowler's dismissal, its runs (only by an
-// even number, so the batters stay at their ends), boundary or all run, or
-// who bowled the over.
+// it: the fielder, the kind of a bowler's dismissal, its runs (the API moves
+// the strike on the balls after it to match), boundary or all run, or who
+// bowled the over.
 export function CorrectBallSheet({ match, nameOf, perOver, ballIndex, onClose }: CorrectBallSheetProps) {
   const [chosen, setChosen] = useState<number | null>(ballIndex);
   const inningsIndex = match.innings.length - 1;
@@ -134,8 +134,10 @@ function BallEditor({
   const takesFielder = WITH_FIELDER.includes(kind);
   const boundaryEditable = runsEditable && (runs === 4 || runs === 6);
   const bowlerEditable = ball.extraType !== "penalty";
-  // Only the same parity: the batters stay at the ends they finished at.
-  const runValues = [0, 1, 2, 3, 4, 5, 6, 7].filter((n) => n % 2 === ball.runs % 2);
+  // An odd change puts the batters at the other ends from here on (as the API
+  // works it out). A run-out's end, or a batter alone, leaves them placed.
+  const strikeMoves =
+    (runs - ball.runs) % 2 !== 0 && ball.batterId !== ball.nonStrikerId && !(ball.wicketType === "run-out" && ball.outEnd);
 
   const edit: CricketBallEdit = {};
   if (runsEditable && runs !== ball.runs) edit.runs = runs;
@@ -251,8 +253,12 @@ function BallEditor({
         {runsEditable && (
           <>
             <label className="cricket-sheet-label">Runs off the bat</label>
-            <RunChoice value={runs} onChange={setRuns} values={runValues} />
-            <p className="admin-hint">Only by 2s, so the batters stay at the ends they finished at.</p>
+            <RunChoice value={runs} onChange={setRuns} max={7} />
+            {strikeMoves && (
+              <p className="admin-hint">
+                The batters finish at the other ends, so the balls after this one move to the other batter, up to the next wicket or strike change made by hand.
+              </p>
+            )}
           </>
         )}
 

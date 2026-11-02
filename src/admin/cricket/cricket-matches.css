@@ -1378,19 +1378,47 @@
   font-variant-numeric: tabular-nums;
   color: #fff;
 }
-/* The innings break: the first innings' total, the target to chase, then
-   the pickers for the openers and opening bowler. */
+/* The DLS par on its own row under what's needed, with the runs ahead of it
+   (green) or behind. */
+.cricket-scorer-dls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.5);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
+}
+.cricket-scorer-dls strong {
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+}
+.cricket-scorer-dls b {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #7ee2a8;
+}
+.cricket-scorer-dls.is-behind b {
+  color: #ffb4a8;
+}
+/* The innings break: the first innings' total, then the target as the one
+   big figure, with what the chase has to work with in a row below it. */
 .cricket-break {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 20px 16px;
+  gap: 10px;
+  padding: 14px;
   border-radius: 16px;
-  border: 1px solid rgba(var(--primary-rgb), 0.25);
-  background: linear-gradient(160deg, rgba(var(--primary-rgb), 0.12), rgba(var(--secondary-rgb), 0.12));
+  background: var(--primary-gradient);
+  box-shadow: 0 6px 18px rgba(var(--primary-rgb), 0.25);
   text-align: center;
-  color: var(--theme-text-dark);
+  color: #fff;
 }
 .cricket-break-eyebrow {
   display: inline-flex;
@@ -1398,52 +1426,142 @@
   gap: 6px;
   padding: 3px 12px;
   border-radius: 999px;
-  background: rgba(var(--primary-rgb), 0.15);
-  color: var(--primary);
+  background: rgba(255, 255, 255, 0.16);
   font-size: var(--fs-xs);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 .cricket-break-first {
-  margin: 4px 0 0;
-  font-size: var(--fs-md);
-  font-weight: 600;
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-weight: 500;
 }
 .cricket-break-first small {
-  color: var(--muted-color);
-  font-weight: 500;
+  opacity: 0.8;
 }
 .cricket-break-target {
   display: flex;
   flex-direction: column;
   align-items: center;
-  line-height: 1;
-  margin: 6px 0;
 }
 .cricket-break-target small {
   font-size: var(--fs-sm);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted-color);
+  font-weight: 600;
+  opacity: 0.85;
 }
 .cricket-break-target strong {
-  font-size: calc(var(--fs-2xl) * 2);
+  font-size: calc(var(--fs-2xl) * 2.2);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
-  color: var(--primary);
+  line-height: 1.05;
 }
-.cricket-break-need {
-  margin: 0;
+.cricket-break-stats {
+  align-self: stretch;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 8px 0;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.18);
 }
-.cricket-break-rate {
-  padding: 3px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--border-color);
-  font-size: var(--fs-sm);
+.cricket-break-stats > span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.cricket-break-stats > span + span {
+  border-left: 1px solid rgba(255, 255, 255, 0.18);
+}
+.cricket-break-stats strong {
+  font-size: var(--fs-md);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+.cricket-break-stats small {
+  font-size: var(--fs-2xs);
   font-weight: 600;
-  color: var(--muted-color);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+/* Back to the 1st innings on the left, start the 2nd on the right, fixed to
+   the bottom of the screen; the page leaves room for them. */
+.cricket-scorer.is-break {
+  padding-bottom: 72px;
+}
+.cricket-action-bar.cricket-break-actions {
+  justify-content: space-between;
+}
+.cricket-action-bar.cricket-break-actions > button {
+  width: auto;
+  height: 46px !important;
+  min-height: 46px !important;
+  padding-inline: 16px !important;
+  font-size: var(--fs-sm) !important;
+  border-radius: 12px !important;
+}
+/* Phones and tablets: the card and pickers share the height of the screen
+   between the header and the buttons. A very short screen scrolls inside. */
+@media (max-width: 900px) {
+  html:has(.cricket-scorer-page .cricket-scorer.is-break),
+  html:has(.cricket-scorer-page .cricket-scorer.is-break) body {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+  .cricket-scorer-page .cricket-scorer.is-break {
+    position: fixed;
+    top: calc(var(--cv-header-h) + env(safe-area-inset-top));
+    right: 0;
+    bottom: calc(63px + env(safe-area-inset-bottom));
+    left: 0;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 8px max(10px, env(safe-area-inset-left), env(safe-area-inset-right));
+    overflow-y: auto;
+  }
+  .cricket-scorer.is-break .cricket-scorer-top {
+    flex: 1 0 auto;
+    gap: 8px;
+  }
+  .cricket-scorer.is-break .cricket-break {
+    flex: 1 0 auto;
+    justify-content: center;
+  }
+  .cricket-scorer.is-break .cricket-pickers {
+    flex: 2 0 auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .cricket-scorer.is-break .cricket-slots {
+    flex: 1 0 auto;
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: 1fr;
+    margin-bottom: 0;
+  }
+  .cricket-action-bar.cricket-break-actions > button {
+    flex: 1 1 0;
+    padding-inline: 8px !important;
+  }
+}
+/* A short screen: everything closer together, so the pickers still fit. */
+@media (max-width: 900px) and (max-height: 719px) {
+  .cricket-break {
+    gap: 6px;
+    padding: 10px 12px;
+  }
+  .cricket-break-target strong {
+    font-size: calc(var(--fs-2xl) * 1.6);
+  }
+  .cricket-break-stats {
+    padding: 5px 0;
+  }
+}
+/* The smallest phones: the page header already says what's going on. */
+@media (max-width: 900px) and (max-height: 599px) {
+  .cricket-break-eyebrow {
+    display: none;
+  }
 }
 /* Someone else is scoring: who, and the button to take over. */
 .cricket-seat-banner {
@@ -2400,7 +2518,28 @@
   color: var(--muted-color);
 }
 
-/* The scorer's Bowlers popover. */
+/* The scorer's bowlers & overs sheet: its section headings and "show all". */
+.cricket-popover-section {
+  margin: 0;
+  padding: 10px 14px 4px;
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: var(--primary);
+}
+.cricket-popover-more {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  border: 0;
+  border-top: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+  background: none;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--primary);
+  cursor: pointer;
+}
+/* The bowlers table. */
 .cricket-bowler-overs {
   display: flex;
   flex-direction: column;
@@ -2408,8 +2547,8 @@
 }
 .cricket-bowler-overs-row {
   display: grid;
-  grid-template-columns: minmax(96px, 1fr) 2.6rem 1.5rem 1.9rem 1.5rem 2.8rem 1.5rem 1.5rem 1.5rem;
-  min-width: 392px;
+  grid-template-columns: minmax(70px, 1fr) 2.6rem 1.5rem 1.9rem 1.5rem 2.8rem 1.5rem 1.5rem 1.5rem;
+  min-width: 366px;
   align-items: center;
   gap: 4px;
   padding: 8px 14px;
@@ -4406,6 +4545,107 @@
 
 /* The live view's free hit flag: the next ball can't get the batter out
    (bar a run-out). */
+/* The scorer on phones. The bottom half is never shorter than its buttons, so if
+   it all can't fit the screen scrolls, rather than the pad running off the end. */
+.cricket-scorer.is-fit .cricket-scorer-dock {
+  min-height: fit-content;
+}
+@media (max-width: 769px) {
+  .cricket-scorer-page .cricket-scorer.is-fit {
+    overflow-y: auto;
+  }
+}
+/* The bowling header's buttons stay on one line: without their icons on a phone. */
+@media (max-width: 430px) {
+  .cricket-scorer.is-fit .cricket-crease-header-actions {
+    flex-wrap: nowrap;
+    gap: 4px;
+  }
+  .cricket-scorer.is-fit .cricket-prev-overs-trigger-btn {
+    padding-inline: 7px;
+    white-space: nowrap;
+  }
+  .cricket-scorer.is-fit .cricket-prev-overs-trigger-btn i {
+    display: none;
+  }
+}
+/* A short screen: the pad gives up some height before anything has to scroll. */
+@media (max-height: 760px) {
+  .cricket-scorer.is-fit .cricket-scorer-dock {
+    gap: 6px;
+    padding-top: 8px;
+  }
+  .cricket-scorer.is-fit .cricket-pad-main {
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    grid-auto-rows: 0;
+  }
+  .cricket-scorer.is-fit .cricket-pad-side {
+    grid-template-rows: repeat(4, minmax(0, 1fr));
+  }
+  .cricket-scorer.is-fit .cricket-pad-main .cricket-pad-btn,
+  .cricket-scorer.is-fit .cricket-pad-side .cricket-pad-btn {
+    min-height: 30px;
+    height: auto;
+  }
+}
+/* Batting and bowling rows keep one height at any width: long names are cut short
+   and nothing wraps, so they can't push the pad off the screen. */
+.cricket-scorer.is-fit .cricket-crease-who {
+  min-width: 0;
+}
+.cricket-scorer.is-fit .cricket-crease-name-line {
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+.cricket-scorer.is-fit .cricket-crease-name-line .cricket-crease-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cricket-scorer.is-fit .cricket-crease-name-line > :not(.cricket-crease-name) {
+  flex: none;
+}
+.cricket-scorer.is-fit .cricket-crease-meta-line {
+  flex-wrap: nowrap;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.cricket-scorer.is-fit .cricket-crease-section-header .cricket-crease-econ-badge {
+  white-space: nowrap;
+}
+/* The very smallest phones have no room for the DLS row while scoring. */
+@media (max-width: 340px) and (max-height: 700px) {
+  .cricket-scorer.is-fit .cricket-scorer-dls {
+    display: none;
+  }
+}
+/* On a narrow phone the extras are just their total, so the bowling header's
+   buttons stay on one line and the pad keeps its height. */
+@media (max-width: 430px) {
+  .cricket-crease-extras-detail {
+    display: none;
+  }
+}
+/* The scorer's "This over" strip when the next ball's a free hit. */
+.cricket-this-over.is-free-hit {
+  border-color: #f79009;
+  box-shadow: 0 0 0 1px #f79009;
+}
+.cricket-this-over.is-free-hit .cricket-this-over-label,
+:root[data-bs-theme="dark"] .cricket-this-over.is-free-hit .cricket-this-over-label {
+  background: #f79009;
+  border-right-color: #f79009;
+  color: #2b1a00 !important;
+}
+/* A short screen: the score card's bottom rows tighten, so the pad keeps its room. */
+@media (max-height: 700px) {
+  .cricket-scorer.is-fit .cricket-scorer-need,
+  .cricket-scorer.is-fit .cricket-scorer-dls {
+    padding-block: 2px;
+  }
+}
 .cricket-free-hit {
   display: inline-flex;
   align-items: center;

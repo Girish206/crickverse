@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { ballsPerOverOf, type CricketMatch } from "../../../api/types";
+import { ballsPerOverOf, type CricketInnings, type CricketMatch } from "../../../api/types";
 import { PlayerLink } from "../players/PlayerProfileSheet";
 import {
   ballChipClass,
@@ -17,7 +17,6 @@ import {
   type NameOf,
 } from "../stats";
 import { NoPlayNote } from "./result/ResultNote";
-import { PillSelect } from "../PillSelect";
 
 export function ScrollableOverBalls({ children, className = "" }: { children: ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -239,78 +238,112 @@ export function Scorecard({ match, nameOf }: { match: CricketMatch; nameOf: Name
 // each over, who bowled to whom, every ball and the runs it cost.
 export function BallByBall({ match, nameOf }: { match: CricketMatch; nameOf: NameOf }) {
   const bowled = match.innings.filter((innings) => innings.balls.length > 0);
-  const [picked, setPicked] = useState<number | null>(null);
+  // A side (0 or 1), both, or until one's picked the side batting last.
+  const [picked, setPicked] = useState<number | "both" | null>(null);
   if (bowled.length === 0) {
     return match.resultMethod ? <NoPlayNote match={match} /> : <div className="admin-empty-state">No balls bowled yet.</div>;
   }
-  const innings = bowled.find((inn) => inn.battingTeam === picked) ?? bowled[bowled.length - 1];
+  const side = picked ?? bowled[bowled.length - 1].battingTeam;
+  // Newest first; a super over gives each side a second innings.
+  const shown = [...bowled].reverse().filter((innings) => side === "both" || innings.battingTeam === side);
   const perOver = ballsPerOverOf(match);
+  const options: { value: number | "both"; label: string }[] = [
+    { value: 0, label: match.teams[0].name },
+    { value: 1, label: match.teams[1].name },
+    { value: "both", label: "Both" },
+  ];
 
-  // Score at the end of each over.
+  return (
+    <div className="cricket-overs-log">
+      {bowled.length > 1 && (
+        <div className="admin-segmented cricket-tabs cricket-overs-sides" role="group" aria-label="Batting side">
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={side === option.value ? "active" : ""}
+              aria-pressed={side === option.value}
+              title={option.label}
+              onClick={() => setPicked(option.value)}
+            >
+              <span>{option.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {shown.map((innings) => {
+        const summary = inningsSummary(innings, perOver);
+        return (
+          <section key={match.innings.indexOf(innings)} className="cricket-overs-innings">
+            {shown.length > 1 && (
+              <h3 className="cricket-overs-innings-head">
+                <span>{match.teams[innings.battingTeam].name}</span>
+                <strong>
+                  {summary.runs}/{summary.wickets} <small>({summary.overs} ov)</small>
+                </strong>
+              </h3>
+            )}
+            <InningsOvers match={match} innings={innings} nameOf={nameOf} />
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
+// One innings' overs, newest first, each with the score at the end of it.
+function InningsOvers({ match, innings, nameOf }: { match: CricketMatch; innings: CricketInnings; nameOf: NameOf }) {
+  const perOver = ballsPerOverOf(match);
   const overs: (ReturnType<typeof oversOf>[number] & { score: string; batters: number[] })[] = [];
   let runs = 0;
   let wickets = 0;
   for (const over of oversOf(innings, perOver)) {
     runs += over.runs;
     wickets += over.balls.filter(isWicket).length;
-    overs.push({ ...over, score: `${runs}-${wickets}`, batters: [...new Set(over.balls.map((ball) => ball.batterId))] });
+    overs.push({ ...over, score: `${runs}/${wickets}`, batters: [...new Set(over.balls.map((ball) => ball.batterId))] });
   }
 
   return (
-    <div className="cricket-overs-log">
-      {bowled.length > 1 && (
-        <PillSelect
-          label="Batting side"
-          value={String(innings.battingTeam)}
-          options={bowled.map((inn) => ({ value: String(inn.battingTeam), label: match.teams[inn.battingTeam].name }))}
-          onChange={(value) => setPicked(Number(value))}
-        />
-      )}
-      <ol className="cricket-over-cards">
-        {[...overs].reverse().map((over) => {
-          const legalBalls = over.balls.filter(isLegal).length;
-          const isLastOver = over.number === overs.length - 1;
-          const isIncomplete = legalBalls < perOver;
-          const isLiveOver =
-            isIncomplete &&
-            isLastOver &&
-            match.status === "live" &&
-            innings === match.innings[match.innings.length - 1] &&
-            !innings.closed;
-          const remainingBalls = isIncomplete ? Math.max(0, perOver - legalBalls) : 0;
+    <ol className="cricket-over-cards">
+      {[...overs].reverse().map((over) => {
+        const legalBalls = over.balls.filter(isLegal).length;
+        const isLastOver = over.number === overs.length - 1;
+        const isIncomplete = legalBalls < perOver;
+        const isLiveOver =
+          isIncomplete &&
+          isLastOver &&
+          match.status === "live" &&
+          innings === match.innings[match.innings.length - 1] &&
+          !innings.closed;
+        const remainingBalls = isIncomplete ? Math.max(0, perOver - legalBalls) : 0;
 
-          return (
-            <li
-              key={over.number}
-              className={`cricket-over-card${isIncomplete ? " is-incomplete" : ""}${isLiveOver ? " is-live-over" : ""}`}
-            >
-              <div className="cricket-over-card-num">
-                <strong>Ov {over.number + 1}</strong>
-                <small>{over.score}</small>
-                {isIncomplete && (
-                  <span className={`cricket-over-card-sub-badge${isLiveOver ? " is-live" : ""}`}>
-                    {over.number}.{legalBalls} ov
-                  </span>
-                )}
+        return (
+          <li
+            key={over.number}
+            className={`cricket-over-card${isIncomplete ? " is-incomplete" : ""}${isLiveOver ? " is-live-over" : ""}`}
+          >
+            <div className="cricket-over-card-num">
+              <strong>Ov {over.number + 1}</strong>
+              <small>{over.score}</small>
+              {isIncomplete && (
+                <span className={`cricket-over-card-sub-badge${isLiveOver ? " is-live" : ""}`}>
+                  {over.number}.{legalBalls} ov
+                </span>
+              )}
+            </div>
+            <div className="cricket-over-card-body">
+              <div className="cricket-over-card-top">
+                <span className="cricket-over-card-who">
+                  <PlayerLink playerId={over.bowlerId}>{nameOf(over.bowlerId)}</PlayerLink> to{" "}
+                  {over.batters.map((id, i) => (
+                    <Fragment key={id}>
+                      {i > 0 && ", "}
+                      <PlayerLink playerId={id}>{nameOf(id)}</PlayerLink>
+                    </Fragment>
+                  ))}
+                </span>
               </div>
-              <div className="cricket-over-card-body">
-                <div className="cricket-over-card-top">
-                  <span className="cricket-over-card-who">
-                    <PlayerLink playerId={over.bowlerId}>{nameOf(over.bowlerId)}</PlayerLink> to{" "}
-                    {over.batters.map((id, i) => (
-                      <Fragment key={id}>
-                        {i > 0 && ", "}
-                        <PlayerLink playerId={id}>{nameOf(id)}</PlayerLink>
-                      </Fragment>
-                    ))}
-                  </span>
-                  {isIncomplete && (
-                    <span className={`cricket-over-incomplete-badge${isLiveOver ? " is-live" : ""}`}>
-                      {isLiveOver && <span className="cricket-over-live-dot" aria-hidden="true" />}
-                      {isLiveOver ? `In progress · ${remainingBalls}b left` : `${legalBalls}/${perOver} balls`}
-                    </span>
-                  )}
-                </div>
+              <div className="cricket-over-card-balls-row">
                 <ScrollableOverBalls className="cricket-over-card-balls-wrap">
                   {over.balls.map((ball, i) => (
                     <span
@@ -332,15 +365,21 @@ export function BallByBall({ match, nameOf }: { match: CricketMatch; nameOf: Nam
                       />
                     ))}
                 </ScrollableOverBalls>
+                {isIncomplete && (
+                  <span className={`cricket-over-incomplete-badge${isLiveOver ? " is-live" : ""}`}>
+                    {isLiveOver && <span className="cricket-over-live-dot" aria-hidden="true" />}
+                    {isLiveOver ? `In progress · ${remainingBalls}b left` : `${legalBalls}/${perOver} balls`}
+                  </span>
+                )}
               </div>
-              <div className="cricket-over-card-runs">
-                <strong>{over.runs}</strong>
-                <small>Run{over.runs === 1 ? "" : "s"}</small>
-              </div>
-            </li>
-          );
-        })}
-      </ol>
-    </div>
+            </div>
+            <div className="cricket-over-card-runs">
+              <strong>{over.runs}</strong>
+              <small>Run{over.runs === 1 ? "" : "s"}</small>
+            </div>
+          </li>
+        );
+      })}
+    </ol>
   );
 }

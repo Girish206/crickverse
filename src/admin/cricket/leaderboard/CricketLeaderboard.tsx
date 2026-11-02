@@ -1,6 +1,7 @@
 import { useState, type KeyboardEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useCricketMatches } from "../../../api/hooks/cricket/useCricketMatches";
+import { useCricketMe } from "../../../api/hooks/cricket/useCricketPlayers";
 import { useCricketTournaments } from "../../../api/hooks/cricket/useCricketTournaments";
 import type { CricketMatch, CricketTeam, CricketTournament } from "../../../api/types";
 import { ListCard } from "../../components/ListCard";
@@ -9,6 +10,8 @@ import { AwardCard } from "../matches/AwardCard";
 import { PlayerAvatar } from "../players/PlayerAvatar";
 import { PlayerLink } from "../players/PlayerProfileSheet";
 import { PillSelect } from "../PillSelect";
+import { BottomSheet } from "../BottomSheet";
+import { MvpCompare, MvpSources } from "../matches/MvpBreakdown";
 import { MvpPointsHelp } from "../matches/MvpPointsGuide";
 import { NrrGuide } from "./NrrGuide";
 import { BALL_TYPES, MATCH_TYPES } from "../cricketOptions";
@@ -18,6 +21,7 @@ import {
   countsForTable,
   impactPerMatch,
   oversText,
+  playerImpactTotals,
   playerMatchLines,
   playerStats,
   points,
@@ -197,7 +201,7 @@ export function LeaderboardGrid({
             <h2 className="cricket-section-title">
               <i className={`fa-solid ${board.icon}`} aria-hidden="true"></i> {board.title}
             </h2>
-            <BoardList board={board} rows={rows} limit={limit} />
+            <BoardList board={board} rows={rows} limit={limit} mvpMatches={matches} />
           </section>
         ))}
       </div>
@@ -231,7 +235,15 @@ export function LeaderboardGrid({
                 photoUrl={photoOf(award.top.playerId)}
                 line={award.board.detail(award.top)}
                 pointsLabel={award.label}
-                points={award.board.value(award.top)}
+                points={
+                  award.featured ? (
+                    <MvpTotalsButton playerId={award.top.playerId} name={nameOf(award.top.playerId)} matches={matches}>
+                      {award.board.value(award.top)}
+                    </MvpTotalsButton>
+                  ) : (
+                    award.board.value(award.top)
+                  )
+                }
                 featured={award.featured}
               />
             ))}
@@ -243,15 +255,78 @@ export function LeaderboardGrid({
   );
 }
 
+// A tournament's "Heroes" tab: whoever is first on each leaderboard, so the two
+// always agree. One with no one on it is left out.
+const TOURNAMENT_HEROES = [
+  { board: "MVP", title: "MVP", label: "MVP" },
+  { board: "Player of the Match", title: "Most Player of the Match awards", label: "Awards" },
+  { board: "Most Runs", title: "Best batter", label: "Runs" },
+  { board: "Most Wickets", title: "Best bowler", label: "Wkts" },
+  { board: "Best Fielder", title: "Best fielder", label: "Dis" },
+  { board: "Highest Score", title: "Highest score", label: "Runs" },
+  { board: "Best Bowling", title: "Best bowling", label: "Figures" },
+  { board: "Most Catches", title: "Most catches", label: "Ct" },
+  { board: "Most Sixes", title: "Most sixes", label: "6s" },
+  { board: "Most Fours", title: "Most fours", label: "4s" },
+  { board: "Best Strike Rate", title: "Best strike rate", label: "SR" },
+  { board: "Best Economy", title: "Best economy", label: "Econ" },
+];
+
+export function TournamentHeroes({ matches }: { matches: CricketMatch[] }) {
+  const nameOf = usePlayerNames();
+  const photoOf = usePlayerPhotos();
+  const rows = [...playerStats(matches).values()];
+  if (!matches.some((match) => match.innings.some((innings) => innings.balls.length > 0))) {
+    return <div className="admin-empty-state">The heroes appear once matches are scored.</div>;
+  }
+  return (
+    <div className="cricket-award-grid cricket-heroes-grid">
+      {TOURNAMENT_HEROES.map((hero) => {
+        const board = BOARDS.find((b) => b.title === hero.board)!;
+        const top = board.rank(rows)[0];
+        if (!top) return null;
+        const name = nameOf(top.playerId);
+        const isMvp = hero.board === "MVP";
+        return (
+          <AwardCard
+            key={hero.title}
+            title={hero.title}
+            icon={board.icon}
+            playerId={top.playerId}
+            name={name}
+            photoUrl={photoOf(top.playerId)}
+            line={board.detail(top)}
+            pointsLabel={hero.label}
+            points={
+              isMvp ? (
+                <MvpTotalsButton playerId={top.playerId} name={name} matches={matches}>
+                  {board.value(top)}
+                </MvpTotalsButton>
+              ) : (
+                board.value(top)
+              )
+            }
+            featured={isMvp}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 // Category tabs, a dropdown of that category's boards, and the chosen
-// board's top ten.
+// board, everyone on it.
 function StatsBoards({ rows, matches }: { rows: PlayerStats[]; matches: CricketMatch[] }) {
   const [category, setCategory] = useState<Category>("overall");
   const [title, setTitle] = useState(BOARDS[0].title);
+  // The players ticked to compare on the MVP board; null when not comparing.
+  const [picks, setPicks] = useState<number[] | null>(null);
   const pickCategory = (value: Category) => {
     setCategory(value);
     setTitle(BOARDS.find((b) => b.category === value)!.title);
+    setPicks(null);
   };
+  const canCompare = BOARDS[0].rank(rows).length >= 2;
   // Swipes on the boards change category; elsewhere they're the page's.
   const swipeRef = useSwipeTabs(CATEGORIES.map((c) => c.value), category, pickCategory, ".cricket-stats");
   return (
@@ -285,11 +360,35 @@ function StatsBoards({ rows, matches }: { rows: PlayerStats[]; matches: CricketM
                   label="Leaderboard"
                   value={board.title}
                   options={boards.map((b) => ({ value: b.title, label: b.title }))}
-                  onChange={setTitle}
+                  onChange={(value) => {
+                    setTitle(value);
+                    setPicks(null);
+                  }}
                 />
               </div>
-              {board.title === "MVP" && <MvpPointsHelp className="mb-2" />}
-              <BoardList board={board} rows={rows} limit={10} matches={matches} />
+              {board.title === "MVP" && (
+                <div className="cricket-mvp-tools">
+                  <MvpPointsHelp />
+                  {canCompare && (
+                    <button
+                      type="button"
+                      className={`cricket-mvp-help-btn ${picks ? "is-active" : ""}`.trim()}
+                      aria-pressed={picks !== null}
+                      onClick={() => setPicks(picks ? null : [])}
+                    >
+                      <i className="fa-solid fa-scale-balanced" aria-hidden="true"></i> Compare players
+                    </button>
+                  )}
+                </div>
+              )}
+              <BoardList
+                board={board}
+                rows={rows}
+                matches={matches}
+                mvpMatches={matches}
+                picks={board.title === "MVP" ? picks : null}
+                onPicks={setPicks}
+              />
             </>
           );
         }}
@@ -306,32 +405,159 @@ const onActivate = (action: () => void) => (e: KeyboardEvent) => {
   }
 };
 
-// With `matches`, each player opens to their match-by-match figures.
-function BoardList({ board, rows, limit, matches }: { board: Board; rows: PlayerStats[]; limit: number; matches?: CricketMatch[] }) {
+// Where a player's points across `matches` came from, then match by match.
+function MvpTotalsSheet({ playerId, name, matches, onClose }: { playerId: number; name: string; matches: CricketMatch[]; onClose: () => void }) {
+  const totals = playerImpactTotals(matches, playerId);
+  const perMatch = totals.matches ? (totals.total / totals.matches).toFixed(1) : "–";
+  return (
+    <BottomSheet title={`${name}'s points`} icon="fa-solid fa-star" onClose={onClose}>
+      <MvpSources row={totals} totalNote={`${totals.matches} match${totals.matches === 1 ? "" : "es"} · ${perMatch} a match`} />
+      <h3 className="cricket-section-title mt-3">
+        <i className="fa-solid fa-list" aria-hidden="true"></i> Match by match
+      </h3>
+      <PlayerMatches playerId={playerId} matches={matches} category="overall" />
+    </BottomSheet>
+  );
+}
+
+// A player's MVP points, tappable to see where they came from.
+function MvpTotalsButton({ playerId, name, matches, children }: { playerId: number; name: string; matches: CricketMatch[]; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        className="cricket-mvp-points-btn"
+        onClick={() => setOpen(true)}
+        aria-label={`See where ${name}'s points came from`}
+        title="See where these points came from"
+      >
+        {children}
+      </button>
+      {open && <MvpTotalsSheet playerId={playerId} name={name} matches={matches} onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
+const MIN_COMPARED = 2;
+const MAX_COMPARED = 3;
+
+// With `matches`, each player opens to their match-by-match figures. On the
+// MVP board, with `mvpMatches`, tapping a player shows where their points came
+// from (and those same match-by-match figures) instead. With `picks`, tapping
+// ticks them to compare instead.
+function BoardList({
+  board,
+  rows,
+  limit,
+  matches,
+  mvpMatches,
+  picks = null,
+  onPicks,
+}: {
+  board: Board;
+  rows: PlayerStats[];
+  // Everyone, unless it's a compact card that shows just the top few.
+  limit?: number;
+  matches?: CricketMatch[];
+  mvpMatches?: CricketMatch[];
+  picks?: number[] | null;
+  onPicks?: (picks: number[] | null) => void;
+}) {
   const nameOf = usePlayerNames();
   const photoOf = usePlayerPhotos();
+  const { data: me } = useCricketMe();
   const [openId, setOpenId] = useState<number | null>(null);
+  const [explaining, setExplaining] = useState<number | null>(null);
+  const [showCompare, setShowCompare] = useState(false);
   const ranked = board.rank(rows).slice(0, limit);
   if (ranked.length === 0) return <p className="admin-hint mb-0">No one yet.</p>;
+  const explainable = board.title === "MVP" ? mvpMatches : undefined;
+  // In points order, and only those still on the board once filters change.
+  const compared = picks ? ranked.filter((s) => picks.includes(s.playerId)) : [];
   return (
+    <>
+    {explainable && explaining !== null && (
+      <MvpTotalsSheet playerId={explaining} name={nameOf(explaining)} matches={explainable} onClose={() => setExplaining(null)} />
+    )}
+    {explainable && showCompare && (
+      <BottomSheet title="Compare points" icon="fa-solid fa-scale-balanced" onClose={() => setShowCompare(false)}>
+        <MvpCompare
+          players={compared.map((s) => ({
+            playerId: s.playerId,
+            name: nameOf(s.playerId),
+            photoUrl: photoOf(s.playerId),
+            totals: playerImpactTotals(explainable, s.playerId),
+          }))}
+        />
+      </BottomSheet>
+    )}
     <ol className="cricket-board-list">
       {ranked.map((s, index) => {
         const name = nameOf(s.playerId);
         const open = openId === s.playerId;
-        const podium = index < 3 ? `is-podium is-rank-${index + 1}` : "";
+        const isMe = me?.player?.id === s.playerId;
+        const podium = `${index < 3 ? `is-podium is-rank-${index + 1}` : ""} ${isMe ? "is-me" : ""}`.trim();
         const row = (
           <>
             <span className="cricket-board-rank">{index + 1}</span>
-            <PlayerAvatar name={name} photoUrl={photoOf(s.playerId)} className="cricket-board-avatar" />
+            <PlayerAvatar name={name} photoUrl={photoOf(s.playerId)} className="cricket-board-avatar" viewable={!picks} />
             <span className="cricket-board-name">
               <strong>
-                <PlayerLink playerId={s.playerId}>{name}</PlayerLink>
+                {picks ? name : <PlayerLink playerId={s.playerId}>{name}</PlayerLink>}
+                {isMe && <span className="cricket-board-you">You</span>}
               </strong>
               <small>{board.detail(s)}</small>
             </span>
             <span className="cricket-board-value">{board.value(s)}</span>
           </>
         );
+        if (picks) {
+          const picked = compared.some((c) => c.playerId === s.playerId);
+          const full = !picked && compared.length >= MAX_COMPARED;
+          const togglePick = () => {
+            if (full) return;
+            const ids = compared.map((c) => c.playerId);
+            onPicks?.(picked ? ids.filter((id) => id !== s.playerId) : [...ids, s.playerId]);
+          };
+          return (
+            <li key={s.playerId} className={`${podium} is-expandable ${picked ? "is-picked" : ""} ${full ? "is-unpickable" : ""}`}>
+              <div
+                className="cricket-board-row"
+                role="checkbox"
+                tabIndex={0}
+                aria-checked={picked}
+                aria-disabled={full}
+                aria-label={`Compare ${name}`}
+                onClick={togglePick}
+                onKeyDown={onActivate(togglePick)}
+              >
+                {row}
+                <span className="cricket-compare-check" aria-hidden="true">
+                  {picked && <i className="fa-solid fa-check"></i>}
+                </span>
+              </div>
+            </li>
+          );
+        }
+        if (explainable) {
+          const explain = () => setExplaining(s.playerId);
+          return (
+            <li key={s.playerId} className={`${podium} is-expandable`}>
+              <div
+                className="cricket-board-row"
+                role="button"
+                tabIndex={0}
+                aria-label={`See where ${name}'s points came from`}
+                onClick={explain}
+                onKeyDown={onActivate(explain)}
+              >
+                {row}
+                <i className="fa-solid fa-chevron-right cricket-expand-icon" aria-hidden="true"></i>
+              </div>
+            </li>
+          );
+        }
         if (!matches) {
           return (
             <li key={s.playerId} className={podium}>
@@ -351,6 +577,21 @@ function BoardList({ board, rows, limit, matches }: { board: Board; rows: Player
         );
       })}
     </ol>
+    {picks && (
+      <div className="cricket-compare-bar">
+        <button type="button" className="cricket-compare-cancel" aria-label="Stop comparing" onClick={() => onPicks?.(null)}>
+          <i className="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+        <span aria-live="polite">
+          {compared.length} picked
+          <small>Min {MIN_COMPARED}, max {MAX_COMPARED}</small>
+        </span>
+        <button type="button" className="cricket-mvp-help-btn is-active" disabled={compared.length < MIN_COMPARED} onClick={() => setShowCompare(true)}>
+          Compare
+        </button>
+      </div>
+    )}
+    </>
   );
 }
 

@@ -1,4 +1,5 @@
 // Shapes returned by the shared API (portfolio-server) for /admin/cricket.
+import type { MvpLock } from "../admin/cricket/stats";
 export type CricketPlayerRole = "batter" | "bowler" | "all-rounder" | "wicket-keeper";
 export type CricketBattingStyle = "right-hand" | "left-hand";
 export type CricketBowlingStyle =
@@ -472,6 +473,8 @@ export interface CricketMatch {
   // Bumped on every score change (the API refuses writes from older copies).
   version?: number | null;
   playerOfMatchId: number | null;
+  // Its MVP points and awards, saved once it finished (see buildMvpLock).
+  mvpLock?: MvpLock | null;
   // Players who may score (and edit) its matches / it; see canManage.ts.
   scorerIds: number[];
   // Who's scoring it right now (one person at a time; see useScoringSeat):
