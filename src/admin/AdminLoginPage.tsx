@@ -109,8 +109,7 @@ export function AdminLoginPage() {
         goTo("setPassword");
         return;
       }
-      const tooMany = isAxiosError(err) && err.response?.status === 429;
-      setError(err instanceof NoCricketAccessError || tooMany ? messageFor(err) : "That password isn't right.");
+      setError(err instanceof NoCricketAccessError ? err.message : messageFor(err));
     }
   }
 

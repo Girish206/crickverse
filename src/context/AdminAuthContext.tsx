@@ -103,6 +103,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
   async function login(identifier: string, password: string) {
     const { data } = await apiClient.post<ApiEnvelope<{ token: string }>>("/admin/auth/login", {
+      app: "cricket",
       email: identifier.trim(),
       password,
       remember: true,
