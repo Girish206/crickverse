@@ -24,6 +24,10 @@ interface AdminAuthContextValue {
   admin: AdminIdentity | null;
   // `identifier` is a mobile number or an email address.
   login: (identifier: string, password: string) => Promise<void>;
+  // Sign in with a code emailed to the account.
+  loginWithCode: (identifier: string, code: string) => Promise<void>;
+  // Sets a new password using a code emailed to the account, and signs in.
+  resetPassword: (identifier: string, code: string, newPassword: string) => Promise<void>;
   register: (input: { name?: string; mobile: string; password: string; inviteCode?: string }) => Promise<void>;
   // Signs in with a token the API just issued (e.g. after a profile edit,
   // which changes the name and mobile it carries).
@@ -111,6 +115,27 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     signInWith(data.data.token, true);
   }
 
+  async function loginWithCode(identifier: string, code: string) {
+    const { data } = await apiClient.post<ApiEnvelope<{ token: string }>>("/admin/auth/otp/login", {
+      app: "cricket",
+      email: identifier.trim(),
+      code,
+      remember: true,
+    });
+    signInWith(data.data.token, true);
+  }
+
+  async function resetPassword(identifier: string, code: string, newPassword: string) {
+    const { data } = await apiClient.post<ApiEnvelope<{ token: string }>>("/admin/auth/password/reset", {
+      app: "cricket",
+      email: identifier.trim(),
+      code,
+      newPassword,
+      remember: true,
+    });
+    signInWith(data.data.token, true);
+  }
+
   async function register(input: { name?: string; mobile: string; password: string; inviteCode?: string }) {
     const { data } = await apiClient.post<ApiEnvelope<{ token: string }>>("/admin/cricket/register", input);
     signInWith(data.data.token, true);
@@ -129,7 +154,18 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AdminAuthContext.Provider
-      value={{ isAuthenticated: admin !== null, admin, login, register, applyToken, logout, mainBg, setMainBg }}
+      value={{
+        isAuthenticated: admin !== null,
+        admin,
+        login,
+        loginWithCode,
+        resetPassword,
+        register,
+        applyToken,
+        logout,
+        mainBg,
+        setMainBg,
+      }}
     >
       {children}
     </AdminAuthContext.Provider>

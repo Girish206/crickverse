@@ -304,3 +304,38 @@
   --sig-line: rgba(var(--brand-navy-rgb), 0.2);
   --sig-name: rgb(var(--brand-navy-rgb));
 }
+
+/* The ways to switch between password, emailed code and forgot password. */
+.admin-login-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 16px;
+  margin-top: 0.85rem;
+}
+
+.admin-login-links button {
+  border: none;
+  background: none;
+  padding: 2px 0;
+  color: var(--primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-login-links button:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.admin-login-links button:disabled {
+  color: var(--bs-secondary-color);
+  cursor: default;
+}
+
+.admin-login-note {
+  margin: 0.6rem 0 0;
+  color: var(--bs-secondary-color);
+  font-size: 0.78rem;
+  text-align: center;
+}

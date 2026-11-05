@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { isAxiosError } from "axios";
 import { NoCricketAccessError, useAdminAuth } from "../context/AdminAuthContext";
@@ -11,7 +11,9 @@ import CustomButton from "./dms/components/CustomButton";
 import { AuthShell } from "./AuthShell";
 
 // What the API says comes after "Next" (portfolio-server lookupSignIn).
-type Step = "identify" | "password" | "setPassword" | "register";
+// "code" and "reset" come from the password step: an emailed code to sign in
+// with, or to set a new password with.
+type Step = "identify" | "password" | "setPassword" | "register" | "code" | "reset";
 
 const COPY: Record<Step, { heading: string; subtitle: string; submit: string; loading: string }> = {
   identify: {
@@ -32,6 +34,18 @@ const COPY: Record<Step, { heading: string; subtitle: string; submit: string; lo
     submit: "Set Password",
     loading: "Saving...",
   },
+  code: {
+    heading: "Check Your Email",
+    subtitle: "Enter the code we sent to sign in.",
+    submit: "Verify and Sign In",
+    loading: "Verifying...",
+  },
+  reset: {
+    heading: "Reset Password",
+    subtitle: "Enter the code we sent and choose a new password.",
+    submit: "Set Password and Sign In",
+    loading: "Saving...",
+  },
   register: {
     heading: "Create Account",
     subtitle: "Join in — track your runs, wickets and every match you play.",
@@ -47,7 +61,7 @@ const COPY: Record<Step, { heading: string; subtitle: string; submit: string; lo
 // or name and password for a new number. Signing in once keeps them signed
 // in on this device.
 export function AdminLoginPage() {
-  const { login, register } = useAdminAuth();
+  const { login, loginWithCode, resetPassword, register } = useAdminAuth();
   const navigate = useNavigate();
   // The page they were sent here from (a shared link), only ever in-app.
   const from = (useLocation().state as { from?: string } | null)?.from;
@@ -64,9 +78,21 @@ export function AdminLoginPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  // The emailed code, the masked address it went to, and the resend countdown.
+  const [code, setCode] = useState("");
+  const [sentTo, setSentTo] = useState("");
+  const [resendIn, setResendIn] = useState(0);
 
   const mobile = normalizeMobile(identifier);
   const copy = COPY[step];
+  const usesCode = step === "code" || step === "reset";
+  const setsPassword = step === "setPassword" || step === "register" || step === "reset";
+
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const timer = setTimeout(() => setResendIn((seconds) => seconds - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendIn]);
 
   function goTo(next: Step) {
     setStep(next);
@@ -83,7 +109,8 @@ export function AdminLoginPage() {
     if (step === "password" && !password) next.password = "Enter your password";
     if (step === "register" && name.trim().length < 2) next.name = "Enter your name";
     if (step === "setPassword" && !/^\d{6}$/.test(inviteCode.trim())) next.inviteCode = "Enter the 6-digit invite code";
-    if (step === "setPassword" || step === "register") {
+    if (usesCode && !/^\d{6}$/.test(code)) next.code = "Enter the 6-digit code";
+    if (setsPassword) {
       if (password.length < 8) next.password = "Use at least 8 characters";
       if (confirm !== password) next.confirm = "The passwords don't match";
     }
@@ -113,6 +140,27 @@ export function AdminLoginPage() {
     }
   }
 
+  // Emails a code, then moves to where it's entered. A number with no email
+  // on its account stays put, with the server saying who can help instead.
+  async function sendCode(next: "code" | "reset") {
+    setError("");
+    setLoading(true);
+    try {
+      const { data } = await apiClient.post<ApiEnvelope<{ sentTo: string; resendInSeconds: number }>>(
+        "/admin/auth/otp/request",
+        { app: "cricket", email: identifier.trim(), purpose: next === "reset" ? "reset" : "login" },
+      );
+      setSentTo(data.data.sentTo);
+      setResendIn(data.data.resendInSeconds);
+      setCode("");
+      if (step !== next) goTo(next);
+    } catch (err) {
+      setError(messageFor(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError("");
@@ -121,7 +169,13 @@ export function AdminLoginPage() {
     try {
       if (step === "identify") await lookup();
       else if (step === "password") await signIn();
-      else {
+      else if (step === "code") {
+        await loginWithCode(identifier, code);
+        navigate(backTo, { replace: true });
+      } else if (step === "reset") {
+        await resetPassword(identifier, code, password);
+        navigate(backTo, { replace: true });
+      } else {
         await register({
           name: step === "register" ? name.trim() : undefined,
           mobile: mobile!,
@@ -131,7 +185,7 @@ export function AdminLoginPage() {
         navigate(backTo, { replace: true });
       }
     } catch (err) {
-      setError(messageFor(err));
+      setError(err instanceof NoCricketAccessError ? err.message : messageFor(err));
     } finally {
       setLoading(false);
     }
@@ -210,12 +264,36 @@ export function AdminLoginPage() {
           />
         )}
 
-        {step !== "identify" && (
+        {usesCode && (
+          <>
+            <p className="admin-login-hint mt-0 mb-2">
+              Code sent to {sentTo} (valid 10 min)
+            </p>
+            <InputComp
+              type="text"
+              name="code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              autoFocus
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+              floating={true}
+              required
+              icon="fa-solid fa-key"
+              iconPosition="right"
+              label="6-digit code"
+              error={errors.code}
+            />
+          </>
+        )}
+
+        {step !== "identify" && step !== "code" && (
           <InputComp
             key={step}
             type={showPassword ? "text" : "password"}
             name="password"
-            label={step === "password" ? "Password" : "Create a password"}
+            label={step === "password" ? "Password" : step === "reset" ? "New password" : "Create a password"}
             autoComplete={step === "password" ? "current-password" : "new-password"}
             autoFocus={step === "password"}
             value={password}
@@ -229,7 +307,7 @@ export function AdminLoginPage() {
           />
         )}
 
-        {(step === "setPassword" || step === "register") && (
+        {setsPassword && (
           <InputComp
             type={showPassword ? "text" : "password"}
             name="confirm"
@@ -257,7 +335,27 @@ export function AdminLoginPage() {
         </CustomButton>
 
         {step === "password" && (
-          <p className="admin-login-hint">Forgot your password? Ask your organiser to reset it — they'll send you a new invite code.</p>
+          <div className="admin-login-links">
+            <button type="button" disabled={loading} onClick={() => sendCode("reset")}>
+              Forgot password?
+            </button>
+            <button type="button" disabled={loading} onClick={() => sendCode("code")}>
+              Email me a code
+            </button>
+          </div>
+        )}
+        {usesCode && (
+          <div className="admin-login-links">
+            <button type="button" onClick={() => goTo("password")}>
+              Use my password
+            </button>
+            <button type="button" disabled={loading || resendIn > 0} onClick={() => sendCode(step === "reset" ? "reset" : "code")}>
+              {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend code"}
+            </button>
+          </div>
+        )}
+        {step === "reset" && (
+          <p className="admin-login-hint">Setting a new password signs you out on your other devices.</p>
         )}
         {step === "setPassword" && (
           <p className="admin-login-hint">No code? Ask the organiser or captain who added you to send your invite.</p>
