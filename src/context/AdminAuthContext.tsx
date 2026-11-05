@@ -9,7 +9,7 @@ import type { ApiEnvelope } from "../api/types";
 // tokens, renewed each time the app opens), so nobody signs in every visit.
 interface AdminIdentity {
   sub: string;
-  // Null for an account that signs in with its mobile number.
+  // Null for an account with no email: it signs in with its mobile number.
   email: string | null;
   name: string | null;
   isOwner: boolean;
@@ -17,6 +17,15 @@ interface AdminIdentity {
   isSuperAdmin: boolean;
   // Player access (super admins always have it).
   hasCricketAccess: boolean;
+}
+
+interface RegisterInput {
+  name?: string;
+  mobile: string;
+  // Optional: where sign-in and password-reset codes go.
+  email?: string;
+  password: string;
+  inviteCode?: string;
 }
 
 interface AdminAuthContextValue {
@@ -28,7 +37,7 @@ interface AdminAuthContextValue {
   loginWithCode: (identifier: string, code: string) => Promise<void>;
   // Sets a new password using a code emailed to the account, and signs in.
   resetPassword: (identifier: string, code: string, newPassword: string) => Promise<void>;
-  register: (input: { name?: string; mobile: string; password: string; inviteCode?: string }) => Promise<void>;
+  register: (input: RegisterInput) => Promise<void>;
   // Signs in with a token the API just issued (e.g. after a profile edit,
   // which changes the name and mobile it carries).
   applyToken: (token: string) => void;
@@ -136,7 +145,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     signInWith(data.data.token, true);
   }
 
-  async function register(input: { name?: string; mobile: string; password: string; inviteCode?: string }) {
+  async function register(input: RegisterInput) {
     const { data } = await apiClient.post<ApiEnvelope<{ token: string }>>("/admin/cricket/register", input);
     signInWith(data.data.token, true);
   }

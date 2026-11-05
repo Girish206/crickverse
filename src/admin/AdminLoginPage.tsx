@@ -18,7 +18,7 @@ type Step = "identify" | "password" | "setPassword" | "register" | "code" | "res
 const COPY: Record<Step, { heading: string; subtitle: string; submit: string; loading: string }> = {
   identify: {
     heading: "Welcome to RunMitra",
-    subtitle: "Every ball. Every stat. Enter your mobile number to get started.",
+    subtitle: "Every ball. Every stat. Enter your email or mobile number to get started.",
     submit: "Next",
     loading: "Checking...",
   },
@@ -54,12 +54,12 @@ const COPY: Record<Step, { heading: string; subtitle: string; submit: string; lo
   },
 };
 
-// RunMitra sign-in and sign-up on one screen: the mobile number first (the
-// field says so, but an organiser's email works there too), then a password
-// for an existing account, the invite code and a new password for a
-// team-added player who has none yet (the code proves the number is theirs),
-// or name and password for a new number. Signing in once keeps them signed
-// in on this device.
+// RunMitra sign-in and sign-up on one screen: the email or mobile number
+// first, then a password for an existing account, the invite code and a new
+// password for a team-added player who has none yet (the code proves the
+// number is theirs), or name and password for a new number. Both ways of
+// joining can add an email, which sign-in codes need. Signing in once keeps
+// them signed in on this device.
 export function AdminLoginPage() {
   const { login, loginWithCode, resetPassword, register } = useAdminAuth();
   const navigate = useNavigate();
@@ -72,6 +72,7 @@ export function AdminLoginPage() {
   // The six digits the organiser who added them shared (set-password step).
   const [inviteCode, setInviteCode] = useState("");
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -86,7 +87,8 @@ export function AdminLoginPage() {
   const mobile = normalizeMobile(identifier);
   const copy = COPY[step];
   const usesCode = step === "code" || step === "reset";
-  const setsPassword = step === "setPassword" || step === "register" || step === "reset";
+  const joining = step === "setPassword" || step === "register";
+  const setsPassword = joining || step === "reset";
 
   useEffect(() => {
     if (resendIn <= 0) return;
@@ -105,9 +107,10 @@ export function AdminLoginPage() {
   function validate() {
     const next: Record<string, string> = {};
     if (step === "identify" && !identifier.includes("@") && !mobile)
-      next.identifier = "Enter a valid 10-digit mobile number";
+      next.identifier = "Enter your email or 10-digit mobile number";
     if (step === "password" && !password) next.password = "Enter your password";
     if (step === "register" && name.trim().length < 2) next.name = "Enter your name";
+    if (joining && email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) next.email = "Enter a valid email address";
     if (step === "setPassword" && !/^\d{6}$/.test(inviteCode.trim())) next.inviteCode = "Enter the 6-digit invite code";
     if (usesCode && !/^\d{6}$/.test(code)) next.code = "Enter the 6-digit code";
     if (setsPassword) {
@@ -179,6 +182,7 @@ export function AdminLoginPage() {
         await register({
           name: step === "register" ? name.trim() : undefined,
           mobile: mobile!,
+          email: email.trim() || undefined,
           password,
           inviteCode: step === "setPassword" ? inviteCode.trim() : undefined,
         });
@@ -213,7 +217,7 @@ export function AdminLoginPage() {
             required
             icon={`fa-solid ${identifier.includes("@") ? "fa-envelope" : "fa-mobile-screen"}`}
             iconPosition="right"
-            label="Mobile number"
+            label="Email or mobile number"
             error={errors.identifier}
           />
         ) : (
@@ -262,6 +266,25 @@ export function AdminLoginPage() {
             label="Invite code"
             error={errors.inviteCode}
           />
+        )}
+
+        {joining && (
+          <>
+            <InputComp
+              type="email"
+              name="signupEmail"
+              autoCapitalize="none"
+              spellCheck={false}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              floating={true}
+              icon="fa-solid fa-envelope"
+              iconPosition="right"
+              label="Email (optional)"
+              error={errors.email}
+            />
+            <p className="admin-login-note mt-0 mb-2">If you want to sign in with a code, enter your email.</p>
+          </>
         )}
 
         {usesCode && (

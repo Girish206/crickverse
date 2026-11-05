@@ -25,8 +25,9 @@ import { Loader } from "../../components/Loader";
 import { confirmAction } from "../../components/confirmDelete";
 
 // /profile — the signed-in user's own details: photo, name, mobile number
-// (also their sign-in), playing role and password; sharing, notifications,
-// tips and signing out are under the header's ⚙.
+// (also their sign-in), email (where sign-in codes go), playing role and
+// password; sharing, notifications, tips and signing out are under the
+// header's ⚙.
 export function MyProfilePage() {
   const { data: me } = useCricketMe();
 
@@ -52,6 +53,7 @@ function ProfileForm({ me }: { me: CricketMe }) {
 
   const [name, setName] = useState(player?.name ?? admin?.name ?? "");
   const [mobile, setMobile] = useState(me.accountMobile ? formatMobile(me.accountMobile) : "");
+  const [email, setEmail] = useState(admin?.email ?? "");
   const [role, setRole] = useState<CricketPlayerRole | null>(player?.role ?? null);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -59,6 +61,9 @@ function ProfileForm({ me }: { me: CricketMe }) {
   const [showPasswords, setShowPasswords] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [photoError, setPhotoError] = useState<string | null>(null);
+
+  const cleanEmail = email.trim().toLowerCase();
+  const emailChanged = cleanEmail !== (admin?.email ?? "");
 
   const displayName = name.trim() || admin?.name || "?";
   // The saved role, not the one being picked below.
@@ -85,7 +90,13 @@ function ProfileForm({ me }: { me: CricketMe }) {
     const next: Record<string, string> = {};
     if (name.trim().length < 2) next.name = "Enter your name";
     if (!normalizeMobile(mobile)) next.mobile = "Enter a valid 10-digit mobile number";
-    if (newPassword || currentPassword || confirmPassword) {
+    if (emailChanged) {
+      if (!cleanEmail) next.email = "Your email can be changed, but not removed";
+      else if (!/^\S+@\S+\.\S+$/.test(cleanEmail)) next.email = "Enter a valid email address";
+      if (!currentPassword) next.currentPassword = "Enter your current password to change your email";
+    }
+    // On its own, the current password may just be there for the email.
+    if (newPassword || confirmPassword || (currentPassword && !emailChanged)) {
       if (!currentPassword) next.currentPassword = "Enter your current password";
       if (newPassword.length < 8) next.newPassword = "Use at least 8 characters";
       if (confirmPassword !== newPassword) next.confirmPassword = "The passwords don't match";
@@ -101,6 +112,7 @@ function ProfileForm({ me }: { me: CricketMe }) {
       name: name.trim(),
       mobile: normalizeMobile(mobile)!,
       role,
+      ...(emailChanged ? { email: cleanEmail, currentPassword } : {}),
       ...(newPassword ? { currentPassword, newPassword } : {}),
     });
     applyToken(token);
@@ -177,6 +189,19 @@ function ProfileForm({ me }: { me: CricketMe }) {
         <small className="admin-hint d-block ms-1 mb-2">
           You sign in with this number — changing it changes your sign-in too.
         </small>
+        <InputComp
+          label="Email"
+          name="accountEmail"
+          type="email"
+          autoCapitalize="none"
+          spellCheck={false}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          error={errors.email}
+        />
+        <small className="admin-hint d-block ms-1 mb-2">
+          If you want to sign in with a code, enter your email. Changing it needs your current password, below.
+        </small>
         {player && (
           <ChipChoice
             label="Playing role"
@@ -191,7 +216,7 @@ function ProfileForm({ me }: { me: CricketMe }) {
         <h3 className="cv-profile-section">
           <i className="fa-solid fa-lock" aria-hidden="true"></i> Change password
         </h3>
-        <p className="admin-hint mb-2">Leave these empty to keep your current password.</p>
+        <p className="admin-hint mb-2">Leave the new password empty to keep your current one.</p>
         <InputComp
           label="Current password"
           name="currentPassword"

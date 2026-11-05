@@ -287,14 +287,16 @@ export function useRevokeCricketPlayerLogin() {
 export interface CricketProfileInput {
   name: string;
   mobile: string;
+  // Only when it's changing, which also needs currentPassword.
+  email?: string;
   role: CricketPlayerRole | null;
   // Both, to change the password.
   currentPassword?: string;
   newPassword?: string;
 }
 
-// The signed-in user's own name, mobile, role and password. Returns a fresh
-// token (the name and mobile ride in it) for AdminAuthContext.applyToken.
+// The signed-in user's own name, mobile, email, role and password. Returns a
+// fresh token (the name and email ride in it) for AdminAuthContext.applyToken.
 export function useUpdateMyProfile() {
   const queryClient = useQueryClient();
   return useMutation({
