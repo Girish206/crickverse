@@ -1,15 +1,18 @@
 // What RunMitra's QR codes hold: ordinary links, so a phone's own camera
 // opens them too. A player's code opens their profile (/p/<id>) and carries
 // a short-lived signed token (?t=) that lets a scanner add them to a team; a
-// team's is its join link (/join/<code>).
+// team's is its join link (/join/<code>). Both point at the website (in the
+// app too), so a phone without the app opens them.
+
+import { siteOrigin } from "../../../app-shell/platform";
 
 export const playerQrUrl = (playerId: number, token: string) => {
-  const url = new URL(`/p/${playerId}`, window.location.origin);
+  const url = new URL(`/p/${playerId}`, siteOrigin());
   url.searchParams.set("t", token);
   return url.toString();
 };
 
-export const teamJoinUrl = (code: string) => new URL(`/join/${code}`, window.location.origin).toString();
+export const teamJoinUrl = (code: string) => new URL(`/join/${code}`, siteOrigin()).toString();
 
 export type QrTarget = { kind: "player"; playerId: number; token: string | null } | { kind: "team"; code: string };
 

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { siteOrigin } from "../../app-shell/platform";
 import { PageHeaderAction } from "../components/PageHeader";
 import { avatarColorFor } from "./avatarColor";
 import { BottomSheet } from "./BottomSheet";
@@ -73,7 +74,7 @@ export function ShareSheet({
   note,
   onClose,
 }: ShareSheetProps & { onClose: () => void }) {
-  const url = new URL(path, window.location.origin).toString();
+  const url = new URL(path, siteOrigin()).toString();
   const message = `${text}\n${url}`;
   const canShare = typeof navigator.share === "function";
 

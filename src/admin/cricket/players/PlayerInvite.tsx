@@ -3,13 +3,14 @@ import { toast } from "sonner";
 import { messageFor } from "../../../api/mutationErrors";
 import { usePlayerInvite, useResetPlayerLogin, type PlayerInviteCode } from "../../../api/hooks/cricket/useCricketPlayers";
 import { confirmAction } from "../../components/confirmDelete";
+import { siteOrigin } from "../../../app-shell/platform";
 
 // The message that goes with an invite code: where to sign up, and the code
 // that proves the number is theirs.
 function inviteText(invite: PlayerInviteCode) {
   return (
     `Hi ${invite.name}! You're on RunMitra — see your runs, wickets and matches.\n` +
-    `Sign in at ${window.location.origin}/login with your mobile number and enter this invite code: ${invite.code}`
+    `Sign in at ${siteOrigin()}/login with your mobile number and enter this invite code: ${invite.code}`
   );
 }
 

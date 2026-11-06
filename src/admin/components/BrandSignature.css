@@ -85,3 +85,11 @@
   font-size: 0.75rem;
   opacity: 0.8;
 }
+
+/* Hidden for now. Delete this rule to show the signature again. Its
+   desktop wrapper (.main-signature in Layout.tsx) is hidden too, so pages
+   do not keep an empty gap at the bottom. */
+.brand-signature,
+.main-signature {
+  display: none;
+}

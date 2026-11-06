@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { CricketTournament } from "../../../api/types";
+import { isNativeApp } from "../../../app-shell/platform";
 import { BottomSheet } from "../BottomSheet";
 import { logoFor } from "./tournamentArt";
 
@@ -17,6 +18,9 @@ export const FONT = "Outfit, system-ui, sans-serif";
 export const loadImage = (src: string) =>
   new Promise<HTMLImageElement | null>((resolve) => {
     const img = new Image();
+    // In the app, uploaded logos come from the API's address, not the
+    // page's: without this the canvas couldn't be saved once one is drawn.
+    img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
     img.onerror = () => resolve(null);
     img.src = src;
@@ -193,6 +197,9 @@ export function ShareCardSheet({
 
   function download() {
     if (!image) return;
+    // The app's web view can't save a download: the phone's share sheet
+    // has "Save to device", Photos, Drive and the rest instead.
+    if (isNativeApp) return void share();
     const link = document.createElement("a");
     link.href = image.url;
     link.download = fileName;

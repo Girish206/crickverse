@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { isNativeApp } from "../../../app-shell/platform";
 import { apiClient } from "../../client";
 import type { ApiEnvelope } from "../../types";
 
@@ -15,9 +16,11 @@ interface PushStatus {
 }
 
 // Why the switch can't work here, in words for the profile page; null = it can.
-export type PushBlocker = "unsupported" | "no-worker" | "no-key" | "denied" | null;
+export type PushBlocker = "app" | "unsupported" | "no-worker" | "no-key" | "denied" | null;
 
 export const PUSH_BLOCKER_TEXT: Record<Exclude<PushBlocker, null>, string> = {
+  // Web Push needs a browser; the Android app's web view has none of it.
+  app: "Match notifications aren't in the Android app yet. To get them, open app.runmitra.in in Chrome and turn them on there.",
   unsupported:
     "This browser can't show notifications. On an iPhone, add RunMitra to your Home Screen and open it from there.",
   "no-worker": "Notifications work in the installed app / on the live site.",
@@ -30,7 +33,7 @@ export const PUSH_BLOCKER_TEXT: Record<Exclude<PushBlocker, null>, string> = {
 export class PushSetupError extends Error {}
 
 const pushSupported = () =>
-  typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  !isNativeApp && typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
 
 // The key comes as URL-safe base64; pushManager wants the raw bytes.
 function urlBase64ToUint8Array(base64: string) {
@@ -83,19 +86,22 @@ export function useCricketPush() {
     };
   }, []);
 
-  const blocker: PushBlocker = !pushSupported()
-    ? "unsupported"
-    : worker === "none"
-      ? "no-worker"
-      : status.data && !status.data.publicKey
-        ? "no-key"
-        : permission === "denied"
-          ? "denied"
-          : null;
+  const blocker: PushBlocker = isNativeApp
+    ? "app"
+    : !pushSupported()
+      ? "unsupported"
+      : worker === "none"
+        ? "no-worker"
+        : status.data && !status.data.publicKey
+          ? "no-key"
+          : permission === "denied"
+            ? "denied"
+            : null;
 
   const enable = useMutation({
     meta: { skipGlobalError: true },
     mutationFn: async () => {
+      if (isNativeApp) throw new PushSetupError(PUSH_BLOCKER_TEXT.app);
       if (!pushSupported()) throw new PushSetupError(PUSH_BLOCKER_TEXT.unsupported);
       // Couldn't ask the server (offline): the caller's generic message.
       if (!status.data) throw new Error("Push status not loaded");

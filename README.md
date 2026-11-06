@@ -30,6 +30,40 @@ npm run dev        # http://localhost:5174 (proxies /api to :4000)
 
 ## Deploy
 
-`vercel.json` rewrites `/api/*` to the shared API
+On app.runmitra.in. `vercel.json` rewrites `/api/*` to the shared API
 (`girish-creations-api.vercel.app`) and serves `index.html` for every other
-path.
+path. runmitra.in and www.runmitra.in are the website (`../runmitra-website`:
+home page, privacy policy, terms, account deletion), which sends links shared
+before the move (`runmitra.in/matches/…`) on to the same path here.
+
+## Android app
+
+The same build, wrapped with [Capacitor](https://capacitorjs.com) (`android/`,
+app id `in.runmitra.app`). It needs Android Studio, and `JAVA_HOME` set to its
+bundled JDK (`C:\Program Files\Android\Android Studio\jbr`) to build from the
+command line.
+
+```sh
+npm run android:apk    # build + sync, then android/app/build/outputs/apk/debug/app-debug.apk
+npm run android:run    # build + sync, then install on a connected phone / emulator
+npm run android:open   # open android/ in Android Studio (release builds, signing)
+```
+
+Run `npm run android:sync` after any web change: the app carries its own copy
+of `dist/`, so a website deploy doesn't update it — a new APK does.
+
+What differs in the app is in `src/app-shell/platform.ts` (it calls the API
+directly, shares app.runmitra.in links, points uploaded pictures at the API) and
+`src/app-shell/nativeShell.ts` (back button, share sheet, clipboard, status
+and navigation bar colours from the page's `theme-color`).
+`android/.../MainActivity.java` keeps every page between the status bar and
+the navigation buttons, so no screen needs its own safe-area CSS. The API
+allows the app's address (`https://localhost`) in `portfolio-server`'s
+`config/cors.ts`. Match notifications (Web Push) aren't in the app yet.
+
+Icons and splash come from `assets/` (made from `public/icon-maskable.svg`):
+after changing them, run
+
+```sh
+npx @capacitor/assets generate --android --iconBackgroundColor "#0f1012" --iconBackgroundColorDark "#0f1012" --splashBackgroundColor "#0f1012" --splashBackgroundColorDark "#0f1012"
+```

@@ -10,6 +10,7 @@ import { AdminAuthProvider } from "./context/AdminAuthContext";
 import { showMutationError } from "./api/mutationErrors";
 import { AppToaster } from "./admin/components/AppToaster";
 import { reloadOnceForNewBuild } from "./app-shell/chunkReload";
+import { isNativeApp } from "./app-shell/platform";
 
 const queryClient = new QueryClient({
   mutationCache: new MutationCache({
@@ -45,9 +46,14 @@ window.addEventListener("vite:preloadError", (event) => {
   if (reloadOnceForNewBuild()) event.preventDefault();
 });
 
+// The Android app: back button, share sheet and clipboard (app-shell/nativeShell).
+if (isNativeApp) void import("./app-shell/nativeShell").then(({ installNativeShell }) => installNativeShell());
+
 // The service worker makes the app installable and opens it offline. Only
-// in a production build: in dev it would cache Vite's modules.
-if (import.meta.env.PROD && "serviceWorker" in navigator) {
+// in a production build: in dev it would cache Vite's modules. Not in the
+// Android app, which carries its own copy of every file (a cached one could
+// outlive an app update).
+if (import.meta.env.PROD && !isNativeApp && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js").catch(() => {
       // Not supported here (e.g. a private window): the app works without it.

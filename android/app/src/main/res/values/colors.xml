@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Behind the status bar and navigation buttons until the page sets its
+         theme-color (AppWindowPlugin): RunMitra's dark, as the splash. -->
+    <color name="app_window_background">#0f1012</color>
+</resources>

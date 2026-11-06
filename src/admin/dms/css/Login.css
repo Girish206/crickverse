@@ -5,7 +5,11 @@
 
 .admin-login-shell {
   position: relative;
+  /* dvh, not just vh: on phones 100vh is the height with the browser's
+     address bar hidden, taller than the visible screen, so the page
+     scrolled even when everything fit. */
   min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   overflow: hidden;
   display: flex;
