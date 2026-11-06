@@ -308,6 +308,21 @@ export function useUpdateMyProfile() {
   });
 }
 
+// My Profile → Delete my account, confirmed with their password; keepName
+// leaves their name on past matches instead of "Deleted player". The server
+// ends every session; the caller signs out here. accountKept: the sign-in
+// stays for the other tools, only RunMitra is gone.
+export function useDeleteMyAccount() {
+  return useMutation({
+    mutationFn: async (input: { password: string; keepName: boolean }) => {
+      const { data } = await apiClient.post<ApiEnvelope<{ accountKept: boolean }>>("/admin/cricket/me/delete", input);
+      return data.data;
+    },
+    // The sheet shows why (a wrong password) under the field instead.
+    meta: { skipGlobalError: true },
+  });
+}
+
 // The signed-in player's own photo; null removes it.
 export function useSetMyPhoto() {
   const queryClient = useQueryClient();

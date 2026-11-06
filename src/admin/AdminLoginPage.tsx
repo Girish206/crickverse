@@ -6,6 +6,7 @@ import { apiClient } from "../api/client";
 import type { ApiEnvelope } from "../api/types";
 import { messageFor } from "../api/mutationErrors";
 import { formatMobile, normalizeMobile } from "./cricket/mobile";
+import { PRIVACY_URL, TERMS_URL } from "./cricket/legalLinks";
 import InputComp from "./dms/components/InputComp";
 import CustomButton from "./dms/components/CustomButton";
 import { AuthShell } from "./AuthShell";
@@ -382,6 +383,19 @@ export function AdminLoginPage() {
         )}
         {step === "setPassword" && (
           <p className="admin-login-hint">No code? Ask the organiser or captain who added you to send your invite.</p>
+        )}
+        {joining && (
+          <p className="admin-login-note admin-login-legal">
+            By continuing, you agree to RunMitra's{" "}
+            <a href={TERMS_URL} target="_blank" rel="noopener">
+              Terms &amp; Conditions
+            </a>{" "}
+            and{" "}
+            <a href={PRIVACY_URL} target="_blank" rel="noopener">
+              Privacy Policy
+            </a>
+            .
+          </p>
         )}
       </form>
     </AuthShell>

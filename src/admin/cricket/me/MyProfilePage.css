@@ -170,3 +170,54 @@
 .cv-profile-switch.is-blocked {
   cursor: default;
 }
+
+/* "Delete my account" (⚙ → its own sheet): what goes and what stays, then
+   the password that confirms it. */
+.cv-delete-account {
+  color: var(--theme-text-dark);
+  font-size: var(--fs-sm);
+}
+.cv-delete-account p {
+  margin: 0 0 8px;
+}
+.cv-delete-account ul {
+  margin: 0 0 14px;
+  padding-left: 1.2em;
+  color: var(--muted-color);
+}
+.cv-delete-account li + li {
+  margin-top: 4px;
+}
+.cv-delete-account-keep {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0 0 14px;
+  padding: 10px 14px 10px 2.4em;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  cursor: pointer;
+}
+.cv-delete-account-keep .form-check-input {
+  flex: none;
+  margin-top: 0.2em;
+  cursor: pointer;
+}
+.cv-delete-account-keep .form-check-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+}
+.cv-delete-account-keep small {
+  color: var(--muted-color);
+  font-size: var(--fs-xs);
+  line-height: 1.35;
+}
+.cv-delete-account-more {
+  display: inline-block;
+  margin: 2px 0 4px 4px;
+  color: var(--primary);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}

@@ -1,7 +1,13 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { useCricketMe, useSetMyPhoto, useUpdateMyProfile } from "../../../api/hooks/cricket/useCricketPlayers";
+import {
+  useCricketMe,
+  useDeleteMyAccount,
+  useSetMyPhoto,
+  useUpdateMyProfile,
+} from "../../../api/hooks/cricket/useCricketPlayers";
+import { messageFor } from "../../../api/mutationErrors";
 import { PUSH_BLOCKER_TEXT, PushSetupError, useCricketPush } from "../../../api/hooks/cricket/useCricketPush";
 import type { CricketMe, CricketPlayer, CricketPlayerRole } from "../../../api/types";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
@@ -15,6 +21,8 @@ import { PLAYER_ROLES, roleOf } from "../playerRoles";
 import { setTipsOff, tipsOff } from "../TipsTour";
 import { ShareAppSheet } from "../ShareMenu";
 import { SettingsMenu } from "../SettingsMenu";
+import { BottomSheet } from "../BottomSheet";
+import { DELETE_ACCOUNT_URL, PRIVACY_URL, TERMS_URL, openWebsite } from "../legalLinks";
 import { PlayerAvatar } from "../players/PlayerAvatar";
 import { PlayerQrSheet } from "../qr/ShowQrSheets";
 import "../../dms/css/adminDisplays.css";
@@ -265,13 +273,14 @@ function ProfileForm({ me }: { me: CricketMe }) {
 }
 
 // The header's ⚙: their QR code, sharing the app, this device's
-// notifications, tips and signing out — everything on the page but the form
-// and its Save.
+// notifications, tips, the privacy policy and terms, signing out and
+// deleting the account — everything on the page but the form and its Save.
 function ProfileSettings({ player }: { player: CricketPlayer | null }) {
   const { logout } = useAdminAuth();
   const navigate = useNavigate();
   const [sharingApp, setSharingApp] = useState(false);
   const [showingQr, setShowingQr] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const [noTips, setNoTips] = useState(tipsOff);
 
   function handleLogout() {
@@ -326,19 +335,138 @@ function ProfileSettings({ player }: { player: CricketPlayer | null }) {
             },
           },
           {
+            icon: "fa-solid fa-user-shield",
+            label: "Privacy Policy",
+            description: "What RunMitra collects and who can see it",
+            onClick: () => openWebsite(PRIVACY_URL),
+          },
+          {
+            icon: "fa-solid fa-file-contract",
+            label: "Terms & Conditions",
+            onClick: () => openWebsite(TERMS_URL),
+          },
+          {
             icon: "fa-solid fa-shield-halved",
             label: "Sign out of all devices",
             description: "Every phone and computer, including this one",
             onClick: handleLogoutEverywhere,
           },
           { icon: "fa-solid fa-right-from-bracket", label: "Sign out", onClick: handleLogout, danger: true },
+          {
+            icon: "fa-solid fa-user-xmark",
+            label: "Delete my account",
+            description: "Your sign-in, profile and photo, for good",
+            onClick: () => setDeletingAccount(true),
+            danger: true,
+          },
         ]}
       >
         <NotificationsRow />
       </SettingsMenu>
       {sharingApp && <ShareAppSheet onClose={() => setSharingApp(false)} />}
       {showingQr && player && <PlayerQrSheet player={player} onClose={() => setShowingQr(false)} />}
+      {deletingAccount && <DeleteAccountSheet onClose={() => setDeletingAccount(false)} />}
     </>
+  );
+}
+
+// "Delete my account": what goes and what stays (as the website's
+// /delete-account page says), confirmed with their password. Deleting signs
+// them out; the server has already ended their other sessions.
+function DeleteAccountSheet({ onClose }: { onClose: () => void }) {
+  const { logout } = useAdminAuth();
+  const navigate = useNavigate();
+  const deleteAccount = useDeleteMyAccount();
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  // Off until they tick it: keeping the name is their choice to make.
+  const [keepName, setKeepName] = useState(false);
+  const [error, setError] = useState<string | undefined>();
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!password) return setError("Enter your password");
+    setError(undefined);
+    try {
+      const { accountKept } = await deleteAccount.mutateAsync({ password, keepName });
+      await logout();
+      navigate("/login", { replace: true });
+      toast.success(
+        accountKept
+          ? "Your RunMitra account is deleted. Your sign-in still works for your other tools."
+          : "Your RunMitra account is deleted",
+      );
+    } catch (err) {
+      setError(messageFor(err));
+    }
+  }
+
+  return (
+    <BottomSheet
+      title="Delete my account"
+      icon="fa-solid fa-user-xmark"
+      onClose={onClose}
+      footer={
+        <CustomButton
+          type="submit"
+          form="cv-delete-account"
+          bg="danger"
+          rounded
+          className="w-100"
+          loading={deleteAccount.isPending}
+          loadingLabel="Deleting..."
+        >
+          <i className="fa-solid fa-trash-can me-2" aria-hidden="true"></i>Delete my account
+        </CustomButton>
+      }
+    >
+      <form id="cv-delete-account" onSubmit={handleSubmit} noValidate className="cv-delete-account">
+        <p>
+          This deletes your RunMitra account straight away. <strong>It can't be undone.</strong>
+        </p>
+        <ul>
+          <li>Your sign-in, mobile number, email, photo and profile are deleted.</li>
+          <li>You stop following players, teams and tournaments, and your notifications stop.</li>
+          <li>
+            {keepName
+              ? "Matches you've played keep their scores under your name, with nothing else about you."
+              : "Matches you've played keep their scores, shown as “Deleted player” instead of your name."}
+          </li>
+        </ul>
+        <label className="form-check cv-delete-account-keep">
+          <input
+            type="checkbox"
+            className="form-check-input"
+            checked={keepName}
+            onChange={(e) => setKeepName(e.target.checked)}
+          />
+          <span className="form-check-label">
+            <strong>Keep my name on past matches</strong>
+            <small>So your teammates' scorecards still show who played. Everything else is still deleted.</small>
+          </span>
+        </label>
+        <InputComp
+          label="Your password"
+          name="deleteAccountPassword"
+          type={showPassword ? "text" : "password"}
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          icon={`fa-solid ${showPassword ? "fa-eye" : "fa-eye-slash"}`}
+          iconPosition="right"
+          iconOnClick={() => setShowPassword((prev) => !prev)}
+          error={error}
+        />
+        <a
+          className="cv-delete-account-more"
+          href={DELETE_ACCOUNT_URL}
+          target="_blank"
+          rel="noopener"
+        >
+          More about deleting your account
+        </a>
+      </form>
+    </BottomSheet>
   );
 }
 
