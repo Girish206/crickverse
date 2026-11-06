@@ -95,6 +95,14 @@
     0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
+/* admin.css (loaded with most pages, so often still here after signing out)
+   caps .admin-login-card at 380px for an old two-panel login. In this
+   420px column that left the card hugging the left edge, off-centre from
+   the logo and heading above it; here it fills the column instead. */
+.admin-login-stack > .admin-login-card {
+  max-width: none;
+}
+
 .admin-login-card::before {
   content: "";
   position: absolute;
