@@ -22,10 +22,24 @@ interface AdminIdentity {
 interface RegisterInput {
   name?: string;
   mobile: string;
-  // Optional: where sign-in and password-reset codes go.
+  // Optional: where sign-in and password-reset codes go. Saved only once
+  // it's confirmed with `emailCode`.
   email?: string;
+  // The code the API emailed to `email` when the form was first sent.
+  emailCode?: string;
   password: string;
   inviteCode?: string;
+  // A new number with no email: the captcha picture and what they typed.
+  captchaId?: string;
+  captchaAnswer?: string;
+}
+
+// Where the API sent the code confirming the sign-up email: no account yet,
+// until the form is sent again with that code.
+export interface EmailToVerify {
+  sentTo: string;
+  expiresInMinutes: number;
+  resendInSeconds: number;
 }
 
 interface AdminAuthContextValue {
@@ -37,7 +51,9 @@ interface AdminAuthContextValue {
   loginWithCode: (identifier: string, code: string) => Promise<void>;
   // Sets a new password using a code emailed to the account, and signs in.
   resetPassword: (identifier: string, code: string, newPassword: string) => Promise<void>;
-  register: (input: RegisterInput) => Promise<void>;
+  // Signs in with the new account, or returns where the code confirming
+  // the email went (nothing is created until it's sent with the code).
+  register: (input: RegisterInput) => Promise<EmailToVerify | null>;
   // Signs in with a token the API just issued (e.g. after a profile edit,
   // which changes the name and mobile it carries).
   applyToken: (token: string) => void;
@@ -146,8 +162,13 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function register(input: RegisterInput) {
-    const { data } = await apiClient.post<ApiEnvelope<{ token: string }>>("/admin/cricket/register", input);
-    signInWith(data.data.token, true);
+    const { data } = await apiClient.post<ApiEnvelope<{ token?: string; verifyEmail?: EmailToVerify }>>(
+      "/admin/cricket/register",
+      input,
+    );
+    if (data.data.verifyEmail) return data.data.verifyEmail;
+    signInWith(data.data.token!, true);
+    return null;
   }
 
   function applyToken(token: string) {

@@ -233,6 +233,15 @@
   text-decoration: underline;
 }
 
+/* What went wrong, above the form: small, like the other notes on it. */
+.admin-login-error {
+  padding: 8px 12px;
+  margin-bottom: 0.85rem;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
 /* After "Next": the number/email they typed, with a way back to change it. */
 .admin-login-identity {
   display: flex;
@@ -365,4 +374,55 @@
 
 .admin-login-legal a:hover {
   text-decoration: underline;
+}
+
+/* After Create Account with no email: the captcha picture and a button for a
+   new one. The picture has its own light background, so it reads in dark mode. */
+.signup-captcha {
+  margin-top: 0.25rem;
+}
+
+.signup-captcha-picture {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 0.75rem;
+}
+
+.signup-captcha-picture img,
+.signup-captcha-placeholder {
+  width: 220px;
+  max-width: calc(100% - 48px);
+  height: auto;
+  aspect-ratio: 220 / 80;
+  border-radius: 10px;
+  border: 1px solid var(--bs-border-color);
+}
+
+.signup-captcha-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bs-tertiary-bg);
+  color: var(--bs-secondary-color);
+  font-size: 0.78rem;
+}
+
+.signup-captcha-refresh {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--primary);
+}
+
+.signup-captcha-refresh:hover:not(:disabled) {
+  background: var(--bs-tertiary-bg);
+}
+
+.signup-captcha-refresh:disabled {
+  color: var(--bs-secondary-color);
 }
