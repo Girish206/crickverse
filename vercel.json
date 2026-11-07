@@ -3,7 +3,36 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://girish-creations-api.vercel.app/api/:path*"
+      "has": [{ "type": "host", "value": "dev-app\\.runmitra\\.in" }],
+      "destination": "https://dev-api.runmitra.in/api/:path*"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://api.runmitra.in/api/:path*"
+    },
+    {
+      "source": "/tournaments/:rest*",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(WhatsApp|facebookexternalhit|Facebot|Twitterbot|TelegramBot|Slackbot|LinkedInBot|Discordbot|SkypeUriPreview|Pinterest|redditbot|Applebot|Googlebot|bingbot).*"
+        },
+        { "type": "host", "value": "(?<host>dev-app\\.runmitra\\.in)" }
+      ],
+      "destination": "https://dev-api.runmitra.in/api/cricket-preview?host=:host&path=tournaments/:rest*"
+    },
+    {
+      "source": "/matches/:rest*",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(WhatsApp|facebookexternalhit|Facebot|Twitterbot|TelegramBot|Slackbot|LinkedInBot|Discordbot|SkypeUriPreview|Pinterest|redditbot|Applebot|Googlebot|bingbot).*"
+        },
+        { "type": "host", "value": "(?<host>dev-app\\.runmitra\\.in)" }
+      ],
+      "destination": "https://dev-api.runmitra.in/api/cricket-preview?host=:host&path=matches/:rest*"
     },
     {
       "source": "/tournaments/:rest*",
@@ -15,7 +44,7 @@
         },
         { "type": "host", "value": "(?<host>.*)" }
       ],
-      "destination": "https://girish-creations-api.vercel.app/api/cricket-preview?host=:host&path=tournaments/:rest*"
+      "destination": "https://api.runmitra.in/api/cricket-preview?host=:host&path=tournaments/:rest*"
     },
     {
       "source": "/matches/:rest*",
@@ -27,7 +56,7 @@
         },
         { "type": "host", "value": "(?<host>.*)" }
       ],
-      "destination": "https://girish-creations-api.vercel.app/api/cricket-preview?host=:host&path=matches/:rest*"
+      "destination": "https://api.runmitra.in/api/cricket-preview?host=:host&path=matches/:rest*"
     },
     {
       "source": "/(.*)",

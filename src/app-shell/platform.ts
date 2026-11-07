@@ -7,9 +7,10 @@ export const isNativeApp = Capacitor.isNativePlatform();
 
 // The API. The website calls it on its own address (/api, which Vercel and
 // the dev server forward); the app has no such forwarding, so it calls the
-// API directly. VITE_API_URL points the app at another one (a test server).
+// API directly: VITE_API_URL from .env.production (api.runmitra.in) or, for a
+// dev build, .env.development (dev-api.runmitra.in).
 export const API_BASE = isNativeApp
-  ? import.meta.env.VITE_API_URL || "https://girish-creations-api.vercel.app/api"
+  ? import.meta.env.VITE_API_URL || "https://api.runmitra.in/api"
   : "/api";
 
 // Where links people share or scan (match pages, team joins, player QR

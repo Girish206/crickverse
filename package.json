@@ -6,12 +6,16 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:dev": "tsc -b && vite build --mode development",
     "lint": "oxlint",
     "preview": "vite preview",
     "android:sync": "npm run build && cap sync android",
     "android:open": "cap open android",
     "android:run": "npm run android:sync && cap run android",
-    "android:apk": "npm run android:sync && cd android && gradlew assembleDebug"
+    "android:apk": "npm run android:sync && cd android && gradlew assembleDebug",
+    "android:sync:dev": "npm run build:dev && cap sync android",
+    "android:run:dev": "npm run android:sync:dev && cap run android",
+    "android:apk:dev": "npm run android:sync:dev && cd android && gradlew assembleDebug"
   },
   "dependencies": {
     "@capacitor/android": "^8.6.0",
