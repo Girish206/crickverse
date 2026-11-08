@@ -61,7 +61,7 @@ export interface CricketSavedTeam {
   captainId: number | null;
   viceCaptainId: number | null;
   keeperId: number | null;
-  // Uploaded logo; null = none (its initial is shown).
+  // Its uploaded logo, or the stock one it was given (/assets/team/...).
   logoUrl: string | null;
   createdById: number;
   createdAt: string;
@@ -140,6 +140,14 @@ export interface CricketTeamRoles {
   keeperId: number | null;
 }
 
+// A side's squad and leaders, picked while its match is being created.
+export interface CricketMatchSquad extends CricketTeamRoles {
+  playerIds: number[];
+}
+
+// Who last captained and kept wicket for a side (null = never named).
+export type CricketLastLeaders = Pick<CricketTeamRoles, "captainId" | "keeperId">;
+
 export interface CricketTeam {
   name: string;
   playerIds: number[];
@@ -150,7 +158,8 @@ export interface CricketTeam {
   // Built by hand or copied from another tournament; missing = generated
   // from matched sets. Generating only refills the generated teams.
   manual?: boolean;
-  // Uploaded logo; null / missing = none (its initial is shown).
+  // Its uploaded logo, or the stock one it was given (/assets/team/...; no
+  // two teams in a tournament share one).
   logoUrl?: string | null;
 }
 

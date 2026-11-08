@@ -119,8 +119,8 @@ async function drawSquadCard(tournament: CricketTournament, teamName: string, sq
     }
     // Dark fade at the bottom for the name.
     const fade = ctx.createLinearGradient(0, y + tileH * 0.45, 0, y + tileH);
-    fade.addColorStop(0, "rgba(20, 6, 7, 0)");
-    fade.addColorStop(1, "rgba(20, 6, 7, 0.95)");
+    fade.addColorStop(0, "rgba(28, 32, 40, 0)");
+    fade.addColorStop(1, "rgba(28, 32, 40, 0.95)");
     ctx.fillStyle = fade;
     ctx.fillRect(x, y, tileW, tileH);
     ctx.restore();

@@ -4,8 +4,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  /* Soft light gradient with brand tint */
-  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.98) 0%, rgba(253, 244, 244, 0.95) 100%);
+  background: var(--adm-bg);
   backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
@@ -47,7 +46,7 @@
   position: absolute;
   width: 110px;
   height: 110px;
-  border: 4px solid rgba(236, 51, 51, 0.1);
+  border: 4px solid var(--adm-line);
   border-top: 4px solid var(--primary);
   border-right: 4px solid var(--primary);
   border-radius: 50%;
@@ -128,7 +127,7 @@
 .loading-bar-container {
   width: 240px;
   height: 6px;
-  background: rgba(236, 51, 51, 0.1);
+  background: var(--adm-hover);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -136,8 +135,8 @@
 .loading-bar-progress {
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light-1) 100%);
-  border-radius: 12px;
+  background: var(--primary-fill);
+  border-radius: var(--radius-md);
   animation: progress-animation 2s infinite ease-in-out;
   transform-origin: 0% 50%;
 }

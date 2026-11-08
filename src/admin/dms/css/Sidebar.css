@@ -16,13 +16,10 @@
   left: 0;
   bottom: 0;
   width: var(--sidebar-width);
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-right: 1px solid rgba(0, 0, 0, 0.05);
-  border-radius: 0 32px 32px 0;
+  background: var(--adm-surface);  border-right: 1px solid var(--adm-line);
+  border-radius: 0;
   transition: all var(--transition-speed) var(--transition-cubic);
-  box-shadow: var(--sidebar-shadow);
+  box-shadow: none;
   z-index: 1050;
   display: flex;
   flex-direction: column;
@@ -59,7 +56,7 @@
   width: 54px;
   height: 54px;
   padding: 8px;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -86,7 +83,7 @@
 }
 
 .brand-name {
-  font-weight: 800;
+  font-weight: 700;
   font-size: var(--fs-md);
   color: var(--primary-dark-2);
 }
@@ -123,7 +120,7 @@
   font-size: var(--fs-3xs);
   text-align: center;
   letter-spacing: 0.5px;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
   color: var(--sidebar-text-muted);
   opacity: 0.8;
@@ -192,7 +189,7 @@
   align-items: center;
   gap: 15px;
   text-decoration: none !important;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
 }
 
 .sidebar-close .nav-link {
@@ -206,7 +203,7 @@
   padding: 0 !important;
   margin: 0 auto !important;
   gap: 0 !important;
-  border-radius: 12px !important;
+  border-radius: var(--radius-md) !important;
   overflow: visible !important;
 }
 
@@ -286,7 +283,6 @@
 .sidebar-close .nav-link:hover {
   background: rgba(var(--primary-rgb), 0.12) !important;
   color: var(--primary-dark-1) !important;
-  transform: scale(1.08);
 }
 
 /* Icon Highlight on Hover (Both Modes) */
@@ -347,7 +343,7 @@
 .submenu-link {
   padding: 10px 15px !important;
   font-size: var(--fs-base) !important;
-  border-radius: 14px !important;
+  border-radius: var(--radius-md) !important;
   color: #64748b !important;
   display: flex !important;
   align-items: center;
@@ -367,29 +363,24 @@
   background: rgba(0, 0, 0, 0.02) !important;
   margin-top: auto;
   border-top: 1px solid rgba(0, 0, 0, 0.05);
-  border-bottom-left-radius: 24px;
-  border-bottom-right-radius: 24px;
+  border-bottom-left-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-lg);
 }
 
 .user-avatar {
   width: 44px;
   height: 44px;
-  /* A solid gradient rather than DMS's original pale --primary-light-4
-     tint (orange text on a near-white pink background read as washed out
-     / low-contrast, both in the sidebar footer and reused in the navbar). */
-  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-  border: 2px solid #fff;
-  box-shadow: 0 4px 10px rgba(var(--primary-rgb), 0.25);
+  background: var(--secondary);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-weight: 700;
   color: #ffffff;
 }
 
 .user-name-highlight {
-  font-weight: 800;
+  font-weight: 700;
   color: var(--theme-text-dark);
   font-size: var(--fs-md);
   line-height: 1.2;
@@ -407,10 +398,10 @@
   align-items: center;
   gap: 12px;
   padding: 12px 16px !important;
-  color: #f43f5e !important;
-  font-weight: 800 !important;
-  background: rgba(244, 63, 94, 0.05);
-  border-radius: 14px;
+  color: var(--danger) !important;
+  font-weight: 700 !important;
+  background: rgba(var(--danger-rgb), 0.05);
+  border-radius: var(--radius-md);
   margin-top: 10px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
   text-decoration: none !important;
@@ -421,10 +412,9 @@
 }
 
 .logout-btn:hover {
-  background: #f43f5e !important;
+  background: var(--danger-fill) !important;
   color: #ffffff !important;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(244, 63, 94, 0.2);
+  box-shadow: none;
 }
 
 /* "Share RunMitra", above Logout. */
@@ -435,7 +425,7 @@
   gap: 12px;
   padding: 12px 16px !important;
   border: 0;
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   background: rgba(var(--primary-rgb), 0.06);
   color: var(--primary) !important;
   font-weight: 700 !important;
@@ -495,7 +485,7 @@
   .sidebar-mobile-divider {
     display: block;
     margin: 10px 16px 2px;
-    border-top: 2px dotted rgba(var(--primary-rgb), 0.35);
+    border-top: 1px solid var(--adm-line);
   }
 
   .sidebar-mobile-close {
@@ -570,7 +560,7 @@
   width: 36px;
   min-width: 36px;
   height: 36px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   font-size: var(--fs-md);
   background: rgba(var(--primary-rgb), 0.07);
 }
@@ -589,10 +579,8 @@
 }
 
 .sidebar-open .nav-item.active > .nav-link .icon {
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark-1) 100%);
-  color: #ffffff !important;
-  box-shadow: 0 6px 14px -4px rgba(var(--primary-rgb), 0.55);
-}
+  background: var(--primary-fill);
+  color: #ffffff !important;}
 
 .sidebar-open .nav-item.active::before {
   display: none;
@@ -602,15 +590,15 @@
    faded menu item. */
 .sidebar .sidebar-footer .logout-btn {
   margin-top: 0;
-  color: #e11d48 !important;
+  color: var(--danger) !important;
   font-weight: 700 !important;
   background: transparent;
-  border: 1px solid rgba(244, 63, 94, 0.25);
+  border: 1px solid rgba(var(--danger-rgb), 0.25);
 }
 
 .sidebar .sidebar-footer .logout-btn:hover {
-  background: #f43f5e !important;
-  border-color: #f43f5e;
+  background: var(--danger-fill) !important;
+  border-color: var(--danger);
   color: #ffffff !important;
 }
 
@@ -641,224 +629,22 @@
   }
 }
 
-/* ---------- Active item: animated background ----------
-   A slow-drifting brand gradient plus a light sweep that passes across the
-   pill; the icon tile gets a soft breathing glow. */
-.sidebar.sidebar-open .nav-item.active > .nav-link {
-  overflow: hidden;
-  isolation: isolate;
-  background: linear-gradient(
-    110deg,
-    rgba(var(--primary-rgb), 0.06) 0%,
-    rgba(var(--primary-rgb), 0.2) 50%,
-    rgba(var(--primary-rgb), 0.06) 100%
-  ) !important;
-  background-size: 220% 100% !important;
-  animation:
-    cv-nav-in 0.45s var(--transition-cubic),
-    cv-nav-drift 6s ease-in-out infinite;
-}
-
-.sidebar.sidebar-open .nav-item.active > .nav-link::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(
-    100deg,
-    transparent 30%,
-    rgba(255, 255, 255, 0.14) 50%,
-    transparent 70%
-  );
-  transform: translateX(-100%);
-  animation: cv-nav-sweep 3.2s ease-in-out infinite;
-  pointer-events: none;
-}
-
-.sidebar.sidebar-open .nav-item.active > .nav-link .icon {
-  animation: cv-nav-glow 2.6s ease-in-out infinite;
-}
-
-@keyframes cv-nav-in {
-  from {
-    opacity: 0.4;
-    transform: translateX(-8px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@keyframes cv-nav-drift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-@keyframes cv-nav-sweep {
-  0% { transform: translateX(-100%); }
-  60%, 100% { transform: translateX(100%); }
-}
-
-@keyframes cv-nav-glow {
-  0%, 100% { box-shadow: 0 6px 14px -4px rgba(var(--primary-rgb), 0.55); }
-  50% { box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.18), 0 6px 18px -2px rgba(var(--primary-rgb), 0.7); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sidebar.sidebar-open .nav-item.active > .nav-link,
-  .sidebar.sidebar-open .nav-item.active > .nav-link::after,
-  .sidebar.sidebar-open .nav-item.active > .nav-link .icon {
-    animation: none;
-  }
-}
-
-/* ---------- Cricket backdrop ----------
-   Line-art stumps, bat and crease lines sit above the footer, with a seamed
-   ball slowly spinning mid-way down. Both are masks filled with the brand
-   colour, so they follow the theme. */
-.sidebar.sidebar-open .scrollable-content,
-.sidebar.sidebar-open .sidebar-footer,
-.sidebar.sidebar-open .sidebar-mobile-head {
-  position: relative;
-  z-index: 1;
-}
-
-.sidebar.sidebar-open::before,
-.sidebar.sidebar-open::after {
-  content: "";
-  position: absolute;
-  pointer-events: none;
-  z-index: 0;
-  background-color: rgba(var(--primary-rgb), 0.09);
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-size: contain;
-  mask-size: contain;
-}
-
-/* Stumps, bat, ball and crease */
-.sidebar.sidebar-open::before {
-  left: 0;
-  right: 0;
-  bottom: 74px;
-  height: 230px;
-  -webkit-mask-position: center bottom;
-  mask-position: center bottom;
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 230' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M-10 212H250M-10 182H250' stroke-dasharray='2 9'/%3E%3Cpath d='M150 70v140M164 70v140M178 70v140' stroke-width='6'/%3E%3Cpath d='M147 63h16M165 63h16' stroke-width='4'/%3E%3Cg transform='rotate(-22 70 205)'%3E%3Crect x='56' y='86' width='28' height='118' rx='9'/%3E%3Cpath d='M70 86V40'  stroke-width='8'/%3E%3Cpath d='M64 48h12M64 58h12M64 68h12' stroke-width='2'/%3E%3Cpath d='M70 100v92' stroke-width='2'/%3E%3C/g%3E%3Ccircle cx='114' cy='200' r='11'/%3E%3Cpath d='M106 192c5 5 5 11 0 16M122 192c-5 5-5 11 0 16' stroke-width='2'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 230' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M-10 212H250M-10 182H250' stroke-dasharray='2 9'/%3E%3Cpath d='M150 70v140M164 70v140M178 70v140' stroke-width='6'/%3E%3Cpath d='M147 63h16M165 63h16' stroke-width='4'/%3E%3Cg transform='rotate(-22 70 205)'%3E%3Crect x='56' y='86' width='28' height='118' rx='9'/%3E%3Cpath d='M70 86V40'  stroke-width='8'/%3E%3Cpath d='M64 48h12M64 58h12M64 68h12' stroke-width='2'/%3E%3Cpath d='M70 100v92' stroke-width='2'/%3E%3C/g%3E%3Ccircle cx='114' cy='200' r='11'/%3E%3Cpath d='M106 192c5 5 5 11 0 16M122 192c-5 5-5 11 0 16' stroke-width='2'/%3E%3C/svg%3E");
-}
-
-/* Spinning seamed ball */
-.sidebar.sidebar-open::after {
-  top: 52%;
-  right: 14px;
-  width: 78px;
-  height: 78px;
-  background-color: rgba(var(--primary-rgb), 0.11);
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='black' stroke-linecap='round'%3E%3Ccircle cx='50' cy='50' r='46' stroke-width='4'/%3E%3Cpath d='M30 9c14 24 14 58 0 82M70 9c-14 24-14 58 0 82' stroke-width='3'/%3E%3Cpath d='M27 20l8-3M30 32l8-2M31 44l8-1M31 56l8 1M30 68l8 2M27 80l8 3M73 20l-8-3M70 32l-8-2M69 44l-8-1M69 56l-8 1M70 68l-8 2M73 80l-8 3' stroke-width='2.5'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='black' stroke-linecap='round'%3E%3Ccircle cx='50' cy='50' r='46' stroke-width='4'/%3E%3Cpath d='M30 9c14 24 14 58 0 82M70 9c-14 24-14 58 0 82' stroke-width='3'/%3E%3Cpath d='M27 20l8-3M30 32l8-2M31 44l8-1M31 56l8 1M30 68l8 2M27 80l8 3M73 20l-8-3M70 32l-8-2M69 44l-8-1M69 56l-8 1M70 68l-8 2M73 80l-8 3' stroke-width='2.5'/%3E%3C/svg%3E");
-  animation: cv-ball-spin 28s linear infinite, cv-ball-bob 7s ease-in-out infinite alternate;
-}
-
-@keyframes cv-ball-spin {
-  to { rotate: 360deg; }
-}
-
-@keyframes cv-ball-bob {
-  from { translate: 0 -10px; }
-  to { translate: -6px 14px; }
-}
-
-:root[data-bs-theme="dark"] .sidebar.sidebar-open::before {
-  background-color: rgba(var(--primary-rgb), 0.12);
-}
-
-:root[data-bs-theme="dark"] .sidebar.sidebar-open::after {
-  background-color: rgba(var(--primary-rgb), 0.14);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sidebar.sidebar-open::after {
-    animation: none;
-  }
-}
-
-/* ---------- Drawer header: logo card ----------
-   A light card with a brand-gradient rim (flag red → orange → yellow), a
-   warm glow in the far corner and a seamed ball watermark. The rim sets it
-   apart from the sidebar; the plain middle keeps the logo readable. */
+/* ---------- Drawer header ---------- */
 @media (max-width: 769px) {
   .sidebar.sidebar-open .sidebar-mobile-head {
-    --cv-head-fill: #ffffff;
-    --cv-head-glow: rgba(255, 205, 0, 0.2);
-    overflow: hidden;
-    margin: 12px 12px 4px;
-    padding: 10px 10px 10px 14px;
-    border: 1.5px solid transparent;
-    border-radius: 18px;
-    background:
-      radial-gradient(circle at 100% 0%, var(--cv-head-glow), transparent 55%) padding-box,
-      linear-gradient(var(--cv-head-fill), var(--cv-head-fill)) padding-box,
-      linear-gradient(
-        120deg,
-        var(--brand-crimson, #c9443b) 0%,
-        var(--brand-orange, #e8501f) 50%,
-        var(--brand-amber, #ffcd00) 100%
-      ) border-box;
-    box-shadow: 0 10px 22px -14px rgba(var(--primary-rgb), 0.55);
-  }
-
-  /* Ball watermark */
-  .sidebar.sidebar-open .sidebar-mobile-head::after {
-    content: "";
-    position: absolute;
-    right: 46px;
-    bottom: -30px;
-    width: 72px;
-    height: 72px;
-    background-color: rgba(var(--primary-rgb), 0.08);
-    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='black' stroke-linecap='round'%3E%3Ccircle cx='50' cy='50' r='46' stroke-width='4'/%3E%3Cpath d='M30 9c14 24 14 58 0 82M70 9c-14 24-14 58 0 82' stroke-width='3'/%3E%3Cpath d='M27 20l8-3M30 32l8-2M31 44l8-1M31 56l8 1M30 68l8 2M27 80l8 3M73 20l-8-3M70 32l-8-2M69 44l-8-1M69 56l-8 1M70 68l-8 2M73 80l-8 3' stroke-width='2.5'/%3E%3C/svg%3E") no-repeat center / contain;
-    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='black' stroke-linecap='round'%3E%3Ccircle cx='50' cy='50' r='46' stroke-width='4'/%3E%3Cpath d='M30 9c14 24 14 58 0 82M70 9c-14 24-14 58 0 82' stroke-width='3'/%3E%3Cpath d='M27 20l8-3M30 32l8-2M31 44l8-1M31 56l8 1M30 68l8 2M27 80l8 3M73 20l-8-3M70 32l-8-2M69 44l-8-1M69 56l-8 1M70 68l-8 2M73 80l-8 3' stroke-width='2.5'/%3E%3C/svg%3E") no-repeat center / contain;
-    pointer-events: none;
-  }
-
-  /* Above the watermark */
-  .sidebar.sidebar-open .sidebar-mobile-head > * {
-    position: relative;
-    z-index: 1;
-  }
+    margin: 0;
+    padding: 12px 10px 12px 14px;  }
 
   .sidebar.sidebar-open .sidebar-mobile-head .sidebar-mobile-close {
-    background: rgba(var(--primary-rgb), 0.08);
-    color: var(--primary);
-  }
-
-  .sidebar.sidebar-open .sidebar-mobile-head .sidebar-mobile-close:active {
-    background: rgba(var(--primary-rgb), 0.16);
-  }
-
-  /* Dark theme: a raised charcoal middle, same rim. */
-  :root[data-bs-theme="dark"] .sidebar.sidebar-open .sidebar-mobile-head {
-    --cv-head-fill: var(--brand-navy-raised, #2a2e37);
-    --cv-head-glow: rgba(232, 80, 31, 0.16);
-    box-shadow: 0 10px 24px -14px rgba(0, 0, 0, 0.8);
-  }
-
-  :root[data-bs-theme="dark"] .sidebar.sidebar-open .sidebar-mobile-head::after {
-    background-color: rgba(255, 255, 255, 0.06);
-  }
-
-  :root[data-bs-theme="dark"] .sidebar.sidebar-open .sidebar-mobile-head .sidebar-mobile-close {
-    background: rgba(255, 255, 255, 0.08);
-    color: #f3f4f6;
+    background: var(--adm-hover);
+    color: var(--adm-text-2);
   }
 }
 
 /* The signed-in account at the top of the sidebar, as a small version of
-   the Home hero: the brand gradient, the photo in a white ring, name, mobile
-   and email in white, and the player's QR code button on the right; just the
-   photo when collapsed. */
+   the Home hero: its dark panel, the photo, name, mobile and email in white,
+   and the player's QR code button on the right; just the photo when
+   collapsed. */
 .sidebar-profile {
   position: relative;
   flex: none;
@@ -868,24 +654,10 @@
   margin: 12px 12px 6px;
   padding: 12px;
   overflow: hidden;
-  border-radius: 16px;
-  background: var(--hero-gradient);
+  border-radius: var(--radius-lg);
+  background: var(--hero-fill);
   color: #fff;
-  text-decoration: none;
-  box-shadow: 0 10px 22px -14px rgba(15, 16, 18, 0.7);
-}
-/* A soft ring for depth, like the hero's. */
-.sidebar-profile::after {
-  content: "";
-  position: absolute;
-  top: -40px;
-  right: -30px;
-  width: 110px;
-  height: 110px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  pointer-events: none;
-}
+  text-decoration: none;}
 .sidebar-profile.is-collapsed {
   justify-content: center;
   margin: 12px 8px 6px;
@@ -902,7 +674,7 @@
   place-items: center;
   border-radius: 50%;
   object-fit: cover;
-  box-shadow: 0 0 0 2px #fff, 0 0 0 4.5px rgba(255, 255, 255, 0.3), 0 4px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
   color: #fff;
   font-size: var(--fs-md);
   font-weight: 700;
@@ -929,7 +701,7 @@
 }
 .sidebar-profile-who strong {
   font-size: var(--fs-base);
-  font-weight: 800;
+  font-weight: 700;
 }
 .sidebar-profile-who small {
   font-size: var(--fs-2xs);
@@ -941,7 +713,7 @@
   font-size: 0.6rem;
   opacity: 0.8;
 }
-/* My QR code: a frosted square on the card's right. */
+/* My QR code: a square on the card's right. */
 .sidebar-profile-qr {
   position: relative;
   z-index: 1;
@@ -951,7 +723,7 @@
   display: grid;
   place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.14);
   color: #fff;
   font-size: 1.15rem;
@@ -961,7 +733,6 @@
 .sidebar-profile-qr:hover,
 .sidebar-profile-qr:focus-visible {
   background: rgba(255, 255, 255, 0.24);
-  transform: scale(1.05);
 }
 
 /* ---------- Compact footer (expanded) ----------
@@ -984,7 +755,7 @@
   min-height: 38px;
   margin: 0 !important;
   padding: 7px 8px !important;
-  border-radius: 11px;
+  border-radius: var(--radius-md);
   font-size: var(--fs-sm);
 }
 .sidebar.sidebar-open .sidebar-footer .nav-link .icon {
@@ -998,20 +769,19 @@
 .sidebar.sidebar-open .sidebar-footer .nav-link:hover {
   transform: none;
 }
-/* Share and Logout as a matched pair: the same outlined button, Share in
-   the brand colour and Logout in red, each filling on hover. */
+/* Share and Logout as a matched pair: the same outlined button, Logout in red. */
 .sidebar .sidebar-footer .share-app-btn {
-  border: 1px solid rgba(var(--primary-rgb), 0.25);
-  background: rgba(var(--primary-rgb), 0.06);
-  color: var(--primary) !important;
+  border: 1px solid var(--adm-line-strong);
+  background: transparent;
+  color: var(--adm-text-2) !important;
 }
 .sidebar .sidebar-footer .share-app-btn:hover {
-  background: var(--primary-gradient);
-  border-color: transparent;
-  color: #fff !important;
+  background: var(--adm-hover);
+  border-color: var(--adm-line-strong);
+  color: var(--adm-text) !important;
 }
 .sidebar .sidebar-footer .logout-btn {
-  background: rgba(244, 63, 94, 0.06);
+  background: rgba(var(--danger-rgb), 0.06);
 }
 /* Their icons take the button's colour, not the menu's grey. */
 .sidebar .sidebar-footer .share-app-btn .icon,

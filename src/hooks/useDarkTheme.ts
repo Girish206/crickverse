@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useState } from "react";
+import { revealThemeChange } from "./themeTransition";
 
 const STORAGE_KEY = "crickverse_darkMode";
 const DEVICE_DARK = "(prefers-color-scheme: dark)";
@@ -65,7 +66,7 @@ export function useDarkTheme() {
     document.body.classList.toggle("dark-theme", isDark);
   }, [isDark]);
 
-  function toggle() {
+  function switchTheme() {
     const next = !isDark;
     const followDevice = next === device;
     setChoice(followDevice ? null : next);
@@ -78,6 +79,9 @@ export function useDarkTheme() {
       }
     }
   }
+
+  // `from` is the button pressed: the new theme spreads out from it.
+  const toggle = (from: HTMLElement) => revealThemeChange(switchTheme, from);
 
   return { isDark, toggle };
 }

@@ -7,7 +7,9 @@ import type {
   ApiEnvelope,
   CricketBall,
   CricketBallType,
+  CricketLastLeaders,
   CricketMatch,
+  CricketMatchSquad,
   CricketMatchStage,
   CricketMatchType,
   CricketPitchType,
@@ -164,6 +166,9 @@ export function useCreateCricketMatch() {
       tournamentId: number | null;
       // A standalone match's captains (who join their side's squad).
       captainIds?: [number | null, number | null];
+      // Each side's squad and leaders, if picked here; null leaves a side
+      // with what its team starts with.
+      squads?: [CricketMatchSquad | null, CricketMatchSquad | null];
     },
   ) =>
     apiClient.post("/admin/cricket/matches", input),
@@ -188,6 +193,15 @@ export function useStartCricketMatch() {
       roles?: [CricketTeamRoles, CricketTeamRoles];
     }) => apiClient.post(url(id, "/start"), input),
   );
+}
+
+// Each side's captain and keeper from its last match, for setting this one up.
+export function useLastLeaders(id: number) {
+  return useQuery({
+    queryKey: ["cricket-matches", "last-leaders", id],
+    queryFn: async () =>
+      (await apiClient.get<ApiEnvelope<[CricketLastLeaders, CricketLastLeaders]>>(url(id, "/last-leaders"))).data.data,
+  });
 }
 
 export function useSetCricketCurrentPlayers() {

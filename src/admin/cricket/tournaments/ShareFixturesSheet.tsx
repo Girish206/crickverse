@@ -163,7 +163,7 @@ async function drawFixturesCard(tournament: CricketTournament, days: FixtureDay[
     const label = day.label.toUpperCase();
     ctx.fillText(label, SIDE, y + DAY_H / 2);
     const ruleX = SIDE + ctx.measureText(label).width + 20;
-    ctx.fillStyle = "rgba(255, 205, 0, 0.3)";
+    ctx.fillStyle = "rgba(217, 189, 116, 0.3)";
     ctx.fillRect(ruleX, y + DAY_H / 2, W - SIDE - ruleX, 2);
     y += DAY_H;
 

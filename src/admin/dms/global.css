@@ -37,4 +37,5 @@
 body.admin-page {
   padding: 0;
   min-height: 0;
+  background: var(--adm-bg);
 }

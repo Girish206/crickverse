@@ -1,4 +1,4 @@
-/* Unified Premium Glass Navbar (Flush Variant) */
+/* Top bar: a flat surface over a hairline. */
 .navbar {
   position: fixed;
   top: 0;
@@ -7,21 +7,12 @@
   /* The home-screen app draws under the status bar (black-translucent). */
   height: calc(64px + env(safe-area-inset-top));
   padding-top: env(safe-area-inset-top) !important;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  background: rgba(255, 255, 255, 0.95);
-  /* A thin line down the sides and round the rounded bottom corners (the
-     bottom nav matches on phones). */
-  border: 1px solid rgba(var(--primary-rgb), 0.22);
-  border-top: 0;
-  border-bottom-left-radius: 20px;
-  border-bottom-right-radius: 20px;
-  box-shadow: 0 10px 28px -6px rgba(var(--primary-rgb), 0.32), 0 4px 12px rgba(0, 0, 0, 0.12);
+  background: var(--adm-surface);
+  border-bottom: 1px solid var(--adm-line);
   z-index: 1060;
   padding: 0 8px; /* Tight edge padding so logo/profile sit near the edges */
   display: flex;
   align-items: center;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Sidebar Sync logic - Navbar stays full width now */
@@ -29,12 +20,6 @@
 .sidebar-closed .navbar {
   left: 0;
 }
-
-.navbar-scrolled {
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 12px 32px -6px rgba(var(--primary-rgb), 0.38), 0 4px 14px rgba(0, 0, 0, 0.16);
-}
-
 /* Center Nav - Segmented Control Look */
 .navbar .nav {
   display: flex !important;
@@ -106,15 +91,12 @@
   height: 40px;
   border-radius: 50%;
   border: 2px solid #fff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-card);
   cursor: pointer;
   transition: transform 0.2s ease;
   object-fit: cover;
 }
 
-.user-img:hover {
-  transform: scale(1.05);
-}
 
 /* Navbar Branding Styles */
 /* The logo, mark and name side by side; the mark alone on the narrowest
@@ -251,13 +233,12 @@
 }
 
 .bg-swatch:hover {
-  transform: scale(1.06);
   border-color: #b0b8c8;
 }
 
 .bg-swatch.selected {
   border: 2px solid var(--primary-dark-2);
-  box-shadow: 0 0 0 2px rgba(128, 17, 26, 0.15);
+  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.15);
 }
 
 .bg-swatch .check {
@@ -362,7 +343,7 @@
   position: absolute;
   top: 3px;
   right: 3px;
-  background: #dc3545;
+  background: var(--danger-fill);
   color: #fff;
   font-size: var(--fs-3xs);
   font-weight: 700;
@@ -374,7 +355,7 @@
   justify-content: center;
   border: 2px solid #fff;
   padding: 0 3px;
-  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+  box-shadow: none;
 }
 
 .navbar-notif-dropdown {
@@ -383,7 +364,7 @@
   right: 0;
   width: 340px;
   background: #ffffff;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   border: 1px solid rgba(0, 0, 0, 0.08);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
   z-index: 1060;
@@ -466,19 +447,19 @@
 }
 
 .notif-icon-circle.success {
-  background: rgba(40, 167, 69, 0.12);
+  background: rgba(var(--success-rgb), 0.12);
 }
 
 .notif-icon-circle.warning {
-  background: rgba(255, 193, 7, 0.15);
+  background: rgba(var(--warning-rgb), 0.15);
 }
 
 .notif-icon-circle.danger {
-  background: rgba(220, 53, 69, 0.12);
+  background: rgba(var(--danger-rgb), 0.12);
 }
 
 .notif-icon-circle.info {
-  background: rgba(23, 162, 184, 0.12);
+  background: rgba(var(--secondary-rgb), 0.12);
 }
 
 .notif-title {
@@ -506,7 +487,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #dc3545;
+  background: var(--danger-fill);
   position: absolute;
   top: 14px;
   right: 14px;
@@ -561,7 +542,7 @@
   max-width: calc(100vw - 20px);
   padding: 6px;
   border: 1px solid rgba(0, 0, 0, 0.07);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   background: #ffffff;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.16);
   animation: navbar-user-dropdown-in 0.14s ease-out;
@@ -581,8 +562,8 @@
   gap: 10px;
   padding: 10px;
   margin-bottom: 6px;
-  border-radius: 12px;
-  background: rgba(var(--primary-rgb), 0.07);
+  border-radius: var(--radius-md);
+  background: var(--adm-raised);
 }
 
 .navbar-user-dropdown-avatar {
@@ -633,7 +614,7 @@
   width: 100%;
   padding: 7px 8px;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--theme-text-dark);
   font-size: var(--fs-sm);
@@ -651,7 +632,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: rgba(var(--primary-rgb), 0.08);
   color: var(--primary);
   font-size: 0.8rem;
@@ -677,16 +658,16 @@
 }
 
 .navbar-user-dropdown-item.is-danger {
-  color: #dc3545;
+  color: var(--danger);
 }
 
 .navbar-user-dropdown-item.is-danger .navbar-user-dropdown-icon {
-  background: rgba(220, 53, 69, 0.1);
-  color: #dc3545;
+  background: rgba(var(--danger-rgb), 0.1);
+  color: var(--danger);
 }
 
 .navbar-user-dropdown-item.is-danger:hover {
-  background: rgba(220, 53, 69, 0.07);
+  background: rgba(var(--danger-rgb), 0.07);
 }
 
 /* Portfolio / Expense Tracker segmented switcher — only rendered for
@@ -816,15 +797,15 @@
   gap: 8px;
   padding: 0 14px;
   border-radius: 999px;
-  border: 1px solid rgba(var(--primary-rgb), 0.25);
+  border: 1px solid var(--adm-line-strong);
   background: transparent;
-  color: var(--primary);
+  color: var(--adm-text-2);
   font-size: var(--fs-sm);
   cursor: pointer;
   transition: background-color 0.15s ease;
 }
 .navbar-search-btn:hover {
-  background: rgba(var(--primary-rgb), 0.1);
+  background: var(--adm-hover);
 }
 .navbar-search-label {
   color: var(--muted-color);

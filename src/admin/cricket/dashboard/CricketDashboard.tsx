@@ -38,8 +38,8 @@ export function CricketDashboard() {
     <MatchCard key={m.id} match={m} tournamentName={m.tournamentId === null ? undefined : tournamentNames.get(m.tournamentId)} />
   );
 
-  // Laid out like the player Home: the numbers on its gradient banner, then
-  // live, upcoming, results and the top players in its tinted sections.
+  // Laid out like the player Home: the numbers on its banner, then
+  // live, upcoming, results and the top players in its sections.
   return (
     <ListCard title="Dashboard" icon="fa-solid fa-chart-pie" subtitle="Players, tournaments and matches at a glance" plain>
       <div className="cricket-home">

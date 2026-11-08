@@ -3,8 +3,12 @@ import { compressImage, MAX_UPLOAD_BYTES, TOURNAMENT_LOGO } from "../../../utils
 import type { useImagePick } from "../tournaments/CricketTournamentForm";
 import { TeamMark } from "./TeamMark";
 
+// A team that hasn't added a logo is given one of these by the API.
+const isStockLogo = (url: string) => url.startsWith("/assets/team/");
+
 // The team forms' logo picker, like the tournament form's: a round badge to
-// tap, with "Remove logo" once there's one. Saved separately after the team.
+// tap, with "Remove logo" once they've added one. Saved separately after the
+// team.
 export function TeamLogoField({ pick }: { pick: ReturnType<typeof useImagePick> }) {
   const [error, setError] = useState<string | null>(null);
 
@@ -34,7 +38,7 @@ export function TeamLogoField({ pick }: { pick: ReturnType<typeof useImagePick> 
           </span>
         </label>
         <span className="cricket-logo-caption">
-          {pick.shown ? (
+          {pick.shown && !isStockLogo(pick.shown) ? (
             <button type="button" className="cricket-media-remove" onClick={() => pick.setFile(null)}>
               Remove logo
             </button>

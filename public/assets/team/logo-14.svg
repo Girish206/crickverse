@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="240" height="240">
+  <!-- Ball struck by lightning -->
+  <rect width="120" height="120" fill="#f4ead2"/>
+  <circle cx="60" cy="60" r="54" fill="none" stroke="#a3211b" stroke-width="2.5" opacity=".55"/>
+  <g transform="translate(60 60) rotate(24)"><circle r="33" fill="#a3211b"/><path d="M-7.9 -31.3Q4.6 0 -7.9 31.3M7.9 -31.3Q20.5 0 7.9 31.3" fill="none" stroke="#f4ead2" stroke-width="3.0" stroke-linecap="round"/></g><path d="M68 14L41 66h17l-9 40 32-54H62z" fill="#f3c14b" stroke="#1b1f27" stroke-width="3" stroke-linejoin="round"/>
+</svg>

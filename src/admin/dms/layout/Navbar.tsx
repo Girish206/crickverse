@@ -11,7 +11,7 @@ interface NavbarProps {
     toggleSidebar: () => void;
     isSidebarOpen: boolean;
     isDark: boolean;
-    toggleTheme: () => void;
+    toggleTheme: (from: HTMLElement) => void;
     // Opens the "Share RunMitra" sheet (Layout).
     onShareApp: () => void;
 }
@@ -74,7 +74,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar, isDark, toggleTheme, onS
                     <div className="d-flex align-items-center">
                         {/* Sidebar toggle for mobile */}
                         <Link
-                            className="text-danger d-md-none me-3"
+                            className="text-body d-md-none me-3"
                             to="#"
                             onClick={toggleSidebar}
                         >
@@ -101,11 +101,12 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar, isDark, toggleTheme, onS
                     <button
                         type="button"
                         className="navbar-theme-btn"
-                        onClick={toggleTheme}
+                        onClick={(event) => toggleTheme(event.currentTarget)}
                         title={isDark ? "Switch to light mode" : "Switch to dark mode"}
                         aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
                     >
-                        <i className={`fa-solid ${isDark ? "fa-sun" : "fa-moon"}`} aria-hidden="true"></i>
+                        {/* Bootstrap's sun: Font Awesome's reads as a settings cog at this size. */}
+                        <i className={isDark ? "bi bi-sun-fill" : "fa-solid fa-moon"} aria-hidden="true"></i>
                     </button>
                     <div className="navbar-user-menu" ref={menuRef} data-tour="account">
                         <button

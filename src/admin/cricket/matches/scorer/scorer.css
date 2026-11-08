@@ -7,12 +7,12 @@
   justify-content: center;
   gap: 6px;
   padding: 6px 12px;
-  border-radius: 10px;
-  background: #f59e0b;
-  color: #1f1300;
+  border-radius: var(--radius-md);
+  background: var(--warning-fill);
+  color: #fff;
   font-family: var(--cv-display, inherit);
   font-size: var(--fs-sm);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   animation: cricket-free-hit-pulse 1.6s ease-in-out infinite;
@@ -27,7 +27,7 @@
 }
 @keyframes cricket-free-hit-pulse {
   50% {
-    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.25);
+    box-shadow: 0 0 0 4px rgba(var(--warning-rgb), 0.25);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -38,8 +38,8 @@
 .cricket-sheet-note {
   margin: 0 0 8px;
   padding: 8px 12px;
-  border-radius: 10px;
-  background: rgba(245, 158, 11, 0.14);
+  border-radius: var(--radius-md);
+  background: rgba(var(--warning-rgb), 0.14);
   color: var(--theme-text-dark);
   font-size: var(--fs-sm);
 }
@@ -51,7 +51,7 @@
   gap: 8px;
   padding: 8px 12px;
   border: 1px dashed var(--border-color);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--adm-surface);
   color: var(--theme-text-dark);
   font-size: var(--fs-sm);

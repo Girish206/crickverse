@@ -14,28 +14,26 @@
   line-height: 1;
 }
 
-/* Logo colours instead of Bootstrap's stock cyan/green/red: view = navy,
-   edit = orange, delete = crimson (still reads as the "danger" action). */
+/* Quiet outlined buttons instead of Bootstrap's stock fills; only delete
+   carries a colour. */
 .admin-row-action-btn.btn-info,
 .admin-row-action-btn.btn-success,
 .admin-row-action-btn.btn-danger {
-  border: none;
-  color: #fff;
-  transition: filter 0.15s ease, transform 0.15s ease;
-}
-.admin-row-action-btn.btn-info {
-  background-color: var(--brand-navy);
-}
-.admin-row-action-btn.btn-success {
-  background-color: var(--brand-orange-deep);
+  border: 1px solid var(--adm-line-strong);
+  border-radius: var(--radius-md);
+  background-color: var(--adm-surface);
+  color: var(--adm-text-2);
+  transition: background-color 0.15s ease;
 }
 .admin-row-action-btn.btn-danger {
-  background-color: var(--brand-crimson-deep);
+  color: var(--danger);
 }
 .admin-row-action-btn.btn-info:hover,
 .admin-row-action-btn.btn-success:hover,
 .admin-row-action-btn.btn-danger:hover {
-  color: #fff;
-  filter: brightness(1.15);
-  transform: translateY(-1px);
+  background-color: var(--adm-hover);
+  color: var(--adm-text-2);
+}
+.admin-row-action-btn.btn-danger:hover {
+  color: var(--danger);
 }

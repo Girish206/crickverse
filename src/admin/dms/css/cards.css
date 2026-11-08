@@ -4,30 +4,30 @@
   align-items: center;
   justify-content: start;
   padding: 1rem;
-  background-color: white;
-  border-radius: 1.25rem;
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.05);
+  background-color: var(--adm-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
   height: 100%;
-  transition: all 0.3s ease-in-out;
+  transition: border-color 0.15s ease;
   flex-direction: row;
   flex-wrap: nowrap;
   gap: 1rem;
   cursor: pointer;
   position: relative !important;
   z-index: 1000 !important;
-  border: 2px solid #e7e7e8;
+  border: 1px solid var(--adm-line);
 }
 
 .ki-card:hover {
-  transform: scale(1.03);
+  border-color: var(--adm-line-strong);
 }
 
 .ki-card i {
   font-size: var(--fs-2xl);
   background-color: #f8f9fa;
   padding: 0.75rem;
-  border-radius: 1rem;
-  color: #dc3545;
+  border-radius: var(--radius-lg);
+  color: var(--adm-text-2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -91,15 +91,15 @@
 
 /* ------------------- Bootstrap Card ------------------- */
 .card {
-  border-radius: 20px !important;
-  border: 2px solid #e7e7e8;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+  border-radius: var(--radius-lg) !important;
+  border: 1px solid var(--adm-line);
+  box-shadow: var(--shadow-card) !important;
   /* position: relative !important;
   z-index: 1000 !important;  */
 }
 
 .card-header {
-  border-radius: 20px 20px 0px 0px !important;
+  border-radius: var(--radius-lg) var(--radius-lg) 0px 0px !important;
 }
 
 @media (max-width: 767.98px) {

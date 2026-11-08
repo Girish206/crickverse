@@ -1,4 +1,4 @@
-import type { CricketTeamRoles as TeamRoles } from "../../../api/types";
+import type { CricketLastLeaders, CricketTeamRoles as TeamRoles } from "../../../api/types";
 
 export type { TeamRoles };
 type RoleKey = keyof TeamRoles;
@@ -41,6 +41,28 @@ function toggled(roles: TeamRoles, key: RoleKey, playerId: number): TeamRoles {
   if (key === "viceCaptainId" && next.captainId === playerId) next.captainId = null;
   return next;
 }
+
+// Makes this player the captain, whoever had it (they stop being vice-captain).
+export const withCaptain = (roles: TeamRoles, playerId: number) =>
+  roles.captainId === playerId ? roles : toggled(roles, "captainId", playerId);
+
+const CARRIED_OVER = ["captainId", "keeperId"] as const;
+
+// A squad's opening roles: last match's captain and keeper take over from
+// the team's own, as long as they're in this squad.
+export const withLastLeaders = (roles: TeamRoles, last: CricketLastLeaders | undefined, squad: number[]) =>
+  CARRIED_OVER.reduce((next, key) => {
+    const playerId = last?.[key];
+    return playerId != null && squad.includes(playerId) && next[key] !== playerId ? toggled(next, key, playerId) : next;
+  }, roles);
+
+// Last match's captain or keeper ticked into the squad gets that role back,
+// unless someone else has been given it.
+export const withReturningLeader = (roles: TeamRoles, last: CricketLastLeaders | undefined, playerId: number) =>
+  CARRIED_OVER.reduce(
+    (next, key) => (last?.[key] === playerId && next[key] === null ? toggled(next, key, playerId) : next),
+    roles,
+  );
 
 // One player's C / VC / WK toggles.
 export function TeamRoleChips({

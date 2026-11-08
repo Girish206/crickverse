@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="240" height="240">
+  <!-- Fast ball with speed lines -->
+  <rect width="120" height="120" fill="#f3701e"/>
+  <circle cx="60" cy="60" r="54" fill="none" stroke="#ffffff" stroke-width="2.5" opacity=".55"/>
+  <g transform="translate(76 60) rotate(24)"><circle r="23" fill="#ffffff"/><path d="M-5.5 -21.8Q3.2 0 -5.5 21.8M5.5 -21.8Q14.3 0 5.5 21.8" fill="none" stroke="#f3701e" stroke-width="2.1" stroke-linecap="round"/></g><rect x="26" y="33" width="20" height="6" rx="3" fill="#ffffff"/><rect x="10" y="57" width="28" height="6" rx="3" fill="#ffffff"/><rect x="26" y="81" width="20" height="6" rx="3" fill="#ffffff"/>
+</svg>

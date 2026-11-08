@@ -47,7 +47,7 @@
    so the text never shifts. */
 .form-control:focus {
   border-bottom-color: var(--primary) !important;
-  box-shadow: 0 1px 0 0 var(--primary) !important;
+  box-shadow: var(--shadow-card);
   outline: none;
 }
 
@@ -65,7 +65,7 @@
   border-bottom-color: var(--field-error) !important;
 }
 .input-group-custom.has-error .form-control:focus {
-  box-shadow: 0 1px 0 0 var(--field-error) !important;
+  box-shadow: var(--shadow-card);
 }
 .input-error {
   display: block;
@@ -86,7 +86,7 @@
 
 /* Shadow fix for custom focus class */
 .input-group-custom.focused .form-control {
-  box-shadow: 0 1px 0 0 var(--primary) !important;
+  box-shadow: var(--shadow-card);
 }
 
 
@@ -228,7 +228,7 @@
   font-size: var(--fs-md) !important;
   z-index: 10 !important;
   padding: 5px;
-  border-radius: 10px !important;
+  border-radius: var(--radius-md) !important;
   transition: color 0.2s ease !important;
 }
 

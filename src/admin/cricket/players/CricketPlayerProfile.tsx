@@ -113,9 +113,9 @@ export function CricketPlayerProfile({
                 title: "Runs in boundaries",
                 summary: s.runs ? `${Math.round(((s.fours * 4 + s.sixes * 6) / s.runs) * 100)}%` : "–",
                 parts: [
-                  { label: "Fours", value: s.fours * 4, color: "#e8501f" },
-                  { label: "Sixes", value: s.sixes * 6, color: "#ffcd00" },
-                  { label: "Running", value: s.runs - s.fours * 4 - s.sixes * 6, color: "#94a3b8" },
+                  { label: "Fours", value: s.fours * 4, color: "var(--primary-fill)" },
+                  { label: "Sixes", value: s.sixes * 6, color: "var(--ball-four)" },
+                  { label: "Running", value: s.runs - s.fours * 4 - s.sixes * 6, color: "var(--adm-line-strong)" },
                 ],
               },
             })}
@@ -162,9 +162,9 @@ export function CricketPlayerProfile({
                 title: "Where the points come from",
                 summary: `${points(s.impact)} pts`,
                 parts: [
-                  { label: "Batting", value: s.battingImpact, color: "#ffcd00", shown: points(s.battingImpact) },
-                  { label: "Bowling", value: s.bowlingImpact, color: "#e8501f", shown: points(s.bowlingImpact) },
-                  { label: "Fielding", value: s.fieldingImpact, color: "#16a34a", shown: points(s.fieldingImpact) },
+                  { label: "Batting", value: s.battingImpact, color: "var(--primary-fill)", shown: points(s.battingImpact) },
+                  { label: "Bowling", value: s.bowlingImpact, color: "var(--ball-four)", shown: points(s.bowlingImpact) },
+                  { label: "Fielding", value: s.fieldingImpact, color: "var(--adm-line-strong)", shown: points(s.fieldingImpact) },
                 ],
               },
             })}

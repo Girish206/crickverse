@@ -2,13 +2,11 @@ import { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import BottomNav from "./BottomNav";
-import CricketBackdrop from "./CricketBackdrop";
 import { PullToRefresh } from "./PullToRefresh";
 import { BrandSignature } from "../../components/BrandSignature";
 import { ShareAppSheet } from "../../cricket/ShareMenu";
 import { PlayerQrSheet } from "../../cricket/qr/ShowQrSheets";
 import { useCricketMe } from "../../../api/hooks/cricket/useCricketPlayers";
-import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { useAdminBodyClass } from "../../useAdminBodyClass";
 import { useAdminTheme } from "../../useAdminTheme";
 import "../global.css";
@@ -34,7 +32,6 @@ const Layout = ({
     const [sharingApp, setSharingApp] = useState(false);
     const [showingQr, setShowingQr] = useState(false);
     const { data: me } = useCricketMe();
-    const { mainBg } = useAdminAuth();
 
     const toggleSidebar = () => {
         if (window.innerWidth < 768) {
@@ -101,14 +98,10 @@ const Layout = ({
 
     return (
         <div
-            className={`layout-wrapper ${mainBg} ${isSidebarOpen ? "sidebar-open" : "sidebar-closed"} ${
+            className={`layout-wrapper ${isSidebarOpen ? "sidebar-open" : "sidebar-closed"} ${
                 isMainScreen ? "" : "is-subpage"
             }`}
         >
-            <div className="admin-bg-shape admin-bg-shape-1" aria-hidden="true" />
-            <div className="admin-bg-shape admin-bg-shape-2" aria-hidden="true" />
-            <CricketBackdrop />
-
             {isMainScreen && (
                 <Navbar
                     toggleSidebar={toggleSidebar}

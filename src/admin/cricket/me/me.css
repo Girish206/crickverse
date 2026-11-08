@@ -1,5 +1,5 @@
 /* The main menu pages (Home, My Stats, My Matches, My Tournaments, My
-   Teams): a bolder page title, scoreline banners on the hero gradient, flat
+   Teams): a page title, scoreline banners on the hero panel, plain
    Home sections, team cards with their record, and My Stats' section cards.
    Selectors start under .cricket-module where they must outrank the shared
    page-title rules in cricket-matches.css whatever order the files load in. */
@@ -13,17 +13,13 @@
   gap: 12px;
 }
 .cricket-module .cv-me .admin-page-title-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 13px;
-  background: var(--hero-gradient);
-  color: rgb(var(--brand-amber-rgb));
-  font-size: var(--fs-md);
-  box-shadow: 0 8px 18px -10px rgba(var(--brand-navy-rgb), 0.8);
+  width: 36px;
+  height: 36px;
+  font-size: var(--fs-sm);
 }
 .cricket-module .cv-me .admin-page-header .admin-page-title-text h1 {
   font-size: var(--fs-lg);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.02em;
 }
 .cricket-module .cv-me .admin-page-title-text p {
@@ -33,7 +29,7 @@
   .cricket-module .cv-me .admin-page-title-icon {
     width: 36px;
     height: 36px;
-    border-radius: 11px;
+    border-radius: var(--radius-md);
     font-size: var(--fs-sm);
   }
   .cricket-module .cv-me .admin-page-header .admin-page-title-text h1 {
@@ -72,7 +68,7 @@
 .cv-scoreline dd {
   margin: 0;
   font-size: var(--fs-xl);
-  font-weight: 800;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1;
   letter-spacing: -0.02em;
@@ -89,12 +85,12 @@
   opacity: 0.72;
 }
 
-/* In the Home / profile hero: on a frosted strip under the name. */
+/* In the Home / profile hero: on a strip under the name. */
 .cricket-home-hero > .cv-scoreline {
   margin-top: 18px;
   padding: 14px 4px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.07);
 }
 
@@ -121,20 +117,17 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: conic-gradient(rgb(var(--brand-amber-rgb)) var(--win), rgba(255, 255, 255, 0.16) 0);
+  background: conic-gradient(#fff var(--win), rgba(255, 255, 255, 0.16) 0);
   line-height: 1.05;
   color: #fff;
 }
-/* The hole: a dark disc so the figure reads on any part of the gradient. */
+/* The hole: the panel's own colour. */
 .cv-win-ring::before {
   content: "";
   position: absolute;
   inset: 5px;
   border-radius: 50%;
-  background: #1c0d10;
-}
-:root[data-bs-theme="dark"] .cv-win-ring::before {
-  background: #3a1014;
+  background: var(--hero-fill);
 }
 .cv-win-ring strong,
 .cv-win-ring small {
@@ -142,7 +135,7 @@
 }
 .cv-win-ring strong {
   font-size: var(--fs-md);
-  font-weight: 800;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 .cv-win-ring small,
@@ -167,11 +160,10 @@
 }
 .cv-banner-count strong {
   font-size: 2.25rem;
-  font-weight: 800;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
-  /* The flag's yellow, as on the ring. */
-  color: rgb(var(--brand-amber-rgb));
+  color: #fff;
 }
 
 /* Recent form: a line of result chips under a rule. */
@@ -202,23 +194,19 @@
   height: 22px;
   display: grid;
   place-items: center;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: var(--fs-2xs);
-  font-weight: 800;
+  font-weight: 700;
   color: #fff;
 }
 .cv-form-chip.is-W {
-  background: #16a34a;
+  background: var(--success-fill);
 }
 .cv-form-chip.is-L {
-  background: #dc2626;
+  background: var(--danger-fill);
 }
 .cv-form-chip.is-T {
   background: rgba(255, 255, 255, 0.28);
-}
-/* The newest result stands out a little. */
-.cv-form-chip:first-child {
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85);
 }
 .cv-form-empty {
   font-size: var(--fs-xs);
@@ -286,27 +274,24 @@
 .cricket-home.is-feed .cricket-home-heading {
   gap: 8px;
   font-size: var(--fs-base);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
 }
 .cricket-home.is-feed .cricket-home-icon {
   width: 26px;
   height: 26px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 .cricket-home.is-feed .cricket-section-title .cricket-home-icon i {
   font-size: var(--fs-xs);
 }
-/* "See all" as a small pill with an arrow. */
+/* "See all" with an arrow. */
 .cricket-home.is-feed .cricket-home-head .admin-link {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(var(--section-rgb), 0.1);
-  font-size: var(--fs-2xs);
-  font-weight: 700;
+  font-size: var(--fs-xs);
+  font-weight: 600;
   text-decoration: none;
 }
 .cricket-home.is-feed .cricket-home-head .admin-link::after {
@@ -316,7 +301,7 @@
   font-weight: 900;
 }
 .cricket-home.is-feed .cricket-home-head .admin-link:hover {
-  background: rgba(var(--section-rgb), 0.18);
+  text-decoration: underline;
 }
 /* No panel padding to bleed into: the rail keeps a small gutter for the
    cards' shadows. */
@@ -345,9 +330,9 @@
   gap: 14px;
   padding: 16px;
   border: 1px solid var(--border-color);
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   background: var(--adm-surface, #fff);
-  box-shadow: 0 6px 18px -12px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-card);
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
@@ -362,8 +347,7 @@
 .cv-team-card:hover,
 .cv-team-card:focus-visible {
   border-color: rgba(var(--primary-rgb), 0.35);
-  box-shadow: 0 14px 28px -16px rgba(var(--brand-navy-rgb), 0.45);
-  transform: translateY(-2px);
+  box-shadow: none;
   outline: none;
 }
 .cv-team-card-head {
@@ -379,11 +363,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   color: #fff;
   font-size: var(--fs-lg);
-  font-weight: 800;
-  box-shadow: 0 6px 14px -8px rgba(0, 0, 0, 0.5);
+  font-weight: 700;
+  box-shadow: var(--shadow-card);
 }
 .cv-team-card-logo.has-team-logo {
   box-shadow: inset 0 0 0 1px var(--border-color);
@@ -399,7 +383,7 @@
   margin: 0;
   overflow: hidden;
   font-size: var(--fs-md);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--theme-text-dark);
   text-overflow: ellipsis;
@@ -432,7 +416,7 @@
   background: rgba(var(--primary-rgb), 0.1);
   color: var(--primary);
 }
-/* Captain and the like in the flag's yellow. */
+/* Captain and the like in the awards gold. */
 .cv-team-role.is-lead {
   background: rgba(var(--brand-amber-rgb), 0.18);
   color: var(--brand-amber-deep);
@@ -452,7 +436,7 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   margin: 0;
   padding: 10px 0;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--background-color);
 }
 :root[data-bs-theme="dark"] .cv-team-stats {
@@ -471,7 +455,7 @@
 .cv-team-stats dd {
   margin: 0;
   font-size: var(--fs-md);
-  font-weight: 800;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1.1;
   color: var(--theme-text-dark);
@@ -496,11 +480,11 @@
   background: var(--border-color);
 }
 .cv-team-bar span:first-child {
-  background: #16a34a;
+  background: var(--success-fill);
 }
 .cv-team-bar span:last-child {
   margin-left: auto;
-  background: #dc2626;
+  background: var(--danger-fill);
 }
 .cv-team-bar-legend {
   display: flex;
@@ -520,34 +504,15 @@
   gap: 14px;
 }
 .cv-stat-card {
-  --tone: var(--primary-rgb);
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 14px;
   padding: 16px 18px;
-  border: 1px solid var(--border-color);
-  border-radius: 18px;
-  background: var(--adm-surface, #fff);
-  box-shadow: 0 6px 18px -12px rgba(0, 0, 0, 0.25);
-}
-.cv-stat-card.is-bowling {
-  --tone: var(--brand-orange-deep-rgb);
-}
-.cv-stat-card.is-fielding {
-  --tone: 22, 128, 61;
-}
-.cv-stat-card.is-impact {
-  --tone: 161, 98, 7;
-}
-:root[data-bs-theme="dark"] .cv-stat-card.is-bowling {
-  --tone: 255, 122, 69;
-}
-:root[data-bs-theme="dark"] .cv-stat-card.is-fielding {
-  --tone: 74, 222, 128;
-}
-:root[data-bs-theme="dark"] .cv-stat-card.is-impact {
-  --tone: 255, 216, 61;
+  border: 1px solid var(--adm-line);
+  border-radius: var(--radius-lg);
+  background: var(--adm-surface);
+  box-shadow: var(--shadow-card);
 }
 .cv-stat-card-head {
   display: flex;
@@ -555,7 +520,7 @@
   gap: 10px;
   margin: 0;
   font-size: var(--fs-md);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--theme-text-dark);
 }
@@ -565,12 +530,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
-  background: rgba(var(--tone), 0.12);
-  color: rgb(var(--tone));
+  border-radius: var(--radius-md);
+  background: var(--adm-hover);
+  color: var(--adm-text-2);
   font-size: var(--fs-sm);
 }
-/* The section's headline figures, big, in its colour's tint. */
+/* The section's headline figures, big. */
 .cv-stat-lead {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
@@ -583,17 +548,18 @@
   flex-direction: column-reverse;
   gap: 4px;
   padding: 12px;
-  border-radius: 14px;
-  background: rgba(var(--tone), 0.07);
+  border: 1px solid var(--adm-line);
+  border-radius: var(--radius-md);
+  background: var(--adm-raised);
 }
 .cv-stat-lead dd {
   margin: 0;
   font-size: var(--fs-xl);
-  font-weight: 800;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
   line-height: 1;
-  color: rgb(var(--tone));
+  color: var(--adm-text);
 }
 .cv-stat-lead dt {
   overflow: hidden;
@@ -754,7 +720,7 @@
 .cv-hero-compact .cv-form-chip {
   width: 18px;
   height: 18px;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   font-size: var(--fs-3xs);
 }
 .cv-hero-compact .cv-form-chip:first-child {
@@ -802,7 +768,7 @@
 }
 .cv-hero-counts strong {
   font-size: var(--fs-sm);
-  font-weight: 800;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1.2;
 }
@@ -871,7 +837,7 @@
   gap: 12px;
   padding: 10px 4px;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: none;
   color: inherit;
   text-align: left;
@@ -903,7 +869,7 @@
   background-position: center;
   color: #fff;
   font-size: var(--fs-sm);
-  font-weight: 800;
+  font-weight: 700;
   object-fit: cover;
 }
 .cv-sheet-icon {
@@ -955,63 +921,14 @@
   align-items: center;
   gap: 6px;
   font-weight: 700;
-  color: #dc2626;
+  color: var(--danger);
 }
 :root[data-bs-theme="dark"] .cv-sheet-live {
-  color: #f87171;
+  color: var(--danger);
 }
 .cv-sheet-list li.is-live .cv-sheet-row {
-  background: rgba(220, 38, 38, 0.06);
+  background: rgba(var(--danger-rgb), 0.06);
 }
 .cv-sheet-list li.is-live .cv-sheet-row:hover {
-  background: rgba(220, 38, 38, 0.1);
-}
-
-/* ---------- Stat cards: depth ----------
-   A strip of the section's colour along the top with a tint fading down,
-   a filled icon tile, the section's icon faint in the corner, and the
-   headline tiles on a soft gradient of the colour. */
-.cv-stat-card {
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(180deg, rgba(var(--tone), 0.07) 0%, transparent 130px), var(--adm-surface, #fff);
-}
-.cv-stat-card::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto;
-  height: 4px;
-  background: linear-gradient(90deg, rgb(var(--tone)) 0%, rgba(var(--tone), 0.35) 100%);
-}
-.cv-stat-card > :not(.cv-stat-card-mark) {
-  position: relative;
-  z-index: 1;
-}
-.cv-stat-card-mark {
-  position: absolute;
-  top: -14px;
-  right: -10px;
-  z-index: 0;
-  font-size: 104px;
-  line-height: 1;
-  color: rgba(var(--tone), 0.07);
-  transform: rotate(-14deg);
-  pointer-events: none;
-}
-:root[data-bs-theme="dark"] .cv-stat-card-mark {
-  color: rgba(var(--tone), 0.09);
-}
-.cv-stat-card-head span {
-  background: linear-gradient(135deg, rgb(var(--tone)) 0%, rgba(var(--tone), 0.72) 100%);
-  color: #fff;
-  box-shadow: 0 6px 14px -6px rgba(var(--tone), 0.7);
-}
-/* The flag yellow and bright greens of the dark theme need dark text. */
-:root[data-bs-theme="dark"] .cv-stat-card.is-impact .cv-stat-card-head span,
-:root[data-bs-theme="dark"] .cv-stat-card.is-fielding .cv-stat-card-head span {
-  color: #1a1a1a;
-}
-.cv-stat-lead > div {
-  border: 1px solid rgba(var(--tone), 0.16);
-  background: linear-gradient(135deg, rgba(var(--tone), 0.12) 0%, rgba(var(--tone), 0.03) 100%);
+  background: rgba(var(--danger-rgb), 0.1);
 }

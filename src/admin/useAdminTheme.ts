@@ -26,7 +26,7 @@ export function useAdminTheme() {
   useLayoutEffect(() => {
     const root = document.documentElement;
     root.setAttribute("data-bs-theme", theme.isDark ? "dark" : "light");
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme.isDark ? "#0f1012" : "#f6f3ef");
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme.isDark ? "#121418" : "#f4f5f7");
     return () => root.removeAttribute("data-bs-theme");
   }, [theme.isDark]);
 

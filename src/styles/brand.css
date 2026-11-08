@@ -1,77 +1,72 @@
 /* ==========================================================================
-   RunMitra brand colours — the Karnataka flag: yellow (ಹಳದಿ) over red
-   (ಕೆಂಪು), with a red-orange between them for gradients and a deep
-   neutral charcoal for the dark theme. Every screen reads these through
-   admin/dms/index.css and dark.css; change a value here and the app follows.
+   RunMitra colours. Deliberately restrained: cool neutrals for surfaces and
+   text, one flat red accent from the logo's name for actions and the current
+   selection, and
+   any other colour only where it means something (live / wicket / error,
+   win, warning, awards). Every screen reads these through admin/dms/index.css
+   and dark.css; change a value here and the app follows.
 
-   The variable names are roles kept from the original palette, so "navy"
-   is the dark base, "crimson" is the flag red and "amber" is the flag yellow.
+   The variable names are roles kept from the earlier palettes: "navy" is the
+   dark ink, "crimson" is the danger red, "amber" is the muted awards gold and
+   "orange" follows the accent.
 
    Which variant to use:
-   - plain (--brand-orange …): vivid colours — gradients, decoration, icons
-     on dark backgrounds.
+   - plain (--brand-accent …): the colour itself, for text on a light surface.
    - -deep: darker shades that keep white text on them, and small text on a
-     white background, readable (≥ 4.5:1). Use for buttons and links on
-     light backgrounds.
+     white background, readable (≥ 4.5:1).
    - -bright: lighter shades for text and accents on the dark background.
    ========================================================================== */
 
 :root {
-  /* Logo colours */
-  --brand-navy: #2a0f12;
-  --brand-crimson: #c9443b;
-  --brand-orange: #e8501f;
-  --brand-amber: #ffcd00;
+  /* Ink and the accent */
+  --brand-navy: #171a20;
+  /* The accent is the gradient of the logo's name, each stop where it reads:
+     its deep start as text on light surfaces, its red as fills under white
+     text, its orange end as text on the charcoal. */
+  --brand-accent: #b8322a;
+  --brand-accent-fill: #d7261e;
+  --brand-accent-bright: #f26a1b;
+
+  /* Roles from the earlier palette */
+  --brand-crimson: #b42318;
+  --brand-orange: var(--brand-accent);
+  --brand-amber: #b8923e;
 
   /* Readable on white / under white text */
-  --brand-crimson-deep: #a8362f;
-  --brand-orange-deep: #c04a26;
-  --brand-amber-deep: #a16207;
+  --brand-crimson-deep: #b42318;
+  --brand-orange-deep: var(--brand-accent);
+  --brand-amber-deep: #7d5f1a;
 
   /* Readable on the dark base */
-  --brand-crimson-bright: #f2756b;
-  --brand-orange-bright: #ff7a45;
-  --brand-amber-bright: #ffd83d;
+  --brand-crimson-bright: #f0796e;
+  --brand-orange-bright: var(--brand-accent-bright);
+  --brand-amber-bright: #d9bd74;
 
-  /* Charcoal surfaces (mobile-friendly dark theme) */
-  --brand-navy-night: #16181d;
-  --brand-navy-surface: #20232a;
-  --brand-navy-raised: #2a2e37;
+  /* Charcoal surfaces (dark theme) */
+  --brand-navy-night: #121418;
+  --brand-navy-surface: #1b1e24;
+  --brand-navy-raised: #252931;
 
   /* "r, g, b" triplets, for rgba(var(--brand-…-rgb), alpha) */
-  --brand-navy-rgb: 42, 15, 18;
-  --brand-navy-night-rgb: 22, 24, 29;
-  --brand-crimson-rgb: 201, 68, 59;
-  --brand-orange-rgb: 232, 80, 31;
-  --brand-orange-deep-rgb: 192, 74, 38;
-  --brand-amber-rgb: 255, 205, 0;
+  --brand-navy-rgb: 23, 26, 32;
+  --brand-navy-night-rgb: 18, 20, 24;
+  --brand-accent-rgb: 184, 50, 42;
+  --brand-accent-bright-rgb: 242, 106, 27;
+  --brand-crimson-rgb: 180, 35, 24;
+  --brand-orange-rgb: var(--brand-accent-rgb);
+  --brand-orange-deep-rgb: var(--brand-accent-rgb);
+  --brand-amber-rgb: 184, 146, 62;
 
-  /* Gradients (red → orange → yellow, the flag read top to bottom in
-     reverse). The button gradients stop at orange so white text stays
-     readable; yellow only appears in text and decorative gradients. */
-  --brand-gradient: linear-gradient(120deg, var(--brand-crimson-deep) 0%, #b8452c 55%, var(--brand-orange-deep) 100%);
-  --brand-gradient-night: linear-gradient(120deg, #94302b 0%, #a8402c 55%, #b5522b 100%);
-  /* Maroon: the app's main theme colour, from the night-sky banner below.
-     The plain one keeps white text on it and reads on white; -bright is the
-     lighter shade for text / fills on the dark theme. */
-  --brand-maroon: #7a2420;
-  --brand-maroon-rgb: 122, 36, 32;
-  --brand-maroon-bright: #d06a60;
-  --brand-maroon-bright-rgb: 208, 106, 96;
-  --brand-gradient-maroon: linear-gradient(120deg, #3a1214 0%, #5a1d1c 55%, #7a2420 100%);
-  /* The dark theme's fill: starts where the light one ends, so buttons stand
-     off the charcoal page and cards and white text stays readable. */
-  --brand-gradient-maroon-night: linear-gradient(120deg, #7a2420 0%, #933029 55%, #ad4034 100%);
-
-  /* Night sky (the stock tournament banner-4): charcoal into deep maroon,
-     for the large hero / cover surfaces. */
-  --brand-gradient-sky: linear-gradient(120deg, #0f1012 0%, #24111a 45%, #3a1214 100%);
-  --brand-gradient-vivid: linear-gradient(120deg, var(--brand-crimson) 0%, var(--brand-orange) 55%, var(--brand-amber) 100%);
-  --brand-gradient-text: linear-gradient(100deg, var(--brand-crimson-deep) 0%, #d1400f 50%, var(--brand-amber-deep) 100%);
-  --brand-gradient-text-night: linear-gradient(
-    100deg,
-    var(--brand-crimson-bright) 0%,
-    var(--brand-orange-bright) 45%,
-    var(--brand-amber-bright) 100%
-  );
+  /* Status. Text and borders use the plain token (dark.css lightens it);
+     -fill stays deep in both themes, for solid chips under white text. */
+  --danger: #b42318;
+  --danger-rgb: 180, 35, 24;
+  --danger-fill: #b42318;
+  --success: #1f7a4d;
+  --success-rgb: 31, 122, 77;
+  --success-fill: #1f7a4d;
+  --success-bright: #57bd8a;
+  --warning: #935f0e;
+  --warning-rgb: 147, 95, 14;
+  --warning-fill: #935f0e;
 }

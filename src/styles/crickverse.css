@@ -22,6 +22,16 @@
   --fs-2xl: 2rem; /* 32px  scoreboard */
   --bs-body-font-size: var(--fs-base);
 
+  /* Shape. One radius per level, so a card, the tile inside it and the chip
+     inside that step down together. */
+  --radius-lg: 12px; /* cards, panels, sheets */
+  --radius-md: 8px; /* buttons, inputs, tiles inside a card */
+  --radius-sm: 6px; /* chips, small badges */
+
+  /* Depth: cards rest on a hairline, only what floats over the page lifts. */
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --shadow-float: 0 8px 24px rgba(16, 24, 40, 0.14);
+
   /* The fixed PageHeader on screens outside the main menu: Layout.css pads
      those screens by it and their sticky tab bars pin under it. */
   --cv-header-h: 60px;
@@ -78,7 +88,7 @@ textarea {
 .cv-wordmark {
   font-family: var(--cv-display);
   font-size: var(--fs-xl);
-  font-weight: 800;
+  font-weight: 700;
   font-style: italic;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -113,9 +123,6 @@ textarea {
 
 .admin-login-badge {
   font-family: var(--cv-display);
-  font-size: var(--fs-md);
-  font-style: italic;
-  letter-spacing: 0.06em;
 }
 
 /* Phones: no scrollbars anywhere — lists, sheets, tables and tab strips

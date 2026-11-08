@@ -28,7 +28,7 @@
 .select__control--is-focused,
 .select__control--menu-is-open {
   border-bottom-color: var(--primary) !important;
-  box-shadow: 0 1px 0 0 var(--primary) !important;
+  box-shadow: var(--shadow-float);
 }
 
 /* Internal padding for the value container */
@@ -85,9 +85,9 @@
   margin-top: 6px !important;
   overflow: hidden;
   border: 1px solid var(--border-color);
-  border-radius: 14px !important;
+  border-radius: var(--radius-md) !important;
   background: var(--bs-body-bg) !important;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14) !important;
+  box-shadow: var(--shadow-float);
 }
 
 .select__menu-list {
@@ -95,7 +95,7 @@
 }
 
 .select__option {
-  border-radius: 9px;
+  border-radius: var(--radius-md);
   padding: 8px 10px !important;
   background-color: transparent !important;
   color: var(--theme-text-dark) !important;

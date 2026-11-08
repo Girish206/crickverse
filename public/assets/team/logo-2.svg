@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="240" height="240">
+  <!-- Cricket ball -->
+  <rect width="120" height="120" fill="#c1121f"/>
+  <circle cx="60" cy="60" r="54" fill="none" stroke="#f6efdf" stroke-width="2.5" opacity=".55"/>
+  <g transform="translate(60 60) rotate(24)"><circle r="34" fill="#f6efdf"/><path d="M-8.2 -32.3Q4.8 0 -8.2 32.3M8.2 -32.3Q21.1 0 8.2 32.3" fill="none" stroke="#c1121f" stroke-width="3.1" stroke-linecap="round"/></g>
+</svg>

@@ -18,7 +18,7 @@
 /* The hole: its huge shadow is the dimmed screen around it. */
 .cv-tips-spot {
   position: fixed;
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   box-shadow:
     0 0 0 3px var(--secondary),
     0 0 0 9999px rgba(15, 16, 18, 0.62);
@@ -51,10 +51,10 @@
 .cv-tip-card {
   position: fixed;
   padding: 14px 16px 12px;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   background: var(--adm-surface, #fff);
   color: var(--theme-text-dark);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+  box-shadow: var(--shadow-float);
   transition:
     top 0.25s ease,
     left 0.25s ease;

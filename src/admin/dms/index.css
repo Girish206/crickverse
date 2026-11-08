@@ -4,13 +4,14 @@
    src/styles/brand.css, so the admin matches the public portfolio: change a
    brand colour there and both follow. */
 :root {
-  /* Primary: maroon (readable under white text and on white) */
-  --primary: var(--brand-maroon);
+  /* Primary: the deep red of the logo's name (readable on white) */
+  --primary: var(--brand-accent);
   /* Same as --primary, as an "r, g, b" triplet for rgba(var(--primary-rgb), alpha) */
-  --primary-rgb: var(--brand-maroon-rgb);
-  /* Deep maroon, for primary buttons and highlights */
-  --primary-gradient: var(--brand-gradient-maroon);
-  --hero-gradient: var(--brand-gradient-sky);
+  --primary-rgb: var(--brand-accent-rgb);
+  /* Solid fills: primary buttons and highlights, and the dark score panels
+     (dark.css swaps both for its own). */
+  --primary-fill: var(--brand-accent-fill);
+  --hero-fill: #1c2028;
 
   /* Lighter shades (tints) */
   --primary-light-1: color-mix(in srgb, var(--primary) 88%, #fff);
@@ -27,10 +28,10 @@
   --primary-dark-3: color-mix(in srgb, var(--primary) 42%, #000);
   --primary-dark-4: color-mix(in srgb, var(--primary) 20%, #000);
 
-  /* Secondary: the logo's amber rays */
-  --secondary: var(--brand-amber);
+  /* Secondary: slate, for quiet labels and tints beside the accent */
+  --secondary: #475467;
   /* Same as --secondary, as an "r, g, b" triplet for rgba(var(--secondary-rgb), alpha) */
-  --secondary-rgb: var(--brand-amber-rgb);
+  --secondary-rgb: 71, 84, 103;
 
   /* Lighter shades (tints) */
   --secondary-light-1: color-mix(in srgb, var(--secondary) 88%, #fff);
@@ -48,25 +49,32 @@
 
   /* Common */
   --theme-text-dark: var(--brand-navy);
-  --muted-color: #6b5753;
-  --border-color: #e8dedb;
-  --background-color: #f6f3ef;
+  --muted-color: #5b6472;
+  --border-color: #e4e7ec;
+  --background-color: #f2f4f7;
   --theme-text-light: #ffffff;
 
-  /* The four logo colours, for the login screen's gradient and other
-     places that echo the logo itself rather than primary/secondary. */
-  --logo-navy: var(--brand-navy);
-  --logo-crimson: var(--brand-crimson);
-  --logo-orange: var(--brand-orange);
-  --logo-gold: var(--brand-amber);
+  /* Surfaces, in both themes (dark.css has the charcoal ones). */
+  --adm-bg: #f4f5f7;
+  --adm-surface: #ffffff;
+  --adm-raised: #f8f9fb;
+  --adm-glass: #ffffff;
+  --adm-line: #e4e7ec;
+  --adm-line-strong: #d0d5dd;
+  --adm-hover: rgba(16, 24, 40, 0.04);
+  --adm-text: var(--brand-navy);
+  --adm-text-2: #3d4553;
 
-  /* Same 4 logo colours mixed ~18% into white: a soft pastel background
-     wash (used by the login screen's backdrop and the admin shell). */
-  --logo-navy-light: color-mix(in srgb, var(--brand-navy) 18%, #fff);
-  --logo-crimson-light: color-mix(in srgb, var(--brand-crimson) 18%, #fff);
-  --logo-orange-light: color-mix(in srgb, var(--brand-orange) 18%, #fff);
-  --logo-gold-light: color-mix(in srgb, var(--brand-amber) 18%, #fff);
-  /* Main layout background: a calm warm off-white (Layout.css). */
-  --layout-bg-top: #eaebee;
-  --layout-bg-bottom: #dde0e6;
+  /* Bootstrap's status utilities (text-warning, btn-success …) on this palette. */
+  --bs-primary-rgb: var(--brand-accent-rgb);
+  --bs-success-rgb: var(--success-rgb);
+  --bs-warning-rgb: var(--warning-rgb);
+  --bs-danger-rgb: var(--danger-rgb);
+  --bs-info-rgb: var(--secondary-rgb);
+
+  /* Runs off the bat, on chips, the scoring pad and the shot map: told apart
+     by depth of grey, so a wicket's red is the only colour on the over. */
+  --ball-four: #475467;
+  --ball-six: var(--brand-navy);
+  --ball-six-text: #ffffff;
 }

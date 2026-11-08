@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="240" height="240">
+  <!-- Ground and pitch -->
+  <rect width="120" height="120" fill="#6d8f12"/>
+  <circle cx="60" cy="60" r="54" fill="none" stroke="#f6efdf" stroke-width="2.5" opacity=".55"/>
+  <ellipse cx="60" cy="60" rx="36" ry="43" fill="none" stroke="#f6efdf" stroke-width="3.5"/><rect x="49" y="31" width="22" height="58" rx="3" fill="#e9d6a4"/><path d="M49 41h22M49 79h22" stroke="#ffffff" stroke-width="3"/><path d="M54 35.5h.01M60 35.5h.01M66 35.5h.01M54 84.5h.01M60 84.5h.01M66 84.5h.01" stroke="#6d4a1d" stroke-width="3.4" stroke-linecap="round"/>
+</svg>

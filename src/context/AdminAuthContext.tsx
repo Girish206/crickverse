@@ -59,9 +59,6 @@ interface AdminAuthContextValue {
   applyToken: (token: string) => void;
   // `everywhere` also ends the account's sessions on every other device.
   logout: (options?: { everywhere?: boolean }) => Promise<void>;
-  // A user-selectable background tint for the shell (Layout reads it).
-  mainBg: string;
-  setMainBg: (bg: string) => void;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextValue | undefined>(undefined);
@@ -95,12 +92,6 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     if (token && !identity?.hasCricketAccess) setAdminToken(null);
     return identity?.hasCricketAccess ? identity : null;
   });
-  const [mainBg, setMainBgState] = useState(() => localStorage.getItem("crickverse_mainBg") || "bg-light");
-
-  function setMainBg(bg: string) {
-    localStorage.setItem("crickverse_mainBg", bg);
-    setMainBgState(bg);
-  }
 
   // Once per app open: swap the stored token for a fresh one, so the
   // session slides forward and picks up any change to the account (a new
@@ -193,8 +184,6 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         register,
         applyToken,
         logout,
-        mainBg,
-        setMainBg,
       }}
     >
       {children}

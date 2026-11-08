@@ -7,7 +7,7 @@
   --cv-shell-bg: var(--adm-bg, #f6f3ef);
   --cv-shell-text: var(--theme-text-dark, #1f1d1d);
   --cv-shell-muted: var(--muted-color, #6b6b76);
-  --cv-shell-accent: var(--primary, var(--brand-maroon));
+  --cv-shell-accent: var(--primary, var(--brand-accent));
 
   min-height: 70vh;
   display: flex;
@@ -32,7 +32,7 @@
   --cv-shell-bg: var(--adm-bg, var(--brand-navy-night));
   --cv-shell-text: var(--theme-text-dark, #f3f4f6);
   --cv-shell-muted: var(--muted-color, #a3a2bf);
-  --cv-shell-accent: var(--primary, var(--brand-maroon-bright));
+  --cv-shell-accent: var(--primary, var(--brand-accent-bright));
 }
 
 @media (prefers-color-scheme: dark) {
@@ -40,7 +40,7 @@
     --cv-shell-bg: var(--brand-navy-night);
     --cv-shell-text: #f3f4f6;
     --cv-shell-muted: #a3a2bf;
-    --cv-shell-accent: var(--brand-maroon-bright);
+    --cv-shell-accent: var(--brand-accent-bright);
   }
 }
 
@@ -52,9 +52,9 @@
 
 .cv-shell-msg-code {
   font-size: var(--fs-2xl, 2rem);
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
-  background: var(--brand-gradient-vivid);
+  background: var(--primary-fill);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;

@@ -1,9 +1,9 @@
-// Deterministic pastel background for a transaction row's avatar circle —
-// same category always gets the same color, without needing to store one.
+// Deterministic background for a team or player's avatar circle, so the same
+// name always gets the same colour without storing one. Muted, dark tones
+// that all carry white text: enough to tell names apart, never a rainbow.
 const PALETTE = [
-  "#F97066", "#F79009", "#EAAA08", "#66C61C",
-  "#12B76A", "#15B79E", "#0BA5EC", "#2E90FA",
-  "#7A5AF8", "#B54708", "#DD2590", "#875BF7",
+  "#475467", "#4b5f7a", "#3f6b6b", "#5b5f7a",
+  "#6b5b6e", "#6b6255", "#7a4a46", "#4e6650",
 ];
 
 export function avatarColorFor(label: string): string {

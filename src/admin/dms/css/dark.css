@@ -17,20 +17,34 @@
   --adm-bg: var(--brand-navy-night);
   --adm-surface: var(--brand-navy-surface);
   --adm-raised: var(--brand-navy-raised);
-  --adm-glass: rgba(32, 35, 42, 0.90);
-  --adm-line: rgba(255, 255, 255, 0.10);
-  --adm-line-strong: rgba(255, 255, 255, 0.18);
-  --adm-hover: rgba(255, 255, 255, 0.06);
-  --adm-text: #f9fafb;
-  --adm-text-2: #d1d5db;
+  --adm-glass: var(--brand-navy-surface);
+  --adm-line: rgba(255, 255, 255, 0.09);
+  --adm-line-strong: rgba(255, 255, 255, 0.16);
+  --adm-hover: rgba(255, 255, 255, 0.05);
+  --adm-text: #f2f4f7;
+  --adm-text-2: #c8cdd6;
 
-  /* Brand: the lighter maroon — the plain one is too dark to read on the
-     charcoal. Buttons and highlights use the night maroon gradient. */
-  --primary: var(--brand-maroon-bright);
-  --primary-rgb: var(--brand-maroon-bright-rgb);
-  --primary-gradient: var(--brand-gradient-maroon-night);
-  --hero-gradient: linear-gradient(135deg, #781c22 0%, #521317 50%, #320c10 100%);
-  --secondary: var(--brand-amber-bright);
+  /* Accent: the orange end of the logo's name, its red being too dark to
+     read on the charcoal. Buttons and highlights keep the red (--primary-fill). */
+  --primary: var(--brand-accent-bright);
+  --primary-rgb: var(--brand-accent-bright-rgb);
+  --hero-fill: var(--adm-raised);
+  --secondary: #aab3c2;
+  --secondary-rgb: 170, 179, 194;
+
+  --danger: var(--brand-crimson-bright);
+  --danger-rgb: 240, 121, 110;
+  --success: var(--success-bright);
+  --success-rgb: 87, 189, 138;
+  --warning: #dcae5f;
+  --warning-rgb: 220, 174, 95;
+
+  --ball-four: #5a6474;
+  --ball-six: #e4e7ec;
+  --ball-six-text: #171a20;
+
+  --shadow-card: none;
+  --shadow-float: 0 8px 28px rgba(0, 0, 0, 0.55);
 
   /* "light" tints are used as soft backgrounds → mix into the surface;
      "dark" shades are used as stronger text → mix towards white. */
@@ -58,16 +72,9 @@
   --secondary-dark-4: color-mix(in srgb, var(--secondary) 30%, #fff);
 
   --theme-text-dark: var(--adm-text);
-  --muted-color: #9ca3af;
-  --border-color: var(--adm-line-strong);
+  --muted-color: #9aa3b2;
+  --border-color: var(--adm-line);
   --background-color: rgba(255, 255, 255, 0.05);
-
-  --logo-navy-light: var(--adm-bg);
-  --logo-crimson-light: color-mix(in srgb, var(--brand-crimson) 10%, var(--adm-bg));
-  --logo-orange-light: color-mix(in srgb, var(--brand-orange) 8%, var(--adm-bg));
-  --logo-gold-light: color-mix(in srgb, var(--brand-amber) 6%, var(--adm-bg));
-  --layout-bg-top: #1b1e24;
-  --layout-bg-bottom: var(--adm-bg);
 
   /* Legacy template variables still read by admin.css */
   --black: var(--adm-text);
@@ -77,43 +84,26 @@
 
   --sidebar-bg: var(--adm-surface);
   --sidebar-text-muted: #9ca3af;
-  --sidebar-shadow: 0 30px 70px rgba(0, 0, 0, 0.5);
+  --sidebar-shadow: none;
 
   /* Bootstrap, so its components use the same charcoal surfaces. */
   --bs-body-bg: var(--adm-surface);
-  --bs-body-bg-rgb: 32, 35, 42;
+  --bs-body-bg-rgb: 27, 30, 36;
   --bs-body-color: var(--adm-text-2);
   --bs-emphasis-color: var(--adm-text);
   --bs-heading-color: var(--adm-text);
-  --bs-secondary-color: #9ca3af;
+  --bs-secondary-color: #9aa3b2;
   --bs-secondary-bg: var(--adm-raised);
-  --bs-tertiary-bg: #1c1f27;
+  --bs-tertiary-bg: #171a1f;
   --bs-border-color: var(--adm-line-strong);
   --bs-border-color-translucent: var(--adm-line);
-  --bs-link-color: var(--brand-maroon-bright);
-  --bs-link-hover-color: var(--brand-amber-bright);
+  --bs-link-color: var(--brand-accent-bright);
+  --bs-link-hover-color: var(--adm-text);
 }
 
 /* ---------- Shell ---------- */
 
-:root[data-bs-theme="dark"] body.admin-page {
-  background: var(--adm-bg);
-  color: var(--adm-text-2);
-}
-:root[data-bs-theme="dark"] .layout-wrapper,
-:root[data-bs-theme="dark"] .layout-wrapper[class*="bg-"] {
-  --bg-overlay: linear-gradient(rgba(18, 20, 24, 0.92), rgba(18, 20, 24, 0.92));
-}
-:root[data-bs-theme="dark"] .cv-backdrop {
-  opacity: 0.28;
-}
-:root[data-bs-theme="dark"] .cricket-home-hero {
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-bottom: 3px solid rgba(var(--brand-amber-rgb), 0.6);
-  box-shadow: 0 14px 30px -18px rgba(var(--brand-crimson-rgb), 0.35);
-}
-:root[data-bs-theme="dark"] .admin-bg-shape {
-  opacity: 0.7;
+:root[data-bs-theme="dark"] body.admin-page {  color: var(--adm-text-2);
 }
 :root[data-bs-theme="dark"] .text-dark {
   color: var(--adm-text) !important;
@@ -125,14 +115,6 @@
 
 /* ---------- Navbar ---------- */
 
-:root[data-bs-theme="dark"] .navbar {
-  background: rgba(22, 24, 29, 0.92);
-  box-shadow: 0 10px 28px -6px rgba(0, 0, 0, 0.85), 0 4px 12px rgba(0, 0, 0, 0.55);
-}
-:root[data-bs-theme="dark"] .navbar-scrolled {
-  background: rgba(22, 24, 29, 0.98);
-  box-shadow: 0 12px 32px -6px rgba(0, 0, 0, 0.9), 0 4px 14px rgba(0, 0, 0, 0.6);
-}
 :root[data-bs-theme="dark"] .navbar .nav {
   background: var(--adm-hover);
 }
@@ -169,11 +151,11 @@
   background: var(--adm-hover);
 }
 :root[data-bs-theme="dark"] .navbar-user-dropdown-item.is-danger {
-  color: #f0606f;
+  color: var(--danger);
 }
 :root[data-bs-theme="dark"] .navbar-user-dropdown-item.is-danger .navbar-user-dropdown-icon {
-  background: rgba(240, 96, 111, 0.14);
-  color: #f0606f;
+  background: rgba(var(--danger-rgb), 0.14);
+  color: var(--danger);
 }
 :root[data-bs-theme="dark"] .navbar-user-dropdown-divider {
   background: var(--adm-line);
@@ -215,14 +197,22 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  border: 1px solid rgba(var(--primary-rgb), 0.25);
+  border: 1px solid var(--adm-line-strong);
   background: transparent;
-  color: var(--primary);
+  color: var(--adm-text-2);
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: background-color 0.15s ease;
 }
 .navbar-theme-btn:hover {
-  background: rgba(var(--primary-rgb), 0.1);
+  background: var(--adm-hover);
+}
+
+/* The theme change (hooks/themeTransition.ts): the new theme is revealed over
+   a still picture of the old one, not the browser's default crossfade. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }
 
 /* ---------- Sidebar ---------- */
@@ -248,8 +238,8 @@
   color: #9ca3af;
 }
 :root[data-bs-theme="dark"] .logout-btn {
-  background: rgba(244, 63, 94, 0.1);
-  color: #ff6b85 !important;
+  background: rgba(var(--danger-rgb), 0.1);
+  color: var(--danger) !important;
 }
 @media (max-width: 767px) {
   :root[data-bs-theme="dark"] .sidebar {
@@ -269,7 +259,7 @@
   --bs-card-cap-bg: rgba(255, 255, 255, 0.03);
   background-color: var(--adm-surface);
   border-color: var(--adm-line);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35) !important;
+  box-shadow: var(--shadow-card);
 }
 :root[data-bs-theme="dark"] .ki-card i {
   background-color: var(--adm-raised);
@@ -281,18 +271,11 @@
 :root[data-bs-theme="dark"] .ki-card small {
   color: #9ca3af;
 }
-:root[data-bs-theme="dark"] .card-header-gradient-primary {
-  background: linear-gradient(135deg, var(--primary-light-6) 0%, var(--adm-surface) 100%) !important;
-}
-:root[data-bs-theme="dark"] .card-header-gradient-secondary {
-  background: linear-gradient(135deg, var(--secondary-light-5) 0%, var(--adm-surface) 100%) !important;
-}
 :root[data-bs-theme="dark"] .admin-timeline-marker {
   border-color: var(--adm-surface);
 }
 :root[data-bs-theme="dark"] .admin-profile-hero-body {
-  background: radial-gradient(circle at 12% 30%, var(--primary-light-5), transparent 45%),
-    linear-gradient(120deg, var(--primary-light-7) 0%, var(--adm-surface) 50%, var(--secondary-light-6) 100%);
+  background: var(--adm-surface);
 }
 :root[data-bs-theme="dark"] .admin-profile-avatar,
 :root[data-bs-theme="dark"] .admin-profile-avatar-edit {
@@ -307,26 +290,26 @@
 :root[data-bs-theme="dark"] .admin-txn-tag-savings,
 :root[data-bs-theme="dark"] .admin-profile-status-saved i,
 :root[data-bs-theme="dark"] .admin-banner-success {
-  color: #4ade80;
+  color: var(--success);
 }
 :root[data-bs-theme="dark"] .admin-txn-tag-split,
 :root[data-bs-theme="dark"] .admin-txn-tag-expenses {
-  color: #7cb4ff;
+  color: var(--secondary);
 }
 :root[data-bs-theme="dark"] .admin-txn-tag-owner {
-  color: #fbbf5a;
+  color: var(--warning);
 }
 :root[data-bs-theme="dark"] .admin-txn-tag-portfolio {
-  color: #b9a4ff;
+  color: var(--secondary);
 }
 :root[data-bs-theme="dark"] .admin-txn-tag-danger,
 :root[data-bs-theme="dark"] .admin-txn-amount,
 :root[data-bs-theme="dark"] .admin-profile-status-error {
-  color: #ff7b72;
+  color: var(--danger);
 }
 :root[data-bs-theme="dark"] .admin-remove-btn {
-  border-color: #ff7b72;
-  color: #ff7b72;
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 /* ---------- Forms ---------- */
@@ -357,7 +340,7 @@
 :root[data-bs-theme="dark"] .select__menu {
   border-color: var(--adm-line-strong);
   background-color: var(--adm-raised) !important;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45) !important;
+  box-shadow: var(--shadow-float);
 }
 :root[data-bs-theme="dark"] .select__single-value,
 :root[data-bs-theme="dark"] .select__input-container,
@@ -424,7 +407,7 @@
 :root[data-bs-theme="dark"] .sticky-top-left-1,
 :root[data-bs-theme="dark"] .sticky-top-left-2,
 :root[data-bs-theme="dark"] .sticky-top-left-3 {
-  background-color: color-mix(in srgb, var(--primary) 14%, var(--adm-surface)) !important;
+  background-color: var(--adm-raised) !important;
   color: var(--adm-text) !important;
   border-color: var(--adm-line) !important;
 }
@@ -444,7 +427,7 @@
 :root[data-bs-theme="dark"] table.table-striped > tbody > tr:nth-of-type(even),
 :root[data-bs-theme="dark"] table.sticky-header.table-striped > tbody > tr:nth-of-type(even),
 :root[data-bs-theme="dark"] .rdt_TableBody > .rdt_TableRow:nth-of-type(even) {
-  background-color: #11133a !important;
+  background-color: var(--adm-raised) !important;
 }
 :root[data-bs-theme="dark"] table.table-striped > tbody > tr:hover,
 :root[data-bs-theme="dark"] table.sticky-header.table-striped > tbody > tr:hover,
@@ -452,7 +435,7 @@
   background-color: var(--adm-raised) !important;
 }
 :root[data-bs-theme="dark"] .table-report .report-total-col {
-  background-color: rgba(var(--brand-amber-rgb), 0.08) !important;
+  background-color: var(--adm-hover) !important;
 }
 :root[data-bs-theme="dark"] .sticky-right-1,
 :root[data-bs-theme="dark"] .sticky-right-2,
@@ -474,7 +457,7 @@
 }
 :root[data-bs-theme="dark"] .virtual-table-container .rdt_TableHeadRow,
 :root[data-bs-theme="dark"] .virtual-table-container .rdt_TableCol {
-  background-color: color-mix(in srgb, var(--primary) 14%, var(--adm-surface)) !important;
+  background-color: var(--adm-raised) !important;
   color: var(--adm-text) !important;
   border-color: var(--adm-line) !important;
 }
@@ -505,7 +488,7 @@
 :root[data-bs-theme="dark"] .modal-content {
   background-color: var(--adm-surface);
   border: 1px solid var(--adm-line);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-float);
 }
 :root[data-bs-theme="dark"] .modal-header,
 :root[data-bs-theme="dark"] .modal-footer {
@@ -514,12 +497,6 @@
 :root[data-bs-theme="dark"] .modal-close-btn {
   border-color: var(--adm-line-strong);
 }
-:root[data-bs-theme="dark"] .admin-login-card {
-  background: var(--adm-surface);
-  border: 1px solid var(--adm-line);
-  box-shadow: 0 30px 70px rgba(var(--primary-rgb), 0.18), 0 6px 20px rgba(0, 0, 0, 0.5);
-}
-
 /* ---------- SweetAlert (confirmDelete) ---------- */
 
 :root[data-bs-theme="dark"] .swal2-popup {
@@ -546,19 +523,13 @@
   background: rgba(255, 255, 255, 0.12);
 }
 :root[data-bs-theme="dark"] .sidebar .sidebar-footer .logout-btn {
-  color: #f87171 !important;
-  border-color: rgba(248, 113, 113, 0.35);
-  background: rgba(248, 113, 113, 0.08);
+  color: var(--danger) !important;
+  border-color: rgba(var(--danger-rgb), 0.35);
+  background: rgba(var(--danger-rgb), 0.08);
 }
 :root[data-bs-theme="dark"] .sidebar .sidebar-footer .logout-btn:hover {
-  background: var(--primary-gradient) !important;
+  background: var(--primary-fill) !important;
   border-color: rgba(var(--primary-rgb), 0.45);
-}
-/* Active menu item: the light theme's primary → primary-dark-1 tile turns
-   salmon here (dark-1 mixes towards white), so use the maroon gradient. */
-:root[data-bs-theme="dark"] .sidebar-open .nav-item.active > .nav-link .icon {
-  background: var(--primary-gradient);
-  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 :root[data-bs-theme="dark"] .sidebar-open .nav-item.active > .nav-link {
   color: var(--adm-text) !important;

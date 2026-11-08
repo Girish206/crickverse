@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="240" height="240">
+  <!-- Shield with bat -->
+  <rect width="120" height="120" fill="#7a1538"/>
+  <circle cx="60" cy="60" r="54" fill="none" stroke="#f3c14b" stroke-width="2.5" opacity=".55"/>
+  <path d="M60 20l34 10v32c0 22-18 34-34 40-16-6-34-18-34-40V30z" fill="#f3c14b"/><g transform="translate(60 61) rotate(0) scale(0.72)"><path d="M-3.5-46h7v22q0 2 3 4l3.5 3v56q0 5-5 5h-10q-5 0-5-5v-56l3.5-3q3-2 3-4z" fill="#7a1538"/><rect x="-4.5" y="-48" width="9" height="22" rx="3" fill="#1b1f27"/></g>
+</svg>

@@ -8,7 +8,7 @@
   --normal-text: var(--theme-text-dark);
   --normal-bg-hover: var(--adm-surface, #fff);
   --normal-border-hover: var(--muted-color);
-  --border-radius: 14px;
+  --border-radius: var(--radius-md);
   /* Sonner pins the close button over the icon at the top left; top right
      instead. */
   --toast-close-button-start: unset;
@@ -22,16 +22,16 @@
   border-left: 4px solid var(--toast-accent);
   font-family: inherit;
   font-weight: 600;
-  box-shadow: 0 10px 28px -12px rgba(15, 16, 18, 0.35);
+  box-shadow: var(--shadow-float);
 }
 [data-sonner-toaster] [data-sonner-toast][data-type="success"] {
-  --toast-accent: #16a34a;
+  --toast-accent: var(--success);
 }
 [data-sonner-toaster] [data-sonner-toast][data-type="error"] {
   --toast-accent: rgb(var(--brand-crimson-rgb));
 }
 [data-sonner-toaster] [data-sonner-toast][data-type="warning"] {
-  --toast-accent: #d97706;
+  --toast-accent: var(--warning);
 }
 [data-sonner-toaster] [data-sonner-toast] [data-icon] {
   color: var(--toast-accent);
@@ -113,11 +113,11 @@
   --normal-bg-hover: #0f1c33;
 }
 :root[data-bs-theme="dark"] [data-sonner-toaster] [data-sonner-toast][data-type="success"] {
-  --toast-accent: #4ade80;
+  --toast-accent: var(--success);
 }
 :root[data-bs-theme="dark"] [data-sonner-toaster] [data-sonner-toast][data-type="error"] {
-  --toast-accent: #f87171;
+  --toast-accent: var(--danger);
 }
 :root[data-bs-theme="dark"] [data-sonner-toaster] [data-sonner-toast][data-type="warning"] {
-  --toast-accent: #fbbf5a;
+  --toast-accent: var(--warning);
 }

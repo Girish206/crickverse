@@ -10,9 +10,9 @@ import { logoFor } from "./tournamentArt";
 // with Share / Download / Copy as text.
 
 export const W = 1080;
-export const NAVY = "#2a0f12";
-export const RED = "#d7261e";
-export const AMBER = "#ffcd00";
+export const NAVY = "#171a20";
+export const RED = "#b42318";
+export const AMBER = "#d9bd74";
 export const FONT = "Outfit, system-ui, sans-serif";
 
 export const loadImage = (src: string) =>
@@ -53,7 +53,7 @@ export function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w
 // Where a card's own content starts, below the frame's header.
 export const CARD_TOP = 350;
 
-// A W × height canvas with the backdrop, flag band, centred header (logo,
+// A W × height canvas with the backdrop, accent band, centred header (logo,
 // tournament, place, heading, then a pill with a count beside it) and the
 // footer drawn; the caller draws its content from CARD_TOP down to
 // height - 80.
@@ -72,22 +72,11 @@ export async function drawCardFrame(
   canvas.height = height;
   const ctx = canvas.getContext("2d")!;
 
-  const bg = ctx.createLinearGradient(0, 0, W, height);
-  bg.addColorStop(0, "#3a1216");
-  bg.addColorStop(1, "#140607");
-  ctx.fillStyle = bg;
+  ctx.fillStyle = "#1c2028";
   ctx.fillRect(0, 0, W, height);
-  // A soft red glow behind the header.
-  const glow = ctx.createRadialGradient(W, 0, 0, W, 0, 700);
-  glow.addColorStop(0, "rgba(215, 38, 30, 0.45)");
-  glow.addColorStop(1, "rgba(215, 38, 30, 0)");
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, W, height);
-  // Flag band.
-  ctx.fillStyle = AMBER;
-  ctx.fillRect(0, 0, W, 10);
-  ctx.fillStyle = RED;
-  ctx.fillRect(0, 10, W, 10);
+  // Accent band.
+  ctx.fillStyle = "#d7261e";
+  ctx.fillRect(0, 0, W, 12);
 
   const pad = 80;
   const mid = W / 2;
@@ -123,10 +112,7 @@ export async function drawCardFrame(
   ctx.font = `600 24px ${FONT}`;
   const countW = ctx.measureText(count).width;
   const pillX = mid - (pillW + 16 + countW) / 2;
-  const pill = ctx.createLinearGradient(pillX, 0, pillX + pillW, 0);
-  pill.addColorStop(0, RED);
-  pill.addColorStop(1, "#e8501f");
-  ctx.fillStyle = pill;
+  ctx.fillStyle = "#d7261e";
   roundRect(ctx, pillX, 282, pillW, 46, 23);
   ctx.textAlign = "left";
   ctx.fillStyle = "#ffffff";

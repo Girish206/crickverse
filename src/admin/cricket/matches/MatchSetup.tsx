@@ -6,25 +6,25 @@ import { toast } from "sonner";
 import { apiClient } from "../../../api/client";
 import {
   useCricketMatch,
+  useLastLeaders,
   useSetCricketCurrentPlayers,
   useStartCricketMatch,
   useTeamPlayers,
 } from "../../../api/hooks/cricket/useCricketMatches";
 import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
 import { useCricketTournament } from "../../../api/hooks/cricket/useCricketTournaments";
-import type { ApiEnvelope, CricketMatch, CricketPlayer, CricketTeamRoles } from "../../../api/types";
+import type { ApiEnvelope, CricketLastLeaders, CricketMatch, CricketTeamRoles } from "../../../api/types";
 import { ListCard } from "../../components/ListCard";
 import { PageHeader } from "../../components/PageHeader";
 import { avatarColorFor } from "../avatarColor";
 import { BottomSheet } from "../BottomSheet";
-import { AddPlayerByMobile } from "../players/AddPlayerByMobile";
 import { PlayerAvatar } from "../players/PlayerAvatar";
-import { PlayerCard } from "../players/PlayerCard";
 import type { NameOf } from "../stats";
-import { rolesOf, rolesWithout, TeamRoleChips } from "../tournaments/TeamRoleChips";
+import { rolesOf, rolesWithout, withLastLeaders, withReturningLeader } from "../tournaments/TeamRoleChips";
 import { CricketMatchForm } from "./CricketMatchForm";
 import { teamKeyOf, usePlayerNames } from "./matchUtils";
 import { PlayerPicker } from "./PlayerPicker";
+import { SquadChecklist, squadGroups } from "./SquadChecklist";
 import "../../admin.css";
 import "../cricket.css";
 import { Loader } from "../../components/Loader";
@@ -68,9 +68,11 @@ export function CricketMatchSetupPage() {
   const id = Number(useParams().id);
   const navigate = useNavigate();
   const { data: match, isLoading } = useCricketMatch(id);
+  // Waited for, so the squads open with last match's leaders already picked.
+  const { data: lastLeaders, isLoading: loadingLeaders } = useLastLeaders(id);
   const nameOf = usePlayerNames();
 
-  if (isLoading || !match) {
+  if (isLoading || loadingLeaders || !match) {
     return (
       <>
         <PageHeader title="Start Match" back={`/matches/${id}`} />
@@ -86,6 +88,7 @@ export function CricketMatchSetupPage() {
   return (
     <MatchSetup
       match={match}
+      lastLeaders={lastLeaders}
       nameOf={nameOf}
       onExit={() => navigate(`/matches/${id}`)}
       onStarted={() => {
@@ -97,6 +100,7 @@ export function CricketMatchSetupPage() {
 
 interface MatchSetupProps {
   match: CricketMatch;
+  lastLeaders?: [CricketLastLeaders, CricketLastLeaders];
   nameOf: NameOf;
   onExit: () => void;
   onStarted: () => void;
@@ -106,7 +110,7 @@ interface MatchSetupProps {
 // on to the toss, openers and opening bowler. Each squad defaults to the
 // team's tournament roster; other tournament players can be brought in. A
 // standalone match picks both squads from every player.
-function MatchSetup({ match, nameOf, onExit, onStarted }: MatchSetupProps) {
+function MatchSetup({ match, lastLeaders, nameOf, onExit, onStarted }: MatchSetupProps) {
   const { data: tournament } = useCricketTournament(match.tournamentId ?? 0, match.tournamentId !== null);
   const queryClient = useQueryClient();
   const startMatch = useStartMatch();
@@ -115,10 +119,11 @@ function MatchSetup({ match, nameOf, onExit, onStarted }: MatchSetupProps) {
 
   const [step, setStep] = useState<"edit" | "toss">("edit");
   const [xi, setXi] = useState<[number[], number[]]>([match.teams[0].playerIds, match.teams[1].playerIds]);
-  // This match's captain / vice-captain / keeper per side, from the teams'.
-  const [roles, setRoles] = useState<[CricketTeamRoles, CricketTeamRoles]>([
-    rolesOf(match.teams[0]),
-    rolesOf(match.teams[1]),
+  // This match's captain / vice-captain / keeper per side: the teams', with
+  // whoever captained and kept wicket in the side's last match taking over.
+  const [roles, setRoles] = useState<[CricketTeamRoles, CricketTeamRoles]>(() => [
+    withLastLeaders(rolesOf(match.teams[0]), lastLeaders?.[0], match.teams[0].playerIds),
+    withLastLeaders(rolesOf(match.teams[1]), lastLeaders?.[1], match.teams[1].playerIds),
   ]);
   const [squadFor, setSquadFor] = useState<0 | 1 | null>(null);
   const [tossWinner, setTossWinner] = useState<0 | 1 | null>(null);
@@ -154,8 +159,6 @@ function MatchSetup({ match, nameOf, onExit, onStarted }: MatchSetupProps) {
         : (tournament?.teams[match.teams[slot].teamIndex]?.playerIds ?? [])),
     ]),
   ];
-  const rostered = new Set([...teamRoster(0), ...teamRoster(1)]);
-  const inTournament = new Set(standalone ? [] : (tournament?.playerIds ?? []));
   // Same badge colours as the match hero, kept apart if both names clash.
   const teamColors = [avatarColorFor(match.teams[0].name), avatarColorFor(match.teams[1].name)];
   for (let salt = 1; teamColors[1] === teamColors[0] && salt < 12; salt++) {
@@ -163,27 +166,19 @@ function MatchSetup({ match, nameOf, onExit, onStarted }: MatchSetupProps) {
   }
   const battingSlot = tossWinner === null || decision === null ? null : decision === "bat" ? tossWinner : 1 - tossWinner;
 
-  // Who a side can pick from: its roster (plus anyone brought in by mobile
-  // number), then the rest of the tournament's squad. The whole player list
-  // is too long to show. Anyone already picked by the other side is left out.
-  function squadGroups(slot: 0 | 1) {
-    const free = (ids: number[]) => ids.filter((id) => !xi[1 - slot].includes(id));
-    const roster = teamRoster(slot);
-    const squad = [...inTournament].filter((id) => !rostered.has(id));
-    const brought = xi[slot].filter((id) => !roster.includes(id) && !squad.includes(id));
-    return [
-      { label: match.teams[slot].name, playerIds: free([...roster, ...brought]) },
-      { label: "Tournament squad", playerIds: free(squad), tag: "Squad" },
-    ];
-  }
-
   function setSideRoles(slot: 0 | 1, next: CricketTeamRoles) {
     setRoles((current) => (slot === 0 ? [next, current[1]] : [current[0], next]));
   }
 
   function toggle(slot: 0 | 1, playerId: number) {
-    // Leaving the XI gives up any role in it.
-    if (xi[slot].includes(playerId)) setSideRoles(slot, rolesWithout(roles[slot], playerId));
+    // Leaving the XI gives up any role in it; last match's captain or keeper
+    // coming in takes theirs back.
+    setSideRoles(
+      slot,
+      xi[slot].includes(playerId)
+        ? rolesWithout(roles[slot], playerId)
+        : withReturningLeader(roles[slot], lastLeaders?.[slot], playerId),
+    );
     setXi((current) => {
       const next: [number[], number[]] = [[...current[0]], [...current[1]]];
       next[slot] = next[slot].includes(playerId)
@@ -197,6 +192,11 @@ function MatchSetup({ match, nameOf, onExit, onStarted }: MatchSetupProps) {
   // the toss once it's done (see onSaved below).
   function toToss() {
     if (xi[0].length < 2 || xi[1].length < 2) return setError("Each side needs at least 2 players in its squad.");
+    const noCaptain = ([0, 1] as const).find((slot) => roles[slot].captainId === null);
+    if (noCaptain !== undefined) {
+      setSquadFor(noCaptain);
+      return setError(`Choose ${match.teams[noCaptain].name}'s captain — tap C on a player.`);
+    }
     setError(null);
     detailsForm.current?.requestSubmit();
   }
@@ -291,7 +291,7 @@ function MatchSetup({ match, nameOf, onExit, onStarted }: MatchSetupProps) {
                             <span className="cricket-role-tag">C</span> {nameOf(roles[slot].captainId)}
                           </>
                         ) : (
-                          "No captain yet"
+                          "Choose a captain"
                         )}
                       </small>
                       <button
@@ -536,7 +536,14 @@ function MatchSetup({ match, nameOf, onExit, onStarted }: MatchSetupProps) {
           }
         >
           <SquadChecklist
-            groups={squadGroups(squadFor)}
+            groups={squadGroups({
+              name: match.teams[squadFor].name,
+              roster: teamRoster(squadFor),
+              otherRoster: teamRoster(squadFor === 0 ? 1 : 0),
+              tournamentPlayerIds: standalone ? [] : (tournament?.playerIds ?? []),
+              selected: xi[squadFor],
+              otherSelected: xi[1 - squadFor],
+            })}
             selected={xi[squadFor]}
             roles={roles[squadFor]}
             playerById={playerById}
@@ -580,87 +587,3 @@ function MatchSetup({ match, nameOf, onExit, onStarted }: MatchSetupProps) {
   );
 }
 
-interface SquadGroup {
-  label: string;
-  playerIds: number[];
-  // A label on each card, e.g. where they're brought in from.
-  tag?: string;
-}
-
-interface SquadChecklistProps {
-  groups: SquadGroup[];
-  selected: number[];
-  roles: CricketTeamRoles;
-  playerById: Map<number, CricketPlayer>;
-  nameOf: NameOf;
-  onToggle: (playerId: number) => void;
-  onRoles: (roles: CricketTeamRoles) => void;
-  blockedReason: (playerId: number) => string | null;
-  // Someone brought in by mobile number (found, or just created).
-  onAdded: (playerId: number) => void;
-}
-
-// Anyone else is brought in by mobile number at the top; below, the side's
-// own roster and the tournament squad. Picked players get C / VC / WK
-// toggles for this match.
-function SquadChecklist({
-  groups,
-  selected,
-  roles,
-  playerById,
-  nameOf,
-  onToggle,
-  onRoles,
-  blockedReason,
-  onAdded,
-}: SquadChecklistProps) {
-  const [search, setSearch] = useState("");
-  const term = search.trim().toLowerCase();
-  const total = groups.reduce((sum, group) => sum + group.playerIds.length, 0);
-  const shown = groups
-    .map((group) => ({ ...group, playerIds: group.playerIds.filter((id) => nameOf(id).toLowerCase().includes(term)) }))
-    .filter((group) => group.playerIds.length > 0);
-
-  return (
-    <>
-      <AddPlayerByMobile blockedReason={blockedReason} onAdded={(player) => onAdded(player.id)} />
-      {total > 6 && (
-        <input
-          type="search"
-          className="cricket-picker-search"
-          placeholder="Search players"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      )}
-      {shown.length === 0 ? (
-        <div className="admin-empty-state">
-          {total === 0 ? "No players yet — add them by mobile number above." : `No one matches "${search}".`}
-        </div>
-      ) : (
-        shown.map((group) => (
-          <section key={group.label} className="cricket-player-card-group">
-            <h3 className="cricket-player-card-group-title">
-              {group.label} <span>{group.playerIds.length}</span>
-            </h3>
-            <div className="cricket-player-card-list">
-              {group.playerIds.map((playerId) => (
-                <PlayerCard
-                  key={playerId}
-                  player={playerById.get(playerId)}
-                  fallbackName={nameOf(playerId)}
-                  selected={selected.includes(playerId)}
-                  tag={group.tag}
-                  onClick={() => onToggle(playerId)}
-                >
-                  <TeamRoleChips roles={roles} playerId={playerId} playerName={nameOf(playerId)} onChange={onRoles} />
-                </PlayerCard>
-              ))}
-            </div>
-          </section>
-        ))
-      )}
-
-    </>
-  );
-}

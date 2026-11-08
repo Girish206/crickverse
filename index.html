@@ -64,19 +64,6 @@
         animation: cvSplashOut 0.4s ease-in 3.1s forwards;
       }
 
-      /* The glow fades in, so the first frame is the plain background */
-      .cv-splash::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(circle at 50% 50%, rgba(215, 38, 30, 0.22), transparent 55%);
-        animation: cvSplashGlow 0.6s ease-out 0.35s both;
-      }
-
-      @keyframes cvSplashGlow {
-        from { opacity: 0; }
-      }
-
       @keyframes cvSplashOut {
         to {
           opacity: 0;

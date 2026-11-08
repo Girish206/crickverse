@@ -570,13 +570,13 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
           {!bowlerLimit && Number(overs) >= 2 && (
             <div className="cricket-app-row is-hint">
               <small className="admin-hint">
-                Usually a fifth of the overs —{" "}
+                Suggested: {Math.ceil(Number(overs) / 5)} {Math.ceil(Number(overs) / 5) === 1 ? "over" : "overs"} per bowler —{" "}
                 <button
                   type="button"
                   className="admin-link-btn"
-                  onClick={() => setBowlerLimit(String(Math.max(1, Math.ceil(Number(overs) / 5))))}
+                  onClick={() => setBowlerLimit(String(Math.ceil(Number(overs) / 5)))}
                 >
-                  use {Math.max(1, Math.ceil(Number(overs) / 5))}
+                  Use this
                 </button>
               </small>
             </div>

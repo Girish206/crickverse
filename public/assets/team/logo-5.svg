@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="240" height="240">
+  <!-- Batting helmet -->
+  <rect width="120" height="120" fill="#2450d6"/>
+  <circle cx="60" cy="60" r="54" fill="none" stroke="#ffffff" stroke-width="2.5" opacity=".55"/>
+  <path d="M38 66C38 40 54 29 70 29c18 0 28 15 28 33v12c0 4-3 6-7 6H77l-5-14z" fill="#ffffff"/><path d="M20 66c10-6 42-7 58-1v7H30c-6 0-10-2-10-6z" fill="#f3c14b"/><path d="M34 72l2 15c2 8 26 11 37 5l4-12M45 72v22M57 72v23M68 72l-1 22M35 82h41" fill="none" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

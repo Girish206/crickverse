@@ -33,7 +33,6 @@ export function StatSectionCard({ section }: { section: StatSection }) {
   return (
     <section className={`cv-stat-card is-${section.tone}`}>
       {/* The section's icon, big and faint in the corner. */}
-      <i className={`fa-solid ${section.icon} cv-stat-card-mark`} aria-hidden="true"></i>
       <h2 className="cv-stat-card-head">
         <span aria-hidden="true">
           <i className={`fa-solid ${section.icon}`}></i>

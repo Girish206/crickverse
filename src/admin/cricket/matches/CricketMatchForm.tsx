@@ -6,17 +6,13 @@ import {
   useCricketPlaces,
   useUpdateCricketMatch,
 } from "../../../api/hooks/cricket/useCricketMatches";
-import {
-  useCreateCricketPlayer,
-  useCricketMe,
-  useCricketPlayers,
-  lookupCricketPlayer,
-} from "../../../api/hooks/cricket/useCricketPlayers";
+import { useCreateCricketPlayer, useCricketMe, lookupCricketPlayer } from "../../../api/hooks/cricket/useCricketPlayers";
 import { useCricketTournaments } from "../../../api/hooks/cricket/useCricketTournaments";
 import {
   ballsPerOverOf,
   type CricketBallType,
   type CricketMatch,
+  type CricketMatchSquad,
   type CricketMe,
   type CricketMatchStage,
   type CricketMatchType,
@@ -36,7 +32,8 @@ import { normalizeMobile } from "../mobile";
 import { STAGES, stageLabel, teamKeyOf, usePlayerNames } from "./matchUtils";
 import { useSuggestions } from "../useSuggestions";
 import { PlayerAvatar } from "../players/PlayerAvatar";
-import { PlayerPicker } from "./PlayerPicker";
+import { NO_ROLES, rolesOf } from "../tournaments/TeamRoleChips";
+import { SquadSheets, type SquadStep } from "./SquadSheets";
 import { fetchTeamInvite } from "../../../api/hooks/cricket/useCricketTeamInvites";
 import { messageFor } from "../../../api/mutationErrors";
 import { QrScannerSheet, type ScanReply } from "../qr/QrScannerSheet";
@@ -147,7 +144,6 @@ export function CricketMatchForm({
   const { data: places } = useCricketPlaces();
   const createMatch = useCreateCricketMatch();
   const createPlayer = useCreateCricketPlayer();
-  const { data: players } = useCricketPlayers();
   const nameOf = usePlayerNames();
   const updateMatch = useUpdateCricketMatch();
 
@@ -211,14 +207,14 @@ export function CricketMatchForm({
     setInlineTeamError(message);
     if (message) toast.error(message, { duration: 5000 });
   };
-  // A one-off match's captains (each joins their side's squad), and the
-  // side whose captain picker is open, with a new player typed into it.
-  // Only a newly named side picks a captain; a known team doesn't.
+  // A one-off match's new teams and the captains they came with (each joins
+  // their side's squad).
   const [captains, setCaptains] = useState<[number | null, number | null]>([null, null]);
   const [newSides, setNewSides] = useState<[boolean, boolean]>([false, false]);
-  const [choosingCaptain, setChoosingCaptain] = useState<0 | 1 | null>(null);
-  const [newCaptain, setNewCaptain] = useState({ name: "", mobile: "" });
-  const [captainError, setCaptainError] = useState<string | null>(null);
+  // Each side's squad and leaders once picked here (null = what its team
+  // starts with), and the side whose squad sheets are open.
+  const [squads, setSquads] = useState<[CricketMatchSquad | null, CricketMatchSquad | null]>([null, null]);
+  const [squadSheet, setSquadSheet] = useState<{ slot: 0 | 1; startAt: SquadStep; askCaptain: boolean } | null>(null);
   // Lets the Schedule Match button, portaled into the sheet footer, submit.
   const formId = useId();
 
@@ -321,11 +317,42 @@ export function CricketMatchForm({
     const key = teamKeys[slot];
     return key === null ? null : (knownTeams(tournaments, me).find((team) => team.key === key)?.logoUrl ?? null);
   };
+  // A tournament side's roster (a one-off side's comes from its team key).
+  const rosterOf = (slot: 0 | 1) => {
+    const index = slot === 0 ? teamA : teamB;
+    return index === null ? [] : (tournament?.teams[index]?.playerIds ?? []);
+  };
+  // Each side's squad and leaders: as picked here, else what its team starts
+  // with (a tournament or saved team's players, or a new team's captain).
+  function squadOf(slot: 0 | 1): CricketMatchSquad {
+    const picked = squads[slot];
+    if (picked) return picked;
+    if (!standalone) {
+      const index = slot === 0 ? teamA : teamB;
+      return { playerIds: rosterOf(slot), ...rolesOf((index !== null && tournament?.teams[index]) || {}) };
+    }
+    const saved = me?.savedTeams.find((team) => team.teamKey === teamKeys[slot]);
+    if (saved) return { playerIds: saved.playerIds, ...rolesOf(saved) };
+    const captainId = captains[slot];
+    return { playerIds: captainId === null ? [] : [captainId], ...NO_ROLES, captainId };
+  }
+  function openTeamSheet(slot: 0 | 1) {
+    setTeamTab(teamChoices(slot).length ? "existing" : "new");
+    setTeamSearch("");
+    setNewTeam("");
+    setCaptainMobile("");
+    setCaptainName("");
+    setNewTeamError(null);
+    setChoosingTeam(slot);
+  }
   // A new team comes with its captain (null for a known team, which comes
-  // with its key instead).
+  // with its key instead). Picking one goes straight on to its squad.
   function pickTeam(slot: 0 | 1, name: string, index: number | null, captainId: number | null = null, key: string | null = null) {
     const trimmed = name.trim().slice(0, 60);
     if (!trimmed) return;
+    // A different team doesn't keep the last one's squad.
+    const sameTeam = standalone ? key !== null && key === teamKeys[slot] : index === (slot === 0 ? teamA : teamB);
+    if (!sameTeam) setSquads((current) => (slot === 0 ? [null, current[1]] : [current[0], null]));
     if (standalone) {
       (slot === 0 ? setTeamAName : setTeamBName)(trimmed);
       setTeamKeys((current) => (slot === 0 ? [key, current[1]] : [current[0], key]));
@@ -338,6 +365,8 @@ export function CricketMatchForm({
     setNewTeamError(null);
     setChoosingTeam(null);
     setError(null);
+    // A new team's captain was only just entered, so it isn't asked for again.
+    setSquadSheet({ slot, startAt: "players", askCaptain: captainId === null });
   }
   async function onTeamScan(slot: 0 | 1, target: QrTarget): Promise<ScanReply> {
     if (target.kind !== "team") return;
@@ -360,8 +389,8 @@ export function CricketMatchForm({
       return setNewTeamError("The other side already has this name.");
     }
     if (captainLookup.status === "found") {
-      if (captainLookup.player.id === captains[slot === 0 ? 1 : 0]) {
-        return setNewTeamError(`${captainLookup.player.name} already captains the other side.`);
+      if (squadOf(slot === 0 ? 1 : 0).playerIds.includes(captainLookup.player.id)) {
+        return setNewTeamError(`${captainLookup.player.name} is already in the other side's squad.`);
       }
       return pickTeam(slot, trimmed, null, captainLookup.player.id);
     }
@@ -378,29 +407,6 @@ export function CricketMatchForm({
       setNewTeamError("Couldn't add the captain — try again.");
     }
   }
-  function pickCaptain(slot: 0 | 1, playerId: number | null) {
-    setCaptains((current) => (slot === 0 ? [playerId, current[1]] : [current[0], playerId]));
-    setChoosingCaptain(null);
-    setNewCaptain({ name: "", mobile: "" });
-    setCaptainError(null);
-  }
-  // Someone not on the player list yet: the mobile number says who it is
-  // (an existing number just picks that player).
-  async function addCaptain(slot: 0 | 1) {
-    const mobile = normalizeMobile(newCaptain.mobile);
-    if (!newCaptain.name.trim()) return setCaptainError("Enter the captain's name.");
-    if (!mobile) return setCaptainError("Add their 10-digit mobile number too.");
-    try {
-      const player = await createPlayer.mutateAsync({
-        name: newCaptain.name.trim(),
-        role: null,
-        mobile,
-      });
-      pickCaptain(slot, player.id);
-    } catch {
-      setCaptainError("Couldn't add that player — try again.");
-    }
-  }
 
   async function submitMatch(mode: "immediate" | "scheduled" = startMode) {
     const oversNumber = Number(overs);
@@ -410,9 +416,9 @@ export function CricketMatchForm({
       if (!existing && names[0].toLowerCase() === names[1].toLowerCase()) {
         return setError("Select two different teams.");
       }
-      const missing = ([0, 1] as const).find((slot) => newSides[slot] && captains[slot] === null);
+      const missing = ([0, 1] as const).find((slot) => newSides[slot] && squadOf(slot).captainId === null);
       if (!existing && missing !== undefined) {
-        setChoosingCaptain(missing);
+        setSquadSheet({ slot: missing, startAt: "captain", askCaptain: false });
         return setError(`Choose ${names[missing]}'s captain.`);
       }
     } else {
@@ -482,12 +488,18 @@ export function CricketMatchForm({
       }
       onSaved();
     } else {
+      // Only a new team names its captain; a known team has its own.
+      const captainIds: [number | null, number | null] = [
+        newSides[0] ? squadOf(0).captainId : null,
+        newSides[1] ? squadOf(1).captainId : null,
+      ];
       let created;
       try {
         created = await createMatch.mutateAsync({
           tournamentId: tournament?.id ?? null,
           ...input,
-          ...(standalone && { teamNames: names, teamKeys, captainIds: captains }),
+          ...(standalone && { teamNames: names, teamKeys, captainIds }),
+          squads,
         });
       } catch (err) {
         // The global handler already toasted it; keep it inline too.
@@ -526,44 +538,60 @@ export function CricketMatchForm({
             <div className="cricket-setup-teams">
               {([0, 1] as const).map((slot) => {
                 const name = sideName(slot);
+                const squad = squadOf(slot);
                 return (
                   <Fragment key={slot}>
                     {slot === 1 && <span className="cricket-setup-vs">vs</span>}
-                    <div className="cricket-setup-team">
+                    <div className={`cricket-setup-team ${name ? "" : "is-empty"}`.trim()}>
                       {name ? (
-                        <TeamMark className="cricket-setup-logo" name={name} logoUrl={sideLogo(slot)} />
-                      ) : (
-                        <span className="cricket-setup-logo is-empty" aria-hidden="true">
-                          <i className="fa-solid fa-shield-halved"></i>
-                        </span>
-                      )}
-                      <strong className="cricket-setup-team-name">{name || `Team ${slot + 1}`}</strong>
-                      {/* Only a newly named side has a captain to show (and change). */}
-                      {standalone && captains[slot] !== null && (
                         <button
                           type="button"
-                          className="cricket-setup-captain cricket-setup-captain-btn"
-                          onClick={() => setChoosingCaptain(slot)}
+                          className="cricket-setup-logo-btn"
+                          aria-label={`Change ${name}`}
+                          onClick={() => openTeamSheet(slot)}
                         >
-                          <span className="cricket-role-tag">C</span> {nameOf(captains[slot])}
+                          <TeamMark className="cricket-setup-logo" name={name} logoUrl={sideLogo(slot)} />
+                          <span className="cricket-setup-logo-change" aria-hidden="true">
+                            <i className="fa-solid fa-arrows-rotate"></i>
+                          </span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="cricket-setup-logo is-empty"
+                          aria-label={`Select team ${slot + 1}`}
+                          onClick={() => openTeamSheet(slot)}
+                        >
+                          <i className="fa-solid fa-plus" aria-hidden="true"></i>
                         </button>
                       )}
-                      <button
-                        type="button"
-                        className="cricket-setup-squad-btn"
-                        onClick={() => {
-                          setTeamTab(teamChoices(slot).length ? "existing" : "new");
-                          setTeamSearch("");
-                          setNewTeam("");
-                          setCaptainMobile("");
-                          setCaptainName("");
-                          setNewTeamError(null);
-                          setChoosingTeam(slot);
-                        }}
-                      >
-                        <i className="fa-solid fa-people-group" aria-hidden="true"></i>{" "}
-                        {name ? "Change" : "Select Team"}
-                      </button>
+                      <strong className="cricket-setup-team-name">{name || `Team ${slot + 1}`}</strong>
+                      {name && (
+                        <>
+                          <button
+                            type="button"
+                            className="cricket-setup-captain cricket-setup-captain-btn"
+                            onClick={() => setSquadSheet({ slot, startAt: "captain", askCaptain: false })}
+                          >
+                            {squad.captainId !== null ? (
+                              <>
+                                <span className="cricket-role-tag">C</span> {nameOf(squad.captainId)}
+                              </>
+                            ) : (
+                              "Choose a captain"
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            className="cricket-setup-squad-btn"
+                            aria-label={`Select ${name} squad`}
+                            onClick={() => setSquadSheet({ slot, startAt: "players", askCaptain: false })}
+                          >
+                            <i className="fa-solid fa-users" aria-hidden="true"></i> Select Squad
+                            <span className="cricket-setup-count">{squad.playerIds.length}</span>
+                          </button>
+                        </>
+                      )}
                     </div>
                   </Fragment>
                 );
@@ -718,9 +746,9 @@ export function CricketMatchForm({
               {!bowlerLimit && oversNumber >= 2 && (
                 <div className="cricket-app-row is-hint">
                   <small className="admin-hint">
-                    Usually a fifth of the overs —{" "}
+                    Suggested: {suggestedLimit} {suggestedLimit === 1 ? "over" : "overs"} per bowler —{" "}
                     <button type="button" className="admin-link-btn" onClick={() => setBowlerLimit(String(suggestedLimit))}>
-                      use {suggestedLimit}
+                      Use this
                     </button>
                   </small>
                 </div>
@@ -782,11 +810,6 @@ export function CricketMatchForm({
         {!existing && tournament && (
           <small className="admin-hint d-block">
             Filled in from {tournament.name}; change anything for this match.
-          </small>
-        )}
-        {!existing && standalone && (
-          <small className="admin-hint d-block">
-            A new team's captain joins its squad now; the rest are picked when the match starts.
           </small>
         )}
         {error && <div className="admin-banner admin-banner-error">{error}</div>}
@@ -1047,53 +1070,25 @@ export function CricketMatchForm({
             onClose={() => setScanningTeam(null)}
           />
         )}
-        {choosingCaptain !== null && (
-          <PlayerPicker
-            title={`${sideName(choosingCaptain) || `Team ${choosingCaptain + 1}`} — Captain`}
-            icon="fa-solid fa-user-tie"
-            items={(players ?? [])
-              .filter((player) => player.id !== captains[choosingCaptain === 0 ? 1 : 0])
-              .map((player) => ({ id: player.id }))}
+        {squadSheet !== null && (
+          <SquadSheets
+            teamName={sideName(squadSheet.slot)}
+            squad={squadOf(squadSheet.slot)}
+            roster={standalone ? [] : rosterOf(squadSheet.slot)}
+            teamKey={standalone ? teamKeys[squadSheet.slot] : null}
+            tournamentPlayerIds={tournament?.playerIds ?? []}
+            other={{
+              name: sideName(squadSheet.slot === 0 ? 1 : 0),
+              roster: standalone ? [] : rosterOf(squadSheet.slot === 0 ? 1 : 0),
+              playerIds: squadOf(squadSheet.slot === 0 ? 1 : 0).playerIds,
+            }}
+            startAt={squadSheet.startAt}
+            askCaptain={squadSheet.askCaptain}
             nameOf={nameOf}
-            selectedId={captains[choosingCaptain]}
-            onPick={(playerId) => pickCaptain(choosingCaptain, playerId)}
-            onClose={() => setChoosingCaptain(null)}
-            footer={
-              <div className="cricket-captain-add">
-                <div className="cricket-quick-add">
-                  <input
-                    className="form-control shadow-none"
-                    placeholder="New player's name"
-                    maxLength={100}
-                    value={newCaptain.name}
-                    onChange={(e) => setNewCaptain({ ...newCaptain, name: e.target.value })}
-                  />
-                  <input
-                    className="form-control shadow-none"
-                    type="tel"
-                    inputMode="tel"
-                    placeholder="Mobile number"
-                    maxLength={20}
-                    value={newCaptain.mobile}
-                    onChange={(e) => setNewCaptain({ ...newCaptain, mobile: e.target.value })}
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-outline-custom-primary"
-                    disabled={createPlayer.isPending || !newCaptain.name.trim()}
-                    onClick={() => void addCaptain(choosingCaptain)}
-                  >
-                    <i className="fa-solid fa-user-plus" aria-hidden="true"></i> Add
-                  </button>
-                </div>
-                {captainError && <small className="input-error">{captainError}</small>}
-                {captains[choosingCaptain] !== null && (
-                  <button type="button" className="admin-link-btn" onClick={() => pickCaptain(choosingCaptain, null)}>
-                    Remove captain
-                  </button>
-                )}
-              </div>
+            onSave={(squad) =>
+              setSquads((current) => (squadSheet.slot === 0 ? [squad, current[1]] : [current[0], squad]))
             }
+            onClose={() => setSquadSheet(null)}
           />
         )}
       </form>

@@ -5,9 +5,9 @@ import { BrandSignature } from "./components/BrandSignature";
 import "./dms/global.css";
 import "./dms/css/Login.css";
 
-// The sign-in and sign-up screens' frame: a dark glowing backdrop with the
-// logo, badge, heading and subtitle on it, a white card holding only the
-// form, then the footer lines below the card.
+// The sign-in and sign-up screens' frame: the logo, badge, heading and
+// subtitle on the page, a plain card holding only the form, then the footer
+// lines below the card.
 export function AuthShell({
   heading,
   subtitle,
@@ -24,9 +24,6 @@ export function AuthShell({
 
   return (
     <div className="admin-login-shell">
-      <div className="admin-login-ash admin-login-ash-1" aria-hidden="true" />
-      <div className="admin-login-ash admin-login-ash-2" aria-hidden="true" />
-
       <div className="admin-login-stack animated fadeInUp">
         <div className="admin-login-intro">
           <div className="admin-login-logo-ring">

@@ -1,11 +1,11 @@
 .custom-nav-pills {
   background-color: #ebe9e9;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 5px !important; /* Add padding to the container */
 }
 
 .custom-nav-pills .nav-link {
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   font-size: var(--fs-base); /* Reduced font size */
   font-weight: 500;
   /* padding: 6px 20px;  */
@@ -18,7 +18,7 @@
 .custom-nav-pills .nav-link.active {
   background-color: var(--primary); /* Active state background color */
   color: white; /* Active text color */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add shadow on active state */
+  box-shadow: var(--shadow-card); /* Add shadow on active state */
 }
 
 .custom-nav-pills .nav-link:hover {
@@ -38,7 +38,7 @@
 
 .custom-tabs {
   border: 1px solid #dee2e6;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-md);
   padding: 5px;
   background-color: #fff;
 }
@@ -54,11 +54,11 @@
 }
 
 .custom-tabs .nav-link.active {
-  color: rgb(178, 35, 49);
-  border-color: rgb(178, 35, 49);
+  color: var(--primary);
+  border-color: var(--primary);
   background-color: transparent;
 }
 
 .custom-tabs .nav-link:hover {
-  color: rgb(178, 35, 49);
+  color: var(--primary);
 }

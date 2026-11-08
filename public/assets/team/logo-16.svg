@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="240" height="240">
+  <!-- Cricket cap -->
+  <rect width="120" height="120" fill="#4f6d8a"/>
+  <circle cx="60" cy="60" r="54" fill="none" stroke="#f6efdf" stroke-width="2.5" opacity=".55"/>
+  <path d="M36 74c-1-27 14-44 34-44 19 0 28 16 28 44z" fill="#f6efdf"/><path d="M13 76c6-7 18-10 32-10 13 0 25 2 32 8v5c-18-4-40-4-56 3-5 2-11-2-8-6z" fill="#f3c14b"/><circle cx="69" cy="27.5" r="4" fill="#f3c14b"/><path d="M68 32c-7 11-9 24-9 35M71 32c8 10 11 23 11 36" fill="none" stroke="#4f6d8a" stroke-width="2.4"/>
+</svg>

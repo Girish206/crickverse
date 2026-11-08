@@ -40,7 +40,7 @@
   background: #fff;
   color: var(--brand-crimson-deep);
   font-size: var(--fs-2xs);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-card);
 }
 /* "Player", the name and the role, stacked close. */
 .cv-profile-id {
@@ -59,7 +59,7 @@
   overflow: hidden;
   font-family: var(--cv-display);
   font-size: var(--fs-xl);
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.15;
   color: #fff;
   text-overflow: ellipsis;
@@ -138,9 +138,9 @@
   gap: 12px;
   padding: 10px 16px;
   border: 1px solid var(--border-color);
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   background: var(--adm-surface, #fff);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-card);
   color: var(--theme-text-dark);
   cursor: pointer;
 }
@@ -195,7 +195,7 @@
   margin: 0 0 14px;
   padding: 10px 14px 10px 2.4em;
   border: 1px solid var(--border-color);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   cursor: pointer;
 }
 .cv-delete-account-keep .form-check-input {

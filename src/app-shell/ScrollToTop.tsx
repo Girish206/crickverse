@@ -1,5 +1,6 @@
 import { useLayoutEffect } from "react";
 import { Outlet, useLocation, useNavigationType } from "react-router-dom";
+import { useScreenTrail } from "./screenTrail";
 
 // Opening another page (a match from the home list, say) starts it at the
 // top, not at however far the last page was scrolled. Only the path counts:
@@ -8,6 +9,7 @@ import { Outlet, useLocation, useNavigationType } from "react-router-dom";
 export function ScrollToTop() {
   const { pathname } = useLocation();
   const navigationType = useNavigationType();
+  useScreenTrail();
 
   useLayoutEffect(() => {
     if (navigationType !== "POP") window.scrollTo(0, 0);

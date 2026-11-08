@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="240" height="240">
+  <!-- Crown over ball -->
+  <rect width="120" height="120" fill="#b01e7f"/>
+  <circle cx="60" cy="60" r="54" fill="none" stroke="#f3c14b" stroke-width="2.5" opacity=".55"/>
+  <path d="M34 54l-5-29 17 13 14-19 14 19 17-13-5 29z" fill="#f3c14b"/><circle cx="29" cy="24" r="4" fill="#f3c14b"/><circle cx="60" cy="17" r="4.5" fill="#f3c14b"/><circle cx="91" cy="24" r="4" fill="#f3c14b"/><g transform="translate(60 80) rotate(24)"><circle r="19" fill="#f6efdf"/><path d="M-4.6 -18.1Q2.7 0 -4.6 18.1M4.6 -18.1Q11.8 0 4.6 18.1" fill="none" stroke="#b01e7f" stroke-width="1.7" stroke-linecap="round"/></g>
+</svg>

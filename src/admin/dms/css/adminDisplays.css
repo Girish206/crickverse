@@ -25,7 +25,7 @@
   top: 8px;
   bottom: 8px;
   width: 2px;
-  background: linear-gradient(180deg, var(--primary) 0%, var(--secondary) 100%);
+  background: var(--adm-line-strong);
   border-radius: 2px;
 }
 
@@ -122,8 +122,8 @@
   flex-wrap: wrap;
   padding: 7px 12px;
   margin-bottom: 6px;
-  border-radius: 10px;
-  background: rgba(var(--primary-rgb), 0.08);
+  border-radius: var(--radius-md);
+  background: var(--adm-raised);
 }
 
 .admin-expense-group-title {
@@ -166,7 +166,7 @@
 
 .admin-txn-row.selected {
   background: rgba(var(--primary-rgb), 0.06);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
 }
 
 .admin-txn-checkbox {
@@ -239,34 +239,34 @@
 }
 
 .admin-txn-tag-savings {
-  background: rgba(18, 183, 106, 0.12);
-  color: #067647;
+  background: rgba(var(--success-rgb), 0.12);
+  color: var(--success);
 }
 
 .admin-txn-tag-split {
-  background: rgba(46, 144, 250, 0.12);
-  color: #175cd3;
+  background: rgba(var(--secondary-rgb), 0.12);
+  color: var(--secondary);
 }
 
 /* Admin Accounts list — same compact tag pattern as the Expenses page's
    paid-by/savings/split badges, applied to owner/access-flag indicators. */
 .admin-txn-tag-owner {
-  background: rgba(247, 144, 9, 0.14);
-  color: #b54708;
+  background: rgba(var(--warning-rgb), 0.14);
+  color: var(--warning);
 }
 
 .admin-txn-tag-portfolio {
-  background: rgba(122, 90, 248, 0.14);
-  color: #5925dc;
+  background: rgba(var(--secondary-rgb), 0.14);
+  color: var(--secondary);
 }
 
 .admin-txn-tag-expenses {
-  background: rgba(46, 144, 250, 0.12);
-  color: #175cd3;
+  background: rgba(var(--secondary-rgb), 0.12);
+  color: var(--secondary);
 }
 
 .admin-txn-tag-danger {
-  background: rgba(217, 45, 32, 0.12);
+  background: rgba(var(--danger-rgb), 0.12);
   color: #b42318;
 }
 
@@ -292,7 +292,7 @@
 .admin-txn-amount {
   font-size: var(--fs-sm);
   font-weight: 700;
-  color: #d92d20;
+  color: var(--danger);
   white-space: nowrap;
 }
 
@@ -344,7 +344,7 @@
   flex-wrap: wrap;
   padding: 8px 12px;
   margin-bottom: 10px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: rgba(var(--primary-rgb), 0.1);
 }
 
@@ -428,8 +428,7 @@
 }
 
 .admin-item-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 14px 30px rgba(var(--primary-rgb), 0.16);
+  box-shadow: none;
 }
 
 /* Icon + title/subtitle on the left, RowActions on the right — real flex
@@ -458,11 +457,11 @@
   width: 42px;
   height: 42px;
   flex-shrink: 0;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  background: var(--adm-hover);
   color: #ffffff;
   font-size: var(--fs-md);
 }
@@ -540,14 +539,14 @@
 .admin-proficiency-fill {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--secondary) 0%, var(--primary) 100%);
+  background: var(--primary-fill);
 }
 
 /* Project thumbnail */
 .admin-project-thumb-wrap {
   width: 100%;
   height: 140px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--background-color);
   display: flex;
@@ -607,7 +606,7 @@
   flex-direction: column;
   gap: 4px;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--background-color);
 }
 
@@ -686,7 +685,7 @@
     display: flex;
     flex-direction: column;
     padding: 14px 16px 12px;
-    border-radius: 16px !important;
+    border-radius: var(--radius-lg) !important;
     border-left: 4px solid var(--primary);
   }
 
@@ -804,7 +803,7 @@
   flex-direction: column;
   gap: 2px;
   padding: 8px 12px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: rgba(var(--primary-rgb), 0.08);
 }
 
@@ -864,12 +863,12 @@
 }
 
 .admin-settle-gets {
-  color: #1e8e3e;
+  color: var(--success);
   font-weight: 600;
 }
 
 .admin-settle-owes {
-  color: #c0392b;
+  color: var(--danger);
   font-weight: 600;
 }
 
@@ -893,7 +892,7 @@
   flex-wrap: wrap;
   gap: 8px;
   padding: 8px 10px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   background: var(--background-color);
   font-size: var(--fs-sm);
   color: var(--theme-text-dark);
@@ -944,8 +943,8 @@
   gap: 4px;
   padding: 12px 14px;
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1), rgba(var(--primary-rgb), 0.02));
+  border-radius: var(--radius-md);
+  background: var(--adm-raised);
   color: var(--theme-text-dark);
   text-align: left;
   cursor: pointer;
@@ -954,8 +953,7 @@
 }
 
 .admin-group-tile:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-card);
 }
 
 .admin-group-tile-closed {
@@ -987,7 +985,7 @@
 
 .admin-group-tile-total {
   font-size: var(--fs-lg);
-  font-weight: 800;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 

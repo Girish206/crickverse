@@ -13,6 +13,7 @@ import { useCricketMe } from "../../../api/hooks/cricket/useCricketPlayers";
 import { useCricketTournament } from "../../../api/hooks/cricket/useCricketTournaments";
 import { ListCard } from "../../components/ListCard";
 import { PageHeader, PageHeaderAction } from "../../components/PageHeader";
+import { stepsBackOutOf } from "../../../app-shell/screenTrail";
 import { ShareSheet } from "../ShareMenu";
 import { useSwipeTabs } from "../../useSwipeTabs";
 import { useTips, type TipStep } from "../TipsTour";
@@ -563,10 +564,14 @@ export function CricketMatchPage() {
                 } catch {
                   // ignore
                 }
-                const target = match.tournamentId === null ? matchesList : `/tournaments/${match.tournamentId}?tab=matches`;
-                navigate(target);
+                // Back to wherever the match was opened from, past its own
+                // setup and scoring screens; opened straight from a link,
+                // nothing's behind it, so the matches list.
+                const own = `/matches/${match.id}`;
+                const steps = stepsBackOutOf((path) => path === own || path.startsWith(`${own}/`));
+                if (steps === null) navigate(matchesList);
+                else navigate(steps);
               }}
-              backLabel={match.tournamentId === null ? "Back to matches" : "Back to tournament"}
               actions={
                 <>
                   <PageHeaderAction

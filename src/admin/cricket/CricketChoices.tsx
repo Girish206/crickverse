@@ -42,6 +42,33 @@ export function ChipChoice<T extends string>({
   );
 }
 
+// The lines that make each one read as a ball: a tennis ball's two curves,
+// a leather ball's stitched seam, a plain moulded line on anything else.
+function BallSeams({ type }: { type: CricketBallType }) {
+  return (
+    <svg className="cricket-ball-seams" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+      {type === "tennis" && (
+        <g stroke="#fff" strokeWidth="2.6" transform="rotate(-28 20 20)">
+          <path d="M7 -2C17 9 17 31 7 42" />
+          <path d="M33 -2C23 9 23 31 33 42" />
+        </g>
+      )}
+      {type === "leather" && (
+        <g transform="rotate(-32 20 20)">
+          <path d="M15 -2C21 12 21 28 15 42" stroke="#fff3e2" strokeWidth="7" strokeDasharray="1.3 2.3" />
+          <path d="M15 -2C21 12 21 28 15 42" stroke="#7a1810" strokeWidth="1.2" />
+        </g>
+      )}
+      {type === "other" && (
+        <g stroke="#fff" strokeOpacity="0.75" strokeWidth="1.8">
+          <path d="M-2 25C10 15 30 15 42 25" />
+          <path d="M-2 31C10 21 30 21 42 31" />
+        </g>
+      )}
+    </svg>
+  );
+}
+
 // The round ball pickers.
 export function BallTypeChoice({
   value,
@@ -69,7 +96,8 @@ export function BallTypeChoice({
             className={value === ball.value ? "active" : ""}
             onClick={() => onChange(ball.value)}
           >
-            <span className="cricket-ball-icon" style={{ background: ball.color }}>
+            <span className="cricket-ball-icon" style={{ backgroundColor: ball.color }}>
+              <BallSeams type={ball.value} />
               {value === ball.value && <i className="fa-solid fa-check" aria-hidden="true"></i>}
             </span>
             {ball.label}
