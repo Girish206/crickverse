@@ -5,7 +5,7 @@ import { roleOf } from "../playerRoles";
 import { roleTagsFor } from "./TeamRoleChips";
 import { AMBER, CARD_TOP, canvasBlob, drawCardFrame, ellipsize, fitFont, FONT, loadImage, NAVY, RED, roundRect, ShareCardSheet, W } from "./shareCard";
 
-interface SquadEntry {
+export interface SquadEntry {
   name: string;
   photoUrl: string | null;
   role: string | null;
@@ -16,7 +16,7 @@ interface SquadEntry {
 // keepers, all-rounders and bowlers (players without a role last).
 const ROLE_ORDER: Record<string, number> = { batter: 0, "wicket-keeper": 1, "all-rounder": 2, bowler: 3 };
 
-function squadOrder(team: CricketTeam, playerById: Map<number, CricketPlayer>): SquadEntry[] {
+export function squadOrder(team: CricketTeam, playerById: Map<number, CricketPlayer>): SquadEntry[] {
   const rank = (id: number) => {
     if (id === team.captainId) return -2;
     if (id === team.viceCaptainId) return -1;
@@ -36,9 +36,9 @@ function squadOrder(team: CricketTeam, playerById: Map<number, CricketPlayer>): 
 }
 
 // "Team squad for Tournament: A (c), B (vc), C, D (wk)".
-function squadText(teamName: string, tournamentName: string, squad: SquadEntry[]) {
+export function squadText(teamName: string, tournamentName: string | undefined, squad: SquadEntry[]) {
   const names = squad.map((p) => (p.tags.length ? `${p.name} (${p.tags.map((t) => t.toLowerCase()).join(", ")})` : p.name));
-  return `🏏 ${teamName} squad for ${tournamentName}:\n\n${names.join(", ")}`;
+  return `🏏 ${teamName} squad${tournamentName ? ` for ${tournamentName}` : ""}:\n\n${names.join(", ")}`;
 }
 
 const H = 1080;
@@ -66,7 +66,6 @@ const TAG_COLORS: Record<string, [string, string]> = {
 // per player (photo, name and role), in the brand's flag colours.
 async function drawSquadCard(tournament: CricketTournament, teamName: string, squad: SquadEntry[]) {
   const { canvas, ctx } = await drawCardFrame(tournament, H, teamName, "SQUAD", `${squad.length} PLAYERS`);
-  const mid = W / 2;
 
   // The players as portrait cards, laid out with however many columns gives
   // the biggest cards, the grid centred in the space.
@@ -85,6 +84,18 @@ async function drawSquadCard(tournament: CricketTournament, teamName: string, sq
   const { cols, rows, tileW, tileH } = layout;
   const gridTop = top + (bottom - top - (tileH * rows + gap * (rows - 1))) / 2;
   const photos = await Promise.all(squad.map((p) => (p.photoUrl ? loadImage(p.photoUrl) : Promise.resolve(null))));
+  drawSquadTiles(ctx, squad, photos, { gridTop, cols, tileW, tileH, gap });
+  return canvasBlob(canvas);
+}
+
+// The players as portrait cards, each row centred on the canvas.
+export function drawSquadTiles(
+  ctx: CanvasRenderingContext2D,
+  squad: SquadEntry[],
+  photos: (HTMLImageElement | null)[],
+  { gridTop, cols, tileW, tileH, gap }: { gridTop: number; cols: number; tileW: number; tileH: number; gap: number },
+) {
+  const mid = W / 2;
   const nameSize = Math.round(Math.min(34, Math.max(18, tileW * 0.115)));
   const roleSize = Math.round(nameSize * 0.6);
   const lastRowStart = squad.length - (squad.length % cols || cols);
@@ -162,8 +173,6 @@ async function drawSquadCard(tournament: CricketTournament, teamName: string, sq
     });
     ctx.textAlign = "left";
   });
-
-  return canvasBlob(canvas);
 }
 
 export function ShareSquadSheet({

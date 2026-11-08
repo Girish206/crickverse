@@ -1,6 +1,8 @@
-/* Fixed header for the screens outside the main menu (PageHeader.tsx): the
-   same flat bar as the navbar. Its height is --cv-header-h
-   (styles/crickverse.css). */
+/* Fixed header for the screens outside the main menu (PageHeader.tsx): a bar
+   like the navbar, with a touch of the accent and some cricket art. Its height
+   is --cv-header-h (styles/crickverse.css).
+
+   The seam runs below the text, and the scene sits faintly behind it. */
 
 .cv-page-header {
   position: fixed;
@@ -13,24 +15,82 @@
   gap: 12px;
   height: calc(var(--cv-header-h) + env(safe-area-inset-top));
   padding: env(safe-area-inset-top) max(16px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left));
-  background: var(--adm-surface);
-  border-bottom: 1px solid var(--adm-line);
+  background:
+    linear-gradient(90deg, rgba(var(--primary-rgb), 0.07), rgba(var(--primary-rgb), 0.02) 50%, transparent 80%),
+    var(--adm-surface);
+  border-bottom: 1px solid rgba(var(--primary-rgb), 0.18);
   color: var(--adm-text);
 }
 
+/* The light theme's text accent is a muted brick, which looks dull at this
+   size next to the dark theme's vivid orange: here it's the logo's red, with
+   a deeper black for the title. */
+:where(:root:not([data-bs-theme="dark"])) .cv-page-header {
+  --primary: var(--primary-fill);
+  --adm-text: #0a0b0f;
+}
+
+/* A ball's seam along the bottom edge, in the strip below the text. */
+.cv-page-header::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 1px;
+  height: 5px;
+  background: repeating-linear-gradient(115deg, rgba(var(--primary-rgb), 0.2) 0 2px, transparent 2px 9px);
+  pointer-events: none;
+}
+
 .cv-page-header-title {
+  position: relative;
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   line-height: 1.2;
 }
+/* The cricket scene, faint behind the title. It spans the title's space, up
+   to the actions, and shrinks to fit so all of it shows. Drawn in --primary
+   through a mask, so it follows the theme. */
+.cv-page-header-title::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: var(--cv-header-h);
+  transform: translateY(-50%);
+  background: var(--primary);
+  opacity: 0.4;
+  /* Quieter on the left, where the text is. */
+  -webkit-mask:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3) 50%, #000 80%),
+    url("./page-header-cricket.svg") right center / contain no-repeat;
+  -webkit-mask-composite: source-in;
+  mask:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3) 50%, #000 80%),
+    url("./page-header-cricket.svg") right center / contain no-repeat;
+  mask-composite: intersect;
+  pointer-events: none;
+}
+/* The same art reads dimmer on the charcoal. */
+:root[data-bs-theme="dark"] .cv-page-header-title::after {
+  opacity: 0.55;
+}
+.cv-page-header-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
 .cv-page-header-title h1 {
   margin: 0;
   overflow: hidden;
   font-family: var(--cv-display);
   font-size: var(--fs-md);
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: -0.01em;
   color: var(--adm-text);
   text-overflow: ellipsis;
@@ -39,10 +99,10 @@
 .cv-page-header-title small {
   overflow: hidden;
   font-size: var(--fs-2xs);
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--muted-color);
+  color: var(--primary);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -61,10 +121,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--adm-line-strong);
+  border: 1px solid rgba(var(--primary-rgb), 0.24);
   border-radius: var(--radius-md);
   background: var(--adm-surface);
-  color: var(--adm-text-2);
+  color: var(--primary);
   font-size: var(--fs-sm);
   cursor: pointer;
   transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease, transform 0.1s ease;

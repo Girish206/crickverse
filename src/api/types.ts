@@ -218,6 +218,7 @@ export interface CricketTournament {
   bowlerOverLimit?: number | null;
   lastManStands?: boolean | null;
   freeHit?: boolean | null;
+  powerplayOvers?: number | null;
   // How it's played (league, groups, playoffs, series...); null = not set
   // up, and every match counts towards one points table. See format/.
   format?: CricketFormat | null;
@@ -390,7 +391,47 @@ export interface CricketInnings {
   // When it was closed; it started with its first ball's `at`. Missing
   // on older innings.
   closedAt?: string | null;
+  // The match's overs when it closed. Null while in progress and on older
+  // innings: read it through inningsPlan.
+  oversLimit?: number | null;
   balls: CricketBall[];
+}
+
+// Who has a match open: right now, the most at once, and everyone who ever has.
+export interface CricketMatchViewers {
+  watching: number;
+  peak: number;
+  unique: number;
+}
+
+export type CricketMatchEventKind =
+  | "scorer-change"
+  | "strike-swap"
+  | "batter-change"
+  | "bowler-change"
+  | "ball-corrected"
+  | "squad-change"
+  | "rain"
+  | "reopened";
+
+// A line in a match's log: something done by hand while scoring, which the
+// balls don't show.
+export interface CricketMatchEvent {
+  kind: CricketMatchEventKind;
+  at: string;
+  // Who did it (left out on a public link).
+  by: string | null;
+  // The innings (0 or 1) and the legal balls bowled in it at the time.
+  innings: number | null;
+  balls: number | null;
+  // Players: the one going and the one coming in.
+  fromId: number | null;
+  toId: number | null;
+  // Scorers, by name.
+  fromName: string | null;
+  toName: string | null;
+  // Rain: the overs left to the side (null = no more play).
+  overs: number | null;
 }
 
 export interface CricketMatchTeam {
@@ -477,6 +518,10 @@ export interface CricketMatch {
   lastManStands?: boolean | null;
   // A no-ball gives a free hit (null = yes, false = off).
   freeHit?: boolean | null;
+  // Overs of powerplay at the start of each innings (null = no powerplay).
+  powerplayOvers?: number | null;
+  // What was done by hand while scoring, oldest first.
+  events?: CricketMatchEvent[];
   // Anyone with the link can watch it without signing in.
   isPublic?: boolean | null;
   // Bumped on every score change (the API refuses writes from older copies).
@@ -490,6 +535,8 @@ export interface CricketMatch {
   // their account and name.
   scoringById?: number | null;
   scoringByName?: string | null;
+  // Everyone who has recorded a ball in it. Empty on older matches.
+  scoredByNames?: string[];
   // The account that created it (null on older ones); see canManage.ts.
   createdById: number | null;
   createdAt: string;

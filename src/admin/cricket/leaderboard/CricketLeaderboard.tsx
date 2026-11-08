@@ -62,7 +62,7 @@ interface Board {
 
 const dismissals = (s: PlayerStats) => s.catches + s.stumpings + s.runOuts;
 
-const BOARDS: Board[] = [
+export const BOARDS: Board[] = [
   {
     title: "MVP",
     icon: "fa-star",
@@ -257,7 +257,7 @@ export function LeaderboardGrid({
 
 // A tournament's "Heroes" tab: whoever is first on each leaderboard, so the two
 // always agree. One with no one on it is left out.
-const TOURNAMENT_HEROES = [
+export const TOURNAMENT_HEROES = [
   { board: "MVP", title: "MVP", label: "MVP" },
   { board: "Player of the Match", title: "Most Player of the Match awards", label: "Awards" },
   { board: "Most Runs", title: "Best batter", label: "Runs" },
@@ -659,7 +659,7 @@ export function PointsTable({ tournament, matches }: { tournament: CricketTourna
 }
 
 // One table of standings. With `qualify`, a line marks the cut and the
-// teams above it get a Q once `settled` (every match played). With
+// teams above it get a Q, and those below an E, once `settled` (every match played). With
 // `matches` (the ones the table counts), each team opens to its results.
 export function StandingsTable({
   rows,
@@ -727,6 +727,7 @@ export function StandingsTable({
                     <TeamMark className="cricket-standings-logo" name={row.name} logoUrl={teams?.[row.teamIndex]?.logoUrl} />
                     <span className="cricket-standings-label">{row.name}</span>
                     {settled && index < qualify && <span className="cricket-q-tag" title="Qualified">Q</span>}
+                    {settled && qualify > 0 && index >= qualify && <span className="cricket-q-tag is-out" title="Eliminated">E</span>}
                     {matches && <i className="fa-solid fa-chevron-down cricket-expand-icon" aria-hidden="true"></i>}
                   </span>
                 </td>

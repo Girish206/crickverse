@@ -10,7 +10,7 @@ import { PlayerAvatar } from "../players/PlayerAvatar";
 import { PlayerLink } from "../players/PlayerProfileSheet";
 import { seasonsOf, seriesOf, seriesPath } from "./TournamentCard";
 
-const dateText = (value: string) =>
+export const dateText = (value: string) =>
   new Date(value)
     .toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" })
     .replace(/ /g, "-");

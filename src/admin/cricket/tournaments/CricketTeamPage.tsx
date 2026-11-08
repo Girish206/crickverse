@@ -24,20 +24,20 @@ import { confirmAction } from "../../components/confirmDelete";
 import { BottomSheet } from "../BottomSheet";
 import { MatchesBoard } from "../matches/CricketMatchesList";
 import { roleOf } from "../playerRoles";
-import { StatTiles, type StatGroup } from "../StatTiles";
+import { StatTiles } from "../StatTiles";
 import { PlayerAvatar } from "../players/PlayerAvatar";
 import { PlayerLink } from "../players/PlayerProfileSheet";
 import { LeaderboardGrid } from "../leaderboard/CricketLeaderboard";
-import { oversText, pointsTable, rate, strikeRate, teamStats, type TeamStats } from "../stats";
+import { pointsTable, teamStats, type TeamStats } from "../stats";
 import { AddTeamPlayersSheet } from "./AddTeamPlayersSheet";
-import { ShareFixturesSheet, upcomingFixtures } from "./ShareFixturesSheet";
-import { ShareSquadSheet } from "./ShareSquadSheet";
-import { ShareMenu } from "../ShareMenu";
+import { upcomingFixtures } from "./ShareFixturesSheet";
 import { useTips, type TipStep } from "../TipsTour";
 import { TeamForm } from "./CricketTeamTools";
 import { bannerFor } from "./tournamentArt";
 import { TeamBadge } from "../teams/TeamLogoField";
 import { TeamRecordCard } from "../teams/TeamRecordCard";
+import { TeamShareSheet } from "../teams/TeamShareSheet";
+import { teamStatGroups } from "../teams/teamTabCards";
 import { roleTagInfo, roleTagsFor, rolesOf, TeamRoleChips } from "./TeamRoleChips";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
@@ -65,7 +65,7 @@ const TEAM_TIPS: TipStep[] = [
   {
     target: "share",
     title: "Share the team",
-    text: "Send the team's link, or share its squad or upcoming fixtures as a picture.",
+    text: "Share a picture of the tab you're on, like the squad or fixtures, or send the team's link.",
   },
   {
     target: "settings",
@@ -94,7 +94,6 @@ export function CricketTeamPage() {
   // The team's join link and QR code, for players to add themselves.
   const [inviting, setInviting] = useState(false);
   const [sharing, setSharing] = useState(false);
-  const [sharingFixtures, setSharingFixtures] = useState(false);
   // Player whose "Move / swap" sheet is open.
   const [moving, setMoving] = useState<number | null>(null);
   // Player whose "⋮" sheet (move / swap, remove) is open.
@@ -139,7 +138,6 @@ export function CricketTeamPage() {
   const standings = pointsTable(tournament, matches ?? []);
   const position = standings.findIndex((row) => row.teamIndex === teamIndex);
   const record = standings[position];
-  const hasFixtures = upcomingFixtures(tournament, matches ?? [], teamIndex).length > 0;
 
   async function handleRemove() {
     if (
@@ -188,31 +186,7 @@ export function CricketTeamPage() {
         backLabel="All teams"
         actions={
           <>
-            <ShareMenu
-              heading="Share team"
-              path={`/tournaments/${id}/teams/${teamIndex}`}
-              title={team.name}
-              image={team.logoUrl ?? undefined}
-              text={`${team.name} · ${tournament.name} on RunMitra`}
-              items={[
-                ...(team.playerIds.length > 0
-                  ? [{
-                      icon: "fa-solid fa-users",
-                      label: "Squad card",
-                      description: "The players with their photos and roles as a picture",
-                      onClick: () => setSharing(true),
-                    }]
-                  : []),
-                ...(hasFixtures
-                  ? [{
-                      icon: "fa-solid fa-calendar-days",
-                      label: "Fixtures card",
-                      description: "The team's upcoming matches as a picture",
-                      onClick: () => setSharingFixtures(true),
-                    }]
-                  : []),
-              ]}
-            />
+            <PageHeaderAction icon="fa-solid fa-share-nodes" label="Share" tour="share" active={sharing} onClick={() => setSharing(true)} />
             {/* The team's join QR code and link, for players to add themselves. */}
             {canAddPlayers && (
               <PageHeaderAction
@@ -393,15 +367,36 @@ export function CricketTeamPage() {
       )}
 
       {sharing && (
-        <ShareSquadSheet tournament={tournament} team={team} playerById={playerById} onClose={() => setSharing(false)} />
-      )}
-
-      {sharingFixtures && (
-        <ShareFixturesSheet
-          tournament={tournament}
-          matches={matches ?? []}
-          teamIndex={teamIndex}
-          onClose={() => setSharingFixtures(false)}
+        <TeamShareSheet
+          data={{
+            team,
+            tournamentName: tournament.name,
+            record: {
+              played: record?.played ?? 0,
+              won: record?.won ?? 0,
+              lost: record?.lost ?? 0,
+              tied: (record?.tied ?? 0) + (record?.noResult ?? 0),
+            },
+            facts: [
+              ...(record && record.played > 0
+                ? ([
+                    ["Position", `${position + 1} of ${standings.length}`],
+                    ["Points", String(record.points)],
+                    ["Net run rate", (record.nrr >= 0 ? "+" : "") + record.nrr.toFixed(3)],
+                  ] as [string, string][])
+                : []),
+              ["Players", String(team.playerIds.length)],
+            ],
+            fixtures: upcomingFixtures(tournament, matches ?? [], teamIndex),
+            matches: teamMatches,
+            statMatches: teamMatches,
+            side: teamIndex,
+            playerById,
+          }}
+          path={`/tournaments/${id}/teams/${teamIndex}`}
+          tab={tab}
+          note="People need to sign in to RunMitra to open this link."
+          onClose={() => setSharing(false)}
         />
       )}
 
@@ -471,64 +466,7 @@ export function CricketTeamPage() {
 // Team totals as tiles, grouped into batting, bowling and fielding.
 export function TeamStatsView({ stats: t }: { stats: TeamStats }) {
   if (t.matches === 0) return <div className="admin-empty-state">Stats appear once the team's matches are scored.</div>;
-  const groups: StatGroup[] = [
-    {
-      title: "Overview",
-      icon: "fa-chart-simple",
-      tiles: [
-        ["Matches", t.matches],
-        ["Won", t.won],
-        ["Lost", t.lost],
-        ["Win %", t.won + t.lost ? `${Math.round((t.won * 100) / (t.won + t.lost))}%` : "–"],
-      ],
-    },
-    {
-      title: "Batting",
-      icon: "fa-baseball-bat-ball",
-      tiles: [
-        ["Runs", t.runs],
-        ["Run rate", rate(t.runs, t.ballsFaced)],
-        ["Overs faced", oversText(t.ballsFaced)],
-        ["Wickets lost", t.wicketsLost],
-        ["Fours", t.fours],
-        ["Sixes", t.sixes],
-        ["Dot balls", t.dotsFaced],
-        ["Dot %", t.ballsFaced ? `${Math.round((t.dotsFaced * 100) / t.ballsFaced)}%` : "–"],
-        ["Boundary runs", t.fours * 4 + t.sixes * 6],
-        ["Extras received", t.extrasReceived],
-        ["Highest total", t.highest ?? "–"],
-        ["Lowest total", t.lowest ?? "–"],
-        ["Strike rate", strikeRate(t.runs, t.ballsFaced)],
-        ["Avg per innings", t.innings ? Math.round(t.runs / t.innings) : "–"],
-      ],
-    },
-    {
-      title: "Bowling",
-      icon: "fa-baseball",
-      tiles: [
-        ["Wickets", t.wickets],
-        ["Economy", rate(t.runsConceded, t.ballsBowled)],
-        ["Overs bowled", oversText(t.ballsBowled)],
-        ["Runs conceded", t.runsConceded],
-        ["Dot balls", t.dotsBowled],
-        ["Maidens", t.maidens],
-        ["Wides", t.wides],
-        ["No-balls", t.noBalls],
-        ["Fours conceded", t.foursConceded],
-        ["Sixes conceded", t.sixesConceded],
-      ],
-    },
-    {
-      title: "Fielding",
-      icon: "fa-hands",
-      tiles: [
-        ["Catches", t.catches],
-        ["Run-outs", t.runOuts],
-        ["Stumpings", t.stumpings],
-      ],
-    },
-  ];
-  return <StatTiles groups={groups} />;
+  return <StatTiles groups={teamStatGroups(t)} />;
 }
 
 // `linked` = tapping the player (photo or name) opens their profile (off

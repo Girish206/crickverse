@@ -6,6 +6,8 @@ export interface PageHeaderProps {
   title: ReactNode;
   // A smaller line above the title (the tournament, "Step 1 of 2"…).
   subtitle?: ReactNode;
+  // Something small right after the title (a match's status).
+  titleAside?: ReactNode;
   // Where the back button goes: a path, or a handler for in-page steps.
   // Defaults to the previous screen (home when there isn't one).
   back?: string | (() => void);
@@ -18,7 +20,7 @@ export interface PageHeaderProps {
 // match, setup, profile): fixed to the top with a back button, the title and
 // the screen's own actions. Layout leaves the navbar out on these screens
 // and pads the page for it.
-export function PageHeader({ title, subtitle, back, backLabel = "Back", actions }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, titleAside, back, backLabel = "Back", actions }: PageHeaderProps) {
   const navigate = useNavigate();
   // A screen opened with `state: { from }` (e.g. from My Teams) goes back
   // there rather than to its usual parent; in-page steps still win.
@@ -43,7 +45,10 @@ export function PageHeader({ title, subtitle, back, backLabel = "Back", actions 
       </button>
       <div className="cv-page-header-title">
         {subtitle && <small>{subtitle}</small>}
-        <h1>{title}</h1>
+        <div className="cv-page-header-title-row">
+          <h1>{title}</h1>
+          {titleAside}
+        </div>
       </div>
       {actions && <div className="cv-page-header-actions">{actions}</div>}
     </header>

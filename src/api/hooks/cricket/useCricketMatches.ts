@@ -40,6 +40,7 @@ export interface CricketMatchInput {
   bowlerOverLimit?: number | null;
   lastManStands?: boolean | null;
   freeHit?: boolean | null;
+  powerplayOvers?: number | null;
   isPublic?: boolean | null;
   // A live chase's revised target (rain); null clears it.
   revisedTarget?: number | null;
@@ -491,6 +492,20 @@ export function useCricketPlaces() {
     queryKey: ["cricket-places"],
     queryFn: async () => {
       const { data } = await apiClient.get<ApiEnvelope<CricketPlaces>>("/admin/cricket/places");
+      return data.data;
+    },
+  });
+}
+
+// Who made a match, for its officials (signed in only).
+export function useMatchCreator(id: number, enabled: boolean) {
+  return useQuery({
+    queryKey: ["cricket-matches", id, "creator"],
+    enabled,
+    staleTime: Infinity,
+    retry: false,
+    queryFn: async () => {
+      const { data } = await apiClient.get<ApiEnvelope<{ name: string | null }>>(`/admin/cricket/matches/${id}/creator`);
       return data.data;
     },
   });

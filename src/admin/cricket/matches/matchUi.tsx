@@ -8,18 +8,12 @@ import { TeamMark } from "../teams/TeamMark";
 const STATUS_LABELS: Record<CricketMatchStatus, string> = {
   scheduled: "Upcoming",
   live: "Live",
-  completed: "Completed",
-  abandoned: "No result",
+  completed: "Result",
+  abandoned: "Abandoned",
 };
 
 export function MatchStatusBadge({ status }: { status: CricketMatchStatus }) {
-  return (
-    <span className={`cricket-match-status is-${status}`}>
-      {status === "live" && <span className="cricket-live-dot" aria-hidden="true"></span>}
-      {status === "completed" && <i className="fa-solid fa-circle-check" aria-hidden="true"></i>}
-      {STATUS_LABELS[status]}
-    </span>
-  );
+  return <span className={`cricket-match-status is-${status}`}>{STATUS_LABELS[status]}</span>;
 }
 
 // Why a card is shown to this viewer (home page): a ribbon across the top,

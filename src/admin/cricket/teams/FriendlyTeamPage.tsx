@@ -7,15 +7,17 @@ import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { Button } from "../../components/Button";
 import { ListCard } from "../../components/ListCard";
 import { Loader } from "../../components/Loader";
-import { PageHeader } from "../../components/PageHeader";
+import { PageHeader, PageHeaderAction } from "../../components/PageHeader";
 import { canManageMatch } from "../canManage";
 import { LeaderboardGrid } from "../leaderboard/CricketLeaderboard";
 import { MatchesBoard } from "../matches/CricketMatchesList";
 import { teamStats } from "../stats";
 import { AddPlayersByMobileSheet } from "../tournaments/AddTeamPlayersSheet";
 import { RosterPlayer, TeamStatsView } from "../tournaments/CricketTeamPage";
+import { upcomingFixtures } from "../tournaments/ShareFixturesSheet";
 import { roleTagsFor } from "../tournaments/TeamRoleChips";
 import { TeamRecordCard } from "./TeamRecordCard";
+import { TeamShareSheet } from "./TeamShareSheet";
 import { bannerFor } from "../tournaments/tournamentArt";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
@@ -55,6 +57,7 @@ export function FriendlyTeamPage() {
   const { data: allFriendlies } = useCricketMatches("none", { enabled: Boolean(admin?.isSuperAdmin) });
   const addPlayers = useAddFriendlyTeamPlayers();
   const [adding, setAdding] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   const matches = useMemo(() => {
     const pool = [
@@ -133,7 +136,13 @@ export function FriendlyTeamPage() {
   const showAddBar = canAddPlayers && tab === "players";
   return (
     <div className={`cricket-page ${showAddBar ? "has-action-bar" : ""}`.trim()}>
-      <PageHeader title={displayName} subtitle="Team" back={backTo} backLabel="Back" />
+      <PageHeader
+        title={displayName}
+        subtitle="Team"
+        back={backTo}
+        backLabel="Back"
+        actions={<PageHeaderAction icon="fa-solid fa-share-nodes" label="Share" tour="share" active={sharing} onClick={() => setSharing(true)} />}
+      />
       <div className="cricket-th-sticky">
         <div className="card cricket-th-card">
           <div className="cricket-th">
@@ -239,6 +248,28 @@ export function FriendlyTeamPage() {
             <i className="fa-solid fa-user-plus" aria-hidden="true"></i> Add players
           </Button>
         </div>
+      )}
+
+      {sharing && (
+        <TeamShareSheet
+          data={{
+            team: { ...latest, name: displayName, playerIds },
+            record: { played: completed.length, won, lost, tied },
+            facts: [
+              ["Players", String(playerIds.length)],
+              ["Matches", String(matches.length)],
+            ],
+            fixtures: upcomingFixtures(null, matches),
+            matches,
+            statMatches: asTeam,
+            side: 0,
+            playerById,
+          }}
+          path={`/teams/friendly/${encodeURIComponent(displayName.trim())}`}
+          tab={tab}
+          note="Only people who play in, follow or organise this team's matches can open this link."
+          onClose={() => setSharing(false)}
+        />
       )}
 
       {adding && (

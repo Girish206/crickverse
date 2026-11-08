@@ -40,7 +40,7 @@ const today = () => {
   return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 };
 
-type Errors = Partial<Record<"name" | "city" | "ground" | "organiserName" | "organiserMobile" | "organiserEmail" | "startDate" | "endDate" | "category" | "ballType" | "matchType" | "overs" | "bowlerOverLimit" | "image", string>>;
+type Errors = Partial<Record<"name" | "city" | "ground" | "organiserName" | "organiserMobile" | "organiserEmail" | "startDate" | "endDate" | "category" | "ballType" | "matchType" | "overs" | "bowlerOverLimit" | "powerplayOvers" | "image", string>>;
 
 // Field names as shown in the "fix these fields" toast.
 const FIELD_LABELS: Record<keyof Errors, string> = {
@@ -57,6 +57,7 @@ const FIELD_LABELS: Record<keyof Errors, string> = {
   matchType: "Match type",
   overs: "Overs",
   bowlerOverLimit: "Overs per bowler",
+  powerplayOvers: "Powerplay overs",
   image: "Image",
 };
 
@@ -94,6 +95,7 @@ export function tournamentInputOf(t: CricketTournament): CricketTournamentInput 
     bowlerOverLimit: t.bowlerOverLimit ?? null,
     lastManStands: t.lastManStands ?? null,
     freeHit: t.freeHit ?? null,
+    powerplayOvers: t.powerplayOvers ?? null,
   };
 }
 
@@ -135,6 +137,8 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
   const [bowlerLimit, setBowlerLimit] = useState(start?.bowlerOverLimit ? String(start.bowlerOverLimit) : "");
   const [lastManStands, setLastManStands] = useState(Boolean(start?.lastManStands));
   const [freeHit, setFreeHit] = useState(start?.freeHit !== false);
+  const [hasPowerplay, setHasPowerplay] = useState(Boolean(start?.powerplayOvers));
+  const [powerplayOvers, setPowerplayOvers] = useState(start?.powerplayOvers ? String(start.powerplayOvers) : "");
   const logo = useImagePick(existing?.logoUrl);
   const banner = useImagePick(existing?.bannerUrl);
   const [errors, setErrors] = useState<Errors>({});
@@ -159,6 +163,8 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
       if (previous.bowlerOverLimit) setBowlerLimit(String(previous.bowlerOverLimit));
       setLastManStands(Boolean(previous.lastManStands));
       setFreeHit(previous.freeHit !== false);
+      setHasPowerplay(Boolean(previous.powerplayOvers));
+      setPowerplayOvers(previous.powerplayOvers ? String(previous.powerplayOvers) : "");
     }
   }
 
@@ -210,6 +216,11 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
       if (!Number.isInteger(limit) || limit < 1 || limit > 50) found.bowlerOverLimit = "1 to 50, or leave blank";
       else if (Number.isInteger(oversNumber) && limit > oversNumber) found.bowlerOverLimit = "Can't be more than the overs";
     }
+    if (hasPowerplay) {
+      const powerplay = Number(powerplayOvers);
+      if (!Number.isInteger(powerplay) || powerplay < 1 || powerplay > 50) found.powerplayOvers = "1 to 50";
+      else if (Number.isInteger(oversNumber) && powerplay > oversNumber) found.powerplayOvers = "Can't be more than the overs";
+    }
     return found;
   }
 
@@ -248,6 +259,7 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
       bowlerOverLimit: bowlerLimit ? Number(bowlerLimit) : null,
       lastManStands,
       freeHit,
+      powerplayOvers: hasPowerplay ? Number(powerplayOvers) : null,
     };
     const saved = existing
       ? await updateTournament.mutateAsync({ id: existing.id, ...input })
@@ -595,6 +607,38 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
             on={freeHit}
             onChange={setFreeHit}
           />
+          <SwitchRow
+            icon="fa-solid fa-gauge-high"
+            label="Powerplay"
+            note={hasPowerplay ? "Its overs at the start of each innings" : "No powerplay in its matches"}
+            on={hasPowerplay}
+            onChange={(on) => {
+              setHasPowerplay(on);
+              clear("powerplayOvers");
+              // The usual share: 6 of 20, 15 of 50.
+              if (on && !powerplayOvers) setPowerplayOvers(String(Math.max(1, Math.round((Number(overs) || 20) * 0.3))));
+            }}
+          />
+          {hasPowerplay && (
+            <label className="cricket-app-row">
+              <span className="cricket-app-row-label">
+                <i className="fa-solid fa-hashtag" aria-hidden="true"></i> Powerplay overs
+              </span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={50}
+                value={powerplayOvers}
+                onChange={text(setPowerplayOvers, "powerplayOvers")}
+              />
+            </label>
+          )}
+          {errors.powerplayOvers && (
+            <div className="cricket-app-row is-hint">
+              <small className="text-danger">{errors.powerplayOvers}</small>
+            </div>
+          )}
         </div>
         <small className="admin-hint cricket-tour-note">
           Ground, city, match type, ball type, pitch, overs and these playing conditions are filled in on every match you

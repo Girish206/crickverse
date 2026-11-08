@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
-import { ballsPerOverOf, type CricketMatch } from "../../../api/types";
+import type { CricketMatch } from "../../../api/types";
 import { monogram } from "../../../utils/format";
-import { avatarColorFor } from "../avatarColor";
-import { chaseInfo, inningsSummary, rate } from "../stats";
-import { battingOrder, matchStageLabel, teamScore } from "./matchUtils";
+import { battingOrder, matchStageLabel, matchStateLine, matchTeamColors, teamScore } from "./matchUtils";
 import { TeamMark } from "../teams/TeamMark";
 
 // "in 2 days", "in 3h 20m", "in 45m", or "Starting soon" once it's due.
@@ -78,28 +76,9 @@ interface MatchHeroProps {
 // state of play.
 export function MatchHero({ match }: MatchHeroProps) {
   const current = match.innings[match.innings.length - 1];
-  // Each side's badge colour, nudged apart when both names hash alike.
-  const colorA = avatarColorFor(match.teams[0].name);
-  let colorB = avatarColorFor(match.teams[1].name);
-  for (let salt = 1; colorB === colorA && salt < 12; salt++) colorB = avatarColorFor(`${match.teams[1].name}#${salt}`);
-  const colors = [colorA, colorB];
+  const colors = matchTeamColors(match);
   const battingNow = match.status === "live" && current ? current.battingTeam : null;
-
-  // One line saying where the game is.
-  let headline: string | null = null;
-  if (match.status === "live" && current) {
-    const chase = match.innings.length === 2 ? chaseInfo(match) : null;
-    const batting = match.teams[current.battingTeam].name;
-    if (chase && current.balls.length === 0) {
-      headline = `Innings break — ${batting} need ${chase.target} to win${chase.revised ? (match.interruptions?.length ? " (DLS)" : " (revised target)") : ""}`;
-    } else if (chase) {
-      headline = `${batting} need ${Math.max(chase.need, 0)} run${chase.need === 1 ? "" : "s"} from ${chase.ballsLeft} ball${chase.ballsLeft === 1 ? "" : "s"}`;
-    } else {
-      const perOver = ballsPerOverOf(match);
-      const now = inningsSummary(current, perOver);
-      headline = `${batting} batting · CRR ${rate(now.runs, now.legalBalls, perOver)}`;
-    }
-  }
+  const headline = matchStateLine(match);
 
   return (
     <div className={`card cricket-hero is-${match.status}`}>

@@ -23,7 +23,7 @@ interface FixtureEntry {
   teamB: FixtureSide;
 }
 
-interface FixtureDay {
+export interface FixtureDay {
   label: string;
   fixtures: FixtureEntry[];
 }
@@ -40,7 +40,8 @@ const timeLabel = (value: string) => new Date(value).toLocaleTimeString(undefine
 // last), then each knockout phase's playoffs not scheduled yet, with the
 // teams known so far ("1st, League" / "Winner Q1" until then). With a
 // `teamIndex`, only that team's: a playoff counts once the team is through.
-export function upcomingFixtures(tournament: CricketTournament, matches: CricketMatch[], teamIndex?: number): FixtureDay[] {
+// Without a tournament (a team's one-off matches), just the matches.
+export function upcomingFixtures(tournament: CricketTournament | null, matches: CricketMatch[], teamIndex?: number): FixtureDay[] {
   const ordered = [...matches].sort(byDate);
   const days: FixtureDay[] = [];
   ordered.forEach((match, i) => {
@@ -58,8 +59,8 @@ export function upcomingFixtures(tournament: CricketTournament, matches: Cricket
     });
   });
 
-  const format = tournament.format;
-  if (!format) return days;
+  const format = tournament?.format;
+  if (!tournament || !format) return days;
   const resolve = makeResolver(tournament, format, matches);
   const teamName = (index: number) => tournament.teams[index]?.name ?? `Team ${index + 1}`;
   format.phases.forEach((phase) => {
@@ -83,7 +84,7 @@ export function upcomingFixtures(tournament: CricketTournament, matches: Cricket
 
 // "Tournament fixtures:" (or "Team fixtures, Tournament:"), then each day and
 // its matches.
-function fixturesText(heading: string, days: FixtureDay[]) {
+export function fixturesText(heading: string, days: FixtureDay[]) {
   const blocks = days.map((day) => {
     const lines = day.fixtures.map((f) => {
       const when = f.live ? "LIVE" : f.time;

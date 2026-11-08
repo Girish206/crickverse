@@ -50,16 +50,16 @@
   /* Common */
   --theme-text-dark: var(--brand-navy);
   --muted-color: #5b6472;
-  --border-color: #e4e7ec;
+  --border-color: #dde1e7;
   --background-color: #f2f4f7;
   --theme-text-light: #ffffff;
 
   /* Surfaces, in both themes (dark.css has the charcoal ones). */
-  --adm-bg: #f4f5f7;
+  --adm-bg: #eceef2;
   --adm-surface: #ffffff;
   --adm-raised: #f8f9fb;
   --adm-glass: #ffffff;
-  --adm-line: #e4e7ec;
+  --adm-line: #dde1e7;
   --adm-line-strong: #d0d5dd;
   --adm-hover: rgba(16, 24, 40, 0.04);
   --adm-text: var(--brand-navy);
@@ -72,9 +72,16 @@
   --bs-danger-rgb: var(--danger-rgb);
   --bs-info-rgb: var(--secondary-rgb);
 
-  /* Runs off the bat, on chips, the scoring pad and the shot map: told apart
-     by depth of grey, so a wicket's red is the only colour on the over. */
-  --ball-four: #475467;
-  --ball-six: var(--brand-navy);
+  /* What a ball was, the same on chips, the scoring pad, commentary and the
+     shot map: four blue, six purple, extras amber (a wicket is --danger). */
+  --ball-four: #1d4ed8;
+  --ball-four-text: #ffffff;
+  --ball-six: #6d28d9;
   --ball-six-text: #ffffff;
+  --ball-extra: #b45309;
+  --ball-extra-rgb: 180, 83, 9;
+  --ball-extra-text: #92400e;
+
+  /* A neutral series beside the accent in a chart. */
+  --series-slate: #475467;
 }

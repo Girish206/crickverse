@@ -5,13 +5,10 @@ import { StatTiles, type StatGroup } from "../StatTiles";
 const pct = (part: number, whole: number) => (whole ? `${Math.round((part * 100) / whole)}%` : "–");
 const totalText = (total: InningsTotal | null) => (total ? `${total.runs}/${total.wickets}` : "–");
 
-// The tournament's Stats tab: totals over all its scored matches — runs,
-// boundaries, dots, extras, how wickets fell and how matches were won.
-export function TournamentStats({ matches }: { matches: CricketMatch[] }) {
-  const t = tournamentStats(matches);
-  if (t.matches === 0) return <div className="admin-empty-state">Stats appear once matches are scored.</div>;
+// The tournament's totals, grouped under headings for the tab and its card.
+export function tournamentStatGroups(t: ReturnType<typeof tournamentStats>): StatGroup[] {
   const decided = t.wonBattingFirst + t.wonChasing;
-  const groups: StatGroup[] = [
+  return [
     {
       title: "Overview",
       icon: "fa-chart-simple",
@@ -66,5 +63,12 @@ export function TournamentStats({ matches }: { matches: CricketMatch[] }) {
       ],
     },
   ];
-  return <StatTiles groups={groups} />;
+}
+
+// The tournament's Stats tab: totals over all its scored matches — runs,
+// boundaries, dots, extras, how wickets fell and how matches were won.
+export function TournamentStats({ matches }: { matches: CricketMatch[] }) {
+  const t = tournamentStats(matches);
+  if (t.matches === 0) return <div className="admin-empty-state">Stats appear once matches are scored.</div>;
+  return <StatTiles groups={tournamentStatGroups(t)} />;
 }

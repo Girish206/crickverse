@@ -1500,8 +1500,10 @@
   flex-direction: row-reverse;
   text-align: right;
 }
-.cricket-hero-row.is-lost {
-  opacity: 0.55;
+/* The losing side steps back through its text; its logo stays legible. */
+.cricket-hero-row.is-lost .cricket-hero-name,
+.cricket-hero-row.is-lost .cricket-hero-score {
+  color: var(--muted-color);
 }
 .cricket-hero-badge {
   flex-shrink: 0;
@@ -1511,6 +1513,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--adm-line);
   color: #fff;
   font-size: var(--fs-2xs);
   font-weight: 700;
@@ -1536,7 +1539,7 @@
   gap: 5px;
   font-size: var(--fs-sm);
   font-weight: 600;
-  color: var(--muted-color);
+  color: var(--theme-text-dark);
 }
 .cricket-hero-row.is-right .cricket-hero-name {
   flex-direction: row-reverse;
@@ -1589,16 +1592,16 @@
 }
 .cricket-hero-headline.is-result {
   font-size: var(--fs-base);
-  color: var(--primary);
+  color: var(--theme-text-dark);
 }
-/* A decided match: the footer becomes a quiet strip along the bottom of the card. */
+/* A decided match: the footer becomes a warm strip along the bottom of the card. */
 .cricket-hero-foot.is-won {
   margin: 0 -16px -14px;
   padding: 11px 16px 12px;
-  border-top: 1px solid var(--adm-line);
+  border-top: 1px solid rgba(var(--brand-amber-rgb), 0.24);
   border-bottom-left-radius: inherit;
   border-bottom-right-radius: inherit;
-  background: var(--adm-raised);
+  background: rgba(var(--brand-amber-rgb), 0.12);
 }
 .cricket-hero-headline.is-result i {
   margin-right: 6px;
@@ -3613,9 +3616,19 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
   font-weight: 600;
   color: var(--muted-color);
 }
+/* The Overs tab's team picker on the light theme: white pills on the page,
+   the selected one marked by its accent text and border alone. */
+:root:not([data-bs-theme="dark"]) .cricket-overs-sides button {
+  border-color: var(--adm-line-strong);
+  background: var(--adm-surface);
+}
+:root:not([data-bs-theme="dark"]) .cricket-overs-sides button.active {
+  border-color: var(--primary);
+  background: var(--adm-surface);
+}
 /* The Overs tab: each over a row of three parts, the over (left) and its runs
-   (right) in a soft tint of the brand colour, framing its balls on a plain
-   middle so their colours stand out. */
+   (right) on a neutral tint, framing its balls on a plain middle so their
+   colours stand out. The accent is kept for the unfinished over. */
 .cricket-over-cards {
   margin: 0;
   padding: 0;
@@ -3624,13 +3637,18 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
   gap: 6px;
 }
 .cricket-over-card {
+  /* Darker than --adm-line-strong, which barely shows on the side panels. */
+  --over-card-line: #b8c0cc;
   display: flex;
   align-items: stretch;
   min-width: 0;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--over-card-line);
   border-radius: var(--radius-md);
   background: var(--adm-surface, #fff);
   overflow: hidden;
+}
+:root[data-bs-theme="dark"] .cricket-over-card {
+  --over-card-line: var(--border-color);
 }
 .cricket-over-card.is-incomplete {
   border-left: 3px solid var(--primary);
@@ -3647,21 +3665,25 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
   justify-content: center;
   gap: 1px;
   padding: 3px 4px;
-  background: rgba(var(--primary-rgb), 0.15);
+  /* A step darker than the page, so the panels don't melt into it. */
+  background: var(--adm-line);
   font-size: var(--fs-sm);
   line-height: 1.15;
-  color: var(--primary);
-}
-:root[data-bs-theme="dark"] .cricket-over-card-num,
-:root[data-bs-theme="dark"] .cricket-over-card-runs {
-  background: rgba(255, 255, 255, 0.09);
-  color: #fff;
+  color: var(--theme-text-dark);
 }
 .cricket-over-card-num {
   width: 58px;
+  border-right: 1px solid var(--over-card-line);
 }
 .cricket-over-card-runs {
   width: 48px;
+  border-left: 1px solid var(--over-card-line);
+}
+:root[data-bs-theme="dark"] .cricket-over-card-num,
+:root[data-bs-theme="dark"] .cricket-over-card-runs {
+  border: 0;
+  background: rgba(255, 255, 255, 0.09);
+  color: #fff;
 }
 .cricket-over-card-num strong,
 .cricket-over-card-runs strong {
@@ -3683,7 +3705,7 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
   font-size: 0.54rem;
   font-weight: 700;
   background: var(--adm-surface, #fff);
-  color: var(--primary);
+  color: var(--theme-text-dark);
   white-space: nowrap;
 }
 :root[data-bs-theme="dark"] .cricket-over-card-sub-badge {
@@ -4066,7 +4088,7 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
   display: none;
 }
 /* The Heroes tab: the same cards as the Summary tab's row, one below the other
-   at full width. The photo keeps the same proportions (210 tall by 300 wide),
+   at full width. The photo keeps the same proportions (255 tall by 300 wide),
    up to a height that still fits on a wide screen. */
 .cricket-heroes-grid {
   container-type: inline-size;
@@ -4077,7 +4099,7 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
   scroll-snap-type: none;
 }
 .cricket-heroes-grid .cricket-award-photo {
-  height: min(70cqw, 380px);
+  height: min(85cqw, 440px);
 }
 /* The signed-in player's own row on a leaderboard. */
 .cricket-board-list li.is-me,
@@ -4114,7 +4136,7 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
 .cricket-award-photo {
   position: relative;
   flex: none;
-  height: 210px;
+  height: 255px;
   overflow: hidden;
   background: rgba(var(--primary-rgb), 0.08);
 }
@@ -4151,6 +4173,35 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
   margin-right: 3px;
   color: var(--brand-amber-bright);
 }
+/* A colour per award (AWARD_TONES in AwardCard.tsx). The ribbon sits on a
+   photo, so these stay the same in dark mode. */
+.cricket-award-title.is-mvp {
+  background: #7d5f1a;
+}
+.cricket-award-title.is-fighter {
+  background: #c2410c;
+}
+.cricket-award-title.is-batting {
+  background: #1d4ed8;
+}
+.cricket-award-title.is-bowling {
+  background: #15803d;
+}
+.cricket-award-title.is-fielding {
+  background: #7c3aed;
+}
+.cricket-award-title.is-sixes {
+  background: #4338ca;
+}
+.cricket-award-title.is-fours {
+  background: #0e7490;
+}
+.cricket-award-title.is-strike {
+  background: #be185d;
+}
+.cricket-award-title.is-economy {
+  background: #0f766e;
+}
 .cricket-award-body {
   display: flex;
   flex-direction: column;
@@ -4160,7 +4211,7 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
 }
 .cricket-award-name {
   font-family: var(--cv-display);
-  font-size: var(--fs-lg);
+  font-size: 1.125rem;
   color: var(--theme-text-dark);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4442,6 +4493,61 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
 }
 .cricket-squad-share-loading {
   background: var(--hero-fill);
+}
+/* A match's picture above the share tiles, the whole card scaled to the room
+   that leaves the sheet in view without scrolling (the rest of the sheet,
+   this box's padding included, is about 346px). */
+.cricket-share-stage {
+  --share-card-h: clamp(80px, calc(88vh - 346px), 460px);
+  display: flex;
+  justify-content: center;
+  padding: 4px;
+  border-radius: var(--radius-lg);
+  background: rgba(var(--primary-rgb), 0.08);
+}
+.cricket-share-stage img,
+.cricket-share-stage-loading {
+  display: block;
+  max-width: 100%;
+  border-radius: var(--radius-sm, 6px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+.cricket-share-stage img {
+  width: auto;
+  height: auto;
+  max-height: var(--share-card-h);
+}
+.cricket-share-stage-loading {
+  height: var(--share-card-h);
+  aspect-ratio: 9 / 16;
+  background: var(--hero-fill);
+}
+.cricket-share-foot {
+  margin: 6px 0 0;
+  text-align: center;
+}
+/* Small tiles under a card, so the card gets the height. */
+.cricket-share-stage + .cricket-share-label {
+  margin: 10px 0 4px;
+}
+.cricket-share-tiles.is-compact button {
+  gap: 4px;
+  padding: 3px 2px;
+}
+.cricket-share-tiles.is-compact button > span {
+  width: 40px;
+  height: 40px;
+  font-size: 18px;
+}
+.cricket-share-tiles button:disabled {
+  opacity: 0.5;
+}
+.cricket-share-tiles .is-facebook {
+  background: #1877f2;
+}
+.cricket-share-tiles .is-x {
+  background: #14171a;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
 }
 .cricket-squad-share-actions {
   display: flex;

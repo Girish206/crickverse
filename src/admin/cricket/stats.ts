@@ -59,6 +59,77 @@ export function inningsSummary(innings: CricketInnings | undefined, perOver = 6)
   return { runs, wickets, legalBalls, overs: oversText(legalBalls, perOver), extras };
 }
 
+// How one innings' overs divide: the powerplay, then the middle overs, then
+// the death overs (the last quarter, at most 10: 16-20 of 20, 41-50 of 50).
+// Null without a powerplay.
+//
+// Overs cut by rain shrink the powerplay in proportion (6 of 20 is 3 of 10),
+// but never below what had been bowled at the cut, and one already finished
+// stays as it was. A closed innings goes by the overs it was played to, so a
+// shortened chase leaves the first innings' overs alone.
+export function inningsPlan(match: CricketMatch, index: number) {
+  if (!match.powerplayOvers) return null;
+  const perOver = ballsPerOverOf(match);
+  const innings = match.innings[index];
+  const limit = (innings.closed ? innings.oversLimit : null) ?? match.overs;
+  let powerplay = match.powerplayOvers;
+  let overs = match.scheduledOvers ?? match.overs;
+  for (const cut of match.interruptions ?? []) {
+    // Only what touched this innings; "no more play" cuts nothing to scale by.
+    if (cut.innings > index || cut.ballsLeftAfter === 0) continue;
+    const cutTo = (cut.balls + cut.ballsLeftAfter) / perOver;
+    const bowled = cut.innings === index ? cut.balls : 0;
+    if (bowled < powerplay * perOver) {
+      powerplay = Math.max(1, Math.ceil(bowled / perOver), Math.round((powerplay * cutTo) / overs));
+    }
+    overs = cutTo;
+  }
+  powerplay = Math.min(powerplay, limit);
+  const death = Math.min(Math.ceil(limit / 4), 10, limit - powerplay);
+  return { limit, powerplay, middleEnd: limit - death };
+}
+
+// One innings for its match notes: what each part of its plan (inningsPlan)
+// produced, null until a ball is bowled in it, and when the side reached
+// each 50.
+export function inningsPhases(innings: CricketInnings, perOver = 6, plan: ReturnType<typeof inningsPlan> = null) {
+  const powerplayBalls = (plan?.powerplay ?? 0) * perOver;
+  const middleBalls = (plan?.middleEnd ?? 0) * perOver;
+  // Something after the last ball (penalty runs) belongs to the last over.
+  const lastBall = (plan?.limit ?? 0) * perOver - 1;
+  const newPhase = () => ({ balls: 0, runs: 0, wickets: 0, legalBalls: 0, extras: 0 });
+  const powerplay = newPhase();
+  const middle = newPhase();
+  const death = newPhase();
+  const milestones: { runs: number; overs: string; wickets: number; ballsTaken: number }[] = [];
+  let total = 0;
+  let legal = 0;
+  let wickets = 0;
+  let legalAtLast = 0;
+  for (const ball of innings.balls) {
+    const at = Math.min(legal, lastBall);
+    const phase = at < powerplayBalls ? powerplay : at < middleBalls ? middle : death;
+    phase.balls += 1;
+    phase.runs += ballTotal(ball);
+    phase.extras += ball.extras;
+    total += ballTotal(ball);
+    if (isWicket(ball)) {
+      phase.wickets += 1;
+      wickets += 1;
+    }
+    if (isLegal(ball)) {
+      phase.legalBalls += 1;
+      legal += 1;
+    }
+    while (total >= (milestones.length + 1) * 50) {
+      milestones.push({ runs: (milestones.length + 1) * 50, overs: oversText(legal, perOver), wickets, ballsTaken: legal - legalAtLast });
+      legalAtLast = legal;
+    }
+  }
+  const played = (phase: typeof powerplay) => (plan && phase.balls > 0 ? phase : null);
+  return { powerplay: played(powerplay), middle: played(middle), death: played(death), milestones };
+}
+
 // Whether the next delivery is a free hit: after a no-ball, and still after
 // a wide or no-ball bowled on the free hit itself (as the server rules).
 export function isFreeHitNext(match: CricketMatch, innings: CricketInnings) {
@@ -125,11 +196,11 @@ export function ballLabel(ball: CricketBall) {
   return String(ball.runs);
 }
 
-// A ball chip's classes: its label ("is-4", "is-W") and, for a wide or a
-// no ball (not out), its kind, which colours it whatever was run off it.
+// A ball chip's classes, which colour it by what the ball was. An all-run
+// four is plain runs; any extra is an extra, whatever was run off it.
 export function ballChipClass(ball: CricketBall) {
-  const kind = isWicket(ball) ? "" : ball.extraType === "wide" ? " is-wide" : ball.extraType === "no-ball" ? " is-no-ball" : "";
-  return `cricket-ball-chip is-${ballLabel(ball)}${kind}`;
+  const kind = isWicket(ball) ? "is-W" : ball.extraType ? "is-extra" : isFour(ball) ? "is-4" : isSix(ball) ? "is-6" : "is-run";
+  return `cricket-ball-chip ${kind}`;
 }
 
 export type NameOf = (playerId: number | null) => string;
@@ -657,6 +728,33 @@ export function pointsTable(tournament: CricketTournament, matches: CricketMatch
     tournament.teams.map((team, teamIndex) => ({ teamIndex, name: team.name })),
     matches.filter(countsForTable),
   );
+}
+
+export interface LeagueTable {
+  title: string;
+  rows: PointsRow[];
+  // How many from the top go through, and whether its places are final.
+  qualify?: number;
+  settled?: boolean;
+}
+
+// The points table, one per group when the league is played in groups.
+export function leagueTables(tournament: CricketTournament, matches: CricketMatch[]): LeagueTable[] {
+  if (tournament.teams.length < 2) return [];
+  const league = matches.filter(countsForTable);
+  const groups = [...new Set(league.map((m) => m.group).filter((g): g is string => Boolean(g)))].sort();
+  if (groups.length <= 1) return [{ title: "Points table", rows: pointsTable(tournament, matches) }];
+  return groups.map((group) => {
+    const inGroup = league.filter((m) => m.group === group);
+    const teamIndexes = [...new Set(inGroup.flatMap((m) => m.teams.map((t) => t.teamIndex)))];
+    return {
+      title: `Group ${group}`,
+      rows: standings(
+        teamIndexes.map((teamIndex) => ({ teamIndex, name: tournament.teams[teamIndex]?.name ?? "Team" })),
+        inGroup,
+      ),
+    };
+  });
 }
 
 // ===== Team stats =====

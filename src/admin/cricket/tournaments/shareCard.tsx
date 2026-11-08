@@ -134,34 +134,27 @@ export async function drawCardFrame(
 export const canvasBlob = (canvas: HTMLCanvasElement) =>
   new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
 
-// The sheet showing a drawn card: Share (the image where the device can
-// share files — phones — else the text), Download image and Copy as text.
-// `draw` should be stable (useCallback) — the card is redrawn when it changes.
-export function ShareCardSheet({
-  title,
-  shareTitle,
-  what,
-  fileName,
-  text,
-  draw,
-  onClose,
-}: {
-  title: string;
+interface ShareCardOptions {
   // The share target's title, e.g. "Strikers squad".
   shareTitle: string;
   // For the toasts, e.g. "squad" → "Squad copied".
   what: string;
   fileName: string;
   text: string;
-  draw: () => Promise<Blob | null>;
-  onClose: () => void;
-}) {
+  // Should be stable (useCallback) — the card is redrawn when it changes.
+  // Without it there's no card, and `image` stays null.
+  draw?: () => Promise<Blob | null>;
+}
+
+// A drawn card and what can be done with it: share (the image where the
+// device can share files — phones — else the text), download, copy as text.
+export function useShareCard({ shareTitle, what, fileName, text, draw }: ShareCardOptions) {
   const [image, setImage] = useState<{ blob: Blob; url: string } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     let url: string | null = null;
-    draw().then((blob) => {
+    draw?.().then((blob) => {
       if (cancelled || !blob) return;
       url = URL.createObjectURL(blob);
       setImage({ blob, url });
@@ -206,6 +199,21 @@ export function ShareCardSheet({
       if ((err as Error).name !== "AbortError") toast.error(`Couldn't share the ${what}`);
     }
   }
+
+  return { image, copyText, download, share };
+}
+
+// The sheet showing a drawn card: Share, Download image and Copy as text.
+export function ShareCardSheet({
+  title,
+  onClose,
+  ...options
+}: ShareCardOptions & {
+  title: string;
+  onClose: () => void;
+}) {
+  const { image, copyText, download, share } = useShareCard(options);
+  const { shareTitle } = options;
 
   return (
     <BottomSheet

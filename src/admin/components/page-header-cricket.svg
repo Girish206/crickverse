@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="60" viewBox="116 0 300 60" fill="none">
+  <!-- PageHeader's scene, used as a mask: only the opacity counts, the colour
+       comes from the theme. Mirrored, so the stumps and bat are on the right
+       and the ball on the left. -->
+  <g transform="matrix(-1 0 0 1 532 0)">
+    <!-- Stumps and bails -->
+    <g fill="#000">
+      <g fill-opacity=".5">
+        <rect x="122" y="24" width="4" height="30" rx="2"/>
+        <rect x="132" y="24" width="4" height="30" rx="2"/>
+        <rect x="142" y="24" width="4" height="30" rx="2"/>
+      </g>
+      <rect fill-opacity=".7" x="121" y="19" width="12" height="3" rx="1.500"/>
+      <rect fill-opacity=".7" x="135" y="19" width="12" height="3" rx="1.500"/>
+    </g>
+
+    <!-- The bat that hit it -->
+    <g transform="translate(200 33) rotate(-68) scale(.66)" fill="#000">
+      <path fill-opacity=".34" d="M-3.500-46h7v22q0 2 3 4l3.500 3v56q0 5-5 5h-10q-5 0-5-5v-56l3.500-3q3-2 3-4z"/>
+      <rect fill-opacity=".6" x="-4.500" y="-48" width="9" height="22" rx="3"/>
+    </g>
+
+    <!-- Its flight -->
+    <path d="M238 42Q322-10 386 21" stroke="#000" stroke-opacity=".55" stroke-width="2" stroke-linecap="round" stroke-dasharray=".1 7"/>
+
+    <!-- The ball -->
+    <g transform="translate(398 27) rotate(24)">
+      <circle r="11" fill="#000" fill-opacity=".5"/>
+      <path d="M-2.500-10.500Q1.500 0-2.500 10.500M2.500-10.500Q6.500 0 2.500 10.500" stroke="#000" stroke-width="1.300" stroke-linecap="round"/>
+    </g>
+  </g>
+</svg>

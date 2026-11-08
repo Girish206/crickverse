@@ -27,7 +27,6 @@ import { MatchesBoard } from "../matches/CricketMatchesList";
 import { teamKeyOf } from "../matches/matchUtils";
 import { TeamInviteSheet } from "../qr/ShowQrSheets";
 import { SettingsMenu } from "../SettingsMenu";
-import { ShareMenu } from "../ShareMenu";
 import { teamStats } from "../stats";
 import { AddPlayersByMobileSheet } from "../tournaments/AddTeamPlayersSheet";
 import { RosterPlayer, TeamStatsView } from "../tournaments/CricketTeamPage";
@@ -35,9 +34,11 @@ import { NO_ROLES, roleTagsFor, rolesOf, rolesWithout, TeamRoleChips, type TeamR
 import { AddPlayerByMobile } from "../players/AddPlayerByMobile";
 import { PlayerCard } from "../players/PlayerCard";
 import { useImagePick } from "../tournaments/CricketTournamentForm";
+import { upcomingFixtures } from "../tournaments/ShareFixturesSheet";
 import { bannerFor } from "../tournaments/tournamentArt";
 import { TeamBadge, TeamLogoField } from "./TeamLogoField";
 import { TeamRecordCard } from "./TeamRecordCard";
+import { TeamShareSheet } from "./TeamShareSheet";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
@@ -226,6 +227,7 @@ export function SavedTeamPage() {
   const [adding, setAdding] = useState(false);
   // The team's join link and QR code, for players to add themselves.
   const [inviting, setInviting] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [renaming, setRenaming] = useState(false);
   // Player whose "⋮" sheet is open.
   const [actionsFor, setActionsFor] = useState<number | null>(null);
@@ -306,13 +308,7 @@ export function SavedTeamPage() {
         back={backTo}
         actions={
           <>
-            <ShareMenu
-              heading="Share team"
-              path={`/teams/saved/${team.id}`}
-              title={team.name}
-              image={team.logoUrl ?? undefined}
-              text={`${team.name} on RunMitra`}
-            />
+            <PageHeaderAction icon="fa-solid fa-share-nodes" label="Share" tour="share" active={sharing} onClick={() => setSharing(true)} />
             {canManage && (
               <>
                 {/* The team's join QR code and link, for players to add themselves. */}
@@ -488,6 +484,28 @@ export function SavedTeamPage() {
 
       {inviting && (
         <TeamInviteSheet team={{ savedTeamId: team.id }} name={team.name} onClose={() => setInviting(false)} />
+      )}
+
+      {sharing && (
+        <TeamShareSheet
+          data={{
+            team,
+            record: { played: completed.length, won, lost, tied: completed.length - won - lost },
+            facts: [
+              ["Players", String(team.playerIds.length)],
+              ["Matches", String(matches.length)],
+            ],
+            fixtures: upcomingFixtures(null, matches),
+            matches,
+            statMatches: asTeam,
+            side: 0,
+            playerById,
+          }}
+          path={`/teams/saved/${team.id}`}
+          tab={tab}
+          note="People need to sign in to RunMitra to open this link."
+          onClose={() => setSharing(false)}
+        />
       )}
 
       {renaming && (

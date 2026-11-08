@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
 import { isNotPublic, usePublicTournament, type PublicTournamentData } from "../api/hooks/cricket/useCricketPublic";
 import type { CricketMatch, CricketTournament } from "../api/types";
-import { countsForTable, pointsTable, standings, type PointsRow } from "../admin/cricket/stats";
+import { leagueTables } from "../admin/cricket/stats";
+import { MatchStatusBadge } from "../admin/cricket/matches/matchUi";
 import { formatMatchDate, matchStageLabel, teamInitials, teamScore } from "../admin/cricket/matches/matchUtils";
 import { PublicShell, PublicState } from "./PublicShell";
 import { useNameOf } from "./publicNames";
@@ -116,24 +117,7 @@ function TournamentView({ data }: { data: PublicTournamentData }) {
 
 // The points table — one per group when the league is played in groups.
 function Tables({ tournament, matches }: { tournament: CricketTournament; matches: CricketMatch[] }) {
-  if (tournament.teams.length < 2) return null;
-  const league = matches.filter(countsForTable);
-  const groups = [...new Set(league.map((m) => m.group).filter((g): g is string => Boolean(g)))].sort();
-
-  const tables: { title: string; rows: PointsRow[] }[] =
-    groups.length > 1
-      ? groups.map((group) => {
-          const inGroup = league.filter((m) => m.group === group);
-          const teamIndexes = [...new Set(inGroup.flatMap((m) => m.teams.map((t) => t.teamIndex)))];
-          return {
-            title: `Group ${group}`,
-            rows: standings(
-              teamIndexes.map((teamIndex) => ({ teamIndex, name: tournament.teams[teamIndex]?.name ?? "Team" })),
-              inGroup,
-            ),
-          };
-        })
-      : [{ title: "Points table", rows: pointsTable(tournament, matches) }];
+  const tables = leagueTables(tournament, matches);
 
   return (
     <>
@@ -191,10 +175,7 @@ function Fixtures({ title, matches }: { title: string; matches: CricketMatch[] }
             <span className="cv-pt-fixture-meta">
               {matchStageLabel(match)}
               {match.status === "live" ? (
-                <span className="cv-pm-status is-live">
-                  <span className="cv-pm-dot" aria-hidden="true" />
-                  Live
-                </span>
+                <MatchStatusBadge status="live" />
               ) : (
                 match.scheduledAt && <span>{formatMatchDate(match.scheduledAt)}</span>
               )}

@@ -37,15 +37,14 @@ import { FormatView } from "../format/FormatView";
 import { TournamentBanner } from "./TournamentBanner";
 import { TournamentInfo } from "./TournamentInfo";
 import { TournamentStats } from "./TournamentStats";
-import { ShareFixturesSheet, upcomingFixtures } from "./ShareFixturesSheet";
+import { TOURNAMENT_SHARE_HEADINGS } from "./tournamentTabCards";
 import { NrrCalculatorSheet } from "./NrrCalculatorSheet";
 import { NrrGuide } from "../leaderboard/NrrGuide";
 import { FollowButton, useFollowMenuItem } from "../follow/FollowButton";
 import { SettingsMenu } from "../SettingsMenu";
 import { ScorersSheet } from "../ScorersSheet";
-import { ShareSheet } from "../ShareMenu";
+import { TournamentShareSheet } from "./TournamentShareSheet";
 import { useTips, type TipStep } from "../TipsTour";
-import { logoFor } from "./tournamentArt";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
@@ -132,7 +131,7 @@ const TOURNAMENT_TIPS: TipStep[] = [
   {
     target: "settings",
     title: "Share, follow and settings",
-    text: "Share the link (or the fixtures as a picture), and follow the tournament to see its matches on your Home. Organisers pick scorers and edit it here too. Show tips again from here any time.",
+    text: "Share the tab you're on as a picture or a link, and follow the tournament to see its matches on your Home. Organisers pick scorers and edit it here too. Show tips again from here any time.",
   },
 ];
 
@@ -188,7 +187,6 @@ export function CricketTournamentPage() {
   const [sharing, setSharing] = useState(false);
   const [pickingScorers, setPickingScorers] = useState(false);
   const [schedulingMatch, setSchedulingMatch] = useState(false);
-  const [sharingFixtures, setSharingFixtures] = useState(false);
   const [nrrCalcOpen, setNrrCalcOpen] = useState(false);
   const [params, setParams] = useSearchParams();
   const location = useLocation();
@@ -239,7 +237,6 @@ export function CricketTournamentPage() {
   // Generating reshuffles the generated teams, so it's only offered until the first
   // match is scheduled (with no teams yet there are no matches either).
   const canAutoBuild = (matches ?? []).length === 0;
-  const hasFixtures = upcomingFixtures(tournament, matches ?? []).length > 0;
   const teamsOutdated =
     canAutoBuild && tournament.generatedAt !== null && !sameMembers(generatedPlayerIds, matchedIds);
 
@@ -313,8 +310,8 @@ export function CricketTournamentPage() {
               items={[
                 {
                   icon: "fa-solid fa-share-nodes",
-                  label: "Share tournament",
-                  description: hasFixtures ? "WhatsApp, Telegram, the link or a fixtures card" : "WhatsApp, Telegram or copy the link",
+                  label: TOURNAMENT_SHARE_HEADINGS[tab],
+                  description: "A picture of this tab, or the link",
                   onClick: () => setSharing(true),
                 },
                 ...(followItem ? [followItem] : []),
@@ -536,32 +533,15 @@ export function CricketTournamentPage() {
         </BottomSheet>
       )}
 
-      {sharingFixtures && (
-        <ShareFixturesSheet tournament={tournament} matches={matches ?? []} onClose={() => setSharingFixtures(false)} />
-      )}
       {sharing && (
-        <ShareSheet
-          heading="Share tournament"
-          path={`/tournaments/${tournament.id}`}
-          title={tournament.name}
-          text={`${tournament.name} on RunMitra`}
-          image={logoFor(tournament)}
+        <TournamentShareSheet
+          tournament={tournament}
+          matches={matches ?? []}
+          tab={tab}
           note={
             isPublic
               ? "Anyone with the link can see it, even without signing in."
               : "People need to sign in to RunMitra to open this link."
-          }
-          items={
-            hasFixtures
-              ? [
-                  {
-                    icon: "fa-solid fa-calendar-days",
-                    label: "Fixtures card",
-                    description: "Upcoming matches and playoffs as a picture",
-                    onClick: () => setSharingFixtures(true),
-                  },
-                ]
-              : []
           }
           onClose={() => setSharing(false)}
         />

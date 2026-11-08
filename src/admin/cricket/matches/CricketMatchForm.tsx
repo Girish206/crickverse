@@ -170,6 +170,8 @@ export function CricketMatchForm({
   const [bowlerLimit, setBowlerLimit] = useState(existing?.bowlerOverLimit ? String(existing.bowlerOverLimit) : "");
   const [lastManStands, setLastManStands] = useState(Boolean(existing?.lastManStands));
   const [freeHit, setFreeHit] = useState(existing?.freeHit !== false);
+  const [hasPowerplay, setHasPowerplay] = useState(Boolean(existing?.powerplayOvers));
+  const [powerplayOvers, setPowerplayOvers] = useState(existing?.powerplayOvers ? String(existing.powerplayOvers) : "");
   const [isPublic, setIsPublic] = useState(Boolean(existing?.isPublic));
   // A rain-cut chase's new target (blank = first innings + 1).
   const [revisedTarget, setRevisedTarget] = useState(existing?.revisedTarget ? String(existing.revisedTarget) : "");
@@ -262,6 +264,8 @@ export function CricketMatchForm({
     setBowlerLimit(t.bowlerOverLimit ? String(t.bowlerOverLimit) : "");
     setLastManStands(Boolean(t.lastManStands));
     setFreeHit(t.freeHit !== false);
+    setHasPowerplay(Boolean(t.powerplayOvers));
+    setPowerplayOvers(t.powerplayOvers ? String(t.powerplayOvers) : "");
   }
   // The Hundred plays 5-ball overs; moving off it goes back to 6.
   function pickMatchType(type: CricketMatchType | null) {
@@ -434,6 +438,14 @@ export function CricketMatchForm({
     if (limit !== null && (!Number.isInteger(limit) || limit < 1 || limit > maxLimit)) {
       return setError(`Overs per bowler must be from 1 to ${maxLimit}, or blank for no limit.`);
     }
+    const powerplay = hasPowerplay ? Number(powerplayOvers) : null;
+    // One already saved may be longer than overs since cut by rain; leave it.
+    if (powerplay !== (existing?.powerplayOvers ?? null) && powerplay !== null) {
+      const maxPowerplay = Math.min(oversNumber, MAX_BOWLER_OVERS);
+      if (!Number.isInteger(powerplay) || powerplay < 1 || powerplay > maxPowerplay) {
+        return setError(`Powerplay overs must be from 1 to ${maxPowerplay}.`);
+      }
+    }
     const target = revisedTarget.trim() ? Number(revisedTarget) : null;
     if (target !== null && (!Number.isInteger(target) || target < 1)) {
       return setError("The revised target must be a whole number of runs.");
@@ -462,6 +474,7 @@ export function CricketMatchForm({
       bowlerOverLimit: limit,
       lastManStands,
       freeHit,
+      powerplayOvers: powerplay,
       isPublic,
     };
     if (existing) {
@@ -476,6 +489,7 @@ export function CricketMatchForm({
         limit === (existing.bowlerOverLimit ?? null) &&
         lastManStands === Boolean(existing.lastManStands) &&
         freeHit === (existing.freeHit !== false) &&
+        powerplay === (existing.powerplayOvers ?? null) &&
         isPublic === Boolean(existing.isPublic) &&
         !targetChanged;
       if (!unchanged) {
@@ -767,6 +781,32 @@ export function CricketMatchForm({
             on={freeHit}
             onChange={setFreeHit}
           />
+          <SwitchRow
+            icon="fa-solid fa-gauge-high"
+            label="Powerplay"
+            note={hasPowerplay ? "Its overs at the start of each innings" : "No powerplay in this match"}
+            on={hasPowerplay}
+            onChange={(on) => {
+              setHasPowerplay(on);
+              // The usual share: 6 of 20, 15 of 50.
+              if (on && !powerplayOvers) setPowerplayOvers(String(Math.max(1, Math.round((oversNumber || 20) * 0.3))));
+            }}
+          />
+          {hasPowerplay && (
+            <label className="cricket-app-row">
+              <span className="cricket-app-row-label">
+                <i className="fa-solid fa-hashtag" aria-hidden="true"></i> Powerplay overs
+              </span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={Math.min(oversNumber || MAX_BOWLER_OVERS, MAX_BOWLER_OVERS)}
+                value={powerplayOvers}
+                onChange={(e) => setPowerplayOvers(e.target.value)}
+              />
+            </label>
+          )}
           </>
           )}
           <SwitchRow

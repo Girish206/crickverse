@@ -9,7 +9,7 @@ import type {
   CricketTeamSource,
   CricketTournament,
 } from "../../../api/types";
-import { standings, type PointsRow } from "../stats";
+import { countsForTable, leagueTables, standings, type LeagueTable, type PointsRow } from "../stats";
 
 // Works a tournament's format out from its matches: each group's table,
 // who has qualified, which bracket matches can be scheduled, and the
@@ -93,6 +93,39 @@ export function groupTableMatches(
     .filter((p) => p.kind === "round-robin")
     .map((p) => p.id);
   return [...counted, ...matches.filter((match) => match.phaseId && earlier.includes(match.phaseId))];
+}
+
+export interface ShareableStandings {
+  // Empty when there's no table to show (no league matches).
+  tables: LeagueTable[];
+  played: number;
+  total: number;
+}
+
+// The tables a shared picture shows: the latest round-robin phase that has its
+// teams, with who goes through; without a format, the plain league table.
+export function shareableStandings(tournament: CricketTournament, matches: CricketMatch[]): ShareableStandings {
+  const format = tournament.format;
+  const phase = format?.phases.filter((p) => p.kind === "round-robin" && p.groups.every((g) => g.teamIndexes.length > 0)).at(-1);
+  const own = phase ? phase.groups.flatMap((group) => groupMatches(phase, group, matches)) : [];
+  if (format && phase && own.length > 0) {
+    return {
+      tables: phase.groups.map((group) => ({
+        title: `Group ${group.name}`,
+        rows: groupTable(tournament, format, phase, group, matches),
+        qualify: phase.qualify,
+        settled: isGroupDone(phase, group, matches),
+      })),
+      played: own.filter(isFinished).length,
+      total: own.length,
+    };
+  }
+  const league = matches.filter(countsForTable);
+  return {
+    tables: league.length > 0 ? leagueTables(tournament, matches) : [],
+    played: league.filter(isFinished).length,
+    total: league.length,
+  };
 }
 
 // Every match of the group played (or washed out), so its places are final.

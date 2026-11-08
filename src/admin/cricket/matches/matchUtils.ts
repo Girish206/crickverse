@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
 import { ballsPerOverOf, type CricketMatch, type CricketMatchStage } from "../../../api/types";
-import { inningsSummary } from "../stats";
+import { avatarColorFor } from "../avatarColor";
+import { chaseInfo, inningsSummary, rate } from "../stats";
 
 // Every round a match can be played in, in tournament order. `note` and
 // `icon` describe it in the stage picker.
@@ -32,6 +33,19 @@ export function matchStageLabel(match: CricketMatch) {
   if (series) return `Match ${series[1]}`;
   if (match.stage === "group" && match.group) return `Group ${match.group}`;
   return stageLabel(match.stage ?? "league");
+}
+
+// The stage as a match page's heading: "Semi-final Match". A label that's
+// already a match ("Match", a series' "Match 2") stays as it is.
+export function matchHeading(match: CricketMatch) {
+  const label = matchStageLabel(match);
+  return label.startsWith("Match") ? label : `${label} Match`;
+}
+
+// The heading and the tournament on one small line, for when the teams' names
+// are the title: "Semi-final · Appu Premier League".
+export function matchHeadingLine(match: CricketMatch, tournamentName: string | null | undefined) {
+  return tournamentName ? `${matchHeading(match)} · ${tournamentName}` : matchHeading(match);
 }
 
 // "Test Strikers" → "TS", for the team badge.
@@ -98,6 +112,32 @@ export function teamScore(match: CricketMatch, teamSlot: number) {
   if (!innings) return null;
   const summary = inningsSummary(innings, ballsPerOverOf(match));
   return { runs: `${summary.runs}/${summary.wickets}`, overs: summary.overs };
+}
+
+// Each side's badge colour, nudged apart when both names hash alike.
+export function matchTeamColors(match: CricketMatch): [string, string] {
+  const first = avatarColorFor(match.teams[0].name);
+  let second = avatarColorFor(match.teams[1].name);
+  for (let salt = 1; second === first && salt < 12; salt++) second = avatarColorFor(`${match.teams[1].name}#${salt}`);
+  return [first, second];
+}
+
+// One line saying where a live game is; null before the first innings opens
+// and once it's over.
+export function matchStateLine(match: CricketMatch) {
+  const current = match.innings[match.innings.length - 1];
+  if (match.status !== "live" || !current) return null;
+  const chase = match.innings.length === 2 ? chaseInfo(match) : null;
+  const batting = match.teams[current.battingTeam].name;
+  if (chase && current.balls.length === 0) {
+    return `Innings break — ${batting} need ${chase.target} to win${chase.revised ? (match.interruptions?.length ? " (DLS)" : " (revised target)") : ""}`;
+  }
+  if (chase) {
+    return `${batting} need ${Math.max(chase.need, 0)} run${chase.need === 1 ? "" : "s"} from ${chase.ballsLeft} ball${chase.ballsLeft === 1 ? "" : "s"}`;
+  }
+  const perOver = ballsPerOverOf(match);
+  const now = inningsSummary(current, perOver);
+  return `${batting} batting · CRR ${rate(now.runs, now.legalBalls, perOver)}`;
 }
 
 // Team slots in batting order, so the side that batted (or will bat) first

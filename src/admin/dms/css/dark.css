@@ -39,9 +39,15 @@
   --warning: #dcae5f;
   --warning-rgb: 220, 174, 95;
 
-  --ball-four: #5a6474;
-  --ball-six: #e4e7ec;
+  --ball-four: #60a5fa;
+  --ball-four-text: #0f172a;
+  --ball-six: #b794f6;
   --ball-six-text: #171a20;
+  --ball-extra: #e8b04b;
+  --ball-extra-rgb: 232, 176, 75;
+  --ball-extra-text: #f0c675;
+
+  --series-slate: #5a6474;
 
   --shadow-card: none;
   --shadow-float: 0 8px 28px rgba(0, 0, 0, 0.55);

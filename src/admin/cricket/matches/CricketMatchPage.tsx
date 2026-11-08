@@ -14,10 +14,9 @@ import { useCricketTournament } from "../../../api/hooks/cricket/useCricketTourn
 import { ListCard } from "../../components/ListCard";
 import { PageHeader, PageHeaderAction } from "../../components/PageHeader";
 import { stepsBackOutOf } from "../../../app-shell/screenTrail";
-import { ShareSheet } from "../ShareMenu";
+import { MatchShareSheet } from "./MatchShareSheet";
 import { useSwipeTabs } from "../../useSwipeTabs";
 import { useTips, type TipStep } from "../TipsTour";
-import { logoFor } from "../tournaments/tournamentArt";
 import { Button } from "../../components/Button";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { matchAccess } from "../canManage";
@@ -33,6 +32,7 @@ import { BallBurst } from "./BallBurst";
 import { MatchStatusBadge } from "./matchUi";
 import { MatchAwards } from "./MatchAwards";
 import { PotmPicker } from "./PotmPicker";
+import { useMatchViewers } from "../../../api/hooks/cricket/useMatchViewers";
 import { MatchInfo } from "./MatchInfo";
 import { MatchInsights } from "./MatchInsights";
 import { LiveView } from "./LiveView";
@@ -43,7 +43,7 @@ import { useMvpLock } from "./useMvpLock";
 import { MatchSquads } from "./MatchSquads";
 import { RescheduleSheet } from "./RescheduleSheet";
 import { existingInput } from "./CricketMatchForm";
-import { editableAfterFinish, formatMatchDate, usePlayerNames } from "./matchUtils";
+import { editableAfterFinish, formatMatchDate, matchHeading, matchHeadingLine, usePlayerNames } from "./matchUtils";
 import { ResultSheet, type ResultSheetStart } from "./result/ResultSheet";
 import { KnockoutPrompt } from "./result/ResultNote";
 import { hasBalls, needsKnockoutWinner } from "./result/resultText";
@@ -75,6 +75,7 @@ export function CricketMatchPage() {
   const [params, setParams] = useSearchParams();
   const location = useLocation();
   const { data: match, isLoading } = useCricketMatch(id);
+  const { data: viewers } = useMatchViewers(id, { live: match?.status === "live" });
   const { data: tournament } = useCricketTournament(match?.tournamentId ?? 0, Boolean(match?.tournamentId));
   const deleteMatch = useDeleteCricketMatch();
   const setScorers = useSetCricketMatchScorers();
@@ -495,6 +496,7 @@ export function CricketMatchPage() {
             <PageHeader
               title="Live Scoring"
               subtitle={`${match.teams[0].name} vs ${match.teams[1].name}`}
+              titleAside={<MatchStatusBadge status={match.status} />}
               back={() => {
                 if (seat.mine) {
                   setLeavingScoreOpen(true);
@@ -512,13 +514,12 @@ export function CricketMatchPage() {
                     onClick={() => navigate(`/matches/${match.id}?tab=scorecard`)}
                   />
                   <PageHeaderAction
-                    icon="fa-solid fa-sliders"
+                    icon="fa-solid fa-gear"
                     label="Match settings"
                     tour="match-settings"
                     active={settingsOpen}
                     onClick={openSettings}
                   />
-                  <MatchStatusBadge status={match.status} />
                 </>
               }
             />
@@ -551,13 +552,20 @@ export function CricketMatchPage() {
           </>
         ) : (
           <>
-            {/* The card below already names both teams, so the header only names
-                them while it's live (when the card is left out). */}
+            {/* A tournament match's header says which round this is, under its
+                tournament. The card below already names both teams, so it
+                only names them while it's live (when the card is left out).
+                A standalone match has no other name, so always gets them. */}
             <PageHeader
               title={
-                match.status === "live" ? `${match.teams[0].name} vs ${match.teams[1].name}` : tournament?.name ?? "Match"
+                match.status === "live" || match.tournamentId === null
+                  ? `${match.teams[0].name} vs ${match.teams[1].name}`
+                  : matchHeading(match)
               }
-              subtitle={match.status === "live" ? tournament?.name ?? "Match" : undefined}
+              subtitle={
+                match.status === "live" || match.tournamentId === null ? matchHeadingLine(match, tournament?.name) : tournament?.name
+              }
+              titleAside={<MatchStatusBadge status={match.status} />}
               back={() => {
                 try {
                   sessionStorage.removeItem(`view_match_${match.id}`);
@@ -573,16 +581,13 @@ export function CricketMatchPage() {
                 else navigate(steps);
               }}
               actions={
-                <>
-                  <PageHeaderAction
-                    icon="fa-solid fa-sliders"
-                    label={canManage ? "Match settings" : "Share match"}
-                    tour="match-settings"
-                    active={settingsOpen}
-                    onClick={openSettings}
-                  />
-                  <MatchStatusBadge status={match.status} />
-                </>
+                <PageHeaderAction
+                  icon={canManage ? "fa-solid fa-gear" : "fa-solid fa-share-nodes"}
+                  label={canManage ? "Match settings" : "Share match"}
+                  tour="match-settings"
+                  active={settingsOpen}
+                  onClick={openSettings}
+                />
               }
             />
             {/* While it's live the Live tab shows the score, so the card is left out. */}
@@ -611,7 +616,7 @@ export function CricketMatchPage() {
                   // No card round the overs, so they use the page's full width.
                   plain={tab === "overs"}
                 >
-                  {tab === "info" && <MatchInfo match={match} tournament={tournament} />}
+                  {tab === "info" && <MatchInfo match={match} nameOf={nameOf} viewers={viewers} tournament={tournament} officials />}
                   {tab === "live" &&
                     (match.status === "live" ? (
                       <>
@@ -674,18 +679,16 @@ export function CricketMatchPage() {
         )}
 
         {settingsOpen && !scoring && (
-          <BottomSheet title={canManage ? "Match settings" : "Match"} icon="fa-solid fa-sliders" onClose={closeSettings}>
+          <BottomSheet title={canManage ? "Match settings" : "Match"} icon={canManage ? "fa-solid fa-gear" : "fa-solid fa-share-nodes"} onClose={closeSettings}>
             {matchSettings}
           </BottomSheet>
         )}
 
         {sharing && (
-          <ShareSheet
-            heading="Share match"
-            path={`/matches/${match.id}`}
-            title={`${match.teams[0].name} vs ${match.teams[1].name}`}
-            text={`${match.status === "live" ? "LIVE: " : ""}${match.teams[0].name} vs ${match.teams[1].name}${tournament ? ` · ${tournament.name}` : ""}`}
-            image={tournament ? logoFor(tournament) : undefined}
+          <MatchShareSheet
+            match={match}
+            tournament={tournament}
+            nameOf={nameOf}
             note={
               match.isPublic
                 ? "Anyone with the link can watch — no sign-in needed."

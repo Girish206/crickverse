@@ -1624,7 +1624,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
       )}
 
       {settingsOpen && (
-        <BottomSheet title="Match settings" icon="fa-solid fa-sliders" onClose={onCloseSettings}>
+        <BottomSheet title="Match settings" icon="fa-solid fa-gear" onClose={onCloseSettings}>
           <h3 className="cricket-sheet-label">Players</h3>
           <div className="cricket-settings-list">
             {(

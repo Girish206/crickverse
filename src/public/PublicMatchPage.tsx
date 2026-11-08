@@ -2,9 +2,10 @@ import { useLayoutEffect, useState } from "react";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { isNotPublic, usePublicMatch, type PublicMatchData } from "../api/hooks/cricket/useCricketPublic";
+import { useMatchViewers } from "../api/hooks/cricket/useMatchViewers";
 import { useNameOf } from "./publicNames";
 import { ListCard } from "../admin/components/ListCard";
-import { ShareSheet } from "../admin/cricket/ShareMenu";
+import { MatchShareSheet } from "../admin/cricket/matches/MatchShareSheet";
 import { logoFor } from "../admin/cricket/tournaments/tournamentArt";
 import { BallBurst } from "../admin/cricket/matches/BallBurst";
 import { Scorecard } from "../admin/cricket/matches/Scorecard";
@@ -12,6 +13,7 @@ import { LiveView } from "../admin/cricket/matches/LiveView";
 import { MatchHero } from "../admin/cricket/matches/MatchHero";
 import { MatchInfo } from "../admin/cricket/matches/MatchInfo";
 import { MatchStatusBadge } from "../admin/cricket/matches/matchUi";
+import { matchHeading, matchHeadingLine } from "../admin/cricket/matches/matchUtils";
 import { PublicShell, PublicState } from "./PublicShell";
 import "../admin/dms/css/adminDisplays.css";
 import "../admin/admin.css";
@@ -65,6 +67,7 @@ export function PublicMatchPage({ id }: { id: number }) {
 
 function MatchView({ data: { match, tournament, players } }: { data: PublicMatchData }) {
   const nameOf = useNameOf(players);
+  const { data: viewers } = useMatchViewers(match.id, { live: match.status === "live", isPublic: true });
   const [params, setParams] = useSearchParams();
   const location = useLocation();
   const [sharing, setSharing] = useState(false);
@@ -101,9 +104,9 @@ function MatchView({ data: { match, tournament, players } }: { data: PublicMatch
       <BallBurst match={match} nameOf={nameOf} />
 
       {/* Tournament logo, the match's status over its title, and Share. The
-          card below names both teams, so the title is the tournament's
-          name, except while live (when the card is left out) or for a
-          standalone match, which has no other name. */}
+          card below names both teams, so the title is the match's round
+          under its tournament, except while live (when the card is left out)
+          or for a standalone match, which has no other name. */}
       <header className="cv-pm-head">
         {/* The match's status rides on the logo as a small tag. */}
         <div className="cv-pm-logo-wrap">
@@ -118,8 +121,8 @@ function MatchView({ data: { match, tournament, players } }: { data: PublicMatch
         </div>
         <div className="cv-pm-head-title">
           {/* A small caps label over the title, as in the app's page headers. */}
-          <small className="cv-pm-eyebrow">{live ? tournament?.name ?? "Match" : tournament ? "Tournament" : "Match"}</small>
-          <h1>{live || !tournament ? `${match.teams[0].name} vs ${match.teams[1].name}` : tournament.name}</h1>
+          <small className="cv-pm-eyebrow">{live || !tournament ? matchHeadingLine(match, tournament?.name) : tournament.name}</small>
+          <h1>{live || !tournament ? `${match.teams[0].name} vs ${match.teams[1].name}` : matchHeading(match)}</h1>
           {tournament?.isPublic && (
             <Link to={`/tournaments/${tournament.id}`} className="cv-pm-head-link">
               View tournament <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
@@ -153,7 +156,7 @@ function MatchView({ data: { match, tournament, players } }: { data: PublicMatch
       <SwipePanels swipe={swipeRef} values={tabs.map((t) => t.value)} current={tab} eager>
         {(tab) => (
           <ListCard title="" bodyClassName={tab === "live" ? "cricket-live-body" : undefined}>
-            {tab === "info" && <MatchInfo match={match} tournament={tournament ?? undefined} />}
+            {tab === "info" && <MatchInfo match={match} nameOf={nameOf} viewers={viewers} tournament={tournament ?? undefined} />}
             {tab === "live" && <LiveView match={match} nameOf={nameOf} />}
             {tab === "scorecard" && <Scorecard match={match} nameOf={nameOf} />}
             {LOCKED_TABS.has(tab) && <SignInToSee label={tabs.find((t) => t.value === tab)!.label} tab={tab} />}
@@ -162,12 +165,10 @@ function MatchView({ data: { match, tournament, players } }: { data: PublicMatch
       </SwipePanels>
 
       {sharing && (
-        <ShareSheet
-          heading="Share match"
-          path={`/matches/${match.id}`}
-          title={`${match.teams[0].name} vs ${match.teams[1].name}`}
-          text={`${match.status === "live" ? "LIVE: " : ""}${match.teams[0].name} vs ${match.teams[1].name}${tournament ? ` · ${tournament.name}` : ""}`}
-          image={tournament ? logoFor(tournament) : undefined}
+        <MatchShareSheet
+          match={match}
+          tournament={tournament}
+          nameOf={nameOf}
           note="Anyone with the link can watch — no sign-in needed."
           onClose={() => setSharing(false)}
         />

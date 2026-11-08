@@ -192,6 +192,9 @@
   font-weight: 700;
   vertical-align: 1px;
 }
+.cricket-q-tag.is-out {
+  background: #6b7280;
+}
 .cricket-seed-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));

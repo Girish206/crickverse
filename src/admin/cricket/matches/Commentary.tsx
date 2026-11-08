@@ -36,13 +36,13 @@ function describe(ball: CricketBall, nameOf: NameOf, seed: number, team: string)
 
   // Leaving without being out.
   if (ball.wicketType === "retired-hurt") {
-    return { lead: "Retired hurt", line: `${nameOf(ball.dismissedId)} has to leave the field`, kind: "extra" };
+    return { lead: "Retired hurt", line: `${nameOf(ball.dismissedId)} has to leave the field`, kind: "retired" };
   }
   if (ball.wicketType === "retired") {
-    return { lead: "Retired", line: `${nameOf(ball.dismissedId)} walks off, not out`, kind: "extra" };
+    return { lead: "Retired", line: `${nameOf(ball.dismissedId)} walks off, not out`, kind: "retired" };
   }
   if (ball.wicketType === "absent-hurt") {
-    return { lead: "Absent hurt", line: `${nameOf(ball.dismissedId)} is unable to bat`, kind: "extra" };
+    return { lead: "Absent hurt", line: `${nameOf(ball.dismissedId)} is unable to bat`, kind: "retired" };
   }
   if (isWicket(ball)) {
     const out = nameOf(ball.dismissedId);
