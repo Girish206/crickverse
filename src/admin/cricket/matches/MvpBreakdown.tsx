@@ -37,6 +37,12 @@ function describe(source: MvpSource): { label: string; icon: string; detail: str
       return { label: "Maidens", icon: "fa-circle", detail: plural(source.count, "maiden") };
     case "catches":
       return { label: "Catches", icon: "fa-hand", detail: plural(source.count, "catch").replace("catchs", "catches") };
+    case "excellentCatches":
+      return { label: "Excellent catch bonus", icon: "fa-hand-sparkles", detail: plural(source.count, "excellent catch").replace("catchs", "catches") };
+    case "droppedCatches":
+      return { label: "Dropped catches", icon: "fa-circle-xmark", detail: plural(source.count, "dropped catch").replace("catchs", "catches") };
+    case "misfields":
+      return { label: "Misfields", icon: "fa-triangle-exclamation", detail: plural(source.count, "misfield") };
     case "stumpings":
       return { label: "Stumpings", icon: "fa-bolt", detail: plural(source.count, "stumping") };
     case "runOuts":
@@ -103,8 +109,8 @@ export function MvpSources({
 
 // The order sources are listed in when players are set side by side, and which
 // of them are a count worth showing under the points.
-const SOURCE_ORDER: MvpSource["kind"][] = ["runs", "fours", "sixes", "wickets", "hauls", "maidens", "par", "catches", "stumpings", "runOuts", "floor"];
-const COUNTED = new Set<MvpSource["kind"]>(["runs", "fours", "sixes", "wickets", "maidens", "catches", "stumpings", "runOuts"]);
+const SOURCE_ORDER: MvpSource["kind"][] = ["runs", "fours", "sixes", "wickets", "hauls", "maidens", "par", "catches", "excellentCatches", "stumpings", "runOuts", "droppedCatches", "misfields", "floor"];
+const COUNTED = new Set<MvpSource["kind"]>(["runs", "fours", "sixes", "wickets", "maidens", "catches", "excellentCatches", "stumpings", "runOuts", "droppedCatches", "misfields"]);
 
 // Marks the highest of a row and dims the rest, unless everyone is level.
 const leadClass = (value: number, values: number[]) => {

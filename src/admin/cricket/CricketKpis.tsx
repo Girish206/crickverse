@@ -15,13 +15,16 @@ export interface CricketKpi {
 export function CricketKpis({
   items,
   variant = "tiles",
+  art,
 }: {
   items: CricketKpi[];
   variant?: "tiles" | "strip" | "hero";
+  // The hero's illustration (hero-art-* in cricket-matches.css).
+  art?: string;
 }) {
   if (variant === "hero") {
     return (
-      <section className="cricket-home-hero cricket-kpi-hero">
+      <section className={`cricket-home-hero ${art ? `hero-art-${art} ` : ""}cricket-kpi-hero`}>
         <div className="cricket-home-hero-stats">
           {items.map((item) => (
             <div key={item.label} title={item.hint}>

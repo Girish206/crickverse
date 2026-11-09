@@ -63,7 +63,7 @@ export function CricketPlayerProfile({
     <div className={`cricket-profile ${cards ? "is-cards" : ""}`.trim()}>
       {/* The compact hero: who they are, their career in four numbers, and
           their tournaments, friendlies and follows as the last line. */}
-      <section className="cricket-home-hero cricket-profile-hero cv-hero-compact">
+      <section className="cricket-home-hero hero-art-career cricket-profile-hero cv-hero-compact">
         <div className="cricket-home-hero-top">
           <PlayerAvatar
             name={player.name}

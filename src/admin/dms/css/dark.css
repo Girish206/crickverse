@@ -28,7 +28,7 @@
      read on the charcoal. Buttons and highlights keep the red (--primary-fill). */
   --primary: var(--brand-accent-bright);
   --primary-rgb: var(--brand-accent-bright-rgb);
-  --hero-fill: var(--adm-raised);
+  --hero-fill: linear-gradient(120deg, #962a23 45%, #5e1712);
   --secondary: #aab3c2;
   --secondary-rgb: 170, 179, 194;
 
@@ -39,13 +39,13 @@
   --warning: #dcae5f;
   --warning-rgb: 220, 174, 95;
 
-  --ball-four: #60a5fa;
+  --ball-four: #38bdf8;
   --ball-four-text: #0f172a;
-  --ball-six: #b794f6;
+  --ball-six: #fbbf24;
   --ball-six-text: #171a20;
-  --ball-extra: #e8b04b;
-  --ball-extra-rgb: 232, 176, 75;
-  --ball-extra-text: #f0c675;
+  --ball-extra: #cbd5e1;
+  --ball-extra-rgb: 203, 213, 225;
+  --ball-extra-text: #d8dee8;
 
   --series-slate: #5a6474;
 

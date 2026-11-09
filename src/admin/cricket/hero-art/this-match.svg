@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 96" fill="#fff">
+  <!-- Clean bowled: the ball into the stumps, the bails in the air. -->
+  <path d="M130 88h270" stroke="#fff" stroke-width="2" stroke-opacity=".6"/>
+  <path d="M312 30h8v54l-4 8-4-8z" fill-opacity=".8"/>
+  <path d="M334 30h8v54l-4 8-4-8z" transform="rotate(14 338 88)"/>
+  <path d="M356 30h8v54l-4 8-4-8z" fill-opacity=".8" transform="rotate(5 360 88)"/>
+  <rect x="306" y="12" width="26" height="6" rx="3" transform="rotate(-30 319 15)"/>
+  <rect x="358" y="6" width="26" height="6" rx="3" transform="rotate(34 371 9)"/>
+  <path d="M340 18l4-10M326 26l-8-6M364 24l9-5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+  <!-- The ball, its line trailing behind it. -->
+  <circle cx="290" cy="58" r="14"/>
+  <clipPath id="ball"><circle cx="290" cy="58" r="14"/></clipPath>
+  <g clip-path="url(#ball)" fill="none" stroke="#000" stroke-opacity=".4" stroke-width="1.5" stroke-linecap="round">
+    <path d="M279 46q11 11 23 23M276 50q11 11 23 23"/>
+  </g>
+  <path d="M176 50h86M206 60h50M150 70h108" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="26 9"/>
+</svg>

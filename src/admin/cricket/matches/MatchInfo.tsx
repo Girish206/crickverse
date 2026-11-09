@@ -41,7 +41,10 @@ function eventText(event: CricketMatchEvent, nameOf: NameOf) {
     case "ball-corrected":
       return "A ball was corrected";
     case "squad-change":
+      if (event.toId === null) return `${nameOf(event.fromId)} left the side`;
       return event.fromId === null ? `${nameOf(event.toId)} joined the side` : `${nameOf(event.toId)} came in for ${nameOf(event.fromId)}`;
+    case "squad-move":
+      return `${nameOf(event.toId)} moved to ${event.toName ?? "the other side"}`;
     case "rain":
       return event.overs === null ? "Rain: no more play" : `Rain: reduced to ${event.overs} overs`;
     case "reopened":
@@ -64,7 +67,8 @@ function InningsNotes({ match, innings, index, nameOf }: { match: CricketMatch; 
   const phases = plan
     ? [
         powerplay && { label: "Powerplay", overs: overRange(1, plan.powerplay), ...powerplay },
-        middle && { label: "Middle overs", overs: overRange(plan.powerplay + 1, plan.middleEnd), ...middle },
+        // With no powerplay before them they aren't the "middle" of anything.
+        middle && { label: plan.powerplay ? "Middle overs" : "Main overs", overs: overRange(plan.powerplay + 1, plan.middleEnd), ...middle },
         death && { label: "Death overs", overs: overRange(plan.middleEnd + 1, plan.limit), ...death },
       ].filter((phase) => phase !== null)
     : [];
@@ -155,16 +159,16 @@ function InningsNotes({ match, innings, index, nameOf }: { match: CricketMatch; 
   );
 }
 
-// Each innings' start, end and minutes taken, by the bowling side — for
-// their over rate — in one compact table. It started with its first ball
-// and ended when it was closed; times not recorded (older matches) show "–".
+// Each innings' start, end and minutes taken, headed by the batting side
+// whose scores sit below it. It started with its first ball and ended when
+// it was closed; times not recorded (older matches) show "–".
 function MatchNotes({ match, nameOf }: { match: CricketMatch; nameOf: NameOf }) {
   if (match.innings.length === 0) return null;
   return (
     <>
       <h2 className="cricket-info-title mt-3">Match notes</h2>
-      {/* One card, a row per innings: who bowled (to whom) and when on the
-          left, the time it took and its overs on the right. */}
+      {/* One card, a row per innings: who batted (and who bowled) and when
+          on the left, the time it took and its overs on the right. */}
       <div className="cricket-crease cricket-notes">
         {match.innings.map((innings, index) => {
           const startedAt = innings.balls.find((ball) => ball.at)?.at ?? null;
@@ -175,8 +179,8 @@ function MatchNotes({ match, nameOf }: { match: CricketMatch; nameOf: NameOf }) 
             <div key={index} className="cricket-notes-innings">
               <div className="cricket-notes-row">
                 <div className="cricket-notes-side">
-                  <strong>{match.teams[1 - innings.battingTeam].name} bowling</strong>
-                  <small>to {match.teams[innings.battingTeam].name}</small>
+                  <strong>{match.teams[innings.battingTeam].name} batting</strong>
+                  <small>{match.teams[1 - innings.battingTeam].name} bowling</small>
                   <span className="cricket-notes-when">
                     <i className="fa-regular fa-clock" aria-hidden="true"></i>
                     {startedAt ? timeText(startedAt) : "–"}
@@ -318,19 +322,28 @@ export function MatchInfo({
       {viewers && (
         <>
           <h2 className="cricket-info-title mt-3">Viewers</h2>
-          <dl className="cricket-info-card">
+          <dl className="cricket-viewers">
             {match.status === "live" && (
-              <div className="cricket-info-row">
-                <dt>Watching now</dt>
+              <div className="cricket-viewers-stat is-live">
+                <dt>
+                  <span className="cricket-live-dot" aria-hidden="true"></span>
+                  Watching now
+                </dt>
                 <dd>{viewers.watching}</dd>
               </div>
             )}
-            <div className="cricket-info-row">
-              <dt>Most at once</dt>
+            <div className="cricket-viewers-stat">
+              <dt>
+                <i className="fa-solid fa-arrow-trend-up" aria-hidden="true"></i>
+                Most at once
+              </dt>
               <dd>{viewers.peak}</dd>
             </div>
-            <div className="cricket-info-row">
-              <dt>Unique viewers</dt>
+            <div className="cricket-viewers-stat">
+              <dt>
+                <i className="fa-solid fa-users" aria-hidden="true"></i>
+                Unique viewers
+              </dt>
               <dd>{viewers.unique}</dd>
             </div>
           </dl>

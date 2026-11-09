@@ -8,6 +8,7 @@ import type {
   CricketBall,
   CricketBallType,
   CricketLastLeaders,
+  CricketFieldingLapse,
   CricketMatch,
   CricketMatchSquad,
   CricketMatchStage,
@@ -358,6 +359,9 @@ export interface CricketBallEdit {
   wicketType?: CricketWicketType;
   boundary?: boolean | null;
   bowlerId?: number;
+  excellentCatch?: boolean;
+  // A dropped catch or misfield on this ball; null takes it off.
+  fieldingLapse?: { type: CricketFieldingLapse; fielderId: number } | null;
 }
 
 export function useEditCricketBall() {
@@ -374,6 +378,16 @@ export function useChangeCricketSquad() {
     ({ id, ...input }: { id: number; team: number; addId: number; replaceId: number | null }) =>
       apiClient.post(url(id, "/squad"), input),
   );
+}
+
+// Takes someone who hasn't played out of a live match's side.
+export function useRemoveCricketPlayer() {
+  return useMatchMutation(({ id, playerId }: { id: number; playerId: number }) => apiClient.delete(url(id, `/squad/${playerId}`)));
+}
+
+// Sends someone who hasn't played to the other side of a live match.
+export function useMoveCricketPlayer() {
+  return useMatchMutation(({ id, playerId }: { id: number; playerId: number }) => apiClient.post(url(id, `/squad/${playerId}/move`)));
 }
 
 // Only one person scores a match at a time, and the seat stays theirs —

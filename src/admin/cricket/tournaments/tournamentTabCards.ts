@@ -31,12 +31,13 @@ import { tournamentStatGroups } from "./TournamentStats";
 
 // What each tab of a tournament shares: its own picture, title and message.
 
-export type TournamentShareTab = "info" | "matches" | "teams" | "points" | "heroes" | "stats" | "totals";
+export type TournamentShareTab = "info" | "matches" | "teams" | "players" | "points" | "heroes" | "stats" | "totals";
 
 export const TOURNAMENT_SHARE_HEADINGS: Record<TournamentShareTab, string> = {
   info: "Share tournament",
   matches: "Share matches",
   teams: "Share teams",
+  players: "Share players",
   points: "Share points table",
   heroes: "Share heroes",
   stats: "Share leaderboard",
@@ -505,6 +506,8 @@ export function tournamentTabShare(tab: TournamentShareTab, data: TournamentCard
     }
     case "teams":
       return { subject: "teams", text: `The teams in ${name} on RunMitra`, draw: tournament.teams.length > 0 ? () => drawTeamsCard(data) : undefined };
+    case "players":
+      return { subject: "players", text: `The players in ${name} on RunMitra` };
     case "points": {
       const standings = shareableStandings(tournament, matches);
       return {

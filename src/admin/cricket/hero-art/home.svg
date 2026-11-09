@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 96" fill="#fff">
+  <!-- Morning at the ground: the sun coming up behind the stumps. -->
+  <path d="M266 72a34 34 0 0 1 68 0z" fill-opacity=".45"/>
+  <path d="M300 28V12M264 39l-12-12M336 39l12-12M242 62l-17-5M358 62l17-5" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-opacity=".75"/>
+  <!-- The ground fades out to the left, so it has no hard edge on wide cards. -->
+  <linearGradient id="fade"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".45" stop-color="#fff"/></linearGradient>
+  <path d="M0 96V78Q200 62 400 78V96z" fill="url(#fade)" fill-opacity=".35"/>
+  <path d="M0 78Q200 62 400 78" fill="none" stroke="url(#fade)" stroke-width="2"/>
+  <path d="M284 46h6v36l-3 6-3-6zM297 46h6v36l-3 6-3-6zM310 46h6v36l-3 6-3-6z"/>
+  <rect x="283" y="41" width="17" height="3.5" rx="1.7"/>
+  <rect x="300" y="41" width="17" height="3.5" rx="1.7"/>
+  <!-- A cloud and two birds drifting across. -->
+  <path d="M148 38h46a9 9 0 0 0 1-18 15 15 0 0 0-28-5 12 12 0 0 0-19 23z" fill-opacity=".5"/>
+  <path d="M212 26q5-6 10 0q5-6 10 0M240 16q4-5 8 0q4-5 8 0" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+</svg>

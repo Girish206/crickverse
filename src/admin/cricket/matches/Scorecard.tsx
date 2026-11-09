@@ -18,7 +18,17 @@ import {
 } from "../stats";
 import { NoPlayNote } from "./result/ResultNote";
 
-export function ScrollableOverBalls({ children, className = "" }: { children: ReactNode; className?: string }) {
+// When scrollEndKey changes (say, the ball count), the row jumps to its end;
+// a viewer who has scrolled back isn't moved until then.
+export function ScrollableOverBalls({
+  children,
+  className = "",
+  scrollEndKey,
+}: {
+  children: ReactNode;
+  className?: string;
+  scrollEndKey?: number;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const [overflow, setOverflow] = useState({ left: false, right: false });
 
@@ -43,6 +53,11 @@ export function ScrollableOverBalls({ children, className = "" }: { children: Re
       observer.disconnect();
     };
   }, [update, children]);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (el && scrollEndKey !== undefined) el.scrollLeft = el.scrollWidth;
+  }, [scrollEndKey]);
 
   return (
     <div

@@ -83,6 +83,7 @@ export function CricketPlayersList() {
         <>
           <CricketKpis
             variant="hero"
+            art="players"
             items={[
               { label: "Players", value: players.length, icon: "fa-users", tone: "total" },
               { label: "In a tournament", value: pickedCount, icon: "fa-trophy", tone: "active" },

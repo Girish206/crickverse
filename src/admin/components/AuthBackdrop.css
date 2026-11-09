@@ -1,0 +1,735 @@
+/* The sign-in page's background. Without motion it rests on its finished
+   picture: everything that moves is in the no-preference block at the end. */
+
+.auth-bg {
+  --art-kit: #cdd2db;
+  --art-pad: #ffffff;
+  --art-shoe: #8a92a0;
+  --art-skin: #c08a5e;
+  --art-jersey: var(--primary);
+  --art-jersey-away: #33517e;
+  --art-helmet: #2a3a63;
+  --art-grille: #6b7484;
+  --art-grip: #454d5c;
+  --art-wood: #dcb781;
+  --art-wood-dark: #a97f48;
+  --art-glove: #f4f5f7;
+  --art-ball: #d7261e;
+  --art-gold: #e3af3e;
+  --art-turf: #c9e0b8;
+  --art-infield: rgba(255, 255, 255, 0.22);
+  --art-mow: rgba(255, 255, 255, 0.2);
+  --art-clay: #e6d2a8;
+  --art-sky-top: #d9e0ec;
+  --art-sky-bottom: var(--adm-bg);
+  --art-flood: rgba(255, 255, 255, 0.95);
+  --art-glow-away: rgba(51, 81, 126, 0.16);
+  --art-crowd-opacity: 0.3;
+  /* The ground's size and centre; the stands are cut out around them. */
+  --ground-size: min(165vw, 900px);
+  --ground-top: 31%;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  color: var(--adm-text);
+  background:
+    radial-gradient(55% 45% at 0% 0%, var(--art-flood), transparent 72%),
+    radial-gradient(55% 45% at 100% 0%, var(--art-flood), transparent 72%),
+    radial-gradient(60% 55% at 0% 100%, rgba(var(--primary-rgb), 0.16), transparent 72%),
+    radial-gradient(60% 55% at 100% 100%, var(--art-glow-away), transparent 72%),
+    linear-gradient(180deg, var(--art-sky-top), var(--art-sky-bottom));
+}
+
+/* The stands: one tile of coloured dots, so the crowd costs a single static
+   image however big the screen is. */
+.auth-bg-crowd {
+  --crowd-edge: calc(var(--ground-size) * 0.495);
+  position: absolute;
+  inset: 0;
+  opacity: var(--art-crowd-opacity);
+  background-size: 30px 30px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Cg fill-opacity='.75'%3E%3Ccircle cx='7' cy='7' r='3' fill='%23d7261e'/%3E%3Ccircle cx='21' cy='7' r='3' fill='%2333517e'/%3E%3Ccircle cx='35' cy='7' r='3' fill='%23e3af3e'/%3E%3Ccircle cx='49' cy='7' r='3' fill='%238a92a0'/%3E%3Ccircle cx='14' cy='21' r='3' fill='%238a92a0'/%3E%3Ccircle cx='28' cy='21' r='3' fill='%23d7261e'/%3E%3Ccircle cx='42' cy='21' r='3' fill='%2333517e'/%3E%3Ccircle cx='56' cy='21' r='3' fill='%23e3af3e'/%3E%3Ccircle cx='0' cy='21' r='3' fill='%23e3af3e'/%3E%3Ccircle cx='7' cy='35' r='3' fill='%2333517e'/%3E%3Ccircle cx='21' cy='35' r='3' fill='%23e3af3e'/%3E%3Ccircle cx='35' cy='35' r='3' fill='%238a92a0'/%3E%3Ccircle cx='49' cy='35' r='3' fill='%23d7261e'/%3E%3Ccircle cx='14' cy='49' r='3' fill='%23e3af3e'/%3E%3Ccircle cx='28' cy='49' r='3' fill='%238a92a0'/%3E%3Ccircle cx='42' cy='49' r='3' fill='%23d7261e'/%3E%3Ccircle cx='56' cy='49' r='3' fill='%2333517e'/%3E%3Ccircle cx='0' cy='49' r='3' fill='%2333517e'/%3E%3C/g%3E%3C/svg%3E");
+  -webkit-mask-image: radial-gradient(circle at 50% var(--ground-top), transparent var(--crowd-edge), #000 calc(var(--crowd-edge) + 1px));
+  mask-image: radial-gradient(circle at 50% var(--ground-top), transparent var(--crowd-edge), #000 calc(var(--crowd-edge) + 1px));
+}
+
+:root[data-bs-theme="dark"] .auth-bg {
+  --art-kit: #4b5262;
+  --art-pad: #b4bac5;
+  --art-shoe: #2c313b;
+  --art-jersey-away: #3f659c;
+  --art-helmet: #33487c;
+  --art-grille: #9aa3b2;
+  --art-grip: #262b35;
+  --art-glove: #c8cdd6;
+  --art-turf: #17301f;
+  --art-infield: rgba(255, 255, 255, 0.03);
+  --art-mow: rgba(255, 255, 255, 0.028);
+  --art-clay: #4a3f2b;
+  --art-sky-top: #182236;
+  --art-flood: rgba(126, 158, 220, 0.2);
+  --art-glow-away: rgba(63, 101, 156, 0.2);
+  --art-crowd-opacity: 0.26;
+}
+
+/* The ground: centred behind the column on a wide screen, behind the logo and
+   the players on a phone, where the form covers the lower half. */
+.auth-bg-ground {
+  position: absolute;
+  top: var(--ground-top);
+  left: 50%;
+  width: var(--ground-size);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  fill: none;
+}
+
+.auth-bg-turf {
+  fill: var(--art-turf);
+}
+
+.auth-bg-mow {
+  fill: var(--art-mow);
+}
+
+.auth-bg-infield {
+  fill: var(--art-infield);
+}
+
+/* Advertising boards round the rope, in alternating colours. */
+.auth-bg-boards {
+  stroke: var(--primary-fill);
+  stroke-width: 14;
+  stroke-dasharray: 1 1;
+  stroke-opacity: 0.75;
+}
+
+.auth-bg-line {
+  stroke: currentColor;
+  stroke-opacity: 0.16;
+  stroke-width: 1.5;
+}
+
+.auth-bg-rope {
+  stroke: #fff;
+  stroke-opacity: 0.8;
+  stroke-width: 3;
+}
+
+.auth-bg-line-dashed {
+  stroke-dasharray: 3 8;
+  stroke-linecap: round;
+  stroke-opacity: 0.24;
+}
+
+.auth-bg-zone {
+  stroke: currentColor;
+  stroke-opacity: 0.05;
+  stroke-width: 1;
+}
+
+.auth-bg-pitch {
+  fill: var(--art-clay);
+  stroke: currentColor;
+  stroke-opacity: 0.16;
+  stroke-width: 1.5;
+}
+
+.auth-bg-fielder {
+  fill: currentColor;
+  fill-opacity: 0.2;
+}
+
+.auth-bg-shot-line {
+  stroke: var(--primary);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-opacity: 0.4;
+}
+
+.auth-bg-shot-six .auth-bg-shot-line {
+  stroke-width: 3;
+  stroke-opacity: 0.7;
+}
+
+.auth-bg-shot-run .auth-bg-shot-line {
+  stroke: currentColor;
+  stroke-opacity: 0.22;
+}
+
+.auth-bg-shot-ball {
+  stroke: var(--primary);
+  stroke-width: 11;
+  stroke-linecap: round;
+  stroke-dasharray: 0.01 200;
+  opacity: 0;
+}
+
+.auth-bg-shot-run .auth-bg-shot-ball {
+  stroke: currentColor;
+  stroke-width: 8;
+}
+
+/* The illustrations: flat colour, limbs as thick round-ended lines. */
+.auth-art {
+  position: absolute;
+  height: auto;
+  overflow: visible;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.art-shadow {
+  fill: currentColor;
+  fill-opacity: 0.1;
+}
+
+.art-shadow-line {
+  stroke: currentColor;
+  stroke-opacity: 0.2;
+  stroke-width: 5;
+}
+
+.art-leg {
+  stroke: var(--art-kit);
+  stroke-width: 27;
+}
+
+.art-pad {
+  stroke: var(--art-pad);
+  stroke-width: 29;
+}
+
+.art-shoe {
+  stroke: var(--art-shoe);
+  stroke-width: 15;
+}
+
+.art-torso {
+  stroke: var(--art-jersey);
+  stroke-width: 48;
+}
+
+.art-torso-away {
+  stroke: var(--art-jersey-away);
+}
+
+.art-skin {
+  fill: var(--art-skin);
+}
+
+.art-arm {
+  stroke: var(--art-skin);
+  stroke-width: 15;
+}
+
+.art-helmet {
+  fill: var(--art-helmet);
+}
+
+.art-helmet-band {
+  stroke: #fff;
+  stroke-opacity: 0.25;
+  stroke-width: 5;
+}
+
+.art-grille {
+  stroke: var(--art-grille);
+  stroke-width: 3.5;
+}
+
+.art-grille-thick {
+  stroke: var(--art-grille);
+  stroke-width: 5;
+}
+
+.art-cap {
+  fill: var(--art-jersey-away);
+}
+
+.art-cap-brim {
+  stroke: var(--art-jersey-away);
+  stroke-width: 8;
+}
+
+.art-glove {
+  fill: var(--art-glove);
+}
+
+.art-bat-handle {
+  stroke: var(--art-grip);
+  stroke-width: 10;
+}
+
+.art-bat-blade {
+  stroke: var(--art-wood);
+  stroke-width: 28;
+  stroke-linecap: square;
+}
+
+.art-wood {
+  fill: var(--art-wood);
+}
+
+/* So the two crossed bats read as two. */
+.art-bat-outlined {
+  stroke: var(--adm-bg);
+  stroke-width: 4;
+}
+
+.art-wood-dark {
+  fill: var(--art-wood-dark);
+}
+
+.art-grip {
+  fill: var(--art-grip);
+}
+
+.art-gold {
+  fill: var(--art-gold);
+}
+
+.art-trophy-handle {
+  stroke: var(--art-gold);
+  stroke-width: 8;
+}
+
+.art-ball {
+  fill: var(--art-ball);
+}
+
+.art-bowler-flight {
+  opacity: 0;
+}
+
+.art-seam {
+  stroke: #fff;
+  stroke-opacity: 0.8;
+  stroke-width: 2;
+}
+
+.art-stitch {
+  stroke: #fff;
+  stroke-opacity: 0.55;
+  stroke-width: 2;
+  stroke-dasharray: 0.01 6;
+}
+
+/* Where they go. Phones and small tablets: the players at the top corners and
+   a little kit in the gap above the card. */
+.auth-art-trophy,
+.auth-art-bats,
+.auth-art-spin {
+  display: none;
+}
+
+.auth-art-batter,
+.auth-art-bowler {
+  top: 28px;
+  width: 112px;
+}
+
+.auth-art-batter {
+  left: 26px;
+}
+
+.auth-art-bowler {
+  right: 22px;
+}
+
+.auth-art-stumps,
+.auth-art-helmet {
+  top: 30%;
+  width: 72px;
+}
+
+.auth-art-stumps {
+  left: 14%;
+}
+
+.auth-art-helmet {
+  right: 14%;
+  top: 32%;
+}
+
+@media (max-width: 939.98px) {
+  /* A longer form pushes the card up to where they are. */
+  .auth-bg-quiet .auth-art {
+    display: none;
+  }
+}
+
+/* The card reaches up to the kit on shorter phones. */
+@media (max-width: 939.98px) and (max-height: 759.98px) {
+  .auth-art-stumps,
+  .auth-art-helmet {
+    display: none;
+  }
+}
+
+@media (max-width: 939.98px) and (max-height: 679.98px) {
+  .auth-art {
+    display: none;
+  }
+}
+
+/* Room beside the form: the ground behind it, a player on each side, facing
+   each other, with the kit above them. */
+@media (min-width: 940px) {
+  .auth-bg {
+    --ground-size: min(112vh, 960px);
+    --ground-top: 50%;
+    --player: min(24vw, 46vh, 400px);
+    --gutter: calc(50% - 210px);
+  }
+
+  .auth-art-batter,
+  .auth-art-bowler {
+    top: auto;
+    bottom: 5%;
+    width: var(--player);
+  }
+
+  .auth-art-batter {
+    left: calc((var(--gutter) - var(--player)) / 2);
+  }
+
+  .auth-art-bowler {
+    right: calc((var(--gutter) - var(--player)) / 2);
+  }
+
+  .auth-art-bats,
+  .auth-art-spin {
+    display: block;
+  }
+
+  .auth-art-bats {
+    top: 8%;
+    left: 7vw;
+    width: 118px;
+  }
+
+  .auth-art-stumps {
+    top: 7%;
+    left: auto;
+    right: 7vw;
+    width: 112px;
+  }
+
+  .auth-art-spin {
+    top: 31%;
+    left: 20vw;
+    width: 46px;
+  }
+
+  .auth-art-helmet {
+    display: none;
+  }
+}
+
+@media (min-width: 1240px) and (min-height: 780px) {
+  .auth-art-trophy,
+  .auth-art-helmet {
+    display: block;
+  }
+
+  .auth-art-trophy {
+    top: 11%;
+    left: 20vw;
+    width: 92px;
+  }
+
+  .auth-art-helmet {
+    top: 28%;
+    right: 19vw;
+    width: 112px;
+  }
+
+  .auth-art-spin {
+    top: 36%;
+    left: 8vw;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .auth-bg-shot-line {
+    stroke-dasharray: 100;
+    animation: auth-bg-shot 14s linear var(--delay) infinite both;
+  }
+
+  .auth-bg-shot-ball {
+    animation: auth-bg-ball 14s linear var(--delay) infinite both;
+  }
+
+  .auth-bg-fielder {
+    animation: auth-bg-pulse 5s ease-in-out var(--delay) infinite;
+  }
+
+  .auth-art-bats,
+  .auth-art-helmet,
+  .auth-art-trophy,
+  .auth-art-stumps {
+    animation: auth-art-float 7s ease-in-out var(--delay) infinite alternate;
+  }
+
+  .auth-art-spin {
+    animation: auth-art-spin 9s linear infinite;
+  }
+
+  /* One 7s ball: the bowler lets go, it crosses behind the form, the batter
+     hits it. Both loops are the same length, so they stay in step. */
+  .art-bowler-arm {
+    transform-box: view-box;
+    transform-origin: 136px 108px;
+    animation: art-bowler-arm 7s ease-in-out infinite;
+  }
+
+  .art-bowler-held {
+    animation: art-bowler-held 7s step-end infinite;
+  }
+
+  .art-bowler-flight {
+    animation: art-bowler-flight 7s linear infinite;
+  }
+
+  .art-batter-arms {
+    transform-box: view-box;
+    transform-origin: 116px 108px;
+    animation: art-batter-arms 7s ease-in-out infinite;
+  }
+
+  .art-batter-bat {
+    transform-box: view-box;
+    transform-origin: 168px 152px;
+    animation: art-batter-bat 7s ease-in-out infinite;
+  }
+
+  .art-batter-ball {
+    animation: art-batter-ball 7s linear infinite;
+  }
+
+  .art-bail-left,
+  .art-bail-right {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .art-bail-left {
+    animation: art-bail-left 7s ease-out infinite;
+  }
+
+  .art-bail-right {
+    animation: art-bail-right 7s ease-out infinite;
+  }
+}
+
+@keyframes auth-bg-shot {
+  0% {
+    stroke-dashoffset: 100;
+    opacity: 1;
+  }
+  10%,
+  74% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  90%,
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+/* The ball at the head of the shot, gone once it reaches the end. */
+@keyframes auth-bg-ball {
+  0% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  10% {
+    stroke-dashoffset: -100;
+    opacity: 1;
+  }
+  12%,
+  100% {
+    stroke-dashoffset: -100;
+    opacity: 0;
+  }
+}
+
+@keyframes auth-bg-pulse {
+  0%,
+  100% {
+    fill-opacity: 0.12;
+  }
+  50% {
+    fill-opacity: 0.3;
+  }
+}
+
+@keyframes auth-art-float {
+  from {
+    transform: translateY(-8px);
+  }
+  to {
+    transform: translateY(8px);
+  }
+}
+
+@keyframes auth-art-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* -190deg looks the same as 170deg, so the loop has no jump. */
+@keyframes art-bowler-arm {
+  0%,
+  12% {
+    transform: rotate(170deg);
+  }
+  28% {
+    transform: rotate(0deg);
+  }
+  40%,
+  100% {
+    transform: rotate(-190deg);
+  }
+}
+
+@keyframes art-bowler-held {
+  0% {
+    opacity: 1;
+  }
+  28% {
+    opacity: 0;
+  }
+}
+
+@keyframes art-bowler-flight {
+  0%,
+  27.9% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  28% {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+  36% {
+    opacity: 1;
+    transform: translate(-420px, 200px);
+  }
+  36.1%,
+  100% {
+    opacity: 0;
+    transform: translate(-420px, 200px);
+  }
+}
+
+@keyframes art-batter-arms {
+  0%,
+  38% {
+    transform: rotate(90deg);
+  }
+  46% {
+    transform: rotate(0deg);
+  }
+  54%,
+  76% {
+    transform: rotate(-95deg);
+  }
+  100% {
+    transform: rotate(90deg);
+  }
+}
+
+@keyframes art-batter-bat {
+  0%,
+  38% {
+    transform: rotate(90deg);
+  }
+  46% {
+    transform: rotate(0deg);
+  }
+  54%,
+  76% {
+    transform: rotate(-95deg);
+  }
+  100% {
+    transform: rotate(90deg);
+  }
+}
+
+@keyframes art-batter-ball {
+  0%,
+  35.9% {
+    opacity: 0;
+    transform: translate(360px, -40px);
+  }
+  36% {
+    opacity: 1;
+    transform: translate(360px, -40px);
+  }
+  46% {
+    opacity: 1;
+    transform: translate(0, 0);
+  }
+  58% {
+    opacity: 1;
+    transform: translate(240px, -420px);
+  }
+  58.1%,
+  100% {
+    opacity: 0;
+    transform: translate(240px, -420px);
+  }
+}
+
+@keyframes art-bail-left {
+  0%,
+  62%,
+  96%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 1;
+  }
+  70% {
+    transform: translate(-20px, -34px) rotate(-120deg);
+    opacity: 1;
+  }
+  84% {
+    transform: translate(-34px, 96px) rotate(-260deg);
+    opacity: 0;
+  }
+  95% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 0;
+  }
+}
+
+@keyframes art-bail-right {
+  0%,
+  62%,
+  96%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 1;
+  }
+  70% {
+    transform: translate(22px, -40px) rotate(130deg);
+    opacity: 1;
+  }
+  84% {
+    transform: translate(36px, 96px) rotate(280deg);
+    opacity: 0;
+  }
+  95% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 0;
+  }
+}

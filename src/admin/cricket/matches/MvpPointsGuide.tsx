@@ -186,6 +186,27 @@ const GROUPS: { title: string; tone: string; icon: string; intro?: string; items
         detail: "The two fielders split the wicket's value.",
         example: `Running out an opener in a T20 earns ${wicketPoints(T20) / 2} each.`,
       },
+      {
+        label: "Excellent catch",
+        icon: "fa-hand-sparkles",
+        points: shown(MVP_POINTS.excellentCatchBonus),
+        detail: "A bonus on top of the catch's own points, when the scorer marks the catch as excellent.",
+        example: `An excellent catch of an opener in a T20 earns ${catchPoints(T20, 1)} + ${MVP_POINTS.excellentCatchBonus} = ${num(catchPoints(T20, 1) + MVP_POINTS.excellentCatchBonus)}.`,
+      },
+      {
+        label: "Dropped catch",
+        icon: "fa-circle-xmark",
+        points: `−${MVP_POINTS.droppedCatchPenalty}`,
+        detail: "Taken off the points of the fielder the scorer names. It's the same whichever batter was let off.",
+        example: `A fielder with 1 catch of an opener in a T20 and 1 dropped catch ends on ${num(catchPoints(T20, 1) - MVP_POINTS.droppedCatchPenalty)} fielding points.`,
+      },
+      {
+        label: "Misfield",
+        icon: "fa-triangle-exclamation",
+        points: `−${MVP_POINTS.misfieldPenalty}`,
+        detail: "Taken off the points of the fielder the scorer names, however many runs it cost.",
+        example: `2 misfields cost ${num(2 * MVP_POINTS.misfieldPenalty)} points.`,
+      },
     ],
   },
   {
@@ -280,7 +301,7 @@ export function MvpPointsTable() {
         <li>
           <i className="fa-solid fa-circle-info" aria-hidden="true"></i>
           Batting and bowling points can't go below 0, but they can drop during a live match. Best batter and bowler go by
-          batting and bowling points.
+          batting and bowling points. Fielding points can go below 0 after a dropped catch or misfield.
           {/* With pressure back on, add: Maidens and wicket hauls aren't multiplied by pressure. */}
         </li>
         <li>

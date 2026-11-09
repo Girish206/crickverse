@@ -45,6 +45,7 @@ export function CricketDashboard() {
       <div className="cricket-home">
         <CricketKpis
           variant="hero"
+          art="dashboard"
           items={[
             { label: "Players", value: players?.length ?? 0, icon: "fa-users", tone: "total" },
             { label: "Tournaments", value: tournaments?.length ?? 0, icon: "fa-trophy", tone: "active" },

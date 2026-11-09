@@ -94,6 +94,70 @@ button.cricket-chip-btn:disabled {
   margin: 0;
 }
 
+/* Manage squads: each side's players, with what can be done to each. */
+.cricket-manage-add {
+  display: block;
+  width: 100%;
+  margin: 10px 0;
+  padding: 9px 12px;
+  border: 1px dashed rgba(var(--primary-rgb), 0.5);
+  border-radius: var(--radius-md);
+  background: rgba(var(--primary-rgb), 0.06);
+  color: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.cricket-manage-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cricket-manage-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border-color);
+}
+.cricket-manage-name {
+  flex: 1;
+  min-width: 0;
+}
+.cricket-manage-name strong,
+.cricket-manage-name small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cricket-manage-name small {
+  color: var(--muted-color);
+  font-size: var(--fs-xs);
+}
+.cricket-manage-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+}
+.cricket-manage-actions button {
+  padding: 5px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: inherit;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.cricket-manage-actions button.is-danger {
+  border-color: rgba(var(--danger-rgb), 0.45);
+  color: var(--danger);
+}
+.cricket-manage-add:disabled,
+.cricket-manage-actions button:disabled {
+  opacity: 0.5;
+}
+
 /* The small actions under the pad (Undo, penalty runs). */
 .cricket-scorer-actions .cricket-penalty-btn {
   margin-left: auto;

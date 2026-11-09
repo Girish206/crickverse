@@ -153,7 +153,7 @@ function HomeHero({ me }: { me: CricketMe }) {
     { label: "POTM", value: stats?.playerOfMatch ?? 0, title: "Player of the Match" },
   ];
   return (
-    <section className="cricket-home-hero cv-hero-compact" data-tour="hero">
+    <section className="cricket-home-hero hero-art-home cv-hero-compact" data-tour="hero">
       <div className="cricket-home-hero-top">
         <PlayerAvatar
           name={player.name}
@@ -424,6 +424,7 @@ function RecordHero({
 }) {
   return (
     <SummaryBanner
+      art="my-matches"
       lead={<WinRing won={won} played={played} />}
       stats={[
         { label: "Won", value: won },
@@ -581,6 +582,7 @@ export function MyCricketTournaments() {
     >
       {shown.length > 0 && (
         <SummaryBanner
+          art="my-tournaments"
           lead={<BannerCount value={shown.length} label={shown.length === 1 ? "Tournament" : "Tournaments"} />}
           stats={[
             { label: "Ongoing", value: inPhase("ongoing") },
@@ -872,6 +874,7 @@ function TeamsBanner({ teams, filter }: { teams: MyTeam[]; filter: TeamFilter })
   const captain = teams.filter((t) => t.role === "Captain").length;
   return (
     <SummaryBanner
+      art="my-teams"
       lead={<WinRing won={won} played={played} label={filter === "opponents" ? "you won" : "won"} />}
       stats={[
         { label: "Teams", value: teams.length },

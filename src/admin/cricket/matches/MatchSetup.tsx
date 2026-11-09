@@ -255,7 +255,7 @@ function MatchSetup({ match, lastLeaders, nameOf, onExit, onStarted }: MatchSetu
     pickerFor === null || battingSlot === null
       ? []
       : pickerFor === "bowlerId"
-        ? xi[1 - battingSlot].map((id) => ({ id }))
+        ? [...xi[1 - battingSlot]].sort((a, b) => nameOf(a).localeCompare(nameOf(b))).map((id) => ({ id }))
         : xi[battingSlot]
             .filter((id) => id !== (pickerFor === "strikerId" ? picks.nonStrikerId : picks.strikerId))
             .map((id) => ({ id }));

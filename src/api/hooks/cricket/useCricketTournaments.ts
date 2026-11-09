@@ -70,6 +70,20 @@ export function useCricketTournament(id: number, enabled = true) {
   });
 }
 
+// The mobile numbers the viewer may see in this tournament's player list:
+// everyone's for its organisers, a captain's own team, otherwise none.
+export function useTournamentPlayerMobiles(id: number) {
+  return useQuery({
+    queryKey: ["cricket-tournaments", id, "player-mobiles"],
+    queryFn: async () => {
+      const { data } = await apiClient.get<ApiEnvelope<{ playerId: number; mobile: string }[]>>(
+        `/admin/cricket/tournaments/${id}/player-mobiles`,
+      );
+      return new Map(data.data.map((row) => [row.playerId, row.mobile]));
+    },
+  });
+}
+
 // Every tournament action returns the updated tournament: seed the detail
 // cache with it so the page updates at once, and refresh the list.
 function useTournamentMutation<TVars>(

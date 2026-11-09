@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 96" fill="#fff">
+  <!-- The stands, curving round the ground: a tier, a rail, the crowd. -->
+  <path d="M0 96V60Q200 88 400 60V96z" fill-opacity=".3"/>
+  <path d="M0 60Q200 88 400 60" fill="none" stroke="#fff" stroke-width="2"/>
+  <path d="M0 70Q200 98 400 70" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-dasharray="0 10"/>
+  <path d="M5 80Q200 105 395 80" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-dasharray="0 10"/>
+  <!-- A floodlight each side, their beams falling towards the middle. -->
+  <g id="light">
+    <path d="M67 66l2.5-44h4l2.5 44z" fill-opacity=".75"/>
+    <g transform="rotate(8 71 14)">
+      <rect x="50" y="4" width="42" height="20" rx="2.5"/>
+      <g fill="#000" fill-opacity=".4">
+        <circle cx="57" cy="10" r="2.4"/><circle cx="66" cy="10" r="2.4"/><circle cx="75" cy="10" r="2.4"/><circle cx="84" cy="10" r="2.4"/>
+        <circle cx="57" cy="18" r="2.4"/><circle cx="66" cy="18" r="2.4"/><circle cx="75" cy="18" r="2.4"/><circle cx="84" cy="18" r="2.4"/>
+      </g>
+    </g>
+    <path d="M90 26L178 71H122z" fill-opacity=".22"/>
+  </g>
+  <use href="#light" transform="matrix(-1 0 0 1 400 0)"/>
+  <!-- The ball in flight, its path dotted behind it. -->
+  <clipPath id="ball"><circle cx="270" cy="24" r="12"/></clipPath>
+  <path d="M138 64Q186 8 256 21" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-dasharray="0 9"/>
+  <circle cx="270" cy="24" r="12"/>
+  <g clip-path="url(#ball)" fill="none" stroke="#000" stroke-opacity=".4" stroke-linecap="round" stroke-width="1.4">
+    <path d="M262 14.5q8 8 16.5 18"/>
+    <path d="M259 18q8 8 16.5 18"/>
+    <path d="M264 12.5l-6 8M268 16l-6 8M272 20l-6 8M276 24l-6 8M280 28l-6 8"/>
+  </g>
+</svg>

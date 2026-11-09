@@ -47,6 +47,7 @@ export function CricketTournamentsList() {
       {tournaments && (
         <CricketKpis
           variant="hero"
+          art="tournaments"
           items={[
             { label: "Tournaments", value: tournaments.length, icon: "fa-trophy", tone: "total" },
             { label: "Ongoing", value: inPhase("ongoing"), icon: "fa-tower-broadcast", tone: "active" },

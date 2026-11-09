@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 96" fill="#fff">
+  <!-- The scorer's book, open: an innings written up ball by ball. -->
+  <path d="M302 18q-34-14-84-8v74q50-6 84 8z" fill-opacity=".7"/>
+  <path d="M310 18q34-14 84-8v74q-50-6-84 8z"/>
+  <path d="M302 18l4 3 4-3v74l-4 3-4-3z" fill-opacity=".45"/>
+  <g fill="none" stroke="#000" stroke-opacity=".35" stroke-width="2.500" stroke-linecap="round">
+    <path d="M232 24q32-2 58 6M232 38q32-2 58 6M232 52q32-2 58 6M232 66q32-2 58 6"/>
+  </g>
+  <g fill="#000" fill-opacity=".38">
+    <circle cx="326" cy="28" r="4"/><circle cx="340" cy="25" r="4"/><circle cx="354" cy="23" r="4"/><circle cx="368" cy="22" r="4"/><circle cx="382" cy="22" r="4"/>
+    <circle cx="326" cy="44" r="4"/><circle cx="340" cy="41" r="4"/><circle cx="354" cy="39" r="4"/><circle cx="368" cy="38" r="4"/><circle cx="382" cy="38" r="4"/>
+    <circle cx="326" cy="60" r="4"/><circle cx="340" cy="57" r="4"/><circle cx="354" cy="55" r="4"/><circle cx="368" cy="54" r="4"/><circle cx="382" cy="54" r="4"/>
+  </g>
+  <path d="M204 72l-24 20 8 2 22-16z" fill-opacity=".75"/>
+</svg>

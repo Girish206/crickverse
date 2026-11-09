@@ -72,6 +72,13 @@ const COPY: Record<Step, { heading: string; subtitle: string; submit: string; lo
   },
 };
 
+// Under the first step's button, what the app is for.
+const PERKS = [
+  { icon: "fa-baseball-bat-ball", title: "Live scoring", detail: "Ball by ball" },
+  { icon: "fa-chart-line", title: "Your stats", detail: "Runs and wickets" },
+  { icon: "fa-trophy", title: "MVP points", detail: "Every match" },
+];
+
 // RunMitra sign-in and sign-up on one screen: the email or mobile number
 // first, then a password for an existing account, the invite code and a new
 // password for a team-added player who has none yet (the code proves the
@@ -303,7 +310,7 @@ export function AdminLoginPage() {
   const togglePassword = () => setShowPassword((prev) => !prev);
 
   return (
-    <AuthShell heading={copy.heading} subtitle={copy.subtitle}>
+    <AuthShell heading={copy.heading} subtitle={copy.subtitle} longForm={step !== "identify" && step !== "password"}>
       <form onSubmit={handleSubmit} noValidate className="admin-login-form">
         {error && <div className="alert alert-danger admin-login-error text-center">{error}</div>}
 
@@ -474,6 +481,21 @@ export function AdminLoginPage() {
         >
           {copy.submit} <i className="fa-solid fa-arrow-right ms-2"></i>
         </CustomButton>
+
+        {step === "identify" && (
+          <>
+            <p className="admin-login-note">New here? Enter your mobile number to sign up.</p>
+            <ul className="admin-login-perks">
+              {PERKS.map(({ icon, title, detail }) => (
+                <li key={title}>
+                  <i className={`fa-solid ${icon}`} aria-hidden="true"></i>
+                  <strong>{title}</strong>
+                  <span>{detail}</span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
 
         {step === "password" && (
           <div className="admin-login-links">

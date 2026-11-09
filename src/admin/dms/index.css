@@ -8,10 +8,11 @@
   --primary: var(--brand-accent);
   /* Same as --primary, as an "r, g, b" triplet for rgba(var(--primary-rgb), alpha) */
   --primary-rgb: var(--brand-accent-rgb);
-  /* Solid fills: primary buttons and highlights, and the dark score panels
-     (dark.css swaps both for its own). */
+  /* Primary buttons and highlights, and the red hero and score panels: the
+     brand red deepening to the right, under white text (dark.css swaps both
+     for its own). A gradient, so use it with `background`, not -color. */
   --primary-fill: var(--brand-accent-fill);
-  --hero-fill: #1c2028;
+  --hero-fill: linear-gradient(120deg, var(--brand-accent) 45%, #7a1d17);
 
   /* Lighter shades (tints) */
   --primary-light-1: color-mix(in srgb, var(--primary) 88%, #fff);
@@ -73,14 +74,14 @@
   --bs-info-rgb: var(--secondary-rgb);
 
   /* What a ball was, the same on chips, the scoring pad, commentary and the
-     shot map: four blue, six purple, extras amber (a wicket is --danger). */
-  --ball-four: #1d4ed8;
+     shot map: four blue, six amber, extras grey (a wicket is --danger). */
+  --ball-four: #0369a1;
   --ball-four-text: #ffffff;
-  --ball-six: #6d28d9;
+  --ball-six: #b45309;
   --ball-six-text: #ffffff;
-  --ball-extra: #b45309;
-  --ball-extra-rgb: 180, 83, 9;
-  --ball-extra-text: #92400e;
+  --ball-extra: #64748b;
+  --ball-extra-rgb: 100, 116, 139;
+  --ball-extra-text: #475569;
 
   /* A neutral series beside the accent in a chart. */
   --series-slate: #475467;

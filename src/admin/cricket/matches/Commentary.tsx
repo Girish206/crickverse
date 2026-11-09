@@ -13,6 +13,7 @@ import {
   oversText,
   type NameOf,
 } from "../stats";
+import { OTHER_SHOT } from "./ShotMap";
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
@@ -32,6 +33,7 @@ function describe(ball: CricketBall, nameOf: NameOf, seed: number, team: string)
   }
   const batter = nameOf(ball.batterId);
   const zone = ball.shotZone?.toLowerCase() ?? null;
+  const shot = ball.shotType && ball.shotType !== OTHER_SHOT ? ball.shotType : null;
   const fielder = ball.fielderId === null ? null : nameOf(ball.fielderId);
 
   // Leaving without being out.
@@ -97,15 +99,23 @@ function describe(ball: CricketBall, nameOf: NameOf, seed: number, team: string)
   } else if (ball.runs === 6) {
     lead = "SIX!";
     kind = "six";
-    line = zone
-      ? pick(seed, [`Launched over ${zone}`, `${batter} sends it sailing over ${zone}`, `Massive hit, into the crowd at ${zone}`])
-      : pick(seed, [`${batter} clears the rope`, "Out of the ground!"]);
+    line = shot
+      ? zone
+        ? `${shot} over ${zone}`
+        : `${batter} clears the rope with the ${shot.toLowerCase()}`
+      : zone
+        ? pick(seed, [`Launched over ${zone}`, `${batter} sends it sailing over ${zone}`, `Massive hit, into the crowd at ${zone}`])
+        : pick(seed, [`${batter} clears the rope`, "Out of the ground!"]);
   } else if (ball.runs === 4) {
     lead = "FOUR!";
     kind = "four";
-    line = zone
-      ? pick(seed, [`Races away to the ${zone} boundary`, `${batter} finds the gap at ${zone}`, `Too good, past ${zone} for four`])
-      : pick(seed, [`${batter} finds the boundary`, "Beats the field and runs away to the rope"]);
+    line = shot
+      ? zone
+        ? `${shot}, races away to the ${zone} boundary`
+        : `${batter} finds the boundary with the ${shot.toLowerCase()}`
+      : zone
+        ? pick(seed, [`Races away to the ${zone} boundary`, `${batter} finds the gap at ${zone}`, `Too good, past ${zone} for four`])
+        : pick(seed, [`${batter} finds the boundary`, "Beats the field and runs away to the rope"]);
   } else if (ball.runs === 0) {
     lead = "No run";
     kind = "dot";
@@ -113,8 +123,9 @@ function describe(ball: CricketBall, nameOf: NameOf, seed: number, team: string)
   } else {
     lead = plural(ball.runs, "run");
     kind = "run";
-    line =
-      ball.runs === 1
+    line = shot && ball.runs <= 3
+      ? `${shot.toLowerCase()}${where} for ${["a single", "two", "three"][ball.runs - 1]}`
+      : ball.runs === 1
         ? pick(seed, [`pushed${where} for a single`, `worked${where}, they take one`, `nudged${where} and away for one`])
         : ball.runs === 2
           ? pick(seed, [`placed${where} and they come back for two`, `good running, two${where}`])
@@ -137,6 +148,14 @@ function describe(ball: CricketBall, nameOf: NameOf, seed: number, team: string)
     };
   }
   return { lead, line, kind };
+}
+
+// What the fielders did on top of the result: a great catch, or a mistake.
+function fieldingNote(ball: CricketBall, line: string, nameOf: NameOf) {
+  const lapse =
+    ball.lapseFielderId == null ? null : ball.lapseType === "dropped-catch" ? `Dropped by ${nameOf(ball.lapseFielderId)}!` : `Misfield by ${nameOf(ball.lapseFielderId)}.`;
+  const notes = [ball.excellentCatch ? "What a catch!" : null, lapse].filter(Boolean).join(" ");
+  return notes && `${/[.!?]$/.test(line) ? "" : "."} ${notes}`;
 }
 
 // A line of text with the player names picked out.
@@ -478,6 +497,7 @@ function inningsCommentary(match: CricketMatch, innings: CricketInnings, nameOf:
                           {nameOf(ball.bowlerId)} to {nameOf(ball.batterId)}, <strong>{lead}</strong>
                           {lead.endsWith("!") ? " " : ", "}
                           {line}
+                          {fieldingNote(ball, line, nameOf)}
                         </>
                       )}
                     </p>

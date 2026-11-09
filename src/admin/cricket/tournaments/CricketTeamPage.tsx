@@ -475,10 +475,13 @@ export function RosterPlayer({
   player,
   tags = [],
   linked = true,
+  detail,
 }: {
   player: CricketPlayer | undefined;
   tags?: string[];
   linked?: boolean;
+  // An extra line under the name.
+  detail?: string;
 }) {
   const name = player?.name ?? "Removed player";
   const role = roleOf(player?.role ?? null);
@@ -511,6 +514,7 @@ export function RosterPlayer({
             {roleNames && <span className="visually-hidden">{roleNames}</span>}
           </small>
         )}
+        {detail && <small>{detail}</small>}
       </span>
     </>
   );

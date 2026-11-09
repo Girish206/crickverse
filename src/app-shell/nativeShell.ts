@@ -10,7 +10,10 @@ import { Share } from "@capacitor/share";
 // phone's, which the app's web view lacks.
 
 // android/app/src/main/java/in/runmitra/app/AppWindowPlugin.java
-const AppWindow = registerPlugin<{ setBackgroundColor(options: { color: string }): Promise<void> }>("AppWindow");
+const AppWindow = registerPlugin<{
+  setBackgroundColor(options: { color: string }): Promise<void>;
+  setKeepAwake(options: { on: boolean }): Promise<void>;
+}>("AppWindow");
 
 // Light text needed on it? (#rrggbb; anything else counts as dark.)
 function isDarkColor(color: string) {
@@ -106,9 +109,28 @@ function fillInClipboard() {
   else Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
 }
 
+// navigator.wakeLock through the window's keep-screen-on flag, which Android
+// only honours while the app is showing, so it survives going to the
+// background and needs no taking again.
+function fillInWakeLock() {
+  const request = async () => {
+    await AppWindow.setKeepAwake({ on: true });
+    const lock = {
+      released: false,
+      release: async () => {
+        lock.released = true;
+        await AppWindow.setKeepAwake({ on: false });
+      },
+    };
+    return lock as unknown as WakeLockSentinel;
+  };
+  Object.defineProperty(navigator, "wakeLock", { value: { request }, configurable: true });
+}
+
 export function installNativeShell() {
   followThemeColor();
   handleBackButton();
   fillInShare();
   fillInClipboard();
+  fillInWakeLock();
 }

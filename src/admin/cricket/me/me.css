@@ -82,7 +82,7 @@
   text-transform: uppercase;
   text-overflow: ellipsis;
   white-space: nowrap;
-  opacity: 0.72;
+  opacity: 0.85;
 }
 
 /* In the Home / profile hero: on a strip under the name. */
@@ -117,17 +117,18 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: conic-gradient(#fff var(--win), rgba(255, 255, 255, 0.16) 0);
   line-height: 1.05;
   color: #fff;
 }
-/* The hole: the panel's own colour. */
+/* The ring, its middle cut out so the panel's gradient shows through. */
 .cv-win-ring::before {
   content: "";
   position: absolute;
-  inset: 5px;
+  inset: 0;
   border-radius: 50%;
-  background: var(--hero-fill);
+  background: conic-gradient(#fff var(--win), rgba(255, 255, 255, 0.22) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4.5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4.5px));
 }
 .cv-win-ring strong,
 .cv-win-ring small {
@@ -144,7 +145,7 @@
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  opacity: 0.75;
+  opacity: 0.85;
 }
 .cv-banner-count {
   flex: none;
@@ -183,7 +184,7 @@
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  opacity: 0.72;
+  opacity: 0.85;
 }
 .cv-form {
   display: flex;
@@ -207,6 +208,14 @@
 }
 .cv-form-chip.is-T {
   background: rgba(255, 255, 255, 0.28);
+}
+/* On the red hero: a red loss would vanish, so win is white, loss is dark. */
+.cricket-home-hero .cv-form-chip.is-W {
+  background: #fff;
+  color: #15803d;
+}
+.cricket-home-hero .cv-form-chip.is-L {
+  background: rgba(0, 0, 0, 0.38);
 }
 .cv-form-empty {
   font-size: var(--fs-xs);
@@ -308,6 +317,7 @@
 .cricket-home.is-feed .cricket-home-rail {
   margin: -8px 0 -16px;
   padding: 8px 0 18px;
+  scroll-padding-inline: 0;
 }
 @media (max-width: 576px) {
   .cricket-home.is-feed {
@@ -779,7 +789,7 @@
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
-  opacity: 0.75;
+  opacity: 0.85;
 }
 /* The figures: a slim line under a rule instead of a frosted panel. */
 .cricket-home-hero.cv-hero-compact > .cv-scoreline {

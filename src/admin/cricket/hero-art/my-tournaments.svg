@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 96" fill="#fff">
+  <!-- The trophy, with confetti falling round it. -->
+  <path d="M284 10h52v22c0 18-12 30-26 30s-26-12-26-30z"/>
+  <path d="M284 16h-16c0 18 6 28 22 32M336 16h16c0 18-6 28-22 32" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+  <path d="M305 62h10v14h-10z" fill-opacity=".8"/>
+  <rect x="290" y="75" width="40" height="8" rx="2" fill-opacity=".85"/>
+  <rect x="282" y="83" width="56" height="11" rx="2"/>
+  <path d="M310 19l3.200 7.800 8.300.6-6.400 5.400 2 8.200-7.100-4.400-7.100 4.400 2-8.200-6.400-5.400 8.300-.6z" fill="#000" fill-opacity=".35"/>
+  <g fill-opacity=".8">
+    <rect x="232" y="16" width="10" height="5" rx="1.500" transform="rotate(30 237 18)"/>
+    <rect x="256" y="46" width="10" height="5" rx="1.500" transform="rotate(-40 261 48)"/>
+    <rect x="208" y="52" width="10" height="5" rx="1.500" transform="rotate(62 213 54)"/>
+    <rect x="372" y="14" width="10" height="5" rx="1.500" transform="rotate(-24 377 16)"/>
+    <rect x="364" y="58" width="10" height="5" rx="1.500" transform="rotate(46 369 60)"/>
+    <rect x="178" y="22" width="10" height="5" rx="1.500" transform="rotate(-60 183 24)"/>
+  </g>
+  <circle cx="254" cy="24" r="3"/><circle cx="222" cy="36" r="3"/><circle cx="386" cy="40" r="3"/><circle cx="238" cy="72" r="3"/><circle cx="356" cy="30" r="3"/><circle cx="192" cy="72" r="3"/>
+</svg>

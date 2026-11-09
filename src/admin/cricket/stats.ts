@@ -61,18 +61,19 @@ export function inningsSummary(innings: CricketInnings | undefined, perOver = 6)
 
 // How one innings' overs divide: the powerplay, then the middle overs, then
 // the death overs (the last quarter, at most 10: 16-20 of 20, 41-50 of 50).
-// Null without a powerplay.
+// Without a powerplay its overs are 0 and the middle overs start at the first.
+// Null for a Test with none, which has no overs to divide.
 //
 // Overs cut by rain shrink the powerplay in proportion (6 of 20 is 3 of 10),
 // but never below what had been bowled at the cut, and one already finished
 // stays as it was. A closed innings goes by the overs it was played to, so a
 // shortened chase leaves the first innings' overs alone.
 export function inningsPlan(match: CricketMatch, index: number) {
-  if (!match.powerplayOvers) return null;
+  if (!match.powerplayOvers && match.matchType === "test") return null;
   const perOver = ballsPerOverOf(match);
   const innings = match.innings[index];
   const limit = (innings.closed ? innings.oversLimit : null) ?? match.overs;
-  let powerplay = match.powerplayOvers;
+  let powerplay = match.powerplayOvers ?? 0;
   let overs = match.scheduledOvers ?? match.overs;
   for (const cut of match.interruptions ?? []) {
     // Only what touched this innings; "no more play" cuts nothing to scale by.
@@ -604,6 +605,18 @@ function inningsQuota(match: CricketMatch, index: number) {
   return (match.scheduledOvers ?? match.overs) * perOver;
 }
 
+// Where the first innings ends up if the current run rate holds. Null until a
+// legal ball is bowled, once the innings is over, in a chase (the target says
+// more) and in a Test (no overs to run out).
+export function projectedScore(match: CricketMatch) {
+  const innings = match.innings[0];
+  if (match.matchType === "test" || match.innings.length !== 1 || innings.closed) return null;
+  const { runs, legalBalls } = inningsSummary(innings, ballsPerOverOf(match));
+  if (!legalBalls) return null;
+  const ballsLeft = Math.max(inningsQuota(match, 0) - legalBalls, 0);
+  return Math.round(runs + (runs / legalBalls) * ballsLeft);
+}
+
 // A finished match's part in NRR, or null when it takes no part.
 export function nrrLine(match: CricketMatch): NrrMatchLine | null {
   if (match.status !== "completed" || match.innings.length === 0) return null;
@@ -966,6 +979,11 @@ export const MVP_POINTS = {
   sixBonus: 0.2,
   // On top of the bowler's full points for a catch or stumping.
   fielderShare: 0.2,
+  // On top of the catch's own points, when the scorer marks it as excellent.
+  excellentCatchBonus: 0.3,
+  // Taken off the fielder's points.
+  droppedCatchPenalty: 0.3,
+  misfieldPenalty: 0.1,
   // Best haul in an innings, biggest first.
   hauls: [
     { wickets: 10, points: 1.5 },
@@ -1069,7 +1087,21 @@ export function wicketPoints(rules: ReturnType<typeof mvpRules>, position = 1) {
 // One source of a player's points in a match.
 export interface MvpSource {
   group: "batting" | "bowling" | "fielding";
-  kind: "runs" | "fours" | "sixes" | "par" | "wickets" | "hauls" | "maidens" | "catches" | "stumpings" | "runOuts" | "floor";
+  kind:
+    | "runs"
+    | "fours"
+    | "sixes"
+    | "par"
+    | "wickets"
+    | "hauls"
+    | "maidens"
+    | "catches"
+    | "excellentCatches"
+    | "stumpings"
+    | "runOuts"
+    | "droppedCatches"
+    | "misfields"
+    | "floor";
   // How many: runs, wickets, maidens… For "par", runs above (or below) par.
   count: number;
   // Points before pressure, and with it.
@@ -1220,11 +1252,24 @@ function calculateMatchImpact(match: CricketMatch): ImpactRow[] {
       const mankad = ball.wicketType === "run-out" && ball.noDelivery;
       if (creditsBowler(ball) || mankad) credit(ball.bowlerId, "bowling", "wickets", 1, value, weight);
 
+      if (ball.lapseFielderId != null) {
+        const dropped = ball.lapseType === "dropped-catch";
+        credit(
+          ball.lapseFielderId,
+          "fielding",
+          dropped ? "droppedCatches" : "misfields",
+          1,
+          -(dropped ? MVP_POINTS.droppedCatchPenalty : MVP_POINTS.misfieldPenalty),
+          weight,
+        );
+      }
+
       if (ball.fielderId === null) continue;
       const fielder = of(ball.fielderId);
       if (isCatch(ball)) {
         fielder.catches += 1;
         credit(ball.fielderId, "fielding", "catches", 1, value * MVP_POINTS.fielderShare, weight);
+        if (ball.excellentCatch) credit(ball.fielderId, "fielding", "excellentCatches", 1, MVP_POINTS.excellentCatchBonus, weight);
       } else if (ball.wicketType === "stumped") {
         fielder.stumpings += 1;
         credit(ball.fielderId, "fielding", "stumpings", 1, value * MVP_POINTS.fielderShare, weight);
@@ -1276,7 +1321,7 @@ function calculateMatchImpact(match: CricketMatch): ImpactRow[] {
 
 // Did anything in the match (batted, bowled or had a hand in a dismissal)?
 export const tookPart = (row: ImpactRow) =>
-  row.bat !== null || row.bowl !== null || row.catches + row.stumpings + row.runOuts > 0;
+  row.bat !== null || row.bowl !== null || row.catches + row.stumpings + row.runOuts > 0 || row.fielding !== 0;
 
 const dismissalsBy = (row: ImpactRow) => row.catches + row.stumpings + row.runOuts;
 

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
-// Line drawings for the wicket sheet's out types and the scoring pad's
-// buttons (LiveScorer): white
+// Line drawings for the wicket sheet's out types, the shot sheet and the
+// scoring pad's buttons (LiveScorer): white
 // figures, stumps and ball on a 48 × 48 grid, drawn in the tile's text
 // colour. Built from the same few pieces so they read as one set.
 
@@ -82,6 +82,37 @@ function Umpire({ arms, legs }: { arms: ReactNode; legs?: ReactNode }) {
 }
 // An arm hanging at the umpire's side.
 const ArmDown = () => <line x1={24} y1={16} x2={19} y2={28} />;
+
+type Pt = [number, number];
+
+// A batter caught mid-shot: where the head, hips and hands are, each leg as
+// the points from the hip down, and the bat's far end.
+function Striker({ head, hip, legs, hands, bat }: { head: Pt; hip: Pt; legs: Pt[][]; hands: Pt; bat: Pt }) {
+  const length = Math.hypot(hip[0] - head[0], hip[1] - head[1]);
+  const along = (share: number): Pt => [head[0] + (hip[0] - head[0]) * share, head[1] + (hip[1] - head[1]) * share];
+  const neck = along(3.5 / length);
+  const shoulder = along(7 / length);
+  return (
+    <g>
+      <Head x={head[0]} y={head[1]} />
+      <line x1={neck[0]} y1={neck[1]} x2={hip[0]} y2={hip[1]} />
+      {legs.map((leg) => (
+        <polyline key={leg.join()} points={[hip, ...leg].join(" ")} />
+      ))}
+      <line x1={shoulder[0]} y1={shoulder[1]} x2={hands[0]} y2={hands[1]} />
+      <Bat x1={hands[0]} y1={hands[1]} x2={bat[0]} y2={bat[1]} />
+    </g>
+  );
+}
+
+// Where the ball went.
+const Flight = ({ d }: { d: string }) => <path d={d} strokeDasharray="2 2.5" />;
+
+// Down on one knee, leaning into a sweep.
+const KNEELING: Pt[][] = [
+  [[27, 34], [27, 43]],
+  [[10, 41], [3, 43]],
+];
 
 const ART: Record<string, ReactNode> = {
   // The scoring pad's buttons: the umpire's signals, and a batter running.
@@ -483,6 +514,164 @@ const ART: Record<string, ReactNode> = {
       <path d="M26 12 Q 19 10 17 42" strokeDasharray="2 2.2" />
       <path d="M17 42 L 9 26" />
       <Ball x={7} y={22} />
+    </>
+  ),
+
+  // The shots played (the scorer's shot sheet; SHOT_TYPES in ShotMap.tsx).
+  // Front foot out, bat through the line, along the ground.
+  "shot:Drive": (
+    <>
+      <Ground />
+      <Striker head={[19, 12]} hip={[15, 27]} legs={[[[25, 32], [28, 43]], [[8, 43]]]} hands={[25, 25]} bat={[33, 37]} />
+      <Flight d="M35 39 H42" />
+      <Ball x={45} y={39} />
+    </>
+  ),
+  // The same stride, the bat finishing high and the ball in the air.
+  "shot:Loft": (
+    <>
+      <Ground />
+      <Striker head={[16, 14]} hip={[15, 29]} legs={[[[23, 34], [25, 43]], [[8, 43]]]} hands={[23, 17]} bat={[30, 5]} />
+      <Flight d="M27 31 Q38 25 42 11" />
+      <Ball x={43} y={8} />
+    </>
+  ),
+  // Bat level, chopping down square.
+  "shot:Cut": (
+    <>
+      <Ground />
+      <Striker head={[17, 12]} hip={[14, 28]} legs={[[[22, 43]], [[8, 43]]]} hands={[26, 22]} bat={[39, 22]} />
+      <Flight d="M40 25 L44 33" />
+      <Ball x={45} y={36} />
+    </>
+  ),
+  // Front foot off the ground, bat across at the shoulder, flat.
+  "shot:Pull": (
+    <>
+      <Ground />
+      <Striker head={[20, 11]} hip={[18, 28]} legs={[[[13, 43]], [[26, 34], [30, 40]]]} hands={[25, 17]} bat={[36, 14]} />
+      <Flight d="M38 14 H42" />
+      <Ball x={45} y={14} />
+    </>
+  ),
+  // A bouncer fetched from head height, over the shoulder.
+  "shot:Hook": (
+    <>
+      <Ground />
+      <Striker head={[24, 15]} hip={[24, 30]} legs={[[[19, 43]], [[31, 43]]]} hands={[15, 12]} bat={[6, 17]} />
+      <Flight d="M44 26 Q30 0 13 4" />
+      <Ball x={10} y={5} />
+    </>
+  ),
+  // Wrists rolling the bat low, off the pads to the leg side.
+  "shot:Flick": (
+    <>
+      <Ground />
+      <Striker head={[22, 12]} hip={[21, 28]} legs={[[[29, 34], [30, 43]], [[15, 43]]]} hands={[14, 27]} bat={[6, 34]} />
+      <Flight d="M8 30 Q6 27 5 24" />
+      <Ball x={5} y={21} />
+    </>
+  ),
+  // Just turned off the bat face, fine behind the batter.
+  "shot:Glance": (
+    <>
+      <Ground />
+      <Striker head={[26, 11]} hip={[26, 27]} legs={[[[21, 43]], [[31, 43]]]} hands={[31, 22]} bat={[33, 37]} />
+      <Flight d="M45 33 L35 36 Q22 40 9 37" />
+      <Ball x={6} y={36} />
+    </>
+  ),
+  // On one knee, bat swept across low.
+  "shot:Sweep": (
+    <>
+      <Ground />
+      <Striker head={[21, 19]} hip={[16, 32]} legs={KNEELING} hands={[28, 27]} bat={[37, 32]} />
+      <Flight d="M39 32 H42" />
+      <Ball x={45} y={32} />
+    </>
+  ),
+  // The sweep turned round the other way.
+  "shot:Reverse sweep": (
+    <>
+      <Ground />
+      <Striker head={[27, 19]} hip={[32, 32]} legs={[[[21, 34], [21, 43]], [[38, 41], [45, 43]]]} hands={[20, 27]} bat={[11, 32]} />
+      <Flight d="M9 32 H6" />
+      <Ball x={3} y={32} />
+      <path d="M36 11 Q25 2 14 11" />
+      <path d="M14 6 V11 H19" />
+    </>
+  ),
+  // On one knee again, but the bat finishes high and the ball goes up.
+  "shot:Slog sweep": (
+    <>
+      <Ground />
+      <Striker head={[20, 19]} hip={[15, 32]} legs={KNEELING} hands={[25, 18]} bat={[34, 7]} />
+      <Flight d="M37 26 Q42 17 43 9" />
+      <Ball x={44} y={6} />
+    </>
+  ),
+  // Feet apart, the bat wound up behind for one big swing.
+  "shot:Slog": (
+    <>
+      <Ground />
+      <Striker head={[21, 13]} hip={[20, 28]} legs={[[[12, 43]], [[29, 43]]]} hands={[14, 13]} bat={[5, 5]} />
+      <Flight d="M33 33 Q41 28 44 18" />
+      <Ball x={45} y={15} />
+    </>
+  ),
+  // Crouched under it, the ball lifted over the batter's head.
+  "shot:Scoop": (
+    <>
+      <Ground />
+      <Striker head={[27, 22]} hip={[20, 32]} legs={[[[29, 35], [30, 43]], [[13, 43]]]} hands={[32, 30]} bat={[40, 22]} />
+      <Flight d="M41 19 Q26 -2 8 18" />
+      <Ball x={6} y={21} />
+    </>
+  ),
+  // Changing hands as the ball is bowled.
+  "shot:Switch hit": (
+    <>
+      <Ground />
+      <Striker head={[24, 12]} hip={[24, 28]} legs={[[[18, 43]], [[30, 43]]]} hands={[31, 20]} bat={[41, 13]} />
+      <line x1={12} y1={4} x2={36} y2={4} />
+      <path d="M16 1 L12 4 L16 7" />
+      <path d="M32 1 L36 4 L32 7" />
+    </>
+  ),
+  // Back on the heels, the bat steering a short ball up and over.
+  "shot:Upper cut": (
+    <>
+      <Ground />
+      <Striker head={[19, 15]} hip={[15, 30]} legs={[[[10, 43]], [[23, 43]]]} hands={[25, 18]} bat={[33, 12]} />
+      <Flight d="M35 9 L40 5" />
+      <Ball x={43} y={3} />
+    </>
+  ),
+  // A short stride, bat upright, the ball just pushed away.
+  "shot:Push": (
+    <>
+      <Ground />
+      <Striker head={[20, 12]} hip={[17, 28]} legs={[[[25, 33], [27, 43]], [[11, 43]]]} hands={[26, 25]} bat={[29, 38]} />
+      <Flight d="M32 39 H36" />
+      <Ball x={39} y={39} />
+    </>
+  ),
+  // In off the bowler, and off the edge at an angle.
+  "shot:Edge": (
+    <>
+      <Ground />
+      <Striker head={[17, 12]} hip={[16, 28]} legs={[[[11, 43]], [[23, 43]]]} hands={[24, 22]} bat={[28, 36]} />
+      <Flight d="M45 38 L30 30 L42 13" />
+      <Ball x={44} y={10} />
+    </>
+  ),
+  // Anything else.
+  "shot:Other": (
+    <>
+      <Ground />
+      <Batter x={15} />
+      <path d="M27 15 a6 6 0 1 1 9.5 5 q-3 2 -3 6" />
+      <circle className="cricket-out-art-fill" cx={33.5} cy={32} r={1.5} />
     </>
   ),
 };

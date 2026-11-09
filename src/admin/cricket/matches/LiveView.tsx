@@ -7,16 +7,18 @@ import {
   inningsSummary,
   isFreeHitNext,
   oversText,
+  projectedScore,
   rate,
   strikeRate,
   type NameOf,
 } from "../stats";
 import { Commentary } from "./Commentary";
 import { MatchAwards } from "./MatchAwards";
+import { OversHistory } from "./OversHistory";
 import { ResultBanner } from "./result/ResultNote";
 import { ScoreHead } from "./ScoreHead";
 
-// The read-only "Live" tab for players: the score, who's in, then
+// The read-only "Live" tab for players: the score, the ball history, who's in, then
 // commentary on the last two overs (the Overs tab has them all). The awards (top performers) wait
 // until it's over, with the result.
 export function LiveView({ match, nameOf }: { match: CricketMatch; nameOf: NameOf }) {
@@ -51,11 +53,13 @@ export function LiveView({ match, nameOf }: { match: CricketMatch; nameOf: NameO
           overs: summary.overs,
           maxOvers: match.overs,
           crr: rate(summary.runs, summary.legalBalls, perOver),
+          projected: projectedScore(match),
           chase,
           // Before the chase's first ball, the banner below says what's needed.
           need: chase && innings.balls.length > 0 ? { runs: chase.need, balls: chase.ballsLeft } : null,
         }}
       />
+      <OversHistory match={match} innings={innings} />
       {/* The next ball can't get the batter out (bar a run-out): a no-ball
           was just bowled. */}
       {freeHit && (

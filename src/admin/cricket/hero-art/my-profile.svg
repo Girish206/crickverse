@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 96" fill="#fff">
+  <!-- A team shirt, with a cap either side of it. -->
+  <path d="M170 12l-36 14-22 30 20 14 12-12v38h112V58l12 12 20-14-22-30-36-14q-30 18-60 0z" fill-opacity=".75"/>
+  <path d="M170 12q30 18 60 0" fill="none" stroke="#000" stroke-opacity=".3" stroke-width="3"/>
+  <path d="M186 42h30v7l-15 37h-11l15-35h-19z" fill="#000" fill-opacity=".35"/>
+  <g id="cap">
+    <path d="M28 60a30 30 0 0 1 60 0z"/>
+    <path d="M72 60h16q22 0 34 13-32 3-50-13z" fill-opacity=".8"/>
+    <circle cx="58" cy="29" r="3"/>
+  </g>
+  <use href="#cap" transform="matrix(-1 0 0 1 400 0)"/>
+</svg>

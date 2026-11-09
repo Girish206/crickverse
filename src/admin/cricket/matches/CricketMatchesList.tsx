@@ -148,6 +148,7 @@ export function CricketMatchesList() {
     >
       <CricketKpis
         variant="hero"
+        art="matches"
         items={[
           { label: "Matches", value: all.length, icon: "fa-calendar-days", tone: "total" },
           { label: "Live now", value: all.filter((m) => m.status === "live").length, icon: "fa-tower-broadcast", tone: "active" },

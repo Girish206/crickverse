@@ -24,8 +24,13 @@ export interface CricketPlayer {
   // Whether they can sign in to see their own stats (an account with the
   // same mobile and cricket access).
   hasLogin?: boolean;
+  // Super admins only: how they came to be on RunMitra (see the API's
+  // cricket-joined.ts) and when.
+  joined?: { via: CricketPlayerJoinedVia; at: string; hasEmail: boolean; addedBy: string | null };
   createdAt?: string;
 }
+
+export type CricketPlayerJoinedVia = "signed-up" | "invited" | "login-given" | "not-joined";
 
 // The signed-in user's cricket identity (GET /admin/cricket/me).
 export interface CricketMe {
@@ -341,6 +346,8 @@ export type CricketWicketType =
   | "retired"
   | "absent-hurt";
 
+export type CricketFieldingLapse = "dropped-catch" | "misfield";
+
 export interface CricketBall {
   // Who was in place when it was bowled.
   batterId: number;
@@ -357,6 +364,11 @@ export interface CricketBall {
   // A run-out's second fielder (the one who broke the stumps), when two
   // were involved. Missing on older balls.
   secondFielderId?: number | null;
+  // A catch the scorer marked as excellent (extra MVP points).
+  excellentCatch?: boolean | null;
+  // A fielding mistake on this ball, and who made it (costs MVP points).
+  lapseType?: CricketFieldingLapse | null;
+  lapseFielderId?: number | null;
   // An event between deliveries (a retirement, a Mankad, a timed out): no
   // ball bowled, so it counts for no batter, bowler or over.
   noDelivery?: boolean | null;
@@ -366,6 +378,8 @@ export interface CricketBall {
   shotX?: number | null;
   shotY?: number | null;
   shotZone?: string | null;
+  // The shot played (SHOT_TYPES in ShotMap.tsx). Null or missing = not marked.
+  shotType?: string | null;
   // When it was recorded. Missing on older balls.
   at?: string | null;
   // Runs the batters ran off a no-ball that weren't hit: byes or leg-byes
@@ -411,6 +425,7 @@ export type CricketMatchEventKind =
   | "bowler-change"
   | "ball-corrected"
   | "squad-change"
+  | "squad-move"
   | "rain"
   | "reopened";
 

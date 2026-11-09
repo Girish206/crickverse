@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 96" fill="#fff">
+  <!-- The side lined up for the team photo, caps on. -->
+  <g transform="translate(-14)">
+    <g id="back" fill-opacity=".55">
+      <circle cx="214" cy="38" r="12"/><path d="M190 96V76q0-24 24-24t24 24v20z"/>
+    </g>
+    <use href="#back" x="58"/>
+    <use href="#back" x="116"/>
+    <use href="#back" x="174"/>
+    <g id="front">
+      <circle cx="243" cy="46" r="14"/>
+      <path d="M214 96V90q0-26 29-26t29 26v6z"/>
+      <path d="M229 46a14 14 0 0 1 28 0z" fill="#000" fill-opacity=".32"/>
+      <path d="M254 43q10 1 15 6-10 1-16-3z" fill-opacity=".85"/>
+    </g>
+    <use href="#front" x="58"/>
+    <use href="#front" x="116"/>
+  </g>
+</svg>

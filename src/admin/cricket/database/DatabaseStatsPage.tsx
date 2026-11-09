@@ -62,6 +62,7 @@ export function DatabaseStatsPage() {
           {totals && (
             <CricketKpis
               variant="hero"
+              art="database"
               items={[
                 { label: "Total size", value: formatBytes(totals.totalSize), icon: "fa-hard-drive", tone: "total", hint: "Storage plus indexes" },
                 { label: "Documents", value: totals.objects.toLocaleString(), icon: "fa-file-lines", tone: "active" },

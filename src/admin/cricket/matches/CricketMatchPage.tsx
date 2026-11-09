@@ -16,6 +16,7 @@ import { PageHeader, PageHeaderAction } from "../../components/PageHeader";
 import { stepsBackOutOf } from "../../../app-shell/screenTrail";
 import { MatchShareSheet } from "./MatchShareSheet";
 import { useSwipeTabs } from "../../useSwipeTabs";
+import { useKeepScreenAwake } from "../../../hooks/useKeepScreenAwake";
 import { useTips, type TipStep } from "../TipsTour";
 import { Button } from "../../components/Button";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
@@ -161,6 +162,8 @@ export function CricketMatchPage() {
   const fallback: Tab = upcoming ? "info" : "live";
   const requested = params.get("tab") as Tab | null;
   const tab: Tab = requested && tabs.some((t) => t.value === requested) ? requested : fallback;
+  // Scoring or following the score, the screen stays on until the match ends.
+  useKeepScreenAwake(match?.status === "live" && (onScoreScreen || tab === "live"));
   const swipeRef = useSwipeTabs(tabs.map((t) => t.value), tab, (value) =>
     setParams({ tab: value }, { replace: true, state: location.state })
   );
@@ -478,7 +481,7 @@ export function CricketMatchPage() {
     return <Navigate to={`/matches/${match.id}`} replace />;
   }
 
-  const hasLiveActionBar = !onScoreScreen && canManage && match.status === "live" && (seat.mine || !seat.holder || access === "organise");
+  const hasLiveActionBar = !onScoreScreen && canManage && match.status === "live" && (seat.mine || !seat.holder);
 
   return (
     <MatchPlayerProfiles match={match}>
@@ -669,7 +672,9 @@ export function CricketMatchPage() {
                   {tab === "commentary" && <MatchCommentary match={match} nameOf={nameOf} />}
                   {tab === "insights" && <MatchInsights match={match} nameOf={nameOf} />}
                   {tab === "overs" && <BallByBall match={match} nameOf={nameOf} />}
-                  {tab === "squads" && <MatchSquads match={match} tournament={tournament} nameOf={nameOf} />}
+                  {tab === "squads" && (
+                    <MatchSquads match={match} tournament={tournament} nameOf={nameOf} canManage={match.status === "live" && seat.mine} />
+                  )}
                   {tab === "mvp" && <MatchMvp match={match} nameOf={nameOf} />}
                   {tab === "heroes" && <MatchHeroes match={match} nameOf={nameOf} />}
                 </ListCard>

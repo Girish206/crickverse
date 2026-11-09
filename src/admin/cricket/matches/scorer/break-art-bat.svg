@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 200" fill="#fff" stroke="#fff">
+  <!-- A bat, leaning. -->
+  <g transform="rotate(22 56 100)" stroke="none">
+    <rect x="50" y="4" width="12" height="62" rx="5"/>
+    <path d="M50 64h12l11 15v101q0 12-12 12H51q-12 0-12-12V79z" fill-opacity=".62"/>
+    <path d="M56 82v96" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+    <rect x="39" y="152" width="34" height="9" fill-opacity=".9"/>
+  </g>
+  <g transform="rotate(22 56 100)" stroke-width="2" stroke-opacity=".4" fill="none">
+    <path d="M49 14h14M49 24h14M49 34h14M49 44h14M49 54h14" stroke="#000"/>
+  </g>
+  <!-- A ball, its seam stitched. -->
+  <circle cx="104" cy="164" r="21" stroke="none" fill-opacity=".85"/>
+  <g fill="none" stroke="#000" stroke-opacity=".38" stroke-linecap="round">
+    <path d="M90 149q15 14 29 31" stroke-width="1.5"/>
+    <path d="M85 154q14 13 28 31" stroke-width="1.5"/>
+    <path d="M92 145l-9 13M98 151l-9 13M104 157l-9 13M110 164l-9 13M116 171l-9 13" stroke-width="1.5"/>
+  </g>
+</svg>

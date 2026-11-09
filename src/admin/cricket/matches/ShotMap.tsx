@@ -1,4 +1,4 @@
-import { useState, type MouseEvent } from "react";
+import { useLayoutEffect, useRef, useState, type MouseEvent } from "react";
 import type { CricketMatch } from "../../../api/types";
 import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
 import { PillSelect } from "../PillSelect";
@@ -19,7 +19,34 @@ export interface Shot {
   runs: number;
   // Caught there, or run out from there.
   wicket?: boolean;
+  // false when the batters ran it rather than it reaching the rope.
+  boundary?: boolean | null;
 }
+
+// The shots a scorer can name, the likeliest first. "Other" is the way out
+// when a four or six (where one must be picked) doesn't fit any of them.
+export const OTHER_SHOT = "Other";
+export const SHOT_TYPES = [
+  "Drive",
+  "Loft",
+  "Cut",
+  "Pull",
+  "Flick",
+  "Sweep",
+  "Reverse sweep",
+  "Slog sweep",
+  "Slog",
+  "Hook",
+  "Glance",
+  "Scoop",
+  "Switch hit",
+  "Upper cut",
+  "Push",
+  "Edge",
+  OTHER_SHOT,
+];
+// How many of those show before "Show more".
+export const COMMON_SHOTS = 8;
 
 // The inner (30-yard) circle, as a share of the boundary's radius.
 const INNER = 0.55;
@@ -99,10 +126,101 @@ const toSvg = (angle: number, distance: number, mirror = 1) => {
 
 const shotClass = (shot: Shot) => (shot.wicket ? "is-wicket" : shot.runs >= 6 ? "is-six" : shot.runs === 4 ? "is-four" : "is-run");
 
+// Fours and sixes are played out: a ball leaves the pitch, its line follows
+// it to the rope, and the landing ripples. A four skims flat and fast; a six
+// hangs in the air on an upward arc.
+export type ShotFlightKind = "four" | "six";
+const FLIGHT_MS: Record<ShotFlightKind, number> = { four: 550, six: 850 };
+const FLIGHT_EASING: Record<ShotFlightKind, string> = {
+  four: "cubic-bezier(0.25, 0.6, 0.45, 1)",
+  six: "cubic-bezier(0.4, 0.15, 0.6, 0.9)",
+};
+// How far a six's curve bows out, as a share of the shot's length.
+const LOFT_BEND = 0.4;
+
+// A ball that reached the rope: four or six, not one the batters ran.
+export function flightOf(runs: number | undefined, boundary: boolean | null | undefined, wicket: boolean): ShotFlightKind | null {
+  if (wicket || boundary === false) return null;
+  return (runs ?? 0) >= 6 ? "six" : runs === 4 ? "four" : null;
+}
+
+// How long the tapped shot stays up before the ball is recorded.
+export const shotHoldMs = (kind: ShotFlightKind | null) => (kind ? FLIGHT_MS[kind] + 300 : 450);
+
+// Boundaries are drawn all the way to the rope, wherever the tap landed.
+function toRope(at: { x: number; y: number }) {
+  const distance = Math.hypot(at.x, at.y);
+  return distance === 0 ? at : { x: (at.x / distance) * R, y: (at.y / distance) * R };
+}
+
+// Straight for a four. For a six, curved to whichever side is up the screen;
+// a shot running straight up or down the screen bows out sideways.
+function flightPath(end: { x: number; y: number }, kind: ShotFlightKind) {
+  if (kind === "four") return `M0 0L${end.x} ${end.y}`;
+  const side = end.x >= 0 ? 1 : -1;
+  const bendX = end.x / 2 + end.y * LOFT_BEND * side;
+  const bendY = end.y / 2 - end.x * LOFT_BEND * side;
+  return `M0 0Q${bendX} ${bendY} ${end.x} ${end.y}`;
+}
+
+// The shot just tapped while scoring; launchFlight plays it out. The ball and
+// the ripple are invisible unless they're being animated.
+function ShotFlight({ to, kind }: { to: { x: number; y: number }; kind: ShotFlightKind }) {
+  const end = toRope(to);
+  return (
+    <g className={`cricket-shot is-${kind}`} data-flight={kind}>
+      <path d={flightPath(end, kind)} pathLength={1} />
+      <circle className="cricket-shot-ripple" cx={end.x} cy={end.y} r={4} />
+      <circle className="cricket-shot-dot" cx={end.x} cy={end.y} r={4} />
+      <circle className="cricket-shot-ball" r={2.4} />
+    </g>
+  );
+}
+
+function launchFlight(group: SVGGElement, delay: number): Animation[] {
+  const kind = group.dataset.flight as ShotFlightKind;
+  const trail = group.querySelector("path");
+  const dot = group.querySelector(".cricket-shot-dot");
+  const ripple = group.querySelector(".cricket-shot-ripple");
+  const ball = group.querySelector(".cricket-shot-ball");
+  if (!trail || !dot || !ripple || !ball) return [];
+
+  const duration = FLIGHT_MS[kind];
+  const flight = { duration, delay, easing: FLIGHT_EASING[kind], fill: "backwards" as const };
+  const landed = delay + duration;
+  const steps = 32;
+  const length = trail.getTotalLength();
+  const ballFrames = Array.from({ length: steps + 1 }, (_, i) => {
+    const progress = i / steps;
+    const point = trail.getPointAtLength(length * progress);
+    // A six rises towards the camera and drops back down.
+    const scale = kind === "six" ? 1 + 1.2 * Math.sin(Math.PI * progress) : 1;
+    return { transform: `translate(${point.x}px, ${point.y}px) scale(${scale})`, opacity: i === 0 ? 0 : 1 };
+  });
+
+  return [
+    trail.animate([{ strokeDasharray: "1 1", strokeDashoffset: 1 }, { strokeDasharray: "1 1", strokeDashoffset: 0 }], flight),
+    ball.animate(ballFrames, flight),
+    dot.animate([{ opacity: 0, transform: "scale(0.2)" }, { opacity: 1, transform: "scale(1)" }], {
+      duration: 180,
+      delay: landed,
+      easing: "cubic-bezier(0.3, 1.6, 0.6, 1)",
+      fill: "backwards",
+    }),
+    ripple.animate([{ opacity: 0.75, transform: "scale(1)" }, { opacity: 0, transform: `scale(${kind === "six" ? 7 : 5})` }], {
+      duration: 500,
+      delay: landed,
+      easing: "ease-out",
+    }),
+  ];
+}
+
 interface ShotGroundProps {
   shots?: Shot[];
   // The spot just tapped, while picking.
   marker?: { x: number; y: number } | null;
+  // Plays the marker out as this boundary.
+  markerFlight?: ShotFlightKind | null;
   // Makes the ground tappable; gets the spot as -1..1 x / y.
   onPick?: (x: number, y: number) => void;
   label?: string;
@@ -110,8 +228,19 @@ interface ShotGroundProps {
   leftHanded?: boolean;
 }
 
-export function ShotGround({ shots = [], marker, onPick, label = "Cricket ground", leftHanded = false }: ShotGroundProps) {
+export function ShotGround({ shots = [], marker, markerFlight = null, onPick, label = "Cricket ground", leftHanded = false }: ShotGroundProps) {
   const mirror = leftHanded ? -1 : 1;
+  const svgRef = useRef<SVGSVGElement>(null);
+  const flying = Boolean(marker && markerFlight);
+
+  // Only the shot tapped while scoring is played out; finished maps just draw.
+  useLayoutEffect(() => {
+    const group = svgRef.current?.querySelector<SVGGElement>("[data-flight]");
+    if (!group || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const animations = launchFlight(group, 0);
+    return () => animations.forEach((animation) => animation.cancel());
+  }, [flying]);
+
   function handleClick(e: MouseEvent<SVGSVGElement>) {
     if (!onPick) return;
     const box = e.currentTarget.getBoundingClientRect();
@@ -126,6 +255,7 @@ export function ShotGround({ shots = [], marker, onPick, label = "Cricket ground
 
   return (
     <svg
+      ref={svgRef}
       className={`cricket-shot-ground ${onPick ? "is-pickable" : ""}`.trim()}
       viewBox="-110 -110 220 220"
       role="img"
@@ -156,7 +286,8 @@ export function ShotGround({ shots = [], marker, onPick, label = "Cricket ground
         );
       })}
       {shots.map((shot, i) => {
-        const at = onScreen(shot.x, shot.y, mirror);
+        const spot = onScreen(shot.x, shot.y, mirror);
+        const at = flightOf(shot.runs, shot.boundary, Boolean(shot.wicket)) ? toRope(spot) : spot;
         return (
           <g key={i} className={`cricket-shot ${shotClass(shot)}`}>
             <line x1={0} y1={0} x2={at.x} y2={at.y} />
@@ -164,12 +295,15 @@ export function ShotGround({ shots = [], marker, onPick, label = "Cricket ground
           </g>
         );
       })}
-      {marker && (
-        <g className="cricket-shot is-marker">
-          <line x1={0} y1={0} x2={onScreen(marker.x, marker.y, mirror).x} y2={onScreen(marker.x, marker.y, mirror).y} />
-          <circle cx={onScreen(marker.x, marker.y, mirror).x} cy={onScreen(marker.x, marker.y, mirror).y} r={4} />
-        </g>
-      )}
+      {marker &&
+        (markerFlight ? (
+          <ShotFlight to={onScreen(marker.x, marker.y, mirror)} kind={markerFlight} />
+        ) : (
+          <g className="cricket-shot is-marker">
+            <line x1={0} y1={0} x2={onScreen(marker.x, marker.y, mirror).x} y2={onScreen(marker.x, marker.y, mirror).y} />
+            <circle cx={onScreen(marker.x, marker.y, mirror).x} cy={onScreen(marker.x, marker.y, mirror).y} r={4} />
+          </g>
+        ))}
     </svg>
   );
 }
@@ -196,6 +330,7 @@ export function MatchShotMap({ match, nameOf }: { match: CricketMatch; nameOf: N
               x: ball.shotX,
               y: ball.shotY,
               runs: ball.runs,
+              boundary: ball.boundary,
               wicket: isWicket(ball),
               zone: ball.shotZone ?? "",
               batterId: ball.batterId,

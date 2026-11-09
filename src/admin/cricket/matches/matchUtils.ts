@@ -21,6 +21,17 @@ export const STAGES: { value: CricketMatchStage; label: string; note: string; ic
   { value: "friendly", label: "Friendly / Practice", note: "Practice or exhibition match", icon: "fa-handshake" },
 ];
 
+// On the scorecard already: they've batted, bowled or fielded, or are out
+// there now. Their balls belong to their side, so they stay on it.
+export function hasPlayed(match: CricketMatch, playerId: number) {
+  return match.innings.some(
+    (innings) =>
+      innings.balls.some((ball) =>
+        [ball.batterId, ball.nonStrikerId, ball.bowlerId, ball.dismissedId, ball.fielderId, ball.secondFielderId, ball.lapseFielderId].includes(playerId),
+      ) || [innings.strikerId, innings.nonStrikerId, innings.bowlerId].includes(playerId),
+  );
+}
+
 export const stageLabel = (stage: CricketMatchStage | null) => STAGES.find((s) => s.value === stage)?.label ?? "League";
 
 // A match's stage. Outside a tournament there's no league, so a standalone

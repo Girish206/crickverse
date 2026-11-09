@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
 import type { CricketMatch, CricketPlayerRole, CricketTournament } from "../../../api/types";
 import { monogram } from "../../../utils/format";
@@ -6,6 +7,7 @@ import { PlayerLink } from "../players/PlayerProfileSheet";
 import { roleOf } from "../playerRoles";
 import type { NameOf } from "../stats";
 import { TeamMark } from "../teams/TeamMark";
+import { ManageSquadSheet } from "./scorer/ManageSquadSheet";
 
 // Batters first, then keepers, all-rounders and bowlers; no role set last.
 const ROLE_ORDER: CricketPlayerRole[] = ["batter", "wicket-keeper", "all-rounder", "bowler"];
@@ -16,11 +18,15 @@ export function MatchSquads({
   match,
   tournament,
   nameOf,
+  canManage = false,
 }: {
   match: CricketMatch;
   tournament?: CricketTournament;
   nameOf: NameOf;
+  // The live match's scorer can change the sides from here.
+  canManage?: boolean;
 }) {
+  const [managing, setManaging] = useState(false);
   const { data: players } = useCricketPlayers();
   const playerById = new Map((players ?? []).map((player) => [player.id, player]));
   const started = match.status !== "scheduled";
@@ -38,9 +44,9 @@ export function MatchSquads({
   // the XI picked at the toss, and the rest of the roster on the bench.
   const roster = (slot: number) => tournament?.teams[match.teams[slot].teamIndex]?.playerIds ?? match.teams[slot].playerIds;
   const xi = match.teams.map((team, slot) => byRole(started ? team.playerIds : roster(slot)));
-  const bench = match.teams.map((team, slot) =>
-    started ? byRole(roster(slot).filter((id) => !team.playerIds.includes(id))) : [],
-  );
+  // Not someone who has moved across and is playing for the other side.
+  const playing = new Set(match.teams.flatMap((team) => team.playerIds));
+  const bench = match.teams.map((_, slot) => (started ? byRole(roster(slot).filter((id) => !playing.has(id))) : []));
 
   const cell = (playerId: number | undefined, side: "left" | "right", benched: boolean) => {
     if (playerId === undefined) return <div className={`cricket-squad-cell is-${side}`}></div>;
@@ -81,6 +87,13 @@ export function MatchSquads({
   };
 
   return (
+    <>
+    {canManage && (
+      <button type="button" className="cricket-manage-add" onClick={() => setManaging(true)}>
+        <i className="fa-solid fa-users-gear" aria-hidden="true"></i> Manage squads
+      </button>
+    )}
+    {managing && <ManageSquadSheet match={match} nameOf={nameOf} onClose={() => setManaging(false)} />}
     <div className="cricket-squad-board">
       <div className="cricket-squad-row is-head">
         {match.teams.map((team, slot) => (
@@ -101,5 +114,6 @@ export function MatchSquads({
         </>
       )}
     </div>
+    </>
   );
 }

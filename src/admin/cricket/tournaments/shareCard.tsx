@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { CricketTournament } from "../../../api/types";
 import { isNativeApp } from "../../../app-shell/platform";
+import { Loader } from "../../components/Loader";
 import { BottomSheet } from "../BottomSheet";
 import { logoFor } from "./tournamentArt";
 
@@ -150,15 +151,22 @@ interface ShareCardOptions {
 // device can share files — phones — else the text), download, copy as text.
 export function useShareCard({ shareTitle, what, fileName, text, draw }: ShareCardOptions) {
   const [image, setImage] = useState<{ blob: Blob; url: string } | null>(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     let url: string | null = null;
-    draw?.().then((blob) => {
-      if (cancelled || !blob) return;
-      url = URL.createObjectURL(blob);
-      setImage({ blob, url });
-    });
+    draw?.()
+      .then((blob) => {
+        if (cancelled) return;
+        if (!blob) return setFailed(true);
+        url = URL.createObjectURL(blob);
+        setFailed(false);
+        setImage({ blob, url });
+      })
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
     return () => {
       cancelled = true;
       if (url) URL.revokeObjectURL(url);
@@ -200,7 +208,12 @@ export function useShareCard({ shareTitle, what, fileName, text, draw }: ShareCa
     }
   }
 
-  return { image, copyText, download, share };
+  return { image, failed, copyText, download, share };
+}
+
+// In a card's place until it's drawn.
+export function CardPlaceholder({ failed }: { failed: boolean }) {
+  return failed ? <p className="admin-hint m-0">Couldn't make the picture</p> : <Loader label="Preparing picture" />;
 }
 
 // The sheet showing a drawn card: Share, Download image and Copy as text.
@@ -212,7 +225,7 @@ export function ShareCardSheet({
   title: string;
   onClose: () => void;
 }) {
-  const { image, copyText, download, share } = useShareCard(options);
+  const { image, failed, copyText, download, share } = useShareCard(options);
   const { shareTitle } = options;
 
   return (
@@ -230,7 +243,9 @@ export function ShareCardSheet({
         {image ? (
           <img src={image.url} alt={`${shareTitle} card`} />
         ) : (
-          <div className="cricket-squad-share-loading" aria-hidden="true" />
+          <div className="cricket-squad-share-loading">
+            <CardPlaceholder failed={failed} />
+          </div>
         )}
         <div className="cricket-squad-share-actions">
           <button type="button" className="cricket-roster-action" onClick={download} disabled={!image}>

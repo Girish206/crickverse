@@ -38,8 +38,9 @@ export function PlayerMatchStats({ player, match }: { player: CricketPlayer; mat
   const inningsLabel = (index: number) => (match.innings.length > 2 ? `Innings ${index + 1}` : "");
 
   const batting = match.innings.flatMap((innings, index) => {
-    const card = battingCard(innings).find((r) => r.playerId === player.id);
-    return card ? [{ index, card }] : [];
+    const order = battingCard(innings);
+    const at = order.findIndex((r) => r.playerId === player.id);
+    return at === -1 ? [] : [{ index, card: order[at], position: at + 1 }];
   });
   const bowling = match.innings.flatMap((innings, index) => {
     const card = bowlingCard(innings, perOver).find((r) => r.playerId === player.id);
@@ -69,7 +70,7 @@ export function PlayerMatchStats({ player, match }: { player: CricketPlayer; mat
 
   return (
     <div className="cricket-profile">
-      <section className="cricket-home-hero cricket-profile-hero cv-hero-compact">
+      <section className="cricket-home-hero hero-art-this-match cricket-profile-hero cv-hero-compact">
         <div className="cricket-home-hero-top">
           <PlayerAvatar
             name={player.name}
@@ -115,7 +116,7 @@ export function PlayerMatchStats({ player, match }: { player: CricketPlayer; mat
         </div>
       ) : (
         <>
-          {batting.map(({ index, card }) => {
+          {batting.map(({ index, card, position }) => {
             const out = card.outBall !== null;
             return (
               <div key={`bat-${index}`}>
@@ -125,7 +126,7 @@ export function PlayerMatchStats({ player, match }: { player: CricketPlayer; mat
                   ["Balls", card.balls],
                   ["Strike rate", strikeRate(card.runs, card.balls)],
                   ["4s / 6s", `${card.fours} / ${card.sixes}`],
-                  ["Batted at", `#${battingCard(match.innings[index]).indexOf(card) + 1}`],
+                  ["Batted at", `#${position}`],
                   ["Status", out ? dismissalText(card.outBall!, nameOf) || "Out" : "Not out"],
                 ])}
               </div>

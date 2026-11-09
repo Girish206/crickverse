@@ -8,7 +8,7 @@ type Kind = "four" | "six" | "out";
 type Burst = { kind: Kind; ball: CricketBall; key: string; line: string; duck: "duck" | "golden" | null };
 
 // How long each one plays (ms); a duck stays a little longer for the duck.
-const DURATION = { boundary: 2400, out: 2400, duck: 3700 };
+const DURATION = { boundary: 4000, out: 4000, duck: 5200 };
 
 // How they were out, for the ribbon under "OUT!".
 function outLabel(ball: CricketBall) {
@@ -53,7 +53,11 @@ export function BallBurst({ match, nameOf }: { match: CricketMatch; nameOf: Name
     if (!added || !innings || !ball) return;
     // An all-run four or six is no boundary: no burst.
     const kind: Kind | null = isWicket(ball) ? "out" : isSix(ball) ? "six" : isFour(ball) ? "four" : null;
-    if (!kind) return;
+    // The game has moved on: don't leave the last moment over the next ball.
+    if (!kind) {
+      setBurst(null);
+      return;
+    }
     const who = kind === "out" ? ball.dismissedId : ball.batterId;
     const row = battingCard(innings).find((r) => r.playerId === who);
     const score = row ? ` · ${row.runs}${kind === "out" ? "" : "*"} (${row.balls})` : "";
@@ -79,6 +83,7 @@ export function BallBurst({ match, nameOf }: { match: CricketMatch; nameOf: Name
       role="status"
       aria-live="polite"
     >
+      <BurstFx kind={kind} />
       <div className="cricket-burst-inner">
         {kind === "out" ? (
           <>
@@ -99,6 +104,87 @@ export function BallBurst({ match, nameOf }: { match: CricketMatch; nameOf: Name
       </div>
     </div>,
     document.body,
+  );
+}
+
+// Points round a circle, for things flying out from the middle (px).
+const scatter = (count: number, reach: number) =>
+  Array.from({ length: count }, (_, i) => {
+    const angle = (i / count) * Math.PI * 2 + (i % 2) * 0.18;
+    const distance = reach * (0.75 + (i % 3) * 0.2);
+    return { x: Math.round(Math.cos(angle) * distance), y: Math.round(Math.sin(angle) * distance) };
+  });
+
+// A four's speed lines: how far from the middle (px), and when each one goes.
+const STREAKS = [
+  { y: -120, delay: 0.02 },
+  { y: -78, delay: 0.1 },
+  { y: -34, delay: 0 },
+  { y: 26, delay: 0.07 },
+  { y: 70, delay: 0.13 },
+  { y: 116, delay: 0.04 },
+];
+
+// A six's fireworks, going off around the number through the hold: where
+// (vw / vh from the middle), when, and in what colour.
+const FIREWORK_SPARKS = scatter(12, 90);
+const FIREWORKS = [
+  { x: -28, y: -24, delay: 0.55, color: "var(--burst-light)" },
+  { x: 30, y: -28, delay: 0.95, color: "#fff" },
+  { x: -32, y: 22, delay: 1.4, color: "var(--burst)" },
+  { x: 32, y: 18, delay: 1.9, color: "var(--burst-light)" },
+  { x: 0, y: -36, delay: 2.5, color: "#fff" },
+];
+
+// A wicket's splinters: where each flies to, and its turn.
+const SHARDS = scatter(16, 240).map((point, i) => ({ ...point, r: (i * 97) % 360 }));
+
+// Behind the number or word: the glow that holds for the whole moment, the
+// flash on impact, and how the moment arrives — a ball streaking in along the
+// ground for a four, one launched into the sky then fireworks for a six,
+// splinters flying out for a wicket.
+function BurstFx({ kind }: { kind: Kind }) {
+  return (
+    <div className="cricket-burst-fx" aria-hidden="true">
+      <span className="cricket-burst-glow"></span>
+      <span className="cricket-burst-flash"></span>
+      {kind === "four" &&
+        STREAKS.map((streak) => (
+          <span
+            key={streak.y}
+            className="cricket-burst-streak"
+            style={{ "--y": `${streak.y}px`, "--delay": `${streak.delay}s` } as CSSProperties}
+          ></span>
+        ))}
+      {kind !== "out" && <span className="cricket-burst-flyball"></span>}
+      {kind === "six" &&
+        FIREWORKS.map((firework) => (
+          <span
+            key={firework.delay}
+            className="cricket-burst-firework"
+            style={
+              {
+                left: `calc(50% + ${firework.x}vw)`,
+                top: `calc(50% + ${firework.y}vh)`,
+                "--delay": `${firework.delay}s`,
+                "--spark": firework.color,
+              } as CSSProperties
+            }
+          >
+            {FIREWORK_SPARKS.map((spark, i) => (
+              <span key={i} className="cricket-burst-spark" style={{ "--x": `${spark.x}px`, "--y": `${spark.y}px` } as CSSProperties}></span>
+            ))}
+          </span>
+        ))}
+      {kind === "out" &&
+        SHARDS.map((shard, i) => (
+          <span
+            key={i}
+            className="cricket-burst-shard"
+            style={{ "--x": `${shard.x}px`, "--y": `${shard.y}px`, "--r": `${shard.r}deg`, background: i % 2 ? "#fff" : "var(--burst)" } as CSSProperties}
+          ></span>
+        ))}
+    </div>
   );
 }
 

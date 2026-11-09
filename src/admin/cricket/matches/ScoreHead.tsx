@@ -10,6 +10,8 @@ export type ScoreHeadData = {
   overs: string;
   maxOvers: number;
   crr: string;
+  // The first innings' total at the current rate; null when there's none to show.
+  projected?: number | null;
   // dlsPar: what ties the chase if play stopped now; dlsMargin: the runs the
   // chasing side are ahead of it (behind if negative).
   chase: { target: number; requiredRate: string; dlsPar?: number | null; dlsMargin?: number | null } | null;
@@ -51,6 +53,12 @@ export function ScoreHead({ data }: { data: ScoreHeadData }) {
           <small>CRR</small>
           <strong>{data.crr}</strong>
         </span>
+        {data.projected != null && (
+          <span className="cricket-scorer-stat" title="The final score if the current run rate holds">
+            <small>Projected</small>
+            <strong>{data.projected}</strong>
+          </span>
+        )}
         {data.chase && (
           <>
             <span className="cricket-scorer-stat is-target">

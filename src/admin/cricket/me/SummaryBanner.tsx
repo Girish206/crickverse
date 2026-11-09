@@ -68,10 +68,21 @@ export function FormLine({ form, label = "Recent form" }: { form: FormResult[]; 
 }
 
 // A page's summary on the hero gradient: a lead (ring or count), the
-// scoreline beside it and anything below (recent form).
-export function SummaryBanner({ lead, stats, children }: { lead: ReactNode; stats: ScoreStat[]; children?: ReactNode }) {
+// scoreline beside it and anything below (recent form). `art` picks the
+// page's illustration behind it (hero-art-* in cricket-matches.css).
+export function SummaryBanner({
+  art,
+  lead,
+  stats,
+  children,
+}: {
+  art: string;
+  lead: ReactNode;
+  stats: ScoreStat[];
+  children?: ReactNode;
+}) {
   return (
-    <section className="cricket-home-hero cv-banner">
+    <section className={`cricket-home-hero hero-art-${art} cv-banner`}>
       <div className="cv-banner-top">
         {lead}
         <Scoreline stats={stats} />

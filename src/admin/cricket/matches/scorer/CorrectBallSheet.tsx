@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useEditCricketBall, type CricketBallEdit } from "../../../../api/hooks/cricket/useCricketMatches";
-import type { CricketMatch, CricketWicketType } from "../../../../api/types";
+import type { CricketFieldingLapse, CricketMatch, CricketWicketType } from "../../../../api/types";
 import { BottomSheet } from "../../BottomSheet";
 import { PlayerAvatar } from "../../players/PlayerAvatar";
 import { ballChipClass, ballLabel, oversOf, type NameOf } from "../../stats";
@@ -28,14 +28,16 @@ interface CorrectBallSheetProps {
   perOver: number;
   // The ball tapped in the over strip; null starts from the list of balls.
   ballIndex: number | null;
+  // Only marking a dropped catch or misfield, not correcting the ball.
+  lapseOnly?: boolean;
   onClose: () => void;
 }
 
 // Fixes an earlier ball of this innings without undoing everything after
 // it: the fielder, the kind of a bowler's dismissal, its runs (the API moves
-// the strike on the balls after it to match), boundary or all run, or who
-// bowled the over.
-export function CorrectBallSheet({ match, nameOf, perOver, ballIndex, onClose }: CorrectBallSheetProps) {
+// the strike on the balls after it to match), boundary or all run, who
+// bowled the over, or a fielding mistake on it.
+export function CorrectBallSheet({ match, nameOf, perOver, ballIndex, lapseOnly = false, onClose }: CorrectBallSheetProps) {
   const [chosen, setChosen] = useState<number | null>(ballIndex);
   const inningsIndex = match.innings.length - 1;
   const innings = match.innings[inningsIndex];
@@ -48,6 +50,7 @@ export function CorrectBallSheet({ match, nameOf, perOver, ballIndex, onClose }:
         nameOf={nameOf}
         perOver={perOver}
         ballIndex={chosen}
+        lapseOnly={lapseOnly}
         // From the list, back goes back to it; from a tapped chip, it closes.
         onBack={ballIndex === null ? () => setChosen(null) : onClose}
         onClose={onClose}
@@ -99,6 +102,7 @@ function BallEditor({
   nameOf,
   perOver,
   ballIndex,
+  lapseOnly,
   onBack,
   onClose,
 }: {
@@ -106,6 +110,7 @@ function BallEditor({
   nameOf: NameOf;
   perOver: number;
   ballIndex: number;
+  lapseOnly: boolean;
   onBack: () => void;
   onClose: () => void;
 }) {
@@ -123,7 +128,10 @@ function BallEditor({
   const [fielderId, setFielderId] = useState(ball.fielderId);
   const [secondFielderId, setSecondFielderId] = useState(ball.secondFielderId ?? null);
   const [bowlerId, setBowlerId] = useState(ball.bowlerId);
-  const [picking, setPicking] = useState<"fielderId" | "secondFielderId" | "bowlerId" | null>(null);
+  const [excellentCatch, setExcellentCatch] = useState(Boolean(ball.excellentCatch));
+  const [lapseType, setLapseType] = useState<CricketFieldingLapse | null>(ball.lapseType ?? null);
+  const [lapseFielderId, setLapseFielderId] = useState(ball.lapseFielderId ?? null);
+  const [picking, setPicking] = useState<"fielderId" | "secondFielderId" | "bowlerId" | "lapseFielderId" | null>(null);
 
   // What can change on this ball, as the API allows.
   const runsEditable =
@@ -134,6 +142,16 @@ function BallEditor({
   const takesFielder = WITH_FIELDER.includes(kind);
   const boundaryEditable = runsEditable && (runs === 4 || runs === 6);
   const bowlerEditable = ball.extraType !== "penalty";
+  const catchTaken = (kind === "caught" || kind === "caught-behind") && fielderId !== null;
+  const lapseEditable = !ball.noDelivery;
+  // Nothing comes off the bat on a wide, bye or leg-bye, so there's no catch.
+  const lapseChoices: { value: CricketFieldingLapse | null; label: string }[] = [
+    { value: null, label: "None" },
+    ...(ball.extraType === null || ball.extraType === "no-ball" ? [{ value: "dropped-catch" as const, label: "Dropped catch" }] : []),
+    { value: "misfield", label: "Misfield" },
+  ];
+  // A mistake chosen, but not yet who made it.
+  const lapseIncomplete = lapseType !== null && lapseFielderId === null;
   // An odd change puts the batters at the other ends from here on (as the API
   // works it out). A run-out's end, or a batter alone, leaves them placed.
   const strikeMoves =
@@ -149,6 +167,11 @@ function BallEditor({
     if (nextFielder !== ball.fielderId) edit.fielderId = nextFielder;
     const nextSecond = kind === "run-out" && nextFielder !== null ? secondFielderId : null;
     if (nextSecond !== (ball.secondFielderId ?? null)) edit.secondFielderId = nextSecond;
+    const nextExcellent = catchTaken && excellentCatch;
+    if (nextExcellent !== Boolean(ball.excellentCatch)) edit.excellentCatch = nextExcellent;
+  }
+  if (lapseEditable && !lapseIncomplete && (lapseType !== (ball.lapseType ?? null) || lapseFielderId !== (ball.lapseFielderId ?? null))) {
+    edit.fieldingLapse = lapseType === null || lapseFielderId === null ? null : { type: lapseType, fielderId: lapseFielderId };
   }
   if (bowlerEditable && bowlerId !== ball.bowlerId) edit.bowlerId = bowlerId;
   const changed = Object.keys(edit).length > 0;
@@ -158,7 +181,12 @@ function BallEditor({
   }
 
   // A card that opens the fielding side's list.
-  function playerSlot(slot: "fielderId" | "secondFielderId" | "bowlerId", label: string, playerId: number | null) {
+  function playerSlot(
+    slot: "fielderId" | "secondFielderId" | "bowlerId" | "lapseFielderId",
+    label: string,
+    playerId: number | null,
+    prompt = `Choose ${label.toLowerCase()}`,
+  ) {
     return (
       <button
         type="button"
@@ -175,7 +203,7 @@ function BallEditor({
         )}
         <span className="cricket-slot-text">
           <small>{label}</small>
-          <strong>{playerId === null ? `Choose ${label.toLowerCase()}` : nameOf(playerId)}</strong>
+          <strong>{playerId === null ? prompt : nameOf(playerId)}</strong>
         </span>
         <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
       </button>
@@ -184,19 +212,53 @@ function BallEditor({
 
   const nothing = !runsEditable && !kindEditable && !ball.wicketType && !bowlerEditable;
 
+  // Any fielding mistake on this ball: the choice and who made it.
+  const lapseSection = lapseEditable && (
+    <>
+      <label className="cricket-sheet-label">Fielding mistake</label>
+      <div className="cricket-chip-choice" role="radiogroup" aria-label="Fielding mistake">
+        {lapseChoices.map((option) => (
+          <button
+            key={option.label}
+            type="button"
+            role="radio"
+            aria-checked={lapseType === option.value}
+            className={lapseType === option.value ? "active" : ""}
+            onClick={() => {
+              setLapseType(option.value);
+              if (option.value === null) setLapseFielderId(null);
+            }}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+      {lapseType !== null && (
+        <div className="cricket-sheet-gap">
+          {playerSlot(
+            "lapseFielderId",
+            lapseType === "dropped-catch" ? "Dropped by" : "Misfield by",
+            lapseFielderId,
+            lapseType === "dropped-catch" ? "Choose who dropped it" : "Choose who misfielded",
+          )}
+        </div>
+      )}
+    </>
+  );
+
   return (
     <>
       <BottomSheet
-        title="Correct a ball"
-        icon="fa-solid fa-pen"
+        title={lapseOnly ? "Drop or misfield" : "Correct a ball"}
+        icon={lapseOnly ? "fa-solid fa-circle-xmark" : "fa-solid fa-pen"}
         onClose={onClose}
         footer={
           <div className="cricket-sheet-actions">
             <button type="button" className="cricket-sheet-undo" onClick={onBack} disabled={editBall.isPending}>
               <i className="fa-solid fa-arrow-left" aria-hidden="true"></i> Back
             </button>
-            <button type="button" className="cricket-sheet-submit" onClick={save} disabled={!changed || editBall.isPending}>
-              <i className="fa-solid fa-check" aria-hidden="true"></i> {editBall.isPending ? "Saving..." : "Save correction"}
+            <button type="button" className="cricket-sheet-submit" onClick={save} disabled={!changed || lapseIncomplete || editBall.isPending}>
+              <i className="fa-solid fa-check" aria-hidden="true"></i> {editBall.isPending ? "Saving..." : lapseOnly ? "Save" : "Save correction"}
             </button>
           </div>
         }
@@ -206,6 +268,7 @@ function BallEditor({
           {nameOf(ball.bowlerId)} to {nameOf(ball.batterId)}
         </p>
 
+        {lapseOnly ? lapseSection : <>
         {nothing && <p className="admin-hint">Nothing on this one can be corrected — undo it instead.</p>}
 
         {kindEditable && (
@@ -246,6 +309,14 @@ function BallEditor({
               >
                 <i className="fa-solid fa-xmark" aria-hidden="true"></i> No fielder named
               </button>
+            )}
+            {catchTaken && (
+              <div className="cricket-sheet-gap">
+                <button type="button" className="cricket-shot-toggle" role="switch" aria-checked={excellentCatch} onClick={() => setExcellentCatch((v) => !v)}>
+                  <span className={`cricket-shot-toggle-knob ${excellentCatch ? "is-on" : ""}`.trim()} aria-hidden="true"></span>
+                  Excellent catch
+                </button>
+              </div>
             )}
           </>
         )}
@@ -291,20 +362,30 @@ function BallEditor({
             )}
           </>
         )}
+
+        {lapseSection}
+        </>}
       </BottomSheet>
 
       {picking && (
         <PlayerPicker
-          title={picking === "bowlerId" ? "Who bowled the over?" : picking === "secondFielderId" ? "Fielder 2" : "Fielder"}
+          title={
+            picking === "bowlerId"
+              ? "Who bowled the over?"
+              : picking === "lapseFielderId"
+                ? lapseType === "dropped-catch" ? "Who dropped it?" : "Who misfielded?"
+                : picking === "secondFielderId" ? "Fielder 2" : "Fielder"
+          }
           icon={`fa-solid ${picking === "bowlerId" ? "fa-baseball" : "fa-hand"}`}
           items={fieldingXi
             .filter((id) => (picking === "secondFielderId" ? id !== fielderId : picking === "fielderId" ? id !== secondFielderId : true))
             .map((id) => ({ id, tag: picking !== "bowlerId" && id === bowlerId ? "Bowler" : undefined }))}
           nameOf={nameOf}
-          selectedId={picking === "bowlerId" ? bowlerId : picking === "fielderId" ? fielderId : secondFielderId}
+          selectedId={picking === "bowlerId" ? bowlerId : picking === "fielderId" ? fielderId : picking === "lapseFielderId" ? lapseFielderId : secondFielderId}
           onPick={(id) => {
             if (picking === "bowlerId") setBowlerId(id);
             else if (picking === "fielderId") setFielderId(id);
+            else if (picking === "lapseFielderId") setLapseFielderId(id);
             else setSecondFielderId(id);
             setPicking(null);
           }}

@@ -36,6 +36,7 @@ import { useMvpLock } from "../matches/useMvpLock";
 import { FormatView } from "../format/FormatView";
 import { TournamentBanner } from "./TournamentBanner";
 import { TournamentInfo } from "./TournamentInfo";
+import { TournamentPlayers } from "./TournamentPlayers";
 import { TournamentStats } from "./TournamentStats";
 import { TOURNAMENT_SHARE_HEADINGS } from "./tournamentTabCards";
 import { NrrCalculatorSheet } from "./NrrCalculatorSheet";
@@ -52,7 +53,7 @@ import { Loader } from "../../components/Loader";
 import { TeamMark } from "../teams/TeamMark";
 import { SwipePanels } from "../../SwipePanels";
 
-type Tab = "info" | "teams" | "matches" | "points" | "heroes" | "stats" | "totals";
+type Tab = "info" | "teams" | "players" | "matches" | "points" | "heroes" | "stats" | "totals";
 
 // How the teams are filled: generated from matched sets, or built by hand
 // (new teams or copies of other tournaments' teams).
@@ -64,6 +65,7 @@ const TABS: { value: Tab; label: string }[] = [
   { value: "info", label: "Profile" },
   { value: "matches", label: "Matches" },
   { value: "teams", label: "Teams" },
+  { value: "players", label: "Players" },
   { value: "points", label: "Points Table" },
   { value: "heroes", label: "Heroes" },
   { value: "stats", label: "Leaderboard" },
@@ -126,7 +128,7 @@ const TOURNAMENT_TIPS: TipStep[] = [
   {
     target: "tabs",
     title: "Everything about the tournament",
-    text: "Switch between Profile, Matches, Teams, Points Table, Heroes, the Leaderboard and Stats. Swipe the tabs sideways to see them all.",
+    text: "Switch between Profile, Matches, Teams, Players, Points Table, Heroes, the Leaderboard and Stats. Swipe the tabs sideways to see them all.",
   },
   {
     target: "settings",
@@ -459,6 +461,12 @@ export function CricketTournamentPage() {
               </ListCard>
 
               </>
+            )}
+
+            {tab === "players" && (
+              <ListCard>
+                <TournamentPlayers tournament={tournament} />
+              </ListCard>
             )}
 
             {tab === "matches" && (

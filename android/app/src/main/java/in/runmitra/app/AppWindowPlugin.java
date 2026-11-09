@@ -2,6 +2,7 @@ package in.runmitra.app;
 
 import android.graphics.Color;
 import android.view.View;
+import android.view.WindowManager;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
@@ -27,6 +28,20 @@ public class AppWindowPlugin extends Plugin {
         getActivity().runOnUiThread(() -> {
             View frame = (View) getBridge().getWebView().getParent();
             frame.setBackgroundColor(parsed);
+            call.resolve();
+        });
+    }
+
+    // Keeps the screen on while the app is showing (src/hooks/useKeepScreenAwake.ts).
+    @PluginMethod
+    public void setKeepAwake(PluginCall call) {
+        boolean on = Boolean.TRUE.equals(call.getBoolean("on", false));
+        getActivity().runOnUiThread(() -> {
+            if (on) {
+                getActivity().getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            } else {
+                getActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            }
             call.resolve();
         });
     }

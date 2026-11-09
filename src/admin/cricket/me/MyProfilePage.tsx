@@ -134,7 +134,7 @@ function ProfileForm({ me }: { me: CricketMe }) {
     <form onSubmit={handleSubmit} noValidate className="cv-profile-form">
       {/* The Home hero: who they are on the left; the photo (tap to change)
           on the right, with Remove photo under it. */}
-      <section className="cricket-home-hero cv-profile-hero">
+      <section className="cricket-home-hero hero-art-my-profile cv-profile-hero">
         <div className="cricket-home-hero-top">
           <div className="cricket-home-hero-name cv-profile-id">
             <small>{admin?.isSuperAdmin ? "Organiser" : "Player"}</small>

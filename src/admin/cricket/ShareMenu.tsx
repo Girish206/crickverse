@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { siteOrigin } from "../../app-shell/platform";
 import { PageHeaderAction } from "../components/PageHeader";
 import { avatarColorFor } from "./avatarColor";
 import { BottomSheet } from "./BottomSheet";
-import { useShareCard } from "./tournaments/shareCard";
+import { CardPlaceholder, useShareCard } from "./tournaments/shareCard";
+import { linkCanHavePicture, uploadLinkPicture } from "./tournaments/sharePreview";
 
 // A "Share as image" row (fixtures / squad cards).
 export interface ShareMenuItem {
@@ -82,10 +83,15 @@ export function ShareSheet({
   note,
   onClose,
 }: ShareSheetProps & { onClose: () => void }) {
-  const url = new URL(path, siteOrigin()).toString();
+  // What makes this link preview the picture; undefined until it's saved,
+  // null if saving it failed (the link then previews as it always has).
+  const [linkPicture, setLinkPicture] = useState<string | null | undefined>(undefined);
+  const link = new URL(path, siteOrigin());
+  if (linkPicture) link.searchParams.set("card", linkPicture);
+  const url = link.toString();
   const message = `${text}\n${url}`;
   const canShare = typeof navigator.share === "function";
-  const { image: cardImage, download, share } = useShareCard({
+  const { image: cardImage, failed: cardFailed, download, share } = useShareCard({
     shareTitle: title,
     what: "card",
     fileName: card?.fileName ?? "",
@@ -94,6 +100,24 @@ export function ShareSheet({
   });
   // Left out where the device can't send a file (most computers).
   const canShareImage = Boolean(card && navigator.canShare?.({ files: [new File(["x"], "card.png", { type: "image/png" })] }));
+
+  // Saved as soon as it's drawn, not when a tile is tapped: browsers won't
+  // open WhatsApp or the share sheet after waiting on the network.
+  const picturedLink = Boolean(card) && linkCanHavePicture(path);
+  useEffect(() => {
+    if (!picturedLink || !cardImage) return;
+    let cancelled = false;
+    uploadLinkPicture(path, cardImage.url)
+      .catch(() => null)
+      .then((token) => {
+        if (!cancelled) setLinkPicture(token);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [picturedLink, path, cardImage]);
+  // Links wait for the picture, so none goes out without it.
+  const linkReady = !picturedLink || cardFailed || linkPicture !== undefined;
 
   async function copyLink() {
     try {
@@ -137,7 +161,7 @@ export function ShareSheet({
   const tiles: LinkTile[] = card
     ? [
         ...(canShareImage
-          ? [{ icon: "fa-solid fa-image", label: "Share image", tone: "is-copy", onClick: share, disabled: !cardImage, keepOpen: true }]
+          ? [{ icon: "fa-solid fa-image", label: "Share image", tone: "is-copy", onClick: share, disabled: !cardImage || !linkReady, keepOpen: true }]
           : []),
         { icon: "fa-solid fa-download", label: "Download", tone: "is-more", onClick: download, disabled: !cardImage, keepOpen: true },
         copy,
@@ -169,7 +193,13 @@ export function ShareSheet({
     <BottomSheet title={heading} icon="fa-solid fa-share-nodes" onClose={onClose}>
       {card ? (
         <div className="cricket-share-stage">
-          {cardImage ? <img src={cardImage.url} alt={`${title} card`} /> : <div className="cricket-share-stage-loading" aria-hidden="true" />}
+          {cardImage ? (
+            <img src={cardImage.url} alt={`${title} card`} />
+          ) : (
+            <div className="cricket-share-stage-loading">
+              <CardPlaceholder failed={cardFailed} />
+            </div>
+          )}
         </div>
       ) : (
         <div className="cricket-share-preview">
@@ -195,7 +225,12 @@ export function ShareSheet({
       <h3 className="cricket-share-label">{card ? "Share to" : "Send link"}</h3>
       <div className={`cricket-share-tiles ${card ? "is-compact" : ""}`.trim()}>
         {tiles.map((tile) => (
-          <button key={tile.label} type="button" disabled={tile.disabled} onClick={tile.keepOpen ? tile.onClick : run(tile.onClick)}>
+          <button
+            key={tile.label}
+            type="button"
+            disabled={tile.disabled || (!tile.keepOpen && !linkReady)}
+            onClick={tile.keepOpen ? tile.onClick : run(tile.onClick)}
+          >
             <span className={tile.tone}>
               <i className={tile.icon} aria-hidden="true"></i>
             </span>

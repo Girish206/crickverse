@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 96" fill="#fff">
+  <!-- The ground's scoreboard on its two posts. -->
+  <path d="M252 72h9v24h-9zM349 72h9v24h-9z" fill-opacity=".7"/>
+  <rect x="222" y="6" width="166" height="68" rx="6" fill-opacity=".65"/>
+  <g fill="#000" fill-opacity=".42">
+    <rect x="234" y="15" width="22" height="33" rx="3"/>
+    <rect x="260" y="15" width="22" height="33" rx="3"/>
+    <rect x="286" y="15" width="22" height="33" rx="3"/>
+    <rect x="328" y="15" width="22" height="33" rx="3"/>
+    <rect x="354" y="15" width="22" height="33" rx="3"/>
+  </g>
+  <!-- 128 / 04, in lit segments. -->
+  <path d="M245 21v21M265 21h12v10h-12v11h12M291 21h12v21h-12zM291 31.500h12M333 21h12v21h-12zM369 21v21M359 21v12h15" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M322 18l-8 28" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+  <!-- This over's balls along the bottom. -->
+  <g>
+    <circle cx="262" cy="61" r="5"/><circle cx="279" cy="61" r="5"/><circle cx="296" cy="61" r="5"/><circle cx="313" cy="61" r="5"/>
+    <circle cx="330" cy="61" r="5" fill-opacity=".35"/><circle cx="347" cy="61" r="5" fill-opacity=".35"/>
+  </g>
+  <path d="M130 96V84Q170 76 222 80V96z" fill-opacity=".3"/>
+</svg>

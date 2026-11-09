@@ -31,24 +31,46 @@
   flex-direction: column;
 }
 
+/* Just the logo, pulled down so it sits half over the card's top edge. */
 .admin-login-intro {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  text-align: center;
+  justify-content: flex-end;
+  position: relative;
+  z-index: 2;
+  margin-bottom: -46px;
 }
-/* Card: the form only */
+
+/* Card: the heading and the form, under a strip stitched like a ball's seam. */
 .admin-login-card {
   position: relative;
   width: 100%;
   background: var(--adm-surface);
   border: 1px solid var(--adm-line);
   border-radius: var(--radius-lg);
-  padding: 2rem 2rem 1.75rem;
+  padding: 3.75rem 2rem 1.75rem;
   overflow: hidden;
-  box-shadow: var(--shadow-card);
+  box-shadow: 0 18px 48px rgba(16, 24, 40, 0.16);
+}
+
+:root[data-bs-theme="dark"] .admin-login-card {
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5);
+}
+
+.admin-login-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 7px;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.75) 0 7px, transparent 7px 14px) center / 100% 1.5px no-repeat,
+    var(--primary-fill);
+}
+
+.admin-login-head {
+  text-align: center;
 }
 
 /* admin.css (loaded with most pages, so often still here after signing out)
@@ -67,20 +89,53 @@
 
   .admin-login-intro {
     flex: none;
-    margin-bottom: 1.5rem;
   }
 }
 .admin-login-logo-ring {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0.25rem auto 1rem;
+  position: relative;
+  box-sizing: border-box;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  border: 4px solid transparent;
+  background:
+    linear-gradient(var(--adm-surface), var(--adm-surface)) padding-box,
+    conic-gradient(from 210deg, var(--primary-fill), #e3af3e, var(--primary-fill)) border-box;
+  box-shadow: 0 10px 30px rgba(var(--primary-rgb), 0.38);
 }
+
+/* A ring spreading out from the badge, only when motion is welcome. */
+@media (prefers-reduced-motion: no-preference) {
+  .admin-login-logo-ring::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 2px solid var(--primary-fill);
+    animation: admin-login-logo-pulse 2.8s ease-out infinite;
+  }
+}
+
+@keyframes admin-login-logo-pulse {
+  from {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  70%,
+  to {
+    transform: scale(1.3);
+    opacity: 0;
+  }
+}
+
 .admin-login-logo {
   position: relative;
   z-index: 1;
-  width: 68px;
-  height: 68px;
+  width: 64px;
+  height: 64px;
   object-fit: contain;}
 
 .admin-login-badge {
@@ -104,9 +159,52 @@
 }
 
 .admin-login-subtitle {
-  margin: 0 0 1.5rem;
+  margin: 0 0 1.25rem;
   color: var(--muted-color);
-  font-size: var(--fs-base);
+  font-size: var(--fs-sm);
+}
+
+/* What the app is for, under the first step's button. */
+.admin-login-perks {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 1.1rem 0 0;
+  padding: 1.1rem 0 0;
+  border-top: 1px solid var(--adm-line);
+  text-align: center;
+}
+
+.admin-login-perks li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+.admin-login-perks i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  margin-bottom: 6px;
+  border-radius: 50%;
+  background: rgba(var(--primary-rgb), 0.1);
+  color: var(--primary);
+  font-size: 0.95rem;
+}
+
+.admin-login-perks strong {
+  color: var(--adm-text);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+
+.admin-login-perks span {
+  color: var(--muted-color);
+  font-size: var(--fs-2xs);
 }
 
 .admin-login-form {
@@ -135,7 +233,7 @@
 
 @media (max-width: 480px) {
   .admin-login-card {
-    padding: 1.75rem 1.25rem 1.5rem;
+    padding: 3.75rem 1.25rem 1.5rem;
     border-radius: var(--radius-lg);
   }
 
