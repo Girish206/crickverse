@@ -150,11 +150,13 @@ function describe(ball: CricketBall, nameOf: NameOf, seed: number, team: string)
   return { lead, line, kind };
 }
 
-// What the fielders did on top of the result: a great catch, or a mistake.
+// What happened on top of the result: a short run, a great catch, or a
+// fielding mistake.
 function fieldingNote(ball: CricketBall, line: string, nameOf: NameOf) {
   const lapse =
     ball.lapseFielderId == null ? null : ball.lapseType === "dropped-catch" ? `Dropped by ${nameOf(ball.lapseFielderId)}!` : `Misfield by ${nameOf(ball.lapseFielderId)}.`;
-  const notes = [ball.excellentCatch ? "What a catch!" : null, lapse].filter(Boolean).join(" ");
+  const short = ball.shortRuns ? `${ball.shortRuns === 1 ? "One" : ball.shortRuns} run${ball.shortRuns === 1 ? "" : "s"} short — not counted.` : null;
+  const notes = [short, ball.excellentCatch ? "What a catch!" : null, lapse].filter(Boolean).join(" ");
   return notes && `${/[.!?]$/.test(line) ? "" : "."} ${notes}`;
 }
 

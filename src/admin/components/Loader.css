@@ -1,64 +1,129 @@
-/* In-page spinner (Loader.tsx). */
+/* In-page loader (Loader.tsx): a cricket ball bouncing in place. */
 .cv-loader {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
   min-height: 180px;
   padding: 24px 16px;
   color: var(--muted-color);
 }
+/* A whole screen loading: the height left between the top bar and the
+   phone's tab bar (and the page's padding), so the ball sits mid-screen. */
 .cv-loader.is-page {
-  min-height: 55vh;
+  min-height: calc(100dvh - var(--admin-navbar-height, 64px) - 140px);
 }
-.cv-loader-spinner {
-  width: 38px;
-  height: 38px;
-  border: 3px solid color-mix(in srgb, var(--primary) 18%, transparent);
-  border-top-color: var(--primary);
-  border-radius: 50%;
-  animation: cv-loader-spin 0.8s linear infinite;
+.cv-loader.is-page .cv-loader-art {
+  width: 160px;
+  height: 94px;
+}
+.cv-loader.is-page .cv-loader-label {
+  font-size: var(--fs-base);
 }
 .cv-loader-label {
   font-size: var(--fs-sm);
   font-weight: 600;
   letter-spacing: 0.02em;
 }
-@keyframes cv-loader-spin {
+
+/* The ball (CricketBall), shared by the loader, BallSpinner and the
+   bowling-now strip. */
+.cv-ball-leather {
+  fill: #c62828;
+}
+.cv-ball-seam {
+  fill: none;
+  stroke: #fff4e0;
+  stroke-width: 0.7;
+  stroke-dasharray: 0.9 0.6;
+  stroke-linecap: round;
+}
+.cv-ball-edge {
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.18);
+  stroke-width: 0.6;
+}
+.cv-ball-spin {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cv-ball-spin 0.45s linear infinite;
+}
+@keyframes cv-ball-spin {
   to {
     transform: rotate(360deg);
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .cv-loader-spinner {
-    animation-duration: 2s;
+
+.cv-loader-art {
+  --cv-bounce: 0.9s;
+  width: 96px;
+  height: 56px;
+  overflow: visible;
+}
+.cv-bounce-y {
+  animation: cv-bounce-y var(--cv-bounce) infinite;
+}
+.cv-bounce-squash {
+  transform-origin: 0 6px;
+  animation: cv-bounce-squash var(--cv-bounce) infinite;
+}
+.cv-bounce-shadow {
+  fill: color-mix(in srgb, var(--muted-color) 40%, transparent);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cv-bounce-shadow var(--cv-bounce) infinite;
+}
+@keyframes cv-bounce-y {
+  0%,
+  100% {
+    transform: translateY(10px);
+    animation-timing-function: cubic-bezier(0.5, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(45px);
+    animation-timing-function: cubic-bezier(0, 0, 0.5, 1);
+  }
+}
+@keyframes cv-bounce-squash {
+  0%,
+  42%,
+  58%,
+  100% {
+    transform: scale(1, 1);
+  }
+  50% {
+    transform: scale(1.22, 0.78);
+  }
+}
+@keyframes cv-bounce-shadow {
+  0%,
+  100% {
+    transform: scaleX(0.45);
+    opacity: 0.4;
+    animation-timing-function: cubic-bezier(0.5, 0, 1, 1);
+  }
+  50% {
+    transform: scaleX(1);
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0, 0, 0.5, 1);
   }
 }
 
-/* Top-of-screen bar while a screen's code loads (LayoutWrapper). */
-.cv-route-progress {
-  position: fixed;
-  inset: 0 0 auto;
-  z-index: 2000;
-  height: 3px;
-  overflow: hidden;
-  background: color-mix(in srgb, var(--primary) 18%, transparent);
+/* Inline spinner (BallSpinner). */
+.cv-ball-spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+  flex: none;
 }
-.cv-route-progress::after {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 40%;
-  border-radius: 999px;
-  background: var(--primary);
-  animation: cv-route-progress 1s ease-in-out infinite;
-}
-@keyframes cv-route-progress {
-  from {
-    transform: translateX(-100%);
+
+@media (prefers-reduced-motion: reduce) {
+  .cv-loader-art {
+    --cv-bounce: 1.8s;
   }
-  to {
-    transform: translateX(250%);
+  .cv-ball-spin {
+    animation-duration: 1.6s;
   }
 }

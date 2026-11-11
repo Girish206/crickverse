@@ -58,7 +58,7 @@ export function FormLine({ form, label = "Recent form" }: { form: FormResult[]; 
         <span className="cv-form" aria-label={`Last ${form.length} results, newest first: ${form.join(" ")}`}>
           {form.map((result, i) => (
             <span key={i} className={`cv-form-chip is-${result}`} aria-hidden="true">
-              {result}
+              <span>{result}</span>
             </span>
           ))}
         </span>

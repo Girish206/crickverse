@@ -208,9 +208,24 @@ export function useLastLeaders(id: number) {
 
 export function useSetCricketCurrentPlayers() {
   return useMatchMutation(
-    ({ id, ...input }: { id: number; strikerId?: number | null; nonStrikerId?: number | null; bowlerId?: number | null }) =>
+    ({
+      id,
+      ...input
+    }: {
+      id: number;
+      strikerId?: number | null;
+      nonStrikerId?: number | null;
+      bowlerId?: number | null;
+      // The batter being changed was a wrong pick: their balls move to the new one.
+      wrongBatter?: boolean;
+    }) =>
       apiClient.put(url(id, "/current"), input),
   );
+}
+
+// "The bowler is running in": live pages show it until the ball is scored.
+export function useMarkCricketBowling() {
+  return useMatchMutation(({ id }: { id: number }) => apiClient.post(url(id, "/bowling")));
 }
 
 // A ball on its way to the API, kept on the device until it's saved, so a
@@ -362,6 +377,11 @@ export interface CricketBallEdit {
   excellentCatch?: boolean;
   // A dropped catch or misfield on this ball; null takes it off.
   fieldingLapse?: { type: CricketFieldingLapse; fielderId: number } | null;
+  // The other batter faced this ball.
+  swapStrike?: boolean;
+  // Whether the balls after it move to the other batter to match ("auto"),
+  // or stay as recorded for the scorer to fix one by one ("manual").
+  strikeAfter?: "auto" | "manual";
 }
 
 export function useEditCricketBall() {
@@ -496,6 +516,21 @@ export function useTeamPlayers(teamKey: string | null, enabled = true) {
       });
       return data.data.playerIds;
     },
+  });
+}
+
+// A team's captain and keeper from its last match, by its key (teamKeyOf),
+// to start a new match's squad with.
+export function useTeamLastLeaders(teamKey: string | null) {
+  return useQuery({
+    enabled: teamKey !== null,
+    queryKey: ["cricket-matches", "team-last-leaders", teamKey],
+    queryFn: async () =>
+      (
+        await apiClient.get<ApiEnvelope<CricketLastLeaders>>("/admin/cricket/teams/last-leaders", {
+          params: { key: teamKey },
+        })
+      ).data.data,
   });
 }
 

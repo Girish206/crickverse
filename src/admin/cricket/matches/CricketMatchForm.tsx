@@ -1,9 +1,12 @@
-import { Fragment, useEffect, useId, useState, type FormEvent, type Ref } from "react";
+import { Fragment, useEffect, useId, useRef, useState, type FormEvent, type Ref } from "react";
+import { BallSpinner } from "../../components/Loader";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
   useCreateCricketMatch,
   useCricketPlaces,
+  useDeleteCricketMatch,
+  useTeamLastLeaders,
   useUpdateCricketMatch,
 } from "../../../api/hooks/cricket/useCricketMatches";
 import { useCreateCricketPlayer, useCricketMe, lookupCricketPlayer } from "../../../api/hooks/cricket/useCricketPlayers";
@@ -18,11 +21,13 @@ import {
   type CricketMatchType,
   type CricketPitchType,
   type CricketPlayer,
+  type CricketTeamRoles,
   type CricketTournament,
 } from "../../../api/types";
 import { ModalActions } from "../../components/ModalActions";
 import CustomButton from "../../dms/components/CustomButton";
-import { FormIdContext } from "../../dms/components/modalContext";
+import { FormIdContext, useModalSlot, type CloseVia } from "../../dms/components/modalContext";
+import { NO_TOSS, TossStep, tossProblem, useStartWithToss } from "./TossStep";
 import { avatarColorFor } from "../avatarColor";
 import { BottomSheet } from "../BottomSheet";
 import { BallTypeChoice, ChipChoice } from "../CricketChoices";
@@ -32,7 +37,7 @@ import { normalizeMobile } from "../mobile";
 import { STAGES, stageLabel, teamKeyOf, usePlayerNames } from "./matchUtils";
 import { useSuggestions } from "../useSuggestions";
 import { PlayerAvatar } from "../players/PlayerAvatar";
-import { NO_ROLES, rolesOf } from "../tournaments/TeamRoleChips";
+import { NO_ROLES, rolesOf, withLastLeaders } from "../tournaments/TeamRoleChips";
 import { SquadSheets, type SquadStep } from "./SquadSheets";
 import { fetchTeamInvite } from "../../../api/hooks/cricket/useCricketTeamInvites";
 import { messageFor } from "../../../api/mutationErrors";
@@ -146,6 +151,9 @@ export function CricketMatchForm({
   const createPlayer = useCreateCricketPlayer();
   const nameOf = usePlayerNames();
   const updateMatch = useUpdateCricketMatch();
+  const deleteMatch = useDeleteCricketMatch();
+  const { start: startWithToss, busy: starting } = useStartWithToss();
+  const modal = useModalSlot();
 
   const tournamentId = existing?.tournamentId ?? fixedTournament ?? null;
   const startMode = initialStartMode ?? "immediate";
@@ -217,6 +225,19 @@ export function CricketMatchForm({
   // starts with), and the side whose squad sheets are open.
   const [squads, setSquads] = useState<[CricketMatchSquad | null, CricketMatchSquad | null]>([null, null]);
   const [squadSheet, setSquadSheet] = useState<{ slot: 0 | 1; startAt: SquadStep; askCaptain: boolean } | null>(null);
+  // "Start Match" on a new match moves on to the toss here, with nothing
+  // saved yet: the match is only created once the toss's "Start" is tapped,
+  // so leaving (or the app closing) first leaves no match behind.
+  const [tossing, setTossing] = useState(false);
+  const [toss, setToss] = useState(NO_TOSS);
+  const [tossError, setTossError] = useState<string | null>(null);
+  // Once the toss has been seen, closing the sheet asks to schedule or discard.
+  const reachedToss = useRef(false);
+  // Created, but the start after it failed: a retry doesn't create it again.
+  const createdId = useRef<number | null>(null);
+  // The "Leave this match?" sheet: schedule it, discard it or keep editing.
+  const [leaving, setLeaving] = useState(false);
+  const allowClose = useRef(false);
   // Lets the Schedule Match button, portaled into the sheet footer, submit.
   const formId = useId();
 
@@ -321,24 +342,39 @@ export function CricketMatchForm({
     const key = teamKeys[slot];
     return key === null ? null : (knownTeams(tournaments, me).find((team) => team.key === key)?.logoUrl ?? null);
   };
+  // Each side's team key (see teamKeyOf), for its last match's leaders; none
+  // for a new team.
+  const sideKey = (slot: 0 | 1) => {
+    if (standalone) return teamKeys[slot];
+    const index = slot === 0 ? teamA : teamB;
+    return tournamentId === null || index === null ? null : `t:${tournamentId}:${index}`;
+  };
+  const { data: lastLeadersA } = useTeamLastLeaders(existing ? null : sideKey(0));
+  const { data: lastLeadersB } = useTeamLastLeaders(existing ? null : sideKey(1));
+  const lastLeaders = [lastLeadersA, lastLeadersB] as const;
   // A tournament side's roster (a one-off side's comes from its team key).
   const rosterOf = (slot: 0 | 1) => {
     const index = slot === 0 ? teamA : teamB;
     return index === null ? [] : (tournament?.teams[index]?.playerIds ?? []);
   };
   // Each side's squad and leaders: as picked here, else what its team starts
-  // with (a tournament or saved team's players, or a new team's captain).
+  // with (a tournament or saved team's players, or a new team's captain),
+  // with whoever captained and kept wicket in its last match taking over.
   function squadOf(slot: 0 | 1): CricketMatchSquad {
     const picked = squads[slot];
     if (picked) return picked;
+    const withLast = (playerIds: number[], roles: Partial<CricketMatchSquad>) => ({
+      playerIds,
+      ...withLastLeaders(rolesOf(roles), lastLeaders[slot], playerIds),
+    });
     if (!standalone) {
       const index = slot === 0 ? teamA : teamB;
-      return { playerIds: rosterOf(slot), ...rolesOf((index !== null && tournament?.teams[index]) || {}) };
+      return withLast(rosterOf(slot), (index !== null && tournament?.teams[index]) || {});
     }
     const saved = me?.savedTeams.find((team) => team.teamKey === teamKeys[slot]);
-    if (saved) return { playerIds: saved.playerIds, ...rolesOf(saved) };
+    if (saved) return withLast(saved.playerIds, saved);
     const captainId = captains[slot];
-    return { playerIds: captainId === null ? [] : [captainId], ...NO_ROLES, captainId };
+    return withLast(captainId === null ? [] : [captainId], { ...NO_ROLES, captainId });
   }
   function openTeamSheet(slot: 0 | 1) {
     setTeamTab(teamChoices(slot).length ? "existing" : "new");
@@ -412,6 +448,34 @@ export function CricketMatchForm({
     }
   }
 
+  // What's saved for the match, from the fields (checked by submitMatch).
+  function matchInput(mode: "immediate" | "scheduled") {
+    return {
+      teamAIndex: teamA ?? 0,
+      teamBIndex: teamB ?? 1,
+      overs: Number(overs),
+      // A new match started now is played now.
+      scheduledAt:
+        !existing && mode === "immediate"
+          ? new Date().toISOString()
+          : scheduledAt
+            ? new Date(scheduledAt).toISOString()
+            : new Date().toISOString(),
+      venue: venue.trim() || null,
+      city: city.trim() || null,
+      matchType: matchType!,
+      ballType: ballType!,
+      pitchType,
+      stage,
+      ballsPerOver,
+      bowlerOverLimit: bowlerLimit.trim() ? Number(bowlerLimit) : null,
+      lastManStands,
+      freeHit,
+      powerplayOvers: hasPowerplay ? Number(powerplayOvers) : null,
+      isPublic,
+    };
+  }
+
   async function submitMatch(mode: "immediate" | "scheduled" = startMode) {
     const oversNumber = Number(overs);
     const names: [string, string] = [teamAName.trim(), teamBName.trim()];
@@ -429,6 +493,19 @@ export function CricketMatchForm({
       if (!tournament) return setError("Choose a tournament.");
       if (tournament.teams.length < 2) return setError("Add at least two teams on the tournament's Teams tab first.");
       if (teamA === null || teamB === null || teamA === teamB) return setError("Choose two different teams.");
+    }
+    // Starting now goes straight to the toss, so the squads are checked here.
+    if (!existing && mode === "immediate") {
+      const short = ([0, 1] as const).find((slot) => squadOf(slot).playerIds.length < 2);
+      if (short !== undefined) {
+        setSquadSheet({ slot: short, startAt: "players", askCaptain: false });
+        return setError(`${sideName(short) || "Each side"} needs at least 2 players in its squad.`);
+      }
+      const noCaptain = ([0, 1] as const).find((slot) => squadOf(slot).captainId === null);
+      if (noCaptain !== undefined) {
+        setSquadSheet({ slot: noCaptain, startAt: "captain", askCaptain: false });
+        return setError(`Choose ${sideName(noCaptain) || "each side"}'s captain.`);
+      }
     }
     if (!Number.isInteger(oversNumber) || oversNumber < 1 || oversNumber > MAX_OVERS) {
       return setError(`Overs must be a whole number from 1 to ${MAX_OVERS}.`);
@@ -456,27 +533,7 @@ export function CricketMatchForm({
     }
     setMissingType(false);
     setError(null);
-    const matchScheduledAt = !existing && mode === "immediate"
-      ? new Date().toISOString()
-      : (scheduledAt ? new Date(scheduledAt).toISOString() : new Date().toISOString());
-    const input = {
-      teamAIndex: teamA ?? 0,
-      teamBIndex: teamB ?? 1,
-      overs: oversNumber,
-      scheduledAt: matchScheduledAt,
-      venue: venue.trim() || null,
-      city: city.trim() || null,
-      matchType,
-      ballType,
-      pitchType,
-      stage,
-      ballsPerOver,
-      bowlerOverLimit: limit,
-      lastManStands,
-      freeHit,
-      powerplayOvers: powerplay,
-      isPublic,
-    };
+    const input = matchInput(mode);
     if (existing) {
       // The setup sheet submits on every "Start Scoring"; skip the request
       // when nothing was changed.
@@ -501,32 +558,126 @@ export function CricketMatchForm({
         }
       }
       onSaved();
+    } else if (mode === "immediate") {
+      // Nothing is saved yet; see `tossing`.
+      setTossError(null);
+      setTossing(true);
+      reachedToss.current = true;
     } else {
-      // Only a new team names its captain; a known team has its own.
-      const captainIds: [number | null, number | null] = [
-        newSides[0] ? squadOf(0).captainId : null,
-        newSides[1] ? squadOf(1).captainId : null,
-      ];
-      let created;
-      try {
-        created = await createMatch.mutateAsync({
-          tournamentId: tournament?.id ?? null,
-          ...input,
-          ...(standalone && { teamNames: names, teamKeys, captainIds }),
-          squads,
-        });
-      } catch (err) {
-        // The global handler already toasted it; keep it inline too.
-        return setInlineError(messageFor(err));
-      }
+      const id = await create(input, names);
+      if (id === null) return;
       onSaved();
-      if (mode === "immediate") {
-        navigate(`/matches/${created.id}/setup`);
-      } else {
-        navigate(`/matches/${created.id}`);
-      }
+      navigate(`/matches/${id}`);
     }
   }
+
+  // Creates the new match (once), resolving its id, or null if it failed.
+  async function create(input: ReturnType<typeof matchInput>, names: [string, string]) {
+    if (createdId.current !== null) return createdId.current;
+    // Only a new team names its captain; a known team has its own.
+    const captainIds: [number | null, number | null] = [
+      newSides[0] ? squadOf(0).captainId : null,
+      newSides[1] ? squadOf(1).captainId : null,
+    ];
+    try {
+      const created = await createMatch.mutateAsync({
+        tournamentId: tournament?.id ?? null,
+        ...input,
+        ...(standalone && { teamNames: names, teamKeys, captainIds }),
+        squads,
+      });
+      createdId.current = created.id;
+      return created.id;
+    } catch (err) {
+      // The global handler already toasted it; keep it inline too.
+      setInlineError(messageFor(err));
+      return null;
+    }
+  }
+
+  // The toss's "Start": create the match, start it and open the scorer.
+  async function startFromToss() {
+    const problem = tossProblem(toss);
+    if (problem) {
+      setTossError(problem);
+      toast.error(problem, { duration: 5000 });
+      return;
+    }
+    setTossError(null);
+    const names: [string, string] = [teamAName.trim(), teamBName.trim()];
+    const id = await create(matchInput("immediate"), names);
+    if (id === null) return setTossError("Couldn't create the match — try again.");
+    const sides = [squadOf(0), squadOf(1)] as const;
+    const started = await startWithToss(
+      id,
+      toss,
+      [sides[0].playerIds, sides[1].playerIds],
+      sides.map(({ captainId, viceCaptainId, keeperId }) => ({ captainId, viceCaptainId, keeperId })) as [
+        CricketTeamRoles,
+        CricketTeamRoles,
+      ],
+    );
+    if (!started) return setTossError("Couldn't start the match — try again.");
+    allowClose.current = true;
+    onSaved();
+    navigate(`/matches/${id}/score`);
+  }
+
+  // Closing the sheet once the toss has been seen: going back from the toss
+  // returns to the details; otherwise schedule the match or discard it.
+  const closeGuard = useRef<(via: CloseVia) => boolean>(() => false);
+  closeGuard.current = (via) => {
+    if (allowClose.current || !reachedToss.current) return false;
+    // Back (the phone's, Escape) steps back from the toss; the X asks.
+    if (tossing && via === "back") {
+      setTossing(false);
+      return true;
+    }
+    setLeaving(true);
+    return true;
+  };
+  async function discard() {
+    setLeaving(false);
+    // Only there if a start failed after it was created.
+    if (createdId.current !== null) await deleteMatch.mutateAsync(createdId.current).catch(() => undefined);
+    allowClose.current = true;
+    modal?.close();
+  }
+  const leaveSheet = leaving && (
+    <BottomSheet title="Leave this match?" icon="fa-solid fa-baseball-bat-ball" onClose={() => setLeaving(false)}>
+      <p className="cricket-sheet-context">It hasn&apos;t started yet. Schedule it to start later, or discard it.</p>
+      <div className="cricket-leave-actions">
+        <button type="button" className="cricket-leave-btn" onClick={() => setLeaving(false)}>
+          Keep editing
+        </button>
+        <button type="button" className="cricket-leave-btn is-danger" disabled={createMatch.isPending} onClick={discard}>
+          Discard
+        </button>
+        <button
+          type="button"
+          className="cricket-leave-btn is-primary"
+          disabled={createMatch.isPending}
+          onClick={() => submitMatch("scheduled")}
+        >
+          {createMatch.isPending ? "Scheduling..." : "Schedule it"}
+        </button>
+      </div>
+    </BottomSheet>
+  );
+  // The toss step titles the sheet "Toss & Openers".
+  const setHeading = modal?.setHeading;
+  const matchup = `${sideName(0)} vs ${sideName(1)}`;
+  useEffect(() => {
+    if (!setHeading || !tossing) return;
+    setHeading({ title: "Toss & Openers", subtitle: matchup, icon: "fa-solid fa-coins" });
+    return () => setHeading(null);
+  }, [setHeading, tossing, matchup]);
+  const guardClose = modal?.guardClose;
+  useEffect(() => {
+    if (!guardClose || existing) return;
+    guardClose((via) => closeGuard.current(via));
+    return () => guardClose(null);
+  }, [guardClose, existing]);
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -542,6 +693,51 @@ export function CricketMatchForm({
     onPick: setCity,
     icon: "fa-solid fa-city",
   });
+  if (tossing) {
+    const sides = [squadOf(0), squadOf(1)] as const;
+    return (
+      <>
+        <TossStep
+          teams={[
+            { name: sideName(0), logoUrl: sideLogo(0) },
+            { name: sideName(1), logoUrl: sideLogo(1) },
+          ]}
+          xi={[sides[0].playerIds, sides[1].playerIds]}
+          nameOf={nameOf}
+          value={toss}
+          onChange={setToss}
+          error={tossError}
+        />
+        <ModalActions>
+          <CustomButton
+            type="button"
+            variant="outline"
+            bg="custom-primary"
+            disabled={starting || createMatch.isPending}
+            onClick={() => setTossing(false)}
+          >
+            <i className="fa-solid fa-arrow-left me-1" aria-hidden="true" />
+            Back
+          </CustomButton>
+          <CustomButton
+            type="button"
+            variant="normal"
+            bg="custom-primary"
+            className="admin-form-submit"
+            loading={starting || createMatch.isPending}
+            // Not until the toss, the choice and the openers are all in.
+            disabled={tossProblem(toss) !== null}
+            onClick={startFromToss}
+          >
+            <i className="fa-solid fa-play me-1" aria-hidden="true" />
+            Start Match
+          </CustomButton>
+        </ModalActions>
+        {leaveSheet}
+      </>
+    );
+  }
+
   return (
     <FormIdContext.Provider value={formId}>
       <form id={formId} className="cricket-app-form" ref={formRef} onSubmit={onSubmit} noValidate>
@@ -595,6 +791,21 @@ export function CricketMatchForm({
                               "Choose a captain"
                             )}
                           </button>
+                          {squad.playerIds.length > 0 && (
+                            <button
+                              type="button"
+                              className="cricket-setup-captain cricket-setup-captain-btn"
+                              onClick={() => setSquadSheet({ slot, startAt: "keeper", askCaptain: false })}
+                            >
+                              {squad.keeperId !== null ? (
+                                <>
+                                  <span className="cricket-role-tag">WK</span> {nameOf(squad.keeperId)}
+                                </>
+                              ) : (
+                                "Choose a keeper"
+                              )}
+                            </button>
+                          )}
                           <button
                             type="button"
                             className="cricket-setup-squad-btn"
@@ -1010,7 +1221,7 @@ export function CricketMatchForm({
                         }}
                       />
                       {captainLookup.status === "looking" && (
-                        <span className="spinner-border spinner-border-sm" aria-label="Looking up"></span>
+                        <BallSpinner label="Looking up" />
                       )}
                     </label>
                     {captainLookup.status === "found" && (
@@ -1058,7 +1269,7 @@ export function CricketMatchForm({
                     onClick={() => void addNewTeam(choosingTeam)}
                   >
                     {createPlayer.isPending ? (
-                      <span className="spinner-border spinner-border-sm" aria-hidden="true"></span>
+                      <BallSpinner />
                     ) : (
                       <i className="fa-solid fa-plus" aria-hidden="true"></i>
                     )}{" "}
@@ -1124,6 +1335,7 @@ export function CricketMatchForm({
             }}
             startAt={squadSheet.startAt}
             askCaptain={squadSheet.askCaptain}
+            lastLeaders={lastLeaders[squadSheet.slot]}
             nameOf={nameOf}
             onSave={(squad) =>
               setSquads((current) => (squadSheet.slot === 0 ? [squad, current[1]] : [current[0], squad]))
@@ -1131,6 +1343,7 @@ export function CricketMatchForm({
             onClose={() => setSquadSheet(null)}
           />
         )}
+        {leaveSheet}
       </form>
     </FormIdContext.Provider>
   );

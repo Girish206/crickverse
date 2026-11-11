@@ -46,7 +46,12 @@ interface SquadChecklistProps {
   playerById: Map<number, CricketPlayer>;
   nameOf: NameOf;
   onToggle: (playerId: number) => void;
+  // A group's "Select all" / "Clear": these players in (true) or out.
+  onSetMany: (playerIds: number[], selected: boolean) => void;
   onRoles: (roles: CricketTeamRoles) => void;
+  // C / VC / WK toggles on each card (off where the roles are asked for
+  // in steps of their own).
+  showRoles?: boolean;
   blockedReason: (playerId: number) => string | null;
   // Someone brought in by mobile number (found, or just created).
   onAdded: (playerId: number) => void;
@@ -62,7 +67,9 @@ export function SquadChecklist({
   playerById,
   nameOf,
   onToggle,
+  onSetMany,
   onRoles,
+  showRoles = true,
   blockedReason,
   onAdded,
 }: SquadChecklistProps) {
@@ -90,27 +97,43 @@ export function SquadChecklist({
           {total === 0 ? "No players yet — add them by mobile number above." : `No one matches "${search}".`}
         </div>
       ) : (
-        shown.map((group) => (
-          <section key={group.label} className="cricket-player-card-group">
-            <h3 className="cricket-player-card-group-title">
-              {group.label} <span>{group.playerIds.length}</span>
-            </h3>
-            <div className="cricket-player-card-list">
-              {group.playerIds.map((playerId) => (
-                <PlayerCard
-                  key={playerId}
-                  player={playerById.get(playerId)}
-                  fallbackName={nameOf(playerId)}
-                  selected={selected.includes(playerId)}
-                  tag={group.tag}
-                  onClick={() => onToggle(playerId)}
-                >
-                  <TeamRoleChips roles={roles} playerId={playerId} playerName={nameOf(playerId)} onChange={onRoles} />
-                </PlayerCard>
-              ))}
-            </div>
-          </section>
-        ))
+        shown.map((group) => {
+          // Covers whoever the search is showing.
+          const allIn = group.playerIds.every((id) => selected.includes(id));
+          return (
+            <section key={group.label} className="cricket-player-card-group">
+              <h3 className="cricket-player-card-group-title">
+                {group.label} <span>{group.playerIds.length}</span>
+                {group.playerIds.length > 1 && (
+                  <button
+                    type="button"
+                    className="cricket-select-all"
+                    onClick={() => onSetMany(group.playerIds, !allIn)}
+                  >
+                    <i className={`fa-${allIn ? "regular fa-square-minus" : "solid fa-square-check"}`} aria-hidden="true"></i>
+                    {allIn ? "Clear" : "Select all"}
+                  </button>
+                )}
+              </h3>
+              <div className="cricket-player-card-list">
+                {group.playerIds.map((playerId) => (
+                  <PlayerCard
+                    key={playerId}
+                    player={playerById.get(playerId)}
+                    fallbackName={nameOf(playerId)}
+                    selected={selected.includes(playerId)}
+                    tag={group.tag}
+                    onClick={() => onToggle(playerId)}
+                  >
+                    {showRoles && (
+                      <TeamRoleChips roles={roles} playerId={playerId} playerName={nameOf(playerId)} onChange={onRoles} />
+                    )}
+                  </PlayerCard>
+                ))}
+              </div>
+            </section>
+          );
+        })
       )}
     </>
   );

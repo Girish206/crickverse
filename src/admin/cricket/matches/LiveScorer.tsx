@@ -10,9 +10,11 @@ import {
   useEditCricketBall,
   usePendingBall,
   useSetCricketCurrentPlayers,
+  useMarkCricketBowling,
   useUndoCricketBall,
   type CricketBallInput,
 } from "../../../api/hooks/cricket/useCricketMatches";
+import { BowlerArt } from "./BowlingNow";
 import {
   ballsPerOverOf,
   type CricketExtraType,
@@ -28,7 +30,8 @@ import { OutArt } from "./OutArt";
 import { PlayerPicker, type PickItem } from "./PlayerPicker";
 import { ScoreHead, type ScoreHeadData } from "./ScoreHead";
 import { ScrollableOverBalls } from "./Scorecard";
-import { usePlayerPhotos } from "./matchUtils";
+import { usePlayerPhotos, withoutRoleMark } from "./matchUtils";
+import { isBurstPlaying, useBurstPlaying } from "./burstPlaying";
 import { COMMON_SHOTS, flightOf, SHOT_TYPES, ShotGround, shotHoldMs, shotZoneAt } from "./ShotMap";
 import { ManageSquadSheet } from "./scorer/ManageSquadSheet";
 import { BowlerOversTable } from "./scorer/BowlerOversTable";
@@ -36,6 +39,7 @@ import { CorrectBallSheet } from "./scorer/CorrectBallSheet";
 import { EndChaseSheet } from "./scorer/EndChaseSheet";
 import { InningsBreakCard } from "./scorer/InningsBreakCard";
 import { PenaltySheet } from "./scorer/PenaltySheet";
+import { ShortRunSheet } from "./scorer/ShortRunSheet";
 import { RainSheet } from "./scorer/RainSheet";
 import { RunChoice } from "./scorer/RunChoice";
 import "./scorer/scorer.css";
@@ -214,6 +218,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   const chase = innings === match.innings[1] ? chaseInfo(match) : null;
 
   const setPlayers = useSetCricketCurrentPlayers();
+  const markBowling = useMarkCricketBowling();
   const editBall = useEditCricketBall();
   const { data: allPlayers } = useCricketPlayers();
   const updatePlayerStyle = useUpdateCricketPlayerStyle();
@@ -303,6 +308,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   const [noBallByes, setNoBallByes] = useState<"bye" | "leg-bye" | null>(null);
   const [noBallFreeHit, setNoBallFreeHit] = useState<boolean>(true);
   const [penaltyOpen, setPenaltyOpen] = useState(false);
+  const [shortRunOpen, setShortRunOpen] = useState(false);
   const [rainOpen, setRainOpen] = useState(false);
   // Correcting a ball: the one tapped, or null to choose from the list.
   // `lapseOnly` is the "Drop or misfield" button: just that part of the sheet.
@@ -448,11 +454,25 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
     if (thisOverBalls.length > 0) setAskingWhy(true);
     else setChanging("bowlerId");
   }
+  // Changing a batter who has played asks why too: a wrong pick moves their
+  // runs and balls to the right batter; retired hurt keeps them and they
+  // can bat again later.
+  const [askingWhyBatter, setAskingWhyBatter] = useState<"strikerId" | "nonStrikerId" | null>(null);
+  const [wrongBatter, setWrongBatter] = useState(false);
+  function startBatterChange(slot: "strikerId" | "nonStrikerId") {
+    if (hasPlayed(innings[slot])) setAskingWhyBatter(slot);
+    else setChanging(slot);
+  }
+  // Who can take a wrong pick's balls: only someone not on the card yet.
+  const yetToBatItems = () => batterItems(null).filter((item) => !hasPlayed(item.id) && !retiredAs.has(item.id));
   function change(slot: Slot, id: number) {
     setChanging(null);
     if (slot === "bowlerId" && wrongBowler && thisOverBalls.length > 0) {
       setWrongBowler(false);
       editBall.mutate({ id: match.id, inningsIndex: match.innings.length - 1, ballIndex: thisOverBalls[0], bowlerId: id });
+    } else if (slot !== "bowlerId" && wrongBatter) {
+      setWrongBatter(false);
+      setPlayers.mutate({ id: match.id, [slot]: id, wrongBatter: true });
     } else {
       setPlayers.mutate({ id: match.id, [slot]: id });
     }
@@ -482,14 +502,21 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
 
   // When an over finishes, the picker for the next bowler (or, after a
   // wicket off the last ball, the next batter first) opens by itself. Keyed
-  // by innings + ball count so it opens once per over.
+  // by innings + ball count so it opens once per over. A four, six or wicket
+  // plays out on screen first; the picker opens once it's done.
+  const burstPlaying = useBurstPlaying();
+  // Meanwhile the page behind it stays as it was — the scorer, not the
+  // "next batter in" / "end of over" pickers — until the moment is over.
+  const holdForBurst = burstPlaying && innings.balls.length > 0;
+  const showPickers = needsPlayers && !holdForBurst;
   const overKey = `${match.innings.length}-${legal.length}`;
   const [overPromptSeen, setOverPromptSeen] = useState<string | null>(null);
   useEffect(() => {
     if (!overEndPending || overPromptSeen === overKey || pickerFor !== null || busy) return;
+    if (burstPlaying || isBurstPlaying()) return;
     setOverPromptSeen(overKey);
     setPickerFor(emptySlots[0] ?? null);
-  }, [overEndPending, overPromptSeen, overKey, pickerFor, busy, emptySlots]);
+  }, [overEndPending, overPromptSeen, overKey, pickerFor, busy, emptySlots, burstPlaying]);
   // Likewise mid-over: once a batter is out (or retires), the list for the
   // next one opens by itself — once per ball, so closing it leaves it shut.
   const batterKey = `${match.innings.length}-${innings.balls.length}`;
@@ -497,12 +524,13 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   useEffect(() => {
     if (overEndPending || !incomingDue || innings.balls.length === 0 || availableBatters.length === 0) return;
     if (batterPromptSeen === batterKey || pickerFor !== null || busy) return;
+    if (burstPlaying || isBurstPlaying()) return;
     setBatterPromptSeen(batterKey);
     setPickerFor(innings.strikerId === null ? "strikerId" : "nonStrikerId");
-  }, [overEndPending, incomingDue, innings.balls.length, innings.strikerId, availableBatters.length, batterPromptSeen, batterKey, pickerFor, busy]);
+  }, [overEndPending, incomingDue, innings.balls.length, innings.strikerId, availableBatters.length, batterPromptSeen, batterKey, pickerFor, busy, burstPlaying]);
   // Closed without a pick, the strip keeps showing the finished over (all
   // its balls); once the next bowler is in, it starts empty for the new one.
-  const showOver = !overJustEnded || (overEndPending && overPromptSeen === overKey) ? thisOver : undefined;
+  const showOver = !overJustEnded || holdForBurst || (overEndPending && overPromptSeen === overKey) ? thisOver : undefined;
   const [prevOversOpen, setPrevOversOpen] = useState(false);
   const [prevOversClosing, setPrevOversClosing] = useState(false);
   // The sheet shows the last few overs until asked for them all.
@@ -841,7 +869,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   // the fixed header could stay pushed up under the status bar. Back to the
   // top on arriving, and whenever the keyboard closes (its field may have
   // moved the page to stay in view).
-  const pageLocked = !needsPlayers || inningsBreak;
+  const pageLocked = !showPickers || inningsBreak;
   useEffect(() => {
     if (!pageLocked) return;
     window.scrollTo(0, 0);
@@ -880,14 +908,14 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   return (
     // .is-fit: on phones and tablets, the scorer fills the screen in two
     // halves (see cricket.css) — except while players are being picked.
-    <div className={`cricket-scorer${needsPlayers ? "" : " is-fit"}${inningsBreak ? " is-break" : ""}`}>
+    <div className={`cricket-scorer${showPickers ? "" : " is-fit"}${inningsBreak ? " is-break" : ""}`}>
       {/* Top half: score, chase and who's in. */}
       <div className="cricket-scorer-top">
       {inningsBreak && chase && <InningsBreakCard match={match} chase={chase} perOver={perOver} nameOf={nameOf} />}
       {!inningsBreak && (
       <ScoreHead data={head} />
       )}
-      {needsPlayers ? (
+      {showPickers ? (
         <section className="cricket-panel cricket-pickers">
           {slotGroups.map((group) => (
           <Fragment key={group.title}>
@@ -1011,7 +1039,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
                   type="button"
                   className={`cricket-crease-player-row ${isStriker ? "is-striker" : ""}`}
                   disabled={playerId === null || busy}
-                  onClick={() => setChanging(slot)}
+                  onClick={() => startBatterChange(slot)}
                   title={playerId === null ? undefined : `Change ${isStriker ? "striker" : "non-striker"}`}
                 >
                   <span className="cricket-crease-avatar-wrap">
@@ -1031,11 +1059,11 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
                   <span className="cricket-crease-who">
                     <span className="cricket-crease-name-line">
                       <span className="cricket-crease-name">
-                        {playerId === null ? "—" : nameOf(playerId)}
+                        {playerId === null ? "—" : withoutRoleMark(nameOf(playerId))}
                         {isStriker && playerId !== null && <span className="cricket-crease-star">*</span>}
                       </span>
                       {roles.length > 0 && (
-                        <span className="cricket-crease-role-tag">{roles.join(" · ")}</span>
+                        <CreaseRoleBadges roles={roles} />
                       )}
                       {playerId !== null && (() => {
                         const p = allPlayers?.find((item) => item.id === playerId);
@@ -1141,7 +1169,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
             <span className="cricket-crease-who">
               <span className="cricket-crease-name-line">
                 <span className="cricket-crease-name">
-                  {innings.bowlerId === null ? "—" : nameOf(innings.bowlerId)}
+                  {innings.bowlerId === null ? "—" : withoutRoleMark(nameOf(innings.bowlerId))}
                 </span>
                 {innings.bowlerId !== null && (() => {
                   const bowlTeam = match.teams[1 - innings.battingTeam];
@@ -1149,7 +1177,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
                   if (bowlTeam.captainId === innings.bowlerId) roles.push("C");
                   else if (bowlTeam.viceCaptainId === innings.bowlerId) roles.push("VC");
                   return roles.length > 0 ? (
-                    <span className="cricket-crease-role-tag">{roles.join(" · ")}</span>
+                    <CreaseRoleBadges roles={roles} />
                   ) : null;
                 })()}
                 {innings.bowlerId !== null && (() => {
@@ -1395,8 +1423,8 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
       <div className="cricket-scorer-dock" ref={dockRef}>
       {/* The next ball's a free hit: said here rather than on a line of its own, so
           the pad keeps its height on a short screen. */}
-      <div className={`cricket-this-over${freeHit && !needsPlayers ? " is-free-hit" : ""}`}>
-        {freeHit && !needsPlayers ? (
+      <div className={`cricket-this-over${freeHit && !showPickers ? " is-free-hit" : ""}`}>
+        {freeHit && !showPickers ? (
           <span className="cricket-this-over-label" role="status" title="Only a run-out gets the batter out">
             <span>
               <i className="fa-solid fa-bolt" aria-hidden="true"></i> Free
@@ -1497,6 +1525,19 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
             2: 5, 6...
             3: No ball
             4: Out (corner button at bottom right) */}
+      {/* "Bowling": tells the live pages the bowler is running in, until
+          this ball is scored. */}
+      {innings.bowlerId && innings.strikerId && !overEndPending && (
+        <button
+          type="button"
+          className={`cricket-bowling-btn ${match.bowlingAt ? "is-on" : ""}`.trim()}
+          disabled={padDisabled || markBowling.isPending}
+          onClick={() => markBowling.mutate({ id: match.id })}
+        >
+          <BowlerArt />
+          <span>{match.bowlingAt ? "Viewers see the bowler running in" : "Bowling — show viewers"}</span>
+        </button>
+      )}
       <div className="cricket-pad-container">
         <div className="cricket-pad-main">
           {[
@@ -1692,9 +1733,9 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
                 disabled={busy || innings[slot] === null}
                 onClick={() => {
                   onCloseSettings();
-                  // The bowler goes through the same "why?" step as tapping them.
+                  // The same "why?" step as tapping them.
                   if (slot === "bowlerId") startBowlerChange();
-                  else setChanging(slot);
+                  else startBatterChange(slot);
                 }}
               >
                 <i className={`fa-solid ${icon}`} aria-hidden="true"></i>
@@ -1769,6 +1810,22 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
                 <small>Fours, sixes, catches and run-outs always ask where the ball went</small>
               </span>
               <span className={`cricket-shot-toggle-knob ${smallShotsOn ? "is-on" : ""}`.trim()} aria-hidden="true"></span>
+            </button>
+            <button
+              type="button"
+              className="cricket-settings-item"
+              disabled={busy || pendingBall !== null || needsPlayers}
+              onClick={() => {
+                onCloseSettings();
+                setShortRunOpen(true);
+              }}
+            >
+              <i className="fa-solid fa-person-running" aria-hidden="true"></i>
+              <span>
+                Short run
+                <small>A run not completed: it isn't scored, but the batters stay where they ran to</small>
+              </span>
+              <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
             </button>
             <button
               type="button"
@@ -1852,6 +1909,39 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
           onRecord={(overs) =>
             interruption.mutate({ id: match.id, overs }, { onSuccess: () => setRainOpen(false) })
           }
+        />
+      )}
+
+      {shortRunOpen && innings.strikerId !== null && (
+        <ShortRunSheet
+          bowler={nameOf(innings.bowlerId)}
+          striker={{ id: innings.strikerId, name: nameOf(innings.strikerId), photoUrl: photoOf(innings.strikerId) }}
+          nonStriker={
+            innings.nonStrikerId !== null && innings.nonStrikerId !== innings.strikerId
+              ? { id: innings.nonStrikerId, name: nameOf(innings.nonStrikerId), photoUrl: photoOf(innings.nonStrikerId) }
+              : null
+          }
+          overEnds={(legal.length + 1) % perOver === 0}
+          busy={busy}
+          onClose={() => setShortRunOpen(false)}
+          onRecord={(ball, nextStrikerId) => {
+            const inningsIndex = match.innings.length - 1;
+            addBall.mutate(
+              { id: match.id, ...blankBall, ...ball },
+              {
+                // The scorer said the other batter faces next: swap them.
+                onSuccess: (saved) => {
+                  const now = saved.innings[inningsIndex];
+                  if (!now || now.closed || now.strikerId === nextStrikerId || now.nonStrikerId !== nextStrikerId) return;
+                  setPlayers.mutate({ id: saved.id, strikerId: now.nonStrikerId, nonStrikerId: now.strikerId });
+                },
+                onError: (error) => {
+                  if (isStaleScore(error)) toast("Score updated from another device");
+                },
+              },
+            );
+            setShortRunOpen(false);
+          }}
         />
       )}
 
@@ -2098,6 +2188,57 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
         </BottomSheet>
       )}
 
+      {askingWhyBatter && innings[askingWhyBatter] !== null && (() => {
+        const batterId = innings[askingWhyBatter];
+        const row = batting.find((r) => r.playerId === batterId);
+        const score = `${row?.runs ?? 0} (${row?.balls ?? 0})`;
+        const options = [
+          {
+            wrong: true,
+            icon: "fa-solid fa-user-pen",
+            label: "Wrong batter picked",
+            description: `Someone else has been batting. ${score} and every ball so far move to them.`,
+            disabled: yetToBatItems().length === 0,
+          },
+          {
+            wrong: false,
+            icon: "fa-solid fa-user-injured",
+            label: "Retired hurt",
+            description: `${nameOf(batterId)} leaves on ${score}, not out, and can bat again later.`,
+            disabled: false,
+          },
+        ];
+        return (
+          <BottomSheet title="Change batter" icon="fa-solid fa-baseball-bat-ball" onClose={() => setAskingWhyBatter(null)}>
+            <p className="cricket-sheet-context">
+              <strong>{nameOf(batterId)}</strong> is on {score}. Why the change?
+            </p>
+            <div className="cricket-settings-list">
+              {options.map((option) => (
+                <button
+                  key={option.label}
+                  type="button"
+                  className="cricket-settings-item"
+                  disabled={option.disabled}
+                  onClick={() => {
+                    setAskingWhyBatter(null);
+                    setWrongBatter(option.wrong);
+                    setChanging(askingWhyBatter);
+                  }}
+                >
+                  <i className={option.icon} aria-hidden="true"></i>
+                  <span>
+                    {option.label}
+                    <small>{option.disabled ? "Everyone else has batted already." : option.description}</small>
+                  </span>
+                  <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                </button>
+              ))}
+            </div>
+          </BottomSheet>
+        );
+      })()}
+
       {changing && innings[changing] !== null && (
         <PlayerPicker
           key={`change-${changing}`}
@@ -2106,9 +2247,11 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
               ? wrongBowler
                 ? "Who bowled this over?"
                 : "Change bowler"
-              : changing === "strikerId"
-                ? "Change striker"
-                : "Change non-striker"
+              : wrongBatter
+                ? "Who has been batting?"
+                : changing === "strikerId"
+                  ? "Change striker"
+                  : "Change non-striker"
           }
           hint={
             changing === "bowlerId" && wrongBowler ? (
@@ -2122,6 +2265,12 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
                 <i className="fa-solid fa-baseball" aria-hidden="true"></i> Who finishes the over for{" "}
                 <strong>{nameOf(innings.bowlerId)}</strong>? Their figures so far stay with them.
               </>
+            ) : wrongBatter ? (
+              <>
+                <i className="fa-solid fa-user-pen" aria-hidden="true"></i> All of{" "}
+                <strong>{nameOf(innings[changing])}</strong>'s runs and balls this innings move to who you pick. Only
+                players yet to bat are shown.
+              </>
             ) : (
               <>
                 <i className="fa-solid fa-baseball-bat-ball" aria-hidden="true"></i> Who comes in for{" "}
@@ -2133,13 +2282,14 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
             )
           }
           icon={`fa-solid ${changing === "bowlerId" ? "fa-baseball" : "fa-baseball-bat-ball"}`}
-          items={changing === "bowlerId" ? changeBowlerItems : batterItems(null)}
+          items={changing === "bowlerId" ? changeBowlerItems : wrongBatter ? yetToBatItems() : batterItems(null)}
           nameOf={nameOf}
           selectedId={null}
           onPick={(id) => change(changing, id)}
           onClose={() => {
             setChanging(null);
             setWrongBowler(false);
+            setWrongBatter(false);
           }}
         />
       )}
@@ -2640,5 +2790,26 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
         </BottomSheet>
       )}
     </div>
+  );
+}
+
+const ROLE_BADGE_TITLES: Record<string, string> = { C: "Captain", VC: "Vice-captain", WK: "Wicket-keeper" };
+
+// Round C / VC / WK badges beside a crease player's name, so they don't read
+// like the batting / bowling style pills.
+function CreaseRoleBadges({ roles }: { roles: string[] }) {
+  return (
+    <>
+      {roles.map((role) => (
+        <span
+          key={role}
+          className={`cricket-crease-role-tag is-${role.toLowerCase()}`}
+          title={ROLE_BADGE_TITLES[role]}
+          aria-label={ROLE_BADGE_TITLES[role]}
+        >
+          {role}
+        </span>
+      ))}
+    </>
   );
 }

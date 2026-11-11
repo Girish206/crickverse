@@ -137,6 +137,12 @@ const FLIGHT_EASING: Record<ShotFlightKind, string> = {
 };
 // How far a six's curve bows out, as a share of the shot's length.
 const LOFT_BEND = 0.4;
+// Before it flies, the ball comes down the pitch and the bat swings through
+// it: the swing takes BAT_SWING_MS and meets the ball BAT_HIT_MS in.
+const BAT_SWING_MS = 620;
+const BAT_HIT_MS = 380;
+// Where the blade meets the ball, measured from the top of the handle.
+const BAT_SWEET_SPOT = 13;
 
 // A ball that reached the rope: four or six, not one the batters ran.
 export function flightOf(runs: number | undefined, boundary: boolean | null | undefined, wicket: boolean): ShotFlightKind | null {
@@ -145,7 +151,7 @@ export function flightOf(runs: number | undefined, boundary: boolean | null | un
 }
 
 // How long the tapped shot stays up before the ball is recorded.
-export const shotHoldMs = (kind: ShotFlightKind | null) => (kind ? FLIGHT_MS[kind] + 300 : 450);
+export const shotHoldMs = (kind: ShotFlightKind | null) => (kind ? BAT_HIT_MS + FLIGHT_MS[kind] + 300 : 450);
 
 // Boundaries are drawn all the way to the rope, wherever the tap landed.
 function toRope(at: { x: number; y: number }) {
@@ -163,8 +169,9 @@ function flightPath(end: { x: number; y: number }, kind: ShotFlightKind) {
   return `M0 0Q${bendX} ${bendY} ${end.x} ${end.y}`;
 }
 
-// The shot just tapped while scoring; launchFlight plays it out. The ball and
-// the ripple are invisible unless they're being animated.
+// The shot just tapped while scoring; launchFlight plays it out. The bat,
+// the ball, the hit and the ripple are invisible unless they're being
+// animated.
 function ShotFlight({ to, kind }: { to: { x: number; y: number }; kind: ShotFlightKind }) {
   const end = toRope(to);
   return (
@@ -172,9 +179,36 @@ function ShotFlight({ to, kind }: { to: { x: number; y: number }; kind: ShotFlig
       <path d={flightPath(end, kind)} pathLength={1} />
       <circle className="cricket-shot-ripple" cx={end.x} cy={end.y} r={4} />
       <circle className="cricket-shot-dot" cx={end.x} cy={end.y} r={4} />
+      {/* Drawn hanging down from the top of its handle at (0, 0). */}
+      <g className="cricket-shot-bat">
+        <rect className="cricket-shot-bat-handle" x={-0.9} y={0} width={1.8} height={6} rx={0.9} />
+        <rect className="cricket-shot-bat-blade" x={-2.1} y={5.5} width={4.2} height={11} rx={1.4} />
+      </g>
+      <circle className="cricket-shot-hit" r={3} />
       <circle className="cricket-shot-ball" r={2.4} />
     </g>
   );
+}
+
+// The bat's swing for a ball sent towards `end`, as rotations about the top
+// of its handle. The bat is drawn pointing down the screen (90°); turned by
+// `a` it points at 90 + a, and its blade moves at right angles to that, so it
+// moves along the shot when a = shotAngle - 180. The handle sits back from
+// the ball so the sweet spot is on it then.
+function batFrames(end: { x: number; y: number }) {
+  const shotAngle = (Math.atan2(end.y, end.x) * 180) / Math.PI;
+  const atHit = shotAngle - 180;
+  const blade = ((90 + atHit) * Math.PI) / 180;
+  const pivot = { x: -Math.cos(blade) * BAT_SWEET_SPOT, y: -Math.sin(blade) * BAT_SWEET_SPOT };
+  const at = (angle: number) => `translate(${pivot.x}px, ${pivot.y}px) rotate(${angle}deg)`;
+  const hit = BAT_HIT_MS / BAT_SWING_MS;
+  return [
+    { transform: at(atHit - 95), opacity: 0, offset: 0, easing: "cubic-bezier(0.5, 0, 0.9, 0.6)" },
+    { transform: at(atHit - 80), opacity: 1, offset: 0.15, easing: "cubic-bezier(0.5, 0, 0.9, 0.6)" },
+    { transform: at(atHit), opacity: 1, offset: hit, easing: "cubic-bezier(0.1, 0.6, 0.4, 1)" },
+    { transform: at(atHit + 55), opacity: 1, offset: 0.85 },
+    { transform: at(atHit + 60), opacity: 0, offset: 1 },
+  ];
 }
 
 function launchFlight(group: SVGGElement, delay: number): Animation[] {
@@ -183,8 +217,13 @@ function launchFlight(group: SVGGElement, delay: number): Animation[] {
   const dot = group.querySelector(".cricket-shot-dot");
   const ripple = group.querySelector(".cricket-shot-ripple");
   const ball = group.querySelector(".cricket-shot-ball");
-  if (!trail || !dot || !ripple || !ball) return [];
+  const bat = group.querySelector(".cricket-shot-bat");
+  const hit = group.querySelector(".cricket-shot-hit");
+  if (!trail || !dot || !ripple || !ball || !bat || !hit) return [];
 
+  // The bat swings first; the ball flies off the moment it's struck.
+  const swingDelay = delay;
+  delay += BAT_HIT_MS;
   const duration = FLIGHT_MS[kind];
   const flight = { duration, delay, easing: FLIGHT_EASING[kind], fill: "backwards" as const };
   const landed = delay + duration;
@@ -198,7 +237,15 @@ function launchFlight(group: SVGGElement, delay: number): Animation[] {
     return { transform: `translate(${point.x}px, ${point.y}px) scale(${scale})`, opacity: i === 0 ? 0 : 1 };
   });
 
+  const end = trail.getPointAtLength(length);
+
   return [
+    bat.animate(batFrames(end), { duration: BAT_SWING_MS, delay: swingDelay }),
+    hit.animate([{ opacity: 0.9, transform: "scale(0.6)" }, { opacity: 0, transform: `scale(${kind === "six" ? 3.2 : 2.4})` }], {
+      duration: 420,
+      delay,
+      easing: "ease-out",
+    }),
     trail.animate([{ strokeDasharray: "1 1", strokeDashoffset: 1 }, { strokeDasharray: "1 1", strokeDashoffset: 0 }], flight),
     ball.animate(ballFrames, flight),
     dot.animate([{ opacity: 0, transform: "scale(0.2)" }, { opacity: 1, transform: "scale(1)" }], {
@@ -212,6 +259,16 @@ function launchFlight(group: SVGGElement, delay: number): Animation[] {
       delay: landed,
       easing: "ease-out",
     }),
+    // The delivery: up the pitch from the bowler's end into the bat. Made
+    // last so it wins over the flight's backwards fill, which hides the ball.
+    ball.animate(
+      [
+        { transform: "translate(0px, 13px)", opacity: 0 },
+        { transform: "translate(0px, 9px)", opacity: 1, offset: 0.25 },
+        { transform: "translate(0px, 0px)", opacity: 1 },
+      ],
+      { duration: BAT_HIT_MS, delay: swingDelay, easing: "linear" },
+    ),
   ];
 }
 

@@ -131,6 +131,9 @@ function BallEditor({
   const [excellentCatch, setExcellentCatch] = useState(Boolean(ball.excellentCatch));
   const [lapseType, setLapseType] = useState<CricketFieldingLapse | null>(ball.lapseType ?? null);
   const [lapseFielderId, setLapseFielderId] = useState(ball.lapseFielderId ?? null);
+  // Who faced it: the recorded batter, or (swapped) the one at the other end.
+  const [swapped, setSwapped] = useState(false);
+  const [strikeAfter, setStrikeAfter] = useState<"auto" | "manual">("auto");
   const [picking, setPicking] = useState<"fielderId" | "secondFielderId" | "bowlerId" | "lapseFielderId" | null>(null);
 
   // What can change on this ball, as the API allows.
@@ -152,10 +155,16 @@ function BallEditor({
   ];
   // A mistake chosen, but not yet who made it.
   const lapseIncomplete = lapseType !== null && lapseFielderId === null;
-  // An odd change puts the batters at the other ends from here on (as the API
-  // works it out). A run-out's end, or a batter alone, leaves them placed.
+  // The other batter can have faced it, but not a wicket (its batter is out),
+  // a penalty, or with nobody at the other end.
+  const swapEditable =
+    ball.extraType !== "penalty" && ball.dismissedId === null && ball.nonStrikerId != null && ball.batterId !== ball.nonStrikerId;
+  // An odd change, or the other batter facing, puts the batters at the other
+  // ends afterwards (both cancel out). A run-out's end, or a batter alone,
+  // leaves them placed.
   const strikeMoves =
-    (runs - ball.runs) % 2 !== 0 && ball.batterId !== ball.nonStrikerId && !(ball.wicketType === "run-out" && ball.outEnd);
+    ((runs - ball.runs) % 2 !== 0) !== swapped && ball.batterId !== ball.nonStrikerId && !(ball.wicketType === "run-out" && ball.outEnd);
+  const hasLaterBalls = ballIndex < innings.balls.length - 1;
 
   const edit: CricketBallEdit = {};
   if (runsEditable && runs !== ball.runs) edit.runs = runs;
@@ -174,6 +183,8 @@ function BallEditor({
     edit.fieldingLapse = lapseType === null || lapseFielderId === null ? null : { type: lapseType, fielderId: lapseFielderId };
   }
   if (bowlerEditable && bowlerId !== ball.bowlerId) edit.bowlerId = bowlerId;
+  if (swapEditable && swapped) edit.swapStrike = true;
+  if (strikeMoves && strikeAfter === "manual") edit.strikeAfter = "manual";
   const changed = Object.keys(edit).length > 0;
 
   function save() {
@@ -210,7 +221,8 @@ function BallEditor({
     );
   }
 
-  const nothing = !runsEditable && !kindEditable && !ball.wicketType && !bowlerEditable;
+  const nothing = !runsEditable && !kindEditable && !ball.wicketType && !bowlerEditable && !swapEditable;
+  const facedBy = swapped ? ball.nonStrikerId : ball.batterId;
 
   // Any fielding mistake on this ball: the choice and who made it.
   const lapseSection = lapseEditable && (
@@ -325,11 +337,65 @@ function BallEditor({
           <>
             <label className="cricket-sheet-label">Runs off the bat</label>
             <RunChoice value={runs} onChange={setRuns} max={7} />
-            {strikeMoves && (
-              <p className="admin-hint">
-                The batters finish at the other ends, so the balls after this one move to the other batter, up to the next wicket or strike change made by hand.
-              </p>
-            )}
+          </>
+        )}
+
+        {swapEditable && (
+          <>
+            <label className="cricket-sheet-label">Faced by</label>
+            <div className="cricket-short-run-batters" role="radiogroup" aria-label="Faced by">
+              {[ball.batterId, ball.nonStrikerId].map((id) => {
+                const on = facedBy === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    className={`cricket-short-run-batter ${on ? "is-on" : ""}`.trim()}
+                    onClick={() => setSwapped(id !== ball.batterId)}
+                  >
+                    <PlayerAvatar name={nameOf(id)} photoUrl={photoOf(id)} className="cricket-short-run-avatar" viewable={false} eager />
+                    <span className="cricket-short-run-batter-check" aria-hidden="true">
+                      {on && <i className="fa-solid fa-check"></i>}
+                    </span>
+                    <span className="cricket-short-run-batter-caption">
+                      {on && (
+                        <span className="cricket-short-run-batter-tag">
+                          <i className="fa-solid fa-baseball-bat-ball" aria-hidden="true"></i> Faced it
+                        </span>
+                      )}
+                      <span className="cricket-short-run-batter-name">{nameOf(id)}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {strikeMoves && hasLaterBalls && (
+          <>
+            <label className="cricket-sheet-label">Balls after this one</label>
+            <div className="cricket-chip-choice" role="radiogroup" aria-label="Balls after this one">
+              {(["auto", "manual"] as const).map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={strikeAfter === value}
+                  className={strikeAfter === value ? "active" : ""}
+                  onClick={() => setStrikeAfter(value)}
+                >
+                  {value === "auto" ? "Automatic" : "Manual"}
+                </button>
+              ))}
+            </div>
+            <p className="admin-hint">
+              {strikeAfter === "auto"
+                ? "The batters finish at the other ends, so the balls after this one move to the other batter, up to the next wicket or strike change made by hand."
+                : "Only this ball changes. The balls after it stay as recorded — tap each one to set who faced it."}
+            </p>
           </>
         )}
 

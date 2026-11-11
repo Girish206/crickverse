@@ -391,6 +391,9 @@ export interface CricketBall {
   // A 4 or 6 that reached the boundary (false = all run). Missing/null on
   // older balls: 4s and 6s count as boundaries then.
   boundary?: boolean | null;
+  // Runs the batters ran but didn't complete (a short run): not in `runs`,
+  // but they still decide who's on strike. Missing/null = none.
+  shortRuns?: number | null;
   // Whether this no-ball awards a free hit (false = free hit turned off).
   freeHit?: boolean | null;
 }
@@ -558,6 +561,9 @@ export interface CricketMatch {
   // Changes on every write; the live check sends it back to hear "nothing
   // new" cheaply (null on a match not written since it was added).
   updatedAt?: string | null;
+  // When the scorer tapped "Bowling" for the ball to come; cleared once it's
+  // scored. Live pages show the bowler running in (BowlingNow).
+  bowlingAt?: string | null;
 }
 
 export type CricketResultMethod = "super-over" | "walkover" | "forfeit" | "concede" | "dls" | "bowl-out" | "other";

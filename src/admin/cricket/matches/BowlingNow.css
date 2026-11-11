@@ -1,0 +1,259 @@
+/* The bowler running in and bowling (BowlerArt), and the live page's strip
+   (BowlingNow) and the scorer's button that shows it. */
+.cv-bowler-art {
+  --bowl: 1.6s;
+  width: 120px;
+  height: 48px;
+  overflow: visible;
+  flex: none;
+}
+.cv-bowler-pitch {
+  stroke: color-mix(in srgb, currentColor 30%, transparent);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+}
+.cv-bowler-stumps rect {
+  fill: #d9a85b;
+  stroke: #9a6b2c;
+  stroke-width: 0.4;
+}
+.cv-bowler-figure line {
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+.cv-bowler-head {
+  fill: currentColor;
+}
+.cv-bowler-x {
+  animation: cv-bowler-x var(--bowl) infinite;
+}
+.cv-bowler-leg {
+  transform-origin: 0 32px;
+  animation: cv-bowler-leg 0.32s ease-in-out infinite alternate;
+}
+.cv-bowler-leg.is-other {
+  animation-direction: alternate-reverse;
+}
+.cv-bowler-off-arm {
+  transform-origin: 0 23px;
+  animation: cv-bowler-off-arm 0.32s ease-in-out infinite alternate;
+}
+.cv-bowler-arm {
+  transform-origin: 0 23px;
+  animation: cv-bowler-arm var(--bowl) infinite;
+}
+.cv-bowler-ball-x {
+  animation: cv-bowler-ball-x var(--bowl) linear infinite;
+}
+.cv-bowler-ball-y {
+  animation: cv-bowler-ball-y var(--bowl) infinite;
+}
+.cv-bowler-mark {
+  fill: color-mix(in srgb, currentColor 35%, transparent);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cv-bowler-mark var(--bowl) ease-out infinite;
+}
+
+@keyframes cv-bowler-x {
+  0% {
+    transform: translateX(10px);
+    opacity: 0;
+  }
+  6% {
+    opacity: 1;
+  }
+  50% {
+    transform: translateX(34px);
+  }
+  62% {
+    transform: translateX(40px);
+    animation-timing-function: ease-out;
+  }
+  80% {
+    transform: translateX(43px);
+    opacity: 1;
+  }
+  92%,
+  100% {
+    transform: translateX(43px);
+    opacity: 0;
+  }
+}
+@keyframes cv-bowler-leg {
+  from {
+    transform: rotate(-32deg);
+  }
+  to {
+    transform: rotate(32deg);
+  }
+}
+@keyframes cv-bowler-off-arm {
+  from {
+    transform: rotate(-35deg);
+  }
+  to {
+    transform: rotate(35deg);
+  }
+}
+/* Behind on the run-up, then over the top: released at about 57%. */
+@keyframes cv-bowler-arm {
+  0%,
+  46% {
+    transform: rotate(30deg);
+  }
+  62%,
+  100% {
+    transform: rotate(340deg);
+  }
+}
+@keyframes cv-bowler-ball-x {
+  0%,
+  56% {
+    transform: translateX(46px);
+    opacity: 0;
+  }
+  57%,
+  96% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(105px);
+    opacity: 0;
+  }
+}
+@keyframes cv-bowler-ball-y {
+  0%,
+  57% {
+    transform: translateY(19px);
+    animation-timing-function: cubic-bezier(0.5, 0, 1, 1);
+  }
+  80% {
+    transform: translateY(41.7px);
+    animation-timing-function: cubic-bezier(0, 0, 0.5, 1);
+  }
+  100% {
+    transform: translateY(32px);
+  }
+}
+@keyframes cv-bowler-mark {
+  0%,
+  78% {
+    opacity: 0;
+    transform: scaleX(0.3);
+  }
+  81% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleX(1.4);
+  }
+}
+
+/* The live page's strip, between the overs and who's in. */
+.cricket-bowling-now {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+  padding: 6px 12px;
+  border-radius: var(--radius-md, 12px);
+  background: rgba(var(--primary-rgb), 0.08);
+  color: var(--theme-text-dark);
+  animation: cv-bowling-in 0.25s ease-out;
+}
+.cricket-bowling-now .cv-bowler-art {
+  width: 90px;
+  height: 36px;
+}
+.cricket-bowling-now-text {
+  min-width: 0;
+  font-size: var(--fs-sm);
+}
+@keyframes cv-bowling-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+/* The scorer's "Bowling" button, above the pad. */
+.cricket-bowling-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 4px 12px;
+  position: relative;
+  /* The outline is drawn by ::before: the button's own border lost its top
+     and left edges in the scorer dock. */
+  border: 0;
+  border-radius: var(--radius-md, 12px);
+  background: transparent;
+  color: var(--theme-text-dark);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+.cricket-bowling-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1.5px dashed rgb(var(--primary-rgb));
+  border-radius: inherit;
+  opacity: 0.55;
+  pointer-events: none;
+}
+.cricket-bowling-btn .cv-bowler-art {
+  width: 60px;
+  height: 24px;
+}
+/* Until tapped, the bowler stands mid run-up. */
+.cricket-bowling-btn:not(.is-on) .cv-bowler-art * {
+  animation-play-state: paused;
+  animation-delay: -0.75s;
+}
+.cricket-bowling-btn.is-on::before {
+  border-style: solid;
+}
+.cricket-bowling-btn.is-on {
+  background: rgba(var(--primary-rgb), 0.1);
+}
+.cricket-bowling-btn:disabled {
+  opacity: 0.55;
+}
+/* The fitted phone scorer has no height to spare (the second innings adds a
+   target line up top): the button goes slim and the run buttons give back
+   the rest, so nothing scrolls. */
+.cricket-scorer.is-fit .cricket-bowling-btn {
+  flex: none;
+  margin-bottom: 0;
+  padding: 2px 10px;
+  font-size: var(--fs-xs);
+}
+.cricket-scorer.is-fit .cricket-bowling-btn .cv-bowler-art {
+  width: 46px;
+  height: 18px;
+}
+.cricket-scorer.is-fit .cricket-scorer-dock:has(.cricket-bowling-btn) .cricket-pad-main .cricket-pad-btn {
+  min-height: 40px;
+}
+/* The side column's four buttons get shorter with it: icon beside the label
+   instead of above it, so neither is squeezed against the edge. */
+.cricket-scorer.is-fit .cricket-scorer-dock:has(.cricket-bowling-btn) .cricket-pad-side .cricket-pad-btn {
+  flex-direction: row;
+  gap: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cv-bowler-art {
+    --bowl: 3.2s;
+  }
+  .cricket-bowling-now {
+    animation: none;
+  }
+}

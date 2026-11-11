@@ -22,7 +22,7 @@ import {
 } from "../tournaments/brandedCard";
 import { AMBER, canvasBlob, FONT, loadImage, NAVY, roundRect, W } from "../tournaments/shareCard";
 import { logoFor } from "../tournaments/tournamentArt";
-import { battingOrder, matchHeading, matchStateLine, matchTeamColors, teamScore } from "./matchUtils";
+import { battingOrder, matchHeading, matchStateLine, matchTeamColors, teamScore, withoutRoleMark } from "./matchUtils";
 
 // The picture a match is shared as, and the message sent with it. Both follow
 // the match's status: an upcoming match is its face-off and start time, a
@@ -227,7 +227,7 @@ function drawPlayerStrip(ctx: Ctx, palette: CardPalette, data: MatchCardData, ti
   const cy = top + STRIP_H / 2;
   ctx.fillStyle = palette.panel;
   roundRect(ctx, PAD, top, INNER, STRIP_H, 24);
-  drawBadge(ctx, photo, monogram(name), avatarColorFor(name), PAD + 32 + 56, cy, 56);
+  drawBadge(ctx, photo, monogram(withoutRoleMark(name)), avatarColorFor(withoutRoleMark(name)), PAD + 32 + 56, cy, 56);
   const right = W - PAD - 36;
   const pointsW = drawPoints(ctx, palette, row, right, cy);
 

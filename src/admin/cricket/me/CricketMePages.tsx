@@ -13,7 +13,7 @@ import { PillSelect } from "../PillSelect";
 import { useTips, type TipStep } from "../TipsTour";
 import { MatchesBoard } from "../matches/CricketMatchesList";
 import { MatchCard, type MatchTag } from "../matches/matchUi";
-import { teamKeyOf, usePlayerNames } from "../matches/matchUtils";
+import { roleMarkOf, teamKeyOf, usePlayerNames } from "../matches/matchUtils";
 import { CricketPlayerProfile } from "../players/CricketPlayerProfile";
 import { battingCard, bowlingCard, oversText, playerOfMatch, playerStats } from "../stats";
 import { TeamFootnote, TournamentCard, TournamentsBoard, tournamentPhase } from "../tournaments/TournamentCard";
@@ -58,7 +58,9 @@ function useMyCricket(title: PageTitle): { me: CricketMe; fallback: null } | { m
   const { data: me, isLoading } = useCricketMe();
   const { admin } = useAdminAuth();
   if (isLoading || !me) {
-    return { me: null, fallback: <ListCard {...title} className="cv-me"><Loader /></ListCard> };
+    // The whole page's loader (as on a match or tournament page), not a
+    // short card around it.
+    return { me: null, fallback: <Loader page /> };
   }
   if (!me.player) {
     return {
@@ -103,7 +105,8 @@ function useFollowedPlayerLines() {
       .filter((id) => match.teams.some((team) => team.playerIds.includes(id)))
       .map((id) => {
         const line = myLine(match, id);
-        return line ? `${nameOf(id)}: ${line}` : nameOf(id);
+        const name = nameOf(id) + roleMarkOf(match, id);
+        return line ? `${name}: ${line}` : name;
       });
     return lines.length ? lines.join(" · ") : null;
   };

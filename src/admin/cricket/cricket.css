@@ -1882,6 +1882,21 @@
   font-size: var(--fs-md);
   font-weight: 700;
 }
+/* A title with a line under it (a step's own heading, see setHeading). */
+.cricket-sheet-titles {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.cricket-sheet-titles small {
+  overflow: hidden;
+  color: var(--muted-color);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .cricket-sheet-count {
   min-width: 24px;
   padding: 2px 8px;
@@ -1921,7 +1936,11 @@
 .cricket-sheet-body {
   flex: 1;
   overflow-y: auto;
-  padding: 10px 0 4px;
+  /* Scrolling clips the sides too, so the body reaches 6px into the sheet's
+     padding: selection rings, focus outlines and shadows at the edges show
+     in full, and the content keeps its width. */
+  margin: 0 -6px;
+  padding: 10px 6px 4px;
 }
 /* Scroll areas: a thin scrollbar that only shows while hovering the list
    (touch screens use their own overlay bar). */
@@ -1994,6 +2013,39 @@
   font-size: var(--fs-base);
   font-weight: 700;
   cursor: pointer;
+}
+/* "Leave this match?": three choices side by side. */
+.cricket-leave-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 16px;
+}
+.cricket-leave-btn {
+  min-height: 46px;
+  padding: 0 8px;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--theme-text-dark);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+.cricket-leave-btn.is-danger {
+  border-color: var(--danger-fill);
+  color: var(--danger-fill);
+}
+.cricket-leave-btn.is-primary {
+  border-color: transparent;
+  background: var(--primary-fill);
+  color: #fff;
+}
+.cricket-leave-btn:disabled {
+  opacity: 0.6;
+}
+.cricket-leave-btn:active:not(:disabled) {
+  transform: scale(0.97);
 }
 .cricket-sheet-submit.is-danger {
   background: var(--danger-fill);
@@ -2252,7 +2304,23 @@
   margin-left: calc(min(22%, 100px) + 14px);
 }
 /* Openers, then Bowler: the second heading needs air above it. */
-.cricket-scorer .cricket-slots:has(+ .cricket-section-title) {
+/* The scorer's slots sit on a surface panel; on the toss page the cards carry
+   that surface themselves. */
+.cricket-toss-slots .cricket-slot,
+.cricket-toss-slots .cricket-slot.is-chosen {
+  background: var(--adm-surface);
+}
+/* The openers as near-square cards, so the photo shows more of the player. */
+.cricket-toss-slots .cricket-slot.is-paired {
+  aspect-ratio: 5 / 4;
+}
+/* And a taller bowler card to go with them. */
+.cricket-toss-slots .cricket-slot.is-bowler,
+.cricket-toss-slots .cricket-slot.is-bowler.is-chosen {
+  min-height: clamp(76px, 11vh, 104px);
+}
+.cricket-scorer .cricket-slots:has(+ .cricket-section-title),
+.cricket-toss-slots .cricket-slots:has(+ .cricket-section-title) {
   margin-bottom: 14px;
 }
 .cricket-slot {
@@ -5590,21 +5658,11 @@ span.cricket-pick-tile-photo {
   background: rgba(245, 197, 24, 0.16);
   color: var(--brand-amber-bright);
 }
-.cricket-toss-step {
+/* A toss section done: a green tick the size of its heading. */
+.cricket-toss-done {
   flex: none;
-  display: inline-grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: rgba(var(--primary-rgb), 0.12);
-  color: var(--primary);
-  font-size: var(--fs-xs);
-  font-weight: 700;
-}
-.cricket-toss-step.is-done {
-  background: var(--primary-fill);
-  color: #fff;
+  color: var(--success);
+  font-size: 1em;
 }
 .cricket-toss-divider {
   display: flex;
@@ -6404,7 +6462,7 @@ span.cricket-slot-photo {
   background: transparent;
   color: var(--theme-text-dark);
 }
-.cricket-newteam-field .spinner-border {
+.cricket-newteam-field .cv-ball-spinner {
   color: var(--primary);
 }
 .cricket-newteam-found {
@@ -8246,4 +8304,24 @@ tbody tr:first-child .cricket-standings-rank {
   justify-content: space-between;
   gap: 8px;
   width: 100%;
+}
+
+/* A squad group's "Select all" / "Clear", at the end of its title. */
+.cricket-select-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  padding: 4px 10px;
+  border: 1px solid rgba(var(--primary-rgb), 0.35);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--primary);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.cricket-select-all:active {
+  transform: scale(0.97);
 }

@@ -15,6 +15,7 @@ import {
 import { Commentary } from "./Commentary";
 import { MatchAwards } from "./MatchAwards";
 import { OversHistory } from "./OversHistory";
+import { BowlingNow } from "./BowlingNow";
 import { ResultBanner } from "./result/ResultNote";
 import { ScoreHead } from "./ScoreHead";
 
@@ -60,6 +61,7 @@ export function LiveView({ match, nameOf }: { match: CricketMatch; nameOf: NameO
         }}
       />
       <OversHistory match={match} innings={innings} />
+      <BowlingNow match={match} nameOf={nameOf} />
       {/* The next ball can't get the batter out (bar a run-out): a no-ball
           was just bowled. */}
       {freeHit && (

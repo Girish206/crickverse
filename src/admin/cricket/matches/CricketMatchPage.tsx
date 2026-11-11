@@ -44,7 +44,7 @@ import { useMvpLock } from "./useMvpLock";
 import { MatchSquads } from "./MatchSquads";
 import { RescheduleSheet } from "./RescheduleSheet";
 import { existingInput } from "./CricketMatchForm";
-import { editableAfterFinish, formatMatchDate, matchHeading, matchHeadingLine, usePlayerNames } from "./matchUtils";
+import { editableAfterFinish, formatMatchDate, matchHeading, matchHeadingLine, useMatchPlayerNames } from "./matchUtils";
 import { ResultSheet, type ResultSheetStart } from "./result/ResultSheet";
 import { KnockoutPrompt } from "./result/ResultNote";
 import { hasBalls, needsKnockoutWinner } from "./result/resultText";
@@ -93,7 +93,7 @@ export function CricketMatchPage() {
   const undoBall = useUndoCricketBall();
   // The "Enter result" sheet, and what it starts on (a knockout tie: a super over).
   const [enteringResult, setEnteringResult] = useState<ResultSheetStart | null>(null);
-  const nameOf = usePlayerNames();
+  const nameOf = useMatchPlayerNames(match);
   // Others follow along read-only (scorecard + ball by ball). Its
   // organisers, both captains and its scorers edit and score it; only the
   // organisers delete it, and they and the captains pick the scorers.

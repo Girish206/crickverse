@@ -2089,16 +2089,42 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 1px 4px;
-  border-radius: 4px;
-  font-size: 0.56rem;
-  font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: 0.03em;
-  color: var(--adm-text-2);
-  background: var(--adm-hover);
-  border: 1px solid var(--adm-line);
   flex-shrink: 0;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  font-size: 0.56rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+/* Captain: solid gold. Vice-captain: gold outline. Keeper: solid teal. */
+.cricket-crease-role-tag.is-c {
+  color: #5a3d00;
+  background: linear-gradient(180deg, #ffd666, #f2b01e);
+  box-shadow: 0 1px 2px rgba(150, 100, 0, 0.35);
+}
+.cricket-crease-role-tag.is-vc {
+  color: #9a6a00;
+  background: rgba(242, 176, 30, 0.12);
+  border: 1px solid #e0a51f;
+}
+.cricket-crease-role-tag.is-wk {
+  color: #fff;
+  background: linear-gradient(180deg, #2bb7a3, #128a7a);
+  box-shadow: 0 1px 2px rgba(10, 90, 80, 0.35);
+}
+/* The name line's gap spaces the name, badges and style pill evenly; C and
+   WK together sit a little closer. */
+.cricket-crease-role-tag + .cricket-crease-role-tag {
+  margin-left: -2px;
+}
+.cricket-crease-name-line .cricket-player-style-tag {
+  margin-left: 0;
+}
+:root[data-bs-theme="dark"] .cricket-crease-role-tag.is-vc {
+  color: #ffd27a;
 }
 .cricket-crease-meta-line {
   display: flex;
@@ -3368,10 +3394,27 @@
   fill: #fff;
   opacity: 0;
 }
-.cricket-shot-ripple {
+.cricket-shot-ripple,
+.cricket-shot-hit,
+.cricket-shot-bat {
   opacity: 0;
 }
+.cricket-shot .cricket-shot-bat rect {
+  stroke: #7c4a12;
+  stroke-width: 0.5;
+  opacity: 1;
+}
+.cricket-shot .cricket-shot-bat-handle {
+  fill: #1f2937;
+}
+.cricket-shot .cricket-shot-bat-blade {
+  fill: #e9c98a;
+}
+.cricket-shot circle.cricket-shot-hit {
+  fill: #fff;
+}
 .cricket-shot-ripple,
+.cricket-shot-hit,
 .cricket-shot-dot {
   transform-box: fill-box;
   transform-origin: center;
@@ -3709,17 +3752,19 @@
   --burst: var(--brand-orange, #e8501f);
   animation: cricket-burst-out var(--burst-dur, 2300ms) ease forwards;
 }
-/* --impact: when the moment lands, after the ball's flight. */
+/* --impact: when the moment lands. A four or six is just the number (the
+   shot itself plays on the scorer's wagon wheel); the speed lines come in
+   just before it. */
 /* --burst-band: behind white text, where the bright --burst is too pale. */
 .cricket-burst.is-four {
   --burst: #0ea5e9;
   --burst-band: #0369a1;
-  --impact: 0.28s;
+  --impact: 0.35s;
 }
 .cricket-burst.is-six {
   --burst: #fbbf24;
   --burst-band: #b45309;
-  --impact: 0.4s;
+  --impact: 0.35s;
 }
 .cricket-burst.is-out {
   --impact: 0.48s;
@@ -3897,31 +3942,6 @@
   opacity: 0;
   animation: cricket-burst-flash 0.45s ease-out var(--impact);
 }
-.cricket-burst-flyball {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #fb7185, #dc2626 60%, #7f1d1d);
-  box-shadow: 0 0 18px rgba(255, 255, 255, 0.8);
-  opacity: 0;
-}
-.is-four .cricket-burst-flyball {
-  animation: cricket-burst-fly-four var(--impact) linear forwards;
-}
-.is-four .cricket-burst-flyball::after {
-  content: "";
-  position: absolute;
-  right: 50%;
-  top: 50%;
-  width: 46vw;
-  height: 8px;
-  transform: translateY(-50%);
-  border-radius: 8px;
-  background: linear-gradient(to right, transparent, var(--burst-light));
-}
-.is-six .cricket-burst-flyball {
-  animation: cricket-burst-fly-six var(--impact) cubic-bezier(0.3, 0.6, 0.6, 1) forwards;
-}
 .cricket-burst-streak {
   left: 0;
   top: calc(50% + var(--y));
@@ -3930,7 +3950,8 @@
   border-radius: 4px;
   background: linear-gradient(to right, transparent, var(--burst-light));
   opacity: 0;
-  animation: cricket-burst-streak 0.32s ease-in var(--delay) forwards;
+  /* Just before the number lands. */
+  animation: cricket-burst-streak 0.32s ease-in calc(var(--impact, 0.35s) - 0.35s + var(--delay)) forwards;
 }
 .cricket-burst-firework {
   width: 0;
@@ -3971,33 +3992,6 @@
     opacity: 0.85;
   }
   100% {
-    opacity: 0;
-  }
-}
-@keyframes cricket-burst-fly-four {
-  0% {
-    transform: translateX(-70vw);
-    opacity: 1;
-  }
-  95% {
-    transform: translateX(0);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1.8);
-    opacity: 0;
-  }
-}
-@keyframes cricket-burst-fly-six {
-  0% {
-    transform: translate(-10vw, 60vh) scale(2.6);
-    opacity: 1;
-  }
-  90% {
-    opacity: 1;
-  }
-  100% {
-    transform: translate(12vw, -58vh) scale(0.35);
     opacity: 0;
   }
 }
