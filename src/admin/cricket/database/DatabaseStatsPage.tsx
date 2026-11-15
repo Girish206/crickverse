@@ -5,6 +5,7 @@ import { ListCard } from "../../components/ListCard";
 import { Loader } from "../../components/Loader";
 import { CricketKpis } from "../CricketKpis";
 import { HomeSection } from "../HomeSection";
+import { AppErrorsSection } from "./AppErrorsSection";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
@@ -160,6 +161,8 @@ export function DatabaseStatsPage() {
               </div>
             </HomeSection>
           )}
+
+          <AppErrorsSection />
 
           <div className="cricket-db-note">
             <strong>

@@ -26,7 +26,9 @@ export function useAdminTheme() {
   useLayoutEffect(() => {
     const root = document.documentElement;
     root.setAttribute("data-bs-theme", theme.isDark ? "dark" : "light");
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme.isDark ? "#121418" : "#eceef2");
+    // The status bar (and the browser's own bar on a phone) carries on from
+    // the top bar: the ends of its brand gradient (brand.css / dark.css).
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme.isDark ? "#2a1d22" : "#a8261c");
     return () => root.removeAttribute("data-bs-theme");
   }, [theme.isDark]);
 

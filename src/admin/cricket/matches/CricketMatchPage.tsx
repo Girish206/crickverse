@@ -39,6 +39,7 @@ import { ListenSettings } from "./ListenSettings";
 import { copyOverlayLink } from "../../../public/overlayLink";
 import { setBurstSoundsOn, useBurstSoundsOn } from "./burstSounds";
 import { MatchStatusBadge } from "./matchUi";
+import { SectionBoundary } from "../../../app-shell/SectionBoundary";
 import { exportScorecardCsv, exportScorecardPdf } from "./scorecardExport";
 import { isNativeApp } from "../../../app-shell/platform";
 import { MatchAwards } from "./MatchAwards";
@@ -575,8 +576,10 @@ export function CricketMatchPage() {
         {tips.element}
         {/* A four, six or wicket plays over the page on whichever tab, and the
             match's last ball still plays as it turns to the result. */}
-        <BallBurst match={match} nameOf={nameOf} />
-        <BallCalls match={match} nameOf={nameOf} />
+        <SectionBoundary where="match: burst" silent>
+          <BallBurst match={match} nameOf={nameOf} />
+          <BallCalls match={match} nameOf={nameOf} />
+        </SectionBoundary>
         {match.tournamentId !== null && <AutoNextRounds tournamentId={match.tournamentId} />}
         {onScoreScreen ? (
           <>
@@ -611,6 +614,7 @@ export function CricketMatchPage() {
               }
             />
             {seat.mine ? (
+              <SectionBoundary where="scorer">
               <LiveScorer
                 match={match}
                 nameOf={nameOf}
@@ -620,6 +624,7 @@ export function CricketMatchPage() {
                 onEnterResult={organiser ? () => openResult() : undefined}
                 queue={{ waiting, blocked, ...ballQueue }}
               />
+              </SectionBoundary>
             ) : seat.busy ? (
               <Loader />
             ) : (
@@ -705,6 +710,8 @@ export function CricketMatchPage() {
                   // nor round the insights, whose sections are cards of their own.
                   plain={tab === "overs" || tab === "insights"}
                 >
+                  {/* A crash in one tab stays in that tab. */}
+                  <SectionBoundary where={`match: ${tab}`} resetKey={tab}>
                   {tab === "info" && (
                     <>
                       <MatchInfo match={match} nameOf={nameOf} viewers={viewers} tournament={tournament} officials />
@@ -771,6 +778,7 @@ export function CricketMatchPage() {
                   )}
                   {tab === "mvp" && <MatchMvp match={match} nameOf={nameOf} />}
                   {tab === "heroes" && <MatchHeroes match={match} nameOf={nameOf} />}
+                  </SectionBoundary>
                 </ListCard>
               )}
             </SwipePanels>

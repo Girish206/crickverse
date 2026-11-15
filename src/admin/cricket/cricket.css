@@ -8328,3 +8328,101 @@ tbody tr:first-child .cricket-standings-rank {
   font-weight: 500;
   color: var(--muted-color);
 }
+
+/* Database page: the app's crash reports (AppErrorsSection.tsx). */
+.cricket-app-errors {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cricket-app-errors > li {
+  border: 1px solid var(--adm-line);
+  border-radius: 12px;
+  background: var(--adm-surface);
+  overflow: hidden;
+}
+.cricket-app-error-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  background: none;
+  color: var(--theme-text-dark);
+  text-align: left;
+  cursor: pointer;
+}
+.cricket-app-error-count {
+  flex: none;
+  min-width: 38px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(var(--danger-rgb), 0.1);
+  color: var(--danger);
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  text-align: center;
+}
+.cricket-app-error-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cricket-app-error-text strong {
+  overflow: hidden;
+  font-size: var(--fs-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cricket-app-error-text small {
+  color: var(--muted-color);
+  font-size: var(--fs-2xs);
+}
+.cricket-app-error-body {
+  padding: 0 12px 12px;
+  font-size: var(--fs-xs);
+}
+.cricket-app-error-body dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0 0 8px;
+}
+.cricket-app-error-body dt {
+  color: var(--muted-color);
+  font-weight: 600;
+}
+.cricket-app-error-body dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.cricket-app-error-body pre {
+  max-height: 220px;
+  margin: 0 0 8px;
+  padding: 10px;
+  overflow: auto;
+  border-radius: 8px;
+  background: var(--adm-raised);
+  font-size: 0.7rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.cricket-app-error-fixed {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--adm-line-strong);
+  border-radius: 999px;
+  background: var(--adm-surface);
+  color: var(--theme-text-dark);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  cursor: pointer;
+}
