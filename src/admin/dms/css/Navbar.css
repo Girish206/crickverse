@@ -9,7 +9,7 @@
   /* The home-screen app draws under the status bar (black-translucent). */
   height: calc(64px + env(safe-area-inset-top));
   padding-top: env(safe-area-inset-top) !important;
-  background: var(--brand-gradient-bar);
+  background: var(--brand-gradient-top);
   border-bottom: 0;
   /* Rounded along the bottom, mirroring the bottom tab bar's top */
   border-radius: 0 0 20px 20px;

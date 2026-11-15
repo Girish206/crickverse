@@ -40,6 +40,7 @@ import { TournamentPlayers } from "./TournamentPlayers";
 import { AuctionPanel } from "./AuctionPanel";
 import { TournamentStats } from "./TournamentStats";
 import { TOURNAMENT_SHARE_HEADINGS } from "./tournamentTabCards";
+import { FINISHED_NOTE, tournamentFinished, tournamentStarted } from "./tournamentLifecycle";
 import { NrrCalculatorSheet } from "./NrrCalculatorSheet";
 import { NrrGuide } from "../leaderboard/NrrGuide";
 import { FollowButton, useFollowMenuItem } from "../follow/FollowButton";
@@ -249,9 +250,14 @@ export function CricketTournamentPage() {
   // not on a hand-built team.
   const matchedIds = tournament.matchSets.flatMap((set) => set.playerIds).filter((id) => !onManualTeam.has(id));
   const generatedPlayerIds = generatedTeams.flatMap((team) => team.playerIds);
-  // Generating reshuffles the generated teams, so it's only offered until the first
-  // match is scheduled (with no teams yet there are no matches either).
-  const canAutoBuild = (matches ?? []).length === 0;
+  // Finished: locked until it's reopened (the server checks it too). Until
+  // then organisers can change its teams, matches, auction and format.
+  const finished = tournamentFinished(tournament);
+  const started = tournamentStarted(matches);
+  const canEdit = canManage && !finished;
+  // Generating reshuffles the generated teams, so it's only offered until the
+  // first match starts (fixtures not played yet follow the new rosters).
+  const canAutoBuild = canEdit && !started;
   const teamsOutdated =
     canAutoBuild && tournament.generatedAt !== null && !sameMembers(generatedPlayerIds, matchedIds);
 
@@ -260,14 +266,24 @@ export function CricketTournamentPage() {
   // opens straight on the steps.
   // Finished / reopened, and public or not: the update is a full PUT, so
   // the tournament's other details go with it unchanged.
-  const finished = Boolean(tournament.finishedAt);
   const isPublic = Boolean(tournament.isPublic);
   async function toggleFinished() {
+    if (!finished && (matches ?? []).some((match) => match.status === "live")) {
+      toast.error("A match is still live — finish or abandon it before marking the tournament finished");
+      return;
+    }
+    const unplayed = (matches ?? []).filter((match) => match.status === "scheduled").length;
     const ok = finished
-      ? await confirmAction("Reopen the tournament?", "It shows as ongoing again (or as its dates say).", "Reopen")
+      ? await confirmAction(
+          "Reopen the tournament?",
+          "It shows as ongoing again (or as its dates say), and its teams, matches and format can be changed again.",
+          "Reopen",
+        )
       : await confirmAction(
           "Mark the tournament finished?",
-          "It shows as completed everywhere. Matches can still be scored, and you can reopen it any time.",
+          `It shows as completed everywhere and is locked: no new matches, results stay as they are, and teams, the auction and the format can't change.${
+            unplayed ? ` ${unplayed} match${unplayed === 1 ? "" : "es"} not played yet won't be playable.` : ""
+          } You can reopen it any time.`,
           "Mark finished",
         );
     if (!ok) return;
@@ -406,9 +422,11 @@ export function CricketTournamentPage() {
         </div>
       </div>
 
+      {canManage && finished && <div className="admin-banner mb-3">{FINISHED_NOTE}</div>}
+
       {/* The next round, once its teams are known, for the organiser to
           check and schedule. */}
-      <AutoNextRounds tournamentId={tournament.id} card />
+      {!finished && <AutoNextRounds tournamentId={tournament.id} card />}
 
       <SwipePanels swipe={swipeRef} values={tabs.map((t) => t.value)} current={tab} eager>
         {(tab) => (
@@ -419,7 +437,7 @@ export function CricketTournamentPage() {
               </ListCard>
             )}
 
-            {tab === "teams" && !canManage && (
+            {tab === "teams" && !canEdit && (
               <ListCard>
                 {teamCount === 0 ? (
                   <div className="admin-empty-state">The teams haven't been picked yet.</div>
@@ -429,7 +447,7 @@ export function CricketTournamentPage() {
               </ListCard>
             )}
 
-            {tab === "teams" && canManage && (
+            {tab === "teams" && canEdit && (
               <>
               <ListCard>
                 {teamCount === 0 ? (
@@ -484,7 +502,7 @@ export function CricketTournamentPage() {
 
             {tab === "auction" && (
               <ListCard>
-                <AuctionPanel tournament={tournament} canManage={canManage} />
+                <AuctionPanel tournament={tournament} canManage={canEdit} started={started} />
               </ListCard>
             )}
 
@@ -492,7 +510,7 @@ export function CricketTournamentPage() {
               <ListCard
                 plain
                 action={
-                  canManage ? (
+                  canEdit ? (
                     <Button variant="primary" onClick={() => setSchedulingMatch(true)}>
                       <i className="fa-solid fa-plus" aria-hidden="true" style={{ marginRight: 6 }}></i>
                       New Match
@@ -500,7 +518,7 @@ export function CricketTournamentPage() {
                   ) : undefined
                 }
               >
-                <MatchesBoard matches={matches ?? []} onNew={canManage ? () => setSchedulingMatch(true) : undefined} />
+                <MatchesBoard matches={matches ?? []} onNew={canEdit ? () => setSchedulingMatch(true) : undefined} />
               </ListCard>
             )}
 
@@ -523,7 +541,7 @@ export function CricketTournamentPage() {
                   </div>
                 }
               >
-                <FormatView tournament={tournament} matches={matches ?? []} canManage={canManage} />
+                <FormatView tournament={tournament} matches={matches ?? []} canManage={canEdit} />
               </ListCard>
             )}
 

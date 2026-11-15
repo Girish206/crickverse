@@ -55,6 +55,8 @@ import { useMvpLock } from "./useMvpLock";
 import { MatchSquads } from "./MatchSquads";
 import { RescheduleSheet } from "./RescheduleSheet";
 import { existingInput } from "./CricketMatchForm";
+import { reopenableNow } from "./matchTiming";
+import { tournamentFinished } from "../tournaments/tournamentLifecycle";
 import { editableAfterFinish, formatMatchDate, matchHeading, matchHeadingLine, useMatchPlayerNames } from "./matchUtils";
 import { ResultSheet, type ResultSheetStart } from "./result/ResultSheet";
 import { KnockoutPrompt } from "./result/ResultNote";
@@ -125,6 +127,9 @@ export function CricketMatchPage() {
   const ballQueue = useSendBallQueue(serverMatch, canManage);
   useMvpLock(match ? [match] : undefined, canManage);
   const organiser = access === "organise";
+  // A finished tournament is locked (the server checks it too): its matches
+  // can't be started, reopened, given a result or have their last ball undone.
+  const tournamentLocked = tournamentFinished(tournament);
   // Several people may be allowed to score, but only one does at a time:
   // the first to open the Live tab, until they hand it over or stop. The
   // rest follow the live view. (A live match opens on Live.)
@@ -426,7 +431,7 @@ export function CricketMatchPage() {
           </button>
         )}
 
-        {organiser && (
+        {organiser && !tournamentLocked && (
           <button type="button" className="cricket-settings-item" onClick={settingsThen(() => openResult())}>
             <i className="fa-solid fa-flag-checkered" aria-hidden="true"></i>
             <span>
@@ -436,17 +441,21 @@ export function CricketMatchPage() {
             <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
           </button>
         )}
-        {organiser && over && (
+        {organiser && over && !tournamentLocked && (
           <button
             type="button"
             className="cricket-settings-item"
-            disabled={reopenMatch.isPending}
+            disabled={reopenMatch.isPending || !reopenableNow(match)}
             onClick={settingsThen(handleReopen)}
           >
             <i className="fa-solid fa-rotate-left" aria-hidden="true"></i>
             <span>
               Reopen match
-              <small>Clear the result and carry on scoring</small>
+              <small>
+                {reopenableNow(match)
+                  ? "Clear the result and carry on scoring — within a day of when it first ended"
+                  : "Only possible within a day of when the match first ended"}
+              </small>
             </span>
           </button>
         )}
@@ -491,7 +500,8 @@ export function CricketMatchPage() {
             <span className={`cricket-shot-toggle-knob ${match.isPublic ? "is-on" : ""}`.trim()} aria-hidden="true"></span>
           </button>
         )}
-        {access === "organise" && (
+        {/* A finished tournament keeps its results; a fixture never played can go. */}
+        {access === "organise" && (!tournamentLocked || upcoming) && (
           <button
             type="button"
             className="cricket-settings-item is-danger"
@@ -582,7 +592,7 @@ export function CricketMatchPage() {
           <BallBurst match={match} nameOf={nameOf} />
           <BallCalls match={match} nameOf={nameOf} />
         </SectionBoundary>
-        {match.tournamentId !== null && <AutoNextRounds tournamentId={match.tournamentId} />}
+        {match.tournamentId !== null && !tournamentLocked && <AutoNextRounds tournamentId={match.tournamentId} />}
         {onScoreScreen ? (
           <>
             <PageHeader
@@ -742,7 +752,7 @@ export function CricketMatchPage() {
                       </>
                     ) : (
                       <div className="cricket-summary">
-                        {organiser && needsKnockoutWinner(match) && (
+                        {organiser && !tournamentLocked && needsKnockoutWinner(match) && (
                           <KnockoutPrompt
                             match={match}
                             onEnter={() => openResult({ outcome: "win", method: match.status === "completed" ? "super-over" : "other" })}
@@ -756,6 +766,7 @@ export function CricketMatchPage() {
                         {match.status === "completed" &&
                           !match.resultMethod &&
                           hasBalls(match) &&
+                          !tournamentLocked &&
                           (organiser || (admin != null && String(match.scoringById) === admin.sub)) && (
                             <div className="cricket-potm-row">
                               <div className="cricket-potm-row-text">
@@ -934,9 +945,13 @@ export function CricketMatchPage() {
             <Button variant="outline" onClick={() => setEditingDetails(true)}>
               Edit
             </Button>
-            <Button variant="primary" onClick={() => navigate(`/matches/${match.id}/setup`)}>
-              Start Match
-            </Button>
+            {tournamentLocked ? (
+              <small className="admin-hint">The tournament is finished — reopen it to play this match.</small>
+            ) : (
+              <Button variant="primary" onClick={() => navigate(`/matches/${match.id}/setup`)}>
+                Start Match
+              </Button>
+            )}
           </div>
         )}
 

@@ -421,7 +421,7 @@ body.admin-page {
 }
 
 /* Main menu page title (ListCard with an icon/subtitle): a quiet section
-   label — a small tinted icon, the title in the body font and a line saying
+   label — a small deep-red icon tile, the title in the body font and a line saying
    what the page is for — so it doesn't read as a second app logo under the
    navbar's wordmark. */
 .admin-page-header > .admin-page-title {
@@ -439,9 +439,26 @@ body.admin-page {
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-md);
-  background: var(--adm-hover);
-  color: var(--adm-text-2);
+  background: var(--brand-gradient);
+  color: #fff;
   font-size: var(--fs-sm);
+  box-shadow:
+    0 4px 10px -4px rgba(215, 38, 30, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+.admin-page-title-icon > i {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.18));
+}
+/* Dark theme: the dark top bar's deep reds instead of the bright gradient. */
+:root[data-bs-theme="dark"] .admin-page-title-icon {
+  background: linear-gradient(145deg, #a8261c 0%, #6a1d17 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 4px 12px -4px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+:root[data-bs-theme="dark"] .admin-page-title-icon > i {
+  filter: none;
 }
 .admin-page-title-text {
   min-width: 0;

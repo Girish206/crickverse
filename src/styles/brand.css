@@ -45,11 +45,14 @@
   /* The logo name's gradient, deep red to orange: the edge line of the top
      and bottom bars (Navbar.css, BottomNav.css) */
   --brand-gradient: linear-gradient(90deg, #9a2219 0%, #d7261e 45%, #f26a1b 100%);
-  /* The top and bottom bars' fill: the brand's red spreading sideways from
-     the centre, brightest there (a touch of the orange) and deepening
-     evenly to the left and right ends; the same from top to bottom. Deep
-     enough throughout for the white icons and text on it. */
-  --brand-gradient-bar: linear-gradient(90deg, #a8261c 0%, #bb2a1e 20%, #d6372a 38%, #ea5a2a 50%, #d6372a 62%, #bb2a1e 80%, #a8261c 100%);
+  /* The top and bottom bars' fill: spreading sideways from the centre,
+     deep maroon there and lightening evenly through the brand red to
+     orange at the left and right ends (like the match card's result strip). */
+  --brand-gradient-bar: linear-gradient(90deg, #f26a1b 0%, #d7261e 14%, #9a2219 32%, #6e1812 50%, #9a2219 68%, #d7261e 86%, #f26a1b 100%);
+  /* The top bars' fill (Navbar.css, PageHeader.css): the other way round,
+     orange at the centre deepening through the brand red to maroon at the
+     left and right ends. */
+  --brand-gradient-top: linear-gradient(90deg, #6e1812 0%, #9a2219 18%, #d7261e 36%, #f26a1b 50%, #d7261e 64%, #9a2219 82%, #6e1812 100%);
 
   /* Charcoal surfaces (dark theme) */
   --brand-navy-night: #121418;

@@ -449,7 +449,9 @@ export type CricketMatchEventKind =
   | "squad-move"
   | "impact-sub"
   | "rain"
-  | "reopened";
+  | "reopened"
+  // Logged each time the match finishes (again, after a reopen).
+  | "finished";
 
 // A line in a match's log: something done by hand while scoring, which the
 // balls don't show.

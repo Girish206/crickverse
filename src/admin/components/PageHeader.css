@@ -17,7 +17,7 @@
   gap: 12px;
   height: calc(var(--cv-header-h) + env(safe-area-inset-top));
   padding: env(safe-area-inset-top) max(16px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left));
-  background: var(--brand-gradient-bar);
+  background: var(--brand-gradient-top);
   border-bottom: 0;
   box-shadow: 0 2px 10px rgba(var(--brand-navy-rgb), 0.18);
   color: #fff;

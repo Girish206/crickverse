@@ -14,6 +14,7 @@ import {
 import type { CricketPlayer } from "../../../api/types";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { canManageTournament } from "../canManage";
+import { FINISHED_NOTE, tournamentFinished } from "./tournamentLifecycle";
 import { Button } from "../../components/Button";
 import { ListCard } from "../../components/ListCard";
 import { PageHeader, PageHeaderAction } from "../../components/PageHeader";
@@ -110,7 +111,9 @@ export function CricketTeamPage() {
   );
   const { admin } = useAdminAuth();
   const { data: me } = useCricketMe();
-  const canManage = canManageTournament(admin, tournament, me?.player?.id);
+  // A finished tournament's teams are locked until it's reopened.
+  const finished = tournamentFinished(tournament);
+  const canManage = canManageTournament(admin, tournament, me?.player?.id) && !finished;
   const followItem = useFollowMenuItem({ kind: "team", targetId: id, teamIndex });
   const tips = useTips("team", TEAM_TIPS, Boolean(tournament?.teams[teamIndex]));
   const playerById = useMemo(() => new Map((players ?? []).map((player) => [player.id, player])), [players]);
@@ -133,7 +136,7 @@ export function CricketTeamPage() {
   }
 
   // The team's captain can add players too (but not move, swap or edit).
-  const canAddPlayers = canManage || (me?.player != null && team.captainId === me.player.id);
+  const canAddPlayers = canManage || (!finished && me?.player != null && team.captainId === me.player.id);
   const teamMatches = (matches ?? []).filter((match) => match.teams.some((t) => t.teamIndex === teamIndex));
   const standings = pointsTable(tournament, matches ?? []);
   const position = standings.findIndex((row) => row.teamIndex === teamIndex);
@@ -297,6 +300,9 @@ export function CricketTeamPage() {
 
             {tab === "players" && (
               <ListCard>
+                {finished && canManageTournament(admin, tournament, me?.player?.id) && (
+                  <div className="admin-banner mb-3">{FINISHED_NOTE}</div>
+                )}
                 {team.playerIds.length === 0 ? (
                   <div className="admin-empty-state">No players in this team yet.</div>
                 ) : (

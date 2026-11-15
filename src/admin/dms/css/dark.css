@@ -14,10 +14,11 @@
 :root[data-bs-theme="dark"] {
   color-scheme: dark;
 
-  /* The top and bottom bars' fill (brand.css), for the dark theme: the red
-     softer at the centre and fading sideways into the charcoal, as the
-     launch splash's glow does, rather than a full bright red */
-  --brand-gradient-bar: linear-gradient(90deg, #2a1d22 0%, #3d1a1b 18%, #6a1d17 34%, #a8261c 50%, #6a1d17 66%, #3d1a1b 82%, #2a1d22 100%);
+  /* The top and bottom bars' fill (brand.css), for the dark theme: darkest
+     at the centre, lightening sideways to the deep red at the ends */
+  --brand-gradient-bar: linear-gradient(90deg, #a8261c 0%, #6a1d17 32%, #45120e 50%, #6a1d17 68%, #a8261c 100%);
+  /* The top bars, the other way round: deep red at the centre, darkening to the ends. */
+  --brand-gradient-top: linear-gradient(90deg, #45120e 0%, #6a1d17 32%, #a8261c 50%, #6a1d17 68%, #45120e 100%);
 
   --adm-bg: var(--brand-navy-night);
   --adm-surface: var(--brand-navy-surface);

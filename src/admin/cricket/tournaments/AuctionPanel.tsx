@@ -67,7 +67,17 @@ function SetupForm({ tournament, onDone }: { tournament: CricketTournament; onDo
   );
 }
 
-export function AuctionPanel({ tournament, canManage }: { tournament: CricketTournament; canManage: boolean }) {
+// `started`: a match has got under way — a new auction (or a restart) is
+// only for before then; one already running can still be finished.
+export function AuctionPanel({
+  tournament,
+  canManage,
+  started = false,
+}: {
+  tournament: CricketTournament;
+  canManage: boolean;
+  started?: boolean;
+}) {
   const auction = tournament.auction ?? null;
   const { data: players } = useCricketPlayers();
   const playerById = useMemo(() => new Map((players ?? []).map((player) => [player.id, player])), [players]);
@@ -85,6 +95,13 @@ export function AuctionPanel({ tournament, canManage }: { tournament: CricketTou
 
   if (!auction || editing) {
     if (!canManage) return <div className="admin-empty-state">There's no player auction for this tournament.</div>;
+    if (started && auction?.status !== "open") {
+      return (
+        <div className="admin-empty-state">
+          The tournament's matches have started, so an auction can't be {auction ? "run again" : "started"} now.
+        </div>
+      );
+    }
     return (
       <>
         <p className="cricket-auction-intro">
@@ -223,9 +240,11 @@ export function AuctionPanel({ tournament, canManage }: { tournament: CricketTou
               <i className="fa-solid fa-rotate-left" aria-hidden="true"></i> Undo last sale
             </button>
           )}
-          <button type="button" className="cricket-auction-secondary" disabled={busy || Boolean(current)} onClick={() => setEditing(true)}>
-            <i className="fa-solid fa-sliders" aria-hidden="true"></i> {open ? "Purse and steps" : "Start again"}
-          </button>
+          {(open || !started) && (
+            <button type="button" className="cricket-auction-secondary" disabled={busy || Boolean(current)} onClick={() => setEditing(true)}>
+              <i className="fa-solid fa-sliders" aria-hidden="true"></i> {open ? "Purse and steps" : "Start again"}
+            </button>
+          )}
           {open && (
             <button type="button" className="cricket-auction-secondary" disabled={busy || Boolean(current)} onClick={end}>
               <i className="fa-solid fa-flag-checkered" aria-hidden="true"></i> End auction
