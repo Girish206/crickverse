@@ -416,7 +416,11 @@ export function MatchShotMap({ match, nameOf }: { match: CricketMatch; nameOf: N
   return (
     <section className="cricket-awards">
       <h2 className="cricket-section-title">
-        <i className="fa-solid fa-bullseye" aria-hidden="true"></i> Shot map
+        <i className="fa-solid fa-bullseye" aria-hidden="true"></i>
+        <span className="cricket-insight-heading">
+          Shot map
+          <small>Where the runs were hit</small>
+        </span>
       </h2>
       <div className="cricket-shot-filters">
         {match.innings.length > 1 && (

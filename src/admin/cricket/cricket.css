@@ -1217,12 +1217,19 @@
   flex-direction: column;
   gap: 10px;
   padding: 12px;
-  border: 1px solid var(--adm-line-strong);
-  border-top: 1px solid var(--adm-line-strong);
+  /* A light touch of the brand red on the edge and in the shadow, so the
+     card stands out a little from the page */
+  border: 1px solid rgba(var(--brand-accent-rgb), 0.22);
+  border-top: 1px solid rgba(var(--brand-accent-rgb), 0.3);
   border-radius: var(--radius-lg);
   /* A cool neutral tint behind the pad, so the white run buttons stand off it. */
   background: var(--adm-raised);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-card), 0 -2px 14px rgba(var(--brand-accent-rgb), 0.1);
+}
+/* Light theme: close to white, just off it so the white run buttons
+   (with their borders) still read as keys. Also beats the phone rule below. */
+:root:not([data-bs-theme="dark"]) .cricket-scorer-dock {
+  background: #fff;
 }
 @media (max-width: 560px) {
   .cricket-page:has(.cricket-scorer-dock) {
@@ -1237,12 +1244,12 @@
     gap: 6px;
     padding: 9px max(9px, env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom))
       max(9px, env(safe-area-inset-left));
-    border: 1px solid var(--adm-line-strong);
-    border-top: 1px solid var(--adm-line-strong);
+    border: 1px solid rgba(var(--brand-accent-rgb), 0.22);
+    border-top: 1px solid rgba(var(--brand-accent-rgb), 0.3);
     border-bottom: 0;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     background: var(--adm-raised);
-    box-shadow: var(--shadow-card);
+    box-shadow: var(--shadow-card), 0 -2px 14px rgba(var(--brand-accent-rgb), 0.1);
   }
   .cricket-scorer-dock .cricket-pad {
     position: static;
@@ -3068,81 +3075,6 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
 }
 
 
-/* Insights */
-.cricket-insight-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 14px;
-  margin-bottom: 8px;
-  font-size: var(--fs-sm);
-  color: var(--theme-text-dark);
-}
-.cricket-insight-swatch,
-.cricket-insight-wicket {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  vertical-align: -1px;
-}
-.is-inn-0 .cricket-insight-swatch,
-.cricket-overs-bar.is-inn-0 {
-  background: var(--primary);
-}
-.is-inn-1 .cricket-insight-swatch,
-.cricket-overs-bar.is-inn-1 {
-  background: #98a2b3;
-}
-.cricket-insight-wicket {
-  border-radius: 50%;
-  background: var(--danger-fill);
-}
-.cricket-overs-chart {
-  display: flex;
-  gap: 6px;
-  height: 160px;
-  padding: 14px 0 0;
-  overflow-x: auto;
-}
-.cricket-overs-group {
-  flex: 1 0 28px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.cricket-overs-bars {
-  flex: 1;
-  width: 100%;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 2px;
-}
-.cricket-overs-bar {
-  position: relative;
-  width: 10px;
-  min-height: 2px;
-  border-radius: 3px 3px 0 0;
-}
-.cricket-overs-wkt {
-  position: absolute;
-  top: -12px;
-  left: 50%;
-  width: 10px;
-  height: 10px;
-  transform: translateX(-50%);
-  border-radius: 50%;
-  background: var(--danger-fill);
-  color: #fff;
-  font-size: var(--fs-3xs);
-  line-height: 10px;
-  text-align: center;
-}
-.cricket-overs-label {
-  margin-top: 4px;
-  font-size: var(--fs-2xs);
-  color: var(--muted-color);
-}
 
 @media (max-width: 560px) {
   .cricket-banner-pick {
@@ -3463,6 +3395,10 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
 }
 .cricket-mvp-guide-group.is-bowling {
   --guide-rgb: var(--brand-navy-rgb);
+}
+/* Navy is near-black, lost on the dark page: bowling goes a light blue there. */
+:root[data-bs-theme="dark"] .cricket-mvp-guide-group.is-bowling {
+  --guide-rgb: 96, 165, 250;
 }
 .cricket-mvp-guide-group.is-fielding {
   --guide-rgb: 22, 163, 74;
@@ -4012,9 +3948,6 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
   gap: 8px;
   padding: 7px 0;
   font-size: var(--fs-sm);
-}
-.cricket-overs-chart {
-  height: 120px;
 }
 
 @media (max-width: 560px) {
@@ -7917,6 +7850,9 @@ tbody tr:first-child .cricket-standings-rank {
 .cricket-mvp-compare .is-bowling {
   --guide-rgb: var(--brand-navy-rgb);
 }
+:root[data-bs-theme="dark"] .cricket-mvp-compare .is-bowling {
+  --guide-rgb: 96, 165, 250;
+}
 .cricket-mvp-compare .is-fielding {
   --guide-rgb: 22, 163, 74;
 }
@@ -8324,4 +8260,71 @@ tbody tr:first-child .cricket-standings-rank {
 }
 .cricket-select-all:active {
   transform: scale(0.97);
+}
+
+/* Player profile, This Match: their own balls under each batting / bowling
+   innings, over by over. */
+.cricket-player-ball-log-title {
+  margin: 0 0 8px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted-color);
+}
+/* The Live tab's overs row, kept inside the profile (no full-bleed). */
+.cricket-live-overs.cricket-batter-overs {
+  margin: 0 0 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+/* A batter's balls, a line a bowler: name, the balls (small chips that
+   wrap), runs (balls). */
+.cricket-batter-balls {
+  display: grid;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.cricket-batter-balls li {
+  display: grid;
+  grid-template-columns: minmax(70px, 30%) 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+}
+.cricket-batter-balls li + li {
+  border-top: 1px solid var(--border-color);
+}
+.cricket-batter-balls-name {
+  overflow: hidden;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--theme-text-dark);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cricket-batter-balls-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.cricket-batter-balls-chips .cricket-ball-chip {
+  height: 22px;
+  min-width: 22px;
+  font-size: 0.65rem;
+}
+.cricket-batter-balls-score {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--theme-text-dark);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.cricket-batter-balls-score small {
+  font-weight: 500;
+  color: var(--muted-color);
 }

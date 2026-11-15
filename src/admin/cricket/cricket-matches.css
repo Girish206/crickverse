@@ -163,8 +163,31 @@
 .cv-page-header-title-row .cricket-match-status {
   align-self: center;
   flex: none;
-  padding: 3px 9px;
-  font-size: 0.5625rem;
+  /* The label is all capitals, with no descenders, so in a plain line box it
+     sits low. Trimmed to the capitals' height, it centres exactly; where
+     that isn't supported, a little more padding below lifts it instead. */
+  padding: 3px 6px 4px;
+  font-size: 0.5rem;
+  line-height: 1;
+  letter-spacing: 0.05em;
+  /* A white ring, so a red (live) chip still stands out on the header's
+     red gradient */
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7);
+}
+@supports (text-box: trim-both cap alphabetic) {
+  .cv-page-header-title-row .cricket-match-status {
+    /* A block container (not flex), which text-box trims */
+    display: inline-block;
+    padding: 4px 6px;
+    text-box: trim-both cap alphabetic;
+  }
+}
+/* Live, on the red header: turned round to a white pill with red text, so
+   it reads instead of melting into the bar */
+.cv-page-header-title-row .cricket-match-status.is-live {
+  background: #fff;
+  color: var(--brand-accent-fill);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
 }
 .cricket-live-dot {
   width: 8px;
@@ -2419,8 +2442,13 @@
   flex-direction: column;
   gap: 6px;
 }
+/* The tint alone is too faint on the dark surface, so a bar marks it too. */
 .cricket-prev-over-item.is-current-over {
-  background: rgba(var(--primary-rgb), 0.04);
+  background: rgba(var(--primary-rgb), 0.05);
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+:root[data-bs-theme="dark"] .cricket-prev-over-item.is-current-over {
+  background: rgba(var(--primary-rgb), 0.12);
 }
 .cricket-prev-over-item + .cricket-prev-over-item {
   border-top: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));

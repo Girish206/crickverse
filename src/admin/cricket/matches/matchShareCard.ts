@@ -49,7 +49,7 @@ const PHOTO_BODY_H = 190;
 const STATUS_PILLS: Record<CricketMatchStatus, CardPill> = {
   scheduled: { label: "UPCOMING", fill: AMBER, text: NAVY },
   live: { label: "LIVE", fill: CARD_RED, text: "#ffffff" },
-  completed: { label: "RESULT", fill: "#ffffff", text: NAVY, outline: "rgba(23, 26, 32, 0.16)" },
+  completed: { label: "COMPLETED", fill: "#ffffff", text: NAVY, outline: "rgba(23, 26, 32, 0.16)" },
   abandoned: { label: "ABANDONED", fill: "#444850", text: "#ffffff" },
 };
 

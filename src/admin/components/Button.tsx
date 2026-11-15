@@ -9,7 +9,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 // Generic action button (e.g. a list page's "+ New" button that opens the
-// DefaultModal), rendered through the ported DMS CustomButton.
+// BottomSheet), rendered through the ported DMS CustomButton.
 export function Button({ variant = "primary", size, type = "button", className = "", children, ...rest }: ButtonProps) {
   if (variant === "link" || variant === "danger-text") {
     const sizeClass = size === "sm" ? "btn-sm" : size === "lg" ? "btn-lg" : "";

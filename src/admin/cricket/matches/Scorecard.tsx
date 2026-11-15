@@ -17,6 +17,7 @@ import {
   type NameOf,
 } from "../stats";
 import { NoPlayNote } from "./result/ResultNote";
+import "./analysis.css";
 
 // When scrollEndKey changes (say, the ball count), the row jumps to its end;
 // a viewer who has scrolled back isn't moved until then.

@@ -380,6 +380,10 @@ export interface CricketBall {
   shotZone?: string | null;
   // The shot played (SHOT_TYPES in ShotMap.tsx). Null or missing = not marked.
   shotType?: string | null;
+  // Where it pitched (the scorer's pitch map; PITCH_LINES / PITCH_LENGTHS in
+  // analytics.ts). Null or missing = not marked.
+  pitchLine?: string | null;
+  pitchLength?: string | null;
   // When it was recorded. Missing on older balls.
   at?: string | null;
   // Runs the batters ran off a no-ball that weren't hit: byes or leg-byes
@@ -419,6 +423,17 @@ export interface CricketMatchViewers {
   watching: number;
   peak: number;
   unique: number;
+  // Missing from an older API.
+  fans?: CricketFans;
+}
+
+export type CricketReaction = "clap" | "fire" | "wow" | "heart" | "sad";
+
+// Fans' picks of the winner (side 0, side 1), this viewer's own, and reactions.
+export interface CricketFans {
+  votes: [number, number];
+  myVote: number | null;
+  reactions: Record<CricketReaction, number>;
 }
 
 export type CricketMatchEventKind =

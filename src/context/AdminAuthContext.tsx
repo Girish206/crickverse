@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { apiClient, getAdminToken, setAdminToken } from "../api/client";
+import { apiClient, getAdminToken, SESSION_ENDED, setAdminToken } from "../api/client";
 import type { ApiEnvelope } from "../api/types";
 
 // RunMitra signs in with the shared Girish Creations account (same API,
@@ -108,6 +108,17 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => undefined);
   }, []);
+
+  // The API turned the session down (api/client.ts): sign out here, without
+  // a page load, so the routes can send them on from where they are.
+  useEffect(() => {
+    const ended = () => {
+      queryClient.clear();
+      setAdmin(null);
+    };
+    window.addEventListener(SESSION_ENDED, ended);
+    return () => window.removeEventListener(SESSION_ENDED, ended);
+  }, [queryClient]);
 
   // Same source as a page reload: the response's `admin` carries `id`, not
   // the `sub` the rest of the app reads.

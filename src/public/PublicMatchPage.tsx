@@ -8,6 +8,10 @@ import { ListCard } from "../admin/components/ListCard";
 import { MatchShareSheet } from "../admin/cricket/matches/MatchShareSheet";
 import { logoFor } from "../admin/cricket/tournaments/tournamentArt";
 import { BallBurst } from "../admin/cricket/matches/BallBurst";
+import { BallCalls } from "../admin/cricket/matches/BallCalls";
+import { FanZone } from "../admin/cricket/matches/FanZone";
+import { setScorerPref, useScorerPrefs } from "../admin/cricket/matches/scorerPrefs";
+import { setBurstSoundsOn, useBurstSoundsOn } from "../admin/cricket/matches/burstSounds";
 import { Scorecard } from "../admin/cricket/matches/Scorecard";
 import { LiveView } from "../admin/cricket/matches/LiveView";
 import { MatchHero } from "../admin/cricket/matches/MatchHero";
@@ -71,6 +75,8 @@ function MatchView({ data: { match, tournament, players } }: { data: PublicMatch
   const [params, setParams] = useSearchParams();
   const location = useLocation();
   const [sharing, setSharing] = useState(false);
+  const soundsOn = useBurstSoundsOn();
+  const { voice } = useScorerPrefs();
 
   const upcoming = match.status === "scheduled";
   const live = match.status === "live";
@@ -102,6 +108,7 @@ function MatchView({ data: { match, tournament, players } }: { data: PublicMatch
     <div className="cricket-page">
       {/* A four, six or wicket plays over the page, as for signed-in followers. */}
       <BallBurst match={match} nameOf={nameOf} />
+      <BallCalls match={match} nameOf={nameOf} />
 
       {/* Tournament logo, the match's status over its title, and Share. The
           card below names both teams, so the title is the match's round
@@ -129,6 +136,33 @@ function MatchView({ data: { match, tournament, players } }: { data: PublicMatch
             </Link>
           )}
         </div>
+        <button
+          type="button"
+          className="cv-pm-share"
+          role="switch"
+          aria-checked={soundsOn}
+          aria-label="Sounds for fours, sixes and wickets"
+          title={soundsOn ? "Turn sounds off" : "Turn sounds on"}
+          onClick={() => setBurstSoundsOn(!soundsOn)}
+        >
+          <i className={`fa-solid ${soundsOn ? "fa-volume-high" : "fa-volume-xmark"}`} aria-hidden="true"></i>
+        </button>
+        {live && "speechSynthesis" in window && (
+          <button
+            type="button"
+            className="cv-pm-share"
+            role="switch"
+            aria-checked={voice}
+            aria-label="Read balls aloud"
+            title={voice ? "Stop reading balls aloud" : "Read balls aloud"}
+            onClick={() => {
+              setScorerPref("voice", !voice);
+              if (!voice) window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
+            }}
+          >
+            <i className={`fa-solid ${voice ? "fa-microphone-lines" : "fa-microphone-lines-slash"}`} aria-hidden="true"></i>
+          </button>
+        )}
         <button type="button" className="cv-pm-share" aria-label="Share match" title="Share match" onClick={() => setSharing(true)}>
           <i className="fa-solid fa-share-nodes" aria-hidden="true"></i>
         </button>
@@ -156,8 +190,18 @@ function MatchView({ data: { match, tournament, players } }: { data: PublicMatch
       <SwipePanels swipe={swipeRef} values={tabs.map((t) => t.value)} current={tab} eager>
         {(tab) => (
           <ListCard title="" bodyClassName={tab === "live" ? "cricket-live-body" : undefined}>
-            {tab === "info" && <MatchInfo match={match} nameOf={nameOf} viewers={viewers} tournament={tournament ?? undefined} />}
-            {tab === "live" && <LiveView match={match} nameOf={nameOf} />}
+            {tab === "info" && (
+              <>
+                <MatchInfo match={match} nameOf={nameOf} viewers={viewers} tournament={tournament ?? undefined} />
+                {upcoming && <FanZone match={match} isPublic />}
+              </>
+            )}
+            {tab === "live" && (
+              <>
+                <LiveView match={match} nameOf={nameOf} />
+                <FanZone match={match} isPublic />
+              </>
+            )}
             {tab === "scorecard" && <Scorecard match={match} nameOf={nameOf} />}
             {LOCKED_TABS.has(tab) && <SignInToSee label={tabs.find((t) => t.value === tab)!.label} tab={tab} />}
           </ListCard>

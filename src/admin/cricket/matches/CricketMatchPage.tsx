@@ -5,10 +5,12 @@ import {
   useDeleteCricketMatch,
   useReopenCricketMatch,
   useScoringSeat,
+  useSendBallQueue,
   useUndoCricketBall,
   useSetCricketMatchScorers,
   useUpdateCricketMatch,
 } from "../../../api/hooks/cricket/useCricketMatches";
+import { useQueuedMatch } from "../../../api/hooks/cricket/ballQueue";
 import { useCricketMe } from "../../../api/hooks/cricket/useCricketPlayers";
 import { useCricketTournament } from "../../../api/hooks/cricket/useCricketTournaments";
 import { ListCard } from "../../components/ListCard";
@@ -30,7 +32,15 @@ import { LiveScorer } from "./LiveScorer";
 import { BallByBall, Scorecard } from "./Scorecard";
 import { MatchHero } from "./MatchHero";
 import { BallBurst } from "./BallBurst";
+import { BallCalls } from "./BallCalls";
+import { FanZone } from "./FanZone";
+import { HeadToHead } from "./HeadToHead";
+import { ListenSettings } from "./ListenSettings";
+import { copyOverlayLink } from "../../../public/overlayLink";
+import { setBurstSoundsOn, useBurstSoundsOn } from "./burstSounds";
 import { MatchStatusBadge } from "./matchUi";
+import { exportScorecardCsv, exportScorecardPdf } from "./scorecardExport";
+import { isNativeApp } from "../../../app-shell/platform";
 import { MatchAwards } from "./MatchAwards";
 import { PotmPicker } from "./PotmPicker";
 import { useMatchViewers } from "../../../api/hooks/cricket/useMatchViewers";
@@ -49,6 +59,10 @@ import { ResultSheet, type ResultSheetStart } from "./result/ResultSheet";
 import { KnockoutPrompt } from "./result/ResultNote";
 import { hasBalls, needsKnockoutWinner } from "./result/resultText";
 import "../../dms/css/adminDisplays.css";
+
+// The settings sheet's "Live-stream overlay" row (a scorebug link for OBS),
+// hidden for now. The overlay page itself still works.
+const SHOW_OVERLAY_LINK = false;
 import "../../admin.css";
 import "../cricket.css";
 import { Loader } from "../../components/Loader";
@@ -75,7 +89,10 @@ export function CricketMatchPage() {
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const location = useLocation();
-  const { data: match, isLoading } = useCricketMatch(id);
+  const { data: serverMatch, isLoading } = useCricketMatch(id);
+  // Balls scored offline show at once, as if saved (see ballQueue); they're
+  // sent below.
+  const { match, waiting, blocked } = useQueuedMatch(serverMatch);
   const { data: viewers } = useMatchViewers(id, { live: match?.status === "live" });
   const { data: tournament } = useCricketTournament(match?.tournamentId ?? 0, Boolean(match?.tournamentId));
   const deleteMatch = useDeleteCricketMatch();
@@ -85,6 +102,7 @@ export function CricketMatchPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   // The share sheet, opened from the settings sheet's Share row.
   const [sharing, setSharing] = useState(false);
+  const soundsOn = useBurstSoundsOn();
   const [editingDetails, setEditingDetails] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
   const detailsForm = useRef<HTMLFormElement>(null);
@@ -101,6 +119,7 @@ export function CricketMatchPage() {
   const { data: me } = useCricketMe();
   const access = matchAccess(admin, match, tournament, me?.player?.id);
   const canManage = access !== null;
+  const ballQueue = useSendBallQueue(serverMatch, canManage);
   useMvpLock(match ? [match] : undefined, canManage);
   const organiser = access === "organise";
   // Several people may be allowed to score, but only one does at a time:
@@ -259,6 +278,70 @@ export function CricketMatchPage() {
           </span>
           <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
         </button>
+        {/* The scorecard as a file, once there's a ball to put on it. */}
+        {hasBalls(match) && (
+          <>
+            <button
+              type="button"
+              className="cricket-settings-item"
+              onClick={settingsThen(() => void exportScorecardPdf(match, nameOf))}
+            >
+              <i className="fa-solid fa-file-pdf" aria-hidden="true"></i>
+              <span>
+                {isNativeApp ? "Share scorecard" : "Export scorecard (PDF)"}
+                <small>{isNativeApp ? "As a PDF, to any app" : "Print it or save it as a PDF"}</small>
+              </span>
+              <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
+            </button>
+            <button
+              type="button"
+              className="cricket-settings-item"
+              onClick={settingsThen(() => void exportScorecardCsv(match, nameOf))}
+            >
+              <i className="fa-solid fa-file-csv" aria-hidden="true"></i>
+              <span>
+                Export scorecard (CSV)
+                <small>For Excel or Google Sheets</small>
+              </span>
+              <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
+            </button>
+          </>
+        )}
+        <button
+          type="button"
+          className="cricket-settings-item"
+          role="switch"
+          aria-checked={soundsOn}
+          onClick={() => setBurstSoundsOn(!soundsOn)}
+        >
+          <i className={`fa-solid ${soundsOn ? "fa-volume-high" : "fa-volume-xmark"}`} aria-hidden="true"></i>
+          <span>
+            Sounds
+            <small>{soundsOn ? "On for fours, sixes and wickets" : "Off on this device"}</small>
+          </span>
+          <span className={`cricket-shot-toggle-knob ${soundsOn ? "is-on" : ""}`.trim()} aria-hidden="true"></span>
+        </button>
+        <ListenSettings />
+        {/* Hidden for now: flip SHOW_OVERLAY_LINK to bring it back. */}
+        {SHOW_OVERLAY_LINK && canManage && (
+          <button
+            type="button"
+            className="cricket-settings-item"
+            disabled={!match.isPublic && !tournament?.isPublic}
+            onClick={settingsThen(() => void copyOverlayLink(match.id))}
+          >
+            <i className="fa-solid fa-tv" aria-hidden="true"></i>
+            <span>
+              Live-stream overlay
+              <small>
+                {match.isPublic || tournament?.isPublic
+                  ? "Copy a scorebug link for OBS / Streamlabs (browser source)"
+                  : "Make the match public first: the overlay is a public page"}
+              </small>
+            </span>
+            <i className="fa-solid fa-copy" aria-hidden="true"></i>
+          </button>
+        )}
         {canManage && match.status === "live" && (
           <button
             type="button"
@@ -493,6 +576,7 @@ export function CricketMatchPage() {
         {/* A four, six or wicket plays over the page on whichever tab, and the
             match's last ball still plays as it turns to the result. */}
         <BallBurst match={match} nameOf={nameOf} />
+        <BallCalls match={match} nameOf={nameOf} />
         {match.tournamentId !== null && <AutoNextRounds tournamentId={match.tournamentId} />}
         {onScoreScreen ? (
           <>
@@ -534,6 +618,7 @@ export function CricketMatchPage() {
                 onCloseSettings={closeSettings}
                 matchSettings={matchSettings}
                 onEnterResult={organiser ? () => openResult() : undefined}
+                queue={{ waiting, blocked, ...ballQueue }}
               />
             ) : seat.busy ? (
               <Loader />
@@ -616,10 +701,17 @@ export function CricketMatchPage() {
                 <ListCard
                   title=""
                   bodyClassName={tab === "live" ? "cricket-live-body" : undefined}
-                  // No card round the overs, so they use the page's full width.
-                  plain={tab === "overs"}
+                  // No card round the overs, so they use the page's full width,
+                  // nor round the insights, whose sections are cards of their own.
+                  plain={tab === "overs" || tab === "insights"}
                 >
-                  {tab === "info" && <MatchInfo match={match} nameOf={nameOf} viewers={viewers} tournament={tournament} officials />}
+                  {tab === "info" && (
+                    <>
+                      <MatchInfo match={match} nameOf={nameOf} viewers={viewers} tournament={tournament} officials />
+                      {upcoming && <FanZone match={match} />}
+                      <HeadToHead match={match} canListOneOffs={Boolean(admin?.isSuperAdmin)} />
+                    </>
+                  )}
                   {tab === "live" &&
                     (match.status === "live" ? (
                       <>
@@ -637,6 +729,7 @@ export function CricketMatchPage() {
                           </div>
                         )}
                         <LiveView match={match} nameOf={nameOf} />
+                        <FanZone match={match} />
                       </>
                     ) : (
                       <div className="cricket-summary">
@@ -648,6 +741,7 @@ export function CricketMatchPage() {
                         )}
                         <MatchAwards match={match} nameOf={nameOf} />
                         {match.status === "completed" && <PotmPicker match={match} nameOf={nameOf} />}
+                        <FanZone match={match} />
                         {/* The ball that ended it can still be taken back by whoever
                             scored it (or an organiser) — not a result entered by hand. */}
                         {match.status === "completed" &&

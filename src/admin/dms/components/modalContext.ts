@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
 
-// Lets content rendered inside a DefaultModal reach the modal's footer slot
+// Lets content rendered inside a BottomSheet reach the modal's footer slot
 // (to portal its action buttons there) and close the modal.
 export type CloseVia = "close" | "back";
 

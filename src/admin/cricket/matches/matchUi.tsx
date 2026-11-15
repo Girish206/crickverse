@@ -8,7 +8,7 @@ import { TeamMark } from "../teams/TeamMark";
 const STATUS_LABELS: Record<CricketMatchStatus, string> = {
   scheduled: "Upcoming",
   live: "Live",
-  completed: "Result",
+  completed: "Completed",
   abandoned: "Abandoned",
 };
 

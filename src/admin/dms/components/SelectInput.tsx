@@ -148,7 +148,7 @@ const SelectInput: React.FC<SelectProps> = ({
                 {!floating && label && (
                     <label htmlFor={id} className="pb-0 ps-1 select-label">
                         {typeof label === "string" ? (
-                            <span dangerouslySetInnerHTML={{ __html: label }} />
+                            <span>{label}</span>
                         ) : (
                             label
                         )}
@@ -183,7 +183,7 @@ const SelectInput: React.FC<SelectProps> = ({
                             }`}
                     >
                         {typeof label === "string" ? (
-                            <span dangerouslySetInnerHTML={{ __html: label }} />
+                            <span>{label}</span>
                         ) : (
                             label
                         )}

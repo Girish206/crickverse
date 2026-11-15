@@ -24,7 +24,7 @@ interface BottomSheetProps {
 // A sheet that slides up from the bottom of the screen (a centred card on
 // wider screens) — quicker to reach with a thumb than a modal mid-screen.
 // Admin forms (SubmitButton / ModalActions) portal their Cancel/Save buttons
-// into its footer, just as they do inside a DefaultModal.
+// into its footer, as they did in the old modal.
 export function BottomSheet({
   title,
   icon,

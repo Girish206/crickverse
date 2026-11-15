@@ -14,6 +14,11 @@
 :root[data-bs-theme="dark"] {
   color-scheme: dark;
 
+  /* The top and bottom bars' fill (brand.css), for the dark theme: the red
+     softer at the centre and fading sideways into the charcoal, as the
+     launch splash's glow does, rather than a full bright red */
+  --brand-gradient-bar: linear-gradient(90deg, #2a1d22 0%, #3d1a1b 18%, #6a1d17 34%, #a8261c 50%, #6a1d17 66%, #3d1a1b 82%, #2a1d22 100%);
+
   --adm-bg: var(--brand-navy-night);
   --adm-surface: var(--brand-navy-surface);
   --adm-raised: var(--brand-navy-raised);
@@ -220,6 +225,51 @@
   animation: none;
   mix-blend-mode: normal;
 }
+/* The new theme shows through a circle with a soft edge, centred on the
+   button; themeTransition.ts animates its radius, --theme-reveal-r. (Where
+   that can't be animated, the radius is unset, so is this mask, and the
+   script clips a hard-edged circle instead.) */
+::view-transition-new(root) {
+  -webkit-mask-image: radial-gradient(
+    circle at var(--theme-reveal-x) var(--theme-reveal-y),
+    #000 calc(var(--theme-reveal-r) - 90px),
+    transparent var(--theme-reveal-r)
+  );
+  mask-image: radial-gradient(
+    circle at var(--theme-reveal-x) var(--theme-reveal-y),
+    #000 calc(var(--theme-reveal-r) - 90px),
+    transparent var(--theme-reveal-r)
+  );
+}
+
+/* The toggle's icon, pictured on its own above the reveal: the old one
+   spins away and shrinks, the new one spins in with a little overshoot.
+   Only the theme toggle's (Navbar.tsx): other buttons share
+   .navbar-theme-btn's look, and a view-transition-name must be unique. */
+.navbar-theme-toggle > * {
+  view-transition-name: theme-toggle-icon;
+}
+::view-transition-group(theme-toggle-icon) {
+  animation: none;
+}
+::view-transition-old(theme-toggle-icon) {
+  animation: cvThemeIconOut 0.3s cubic-bezier(0.4, 0, 1, 1) both;
+}
+::view-transition-new(theme-toggle-icon) {
+  animation: cvThemeIconIn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 0.12s both;
+}
+@keyframes cvThemeIconOut {
+  to {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.3);
+  }
+}
+@keyframes cvThemeIconIn {
+  from {
+    opacity: 0;
+    transform: rotate(-120deg) scale(0.3);
+  }
+}
 
 /* ---------- Sidebar ---------- */
 
@@ -333,6 +383,14 @@
 :root[data-bs-theme="dark"] .form-select {
   background-color: rgba(255, 255, 255, 0.04);
   border-color: var(--adm-line-strong) !important;
+  color: var(--adm-text);
+}
+/* A native dropdown's list: the select's see-through background leaves the
+   browser drawing it white, under the theme's light text. Solid charcoal
+   for every option, so the list reads (and matches the theme). */
+:root[data-bs-theme="dark"] select option,
+:root[data-bs-theme="dark"] select optgroup {
+  background-color: var(--adm-raised);
   color: var(--adm-text);
 }
 :root[data-bs-theme="dark"] .form-control::placeholder {

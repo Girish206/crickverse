@@ -43,23 +43,24 @@
       /* Launch screen (markup and script below, in <body>). It opens just
          like the phone's own launch screen for the installed app (the logo
          centred on the plain background), so that hands over seamlessly.
-         Timeline: the logo gives way to the stumps at 0.35s, the ball is
-         bowled from 0.5s and hits at 1.35s, the logo and name come back
-         from 1.8s, and the whole screen fades out from 3.1s. */
+           0.15s  the launch logo steps aside, and the stumps spring up
+           0.45s  the ball is bowled: it pitches, then rises into the stumps
+           1.05s  it hits: shake, flash, the stumps scatter, sparks
+           1.12s  the logo bursts out of the point of impact
+           1.5s   the name snaps in under it
+           3.1s   the whole screen fades out */
       .cv-splash {
-        --cv-sp-ball: 22px;
-        --cv-sp-stumps-w: 60px;
-        --cv-sp-stumps-h: 100px;
-        /* Vertical centre of the stumps and the logo: the screen's centre,
-           where the phone's launch screen shows its icon */
-        --cv-sp-mid: 50vh;
-        --cv-sp-start: 0.5s;
-        --cv-sp-hit: 1.35s;
+        /* Centre of the stumps and of the finished logo, a little above
+           the screen's centre to leave room for the name */
+        --cv-sp-mid: calc(50vh - 36px);
+        --cv-sp-hit: 1.05s;
         position: fixed;
         inset: 0;
         z-index: 3000;
         overflow: hidden;
-        background: #0f1012;
+        /* The brand's navy night (brand.css); its colour spreads over it
+           from the centre (below) */
+        background: #121418;
         cursor: pointer;
         animation: cvSplashOut 0.4s ease-in 3.1s forwards;
       }
@@ -71,64 +72,90 @@
         }
       }
 
-      /* ---------- The delivery ---------- */
-      .cv-splash-ball-x {
+      /* The brand's red, strongest behind the logo and fading out to the
+         theme's own background (navy here, white in the light theme) at
+         the edges; it bursts outward from the centre as the ball hits */
+      .cv-splash::before {
+        /* A huge soft-edged disc centred on the logo, so as it grows it
+           never shows an edge, and when grown it reaches every corner */
+        content: "";
         position: absolute;
-        top: 0;
-        left: 0;
-        animation: cvSplashBallX 0.85s linear var(--cv-sp-start) both;
+        left: 50%;
+        top: var(--cv-sp-mid);
+        width: 260vmax;
+        height: 260vmax;
+        margin: -130vmax 0 0 -130vmax;
+        border-radius: 50%;
+        pointer-events: none;
+        /* The corners sit at about 44% of this disc's radius */
+        background: radial-gradient(closest-side, #9a2219 0, #7e1c16 8%, #521612 18%, #2a1517 30%, #121418 44%, rgba(18, 20, 24, 0) 70%);
+        animation: cvSplashSpread 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) var(--cv-sp-hit) both;
       }
 
-      .cv-splash-ball-y {
-        animation: cvSplashBallY 0.85s var(--cv-sp-start) both;
-      }
-
-      .cv-splash-ball {
-        display: block;
-        width: var(--cv-sp-ball);
-        height: var(--cv-sp-ball);
-        filter: drop-shadow(0 4px 8px rgba(215, 38, 30, 0.55));
-        animation:
-          cvSplashSpin 0.4s linear infinite,
-          cvSplashHide 0.1s linear var(--cv-sp-hit) forwards;
-      }
-
-      @keyframes cvSplashBallX {
+      @keyframes cvSplashSpread {
         from {
-          transform: translateX(calc(-2 * var(--cv-sp-ball)));
-        }
-        to {
-          transform: translateX(calc(50vw - var(--cv-sp-ball) / 2));
+          opacity: 0;
+          transform: scale(0.2);
         }
       }
 
-      /* Leaves the bowler's hand, pitches short of the stumps, then rises into
-         the middle stump. */
-      @keyframes cvSplashBallY {
-        0% {
-          transform: translateY(calc(var(--cv-sp-mid) - var(--cv-sp-stumps-h)));
-          animation-timing-function: ease-in;
+      .cv-splash-launch {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 128px;
+        height: 128px;
+        margin: -64px 0 0 -64px;
+        animation: cvSplashAway 0.25s ease-in 0.15s forwards;
+      }
+
+      @keyframes cvSplashAway {
+        to {
+          opacity: 0;
+          transform: scale(0.7);
         }
-        68% {
-          transform: translateY(calc(var(--cv-sp-mid) + var(--cv-sp-stumps-h) / 2 - var(--cv-sp-ball)));
-          animation-timing-function: ease-out;
-        }
-        100% {
-          transform: translateY(calc(var(--cv-sp-mid) - var(--cv-sp-ball) / 2));
-        }
+      }
+
+      /* Everything that jolts on impact */
+      .cv-splash-shake {
+        position: absolute;
+        inset: 0;
+        animation: cvSplashShake 0.32s linear var(--cv-sp-hit);
+      }
+
+      @keyframes cvSplashShake {
+        20% { transform: translate(4px, -3px); }
+        40% { transform: translate(-4px, 2px); }
+        60% { transform: translate(3px, 2px); }
+        80% { transform: translate(-2px, -1px); }
       }
 
       /* ---------- Stumps ---------- */
       .cv-splash-stumps {
         position: absolute;
-        left: calc(50% - var(--cv-sp-stumps-w) / 2);
-        top: calc(var(--cv-sp-mid) - var(--cv-sp-stumps-h) / 2);
-        width: var(--cv-sp-stumps-w);
-        height: var(--cv-sp-stumps-h);
+        left: calc(50% - 36px);
+        top: calc(var(--cv-sp-mid) - 60px);
+        width: 72px;
+        height: 120px;
         overflow: visible;
+        transform-origin: 50% 100%;
         animation:
-          cvSplashStumpsIn 0.3s ease-out 0.35s both,
-          cvSplashStumpsOut 0.35s ease-in 1.75s forwards;
+          cvSplashStumpsIn 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s both,
+          cvSplashStumpsOut 0.18s ease-in 1.12s forwards;
+      }
+
+      @keyframes cvSplashStumpsIn {
+        from {
+          opacity: 0;
+          transform: scaleY(0);
+        }
+      }
+
+      @keyframes cvSplashStumpsOut {
+        to {
+          opacity: 0;
+          transform: scale(0.5);
+        }
       }
 
       .cv-splash-stump,
@@ -136,217 +163,367 @@
         transform-box: fill-box;
       }
 
-      .cv-splash-stump-mid {
+      .cv-splash-stump {
         transform-origin: 50% 100%;
-        animation: cvSplashStumpShake 0.4s ease-out var(--cv-sp-hit) both;
       }
 
       .cv-splash-bail {
         transform-origin: 50% 50%;
       }
 
-      .cv-splash-bail-l {
-        animation: cvSplashBailLeft 0.6s ease-out var(--cv-sp-hit) both;
+      .cv-splash-stump-l { animation: cvSplashKnockL 0.45s ease-out var(--cv-sp-hit) both; }
+      .cv-splash-stump-m { animation: cvSplashKnockM 0.45s cubic-bezier(0.2, 0.8, 0.3, 1) var(--cv-sp-hit) both; }
+      .cv-splash-stump-r { animation: cvSplashKnockR 0.45s ease-out calc(var(--cv-sp-hit) + 0.03s) both; }
+      .cv-splash-bail-l { animation: cvSplashBailL 0.6s ease-out var(--cv-sp-hit) both; }
+      .cv-splash-bail-r { animation: cvSplashBailR 0.6s ease-out var(--cv-sp-hit) both; }
+
+      @keyframes cvSplashKnockL {
+        50% { transform: rotate(-9deg); }
+        100% { transform: rotate(-5deg); }
       }
 
-      .cv-splash-bail-r {
-        animation: cvSplashBailRight 0.6s ease-out var(--cv-sp-hit) both;
+      @keyframes cvSplashKnockM {
+        100% { transform: translate(14px, -6px) rotate(38deg); }
       }
 
-      @keyframes cvSplashStumpShake {
-        0% { transform: rotate(0deg); }
-        25% { transform: rotate(12deg); }
-        55% { transform: rotate(-5deg); }
-        100% { transform: rotate(4deg); }
+      @keyframes cvSplashKnockR {
+        50% { transform: rotate(14deg); }
+        100% { transform: rotate(9deg); }
       }
 
-      @keyframes cvSplashBailLeft {
-        0% { transform: none; opacity: 1; }
-        50% { transform: translate(-40px, -70px) rotate(-260deg); opacity: 1; }
-        100% { transform: translate(-62px, -24px) rotate(-400deg); opacity: 0; }
+      @keyframes cvSplashBailL {
+        50% { transform: translate(-44px, -80px) rotate(-260deg); opacity: 1; }
+        100% { transform: translate(-70px, -30px) rotate(-420deg); opacity: 0; }
       }
 
-      @keyframes cvSplashBailRight {
-        0% { transform: none; opacity: 1; }
-        50% { transform: translate(36px, -88px) rotate(300deg); opacity: 1; }
-        100% { transform: translate(58px, -40px) rotate(440deg); opacity: 0; }
+      @keyframes cvSplashBailR {
+        50% { transform: translate(42px, -96px) rotate(300deg); opacity: 1; }
+        100% { transform: translate(70px, -44px) rotate(460deg); opacity: 0; }
       }
 
-      @keyframes cvSplashStumpsIn {
-        from {
-          opacity: 0;
-          transform: scale(0.85);
-        }
-      }
-
-      @keyframes cvSplashStumpsOut {
-        to {
-          opacity: 0;
-          transform: scale(0.6);
-        }
-      }
-
-      /* Ring that bursts out of the stumps on impact */
-      .cv-splash-impact {
+      /* ---------- The delivery ----------
+         The outer box carries the ball across, the inner one drops it,
+         bounces it and lifts it into the stumps. */
+      .cv-splash-ball-x {
         position: absolute;
-        left: calc(50% - 40px);
-        top: calc(var(--cv-sp-mid) - 40px);
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        border: 3px solid rgba(255, 205, 0, 0.9);
-        opacity: 0;
-        animation: cvSplashImpact 0.7s ease-out var(--cv-sp-hit) forwards;
+        top: 0;
+        left: 0;
+        animation: cvSplashBallX 0.6s linear 0.45s both;
       }
 
-      @keyframes cvSplashImpact {
-        0% { transform: scale(0.2); opacity: 0.9; }
-        100% { transform: scale(3); opacity: 0; }
-      }
-
-      /* ---------- The reveal ---------- */
-      .cv-splash-brand {
-        position: absolute;
-        inset: calc(var(--cv-sp-mid) - 64px) 0 auto;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 6px;
-        text-align: center;
-        pointer-events: none;
-      }
-
-      .cv-splash-logo {
-        width: 128px;
-        height: 128px;
-        margin-bottom: 4px;
-        /* Showing from the first frame, then away while the ball is bowled */
+      .cv-splash-ball-y {
+        position: relative;
         animation:
-          cvSplashLogoAway 0.3s ease-in 0.35s forwards,
-          cvSplashLogoIn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) 1.8s forwards;
+          cvSplashBallY 0.6s 0.45s both,
+          cvSplashHide 0.06s linear var(--cv-sp-hit) forwards;
       }
 
-      @keyframes cvSplashLogoAway {
-        to {
-          opacity: 0;
-          transform: scale(0.7);
+      @keyframes cvSplashBallX {
+        from { transform: translateX(-60px); }
+        to { transform: translateX(calc(50vw - 15px)); }
+      }
+
+      @keyframes cvSplashBallY {
+        0% {
+          transform: translateY(calc(var(--cv-sp-mid) - 170px));
+          animation-timing-function: ease-in;
         }
-      }
-
-      @keyframes cvSplashLogoIn {
-        from {
-          opacity: 0;
-          transform: scale(0.4) rotate(-12deg);
+        66% {
+          transform: translateY(calc(var(--cv-sp-mid) + 28px));
+          animation-timing-function: ease-out;
         }
-        to {
-          opacity: 1;
-          transform: none;
+        100% {
+          transform: translateY(calc(var(--cv-sp-mid) - 15px));
         }
-      }
-
-      .cv-splash-name {
-        opacity: 0;
-        animation: cvSplashRise 0.45s ease-out forwards;
-      }
-
-      .cv-splash .cv-splash-name {
-        font-family: "Outfit", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-        font-weight: 800;
-        font-style: italic;
-        letter-spacing: 0.03em;
-        text-transform: uppercase;
-        line-height: 1.2;
-        font-size: 2rem;
-        color: #f3f4f6;
-        animation-delay: 2.1s;
-      }
-
-      .cv-splash .cv-splash-name em {
-        color: #ffcd00;
-      }
-
-      @keyframes cvSplashRise {
-        from {
-          opacity: 0;
-          transform: translateY(12px);
-        }
-        to {
-          opacity: 1;
-          transform: none;
-        }
-      }
-
-      @keyframes cvSplashSpin {
-        to { transform: rotate(360deg); }
       }
 
       @keyframes cvSplashHide {
         to { opacity: 0; }
       }
 
-      /* Reduced motion: no delivery, just the logo and name. */
+      .cv-splash-ball {
+        display: block;
+        width: 30px;
+        height: 30px;
+        filter: drop-shadow(0 0 10px rgba(255, 90, 40, 0.7));
+        animation: cvSplashSpin 0.3s linear infinite;
+      }
+
+      @keyframes cvSplashSpin {
+        to { transform: rotate(360deg); }
+      }
+
+      /* Motion streak behind the ball */
+      .cv-splash-streak {
+        position: absolute;
+        right: 20px;
+        top: 9px;
+        width: 70px;
+        height: 12px;
+        border-radius: 6px;
+        background: linear-gradient(90deg, transparent, rgba(255, 170, 60, 0.55));
+        filter: blur(2px);
+      }
+
+      /* ---------- Impact ---------- */
+      .cv-splash-flash {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 50% var(--cv-sp-mid), #fff 0, rgba(255, 230, 160, 0.7) 16%, transparent 55%);
+        opacity: 0;
+        animation: cvSplashFlash 0.5s ease-out var(--cv-sp-hit);
+      }
+
+      @keyframes cvSplashFlash {
+        12% { opacity: 0.95; }
+        100% { opacity: 0; }
+      }
+
+      .cv-splash-wave {
+        position: absolute;
+        left: 50%;
+        top: var(--cv-sp-mid);
+        width: 180px;
+        height: 180px;
+        margin: -90px;
+        border-radius: 50%;
+        border: 3px solid #ffcd00;
+        opacity: 0;
+        animation: cvSplashWave 0.75s cubic-bezier(0.1, 0.6, 0.3, 1) var(--cv-sp-hit);
+      }
+
+      @keyframes cvSplashWave {
+        0% { opacity: 0.95; transform: scale(0.3); }
+        100% { opacity: 0; transform: scale(3.6); }
+      }
+
+      .cv-splash-p {
+        position: absolute;
+        left: 50%;
+        top: var(--cv-sp-mid);
+        width: 6px;
+        height: 6px;
+        margin: -3px;
+        border-radius: 50%;
+        opacity: 0;
+        animation: cvSplashBurst 0.85s cubic-bezier(0.1, 0.7, 0.3, 1) var(--cv-sp-hit);
+      }
+
+      @keyframes cvSplashBurst {
+        0% { opacity: 1; transform: none; }
+        100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.4); }
+      }
+
+      /* ---------- The reveal ---------- */
+      .cv-splash-logo {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 128px;
+        height: 128px;
+        margin: -64px 0 0 -64px;
+        opacity: 0;
+        /* Lit from within, and lifted well off the grass by a deep, soft
+           shadow (no backdrop behind it) */
+        filter: drop-shadow(0 0 10px rgba(255, 210, 120, 0.5)) drop-shadow(0 14px 22px rgba(0, 0, 0, 0.75)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+        animation: cvSplashLogoIn 0.7s cubic-bezier(0.2, 0.9, 0.25, 1) 1.12s forwards;
+      }
+
+      @keyframes cvSplashLogoIn {
+        0% { opacity: 0; transform: translateY(-36px) scale(0.2) rotate(-14deg); }
+        55% { opacity: 1; transform: translateY(-36px) scale(1.6) rotate(2deg); }
+        100% { opacity: 1; transform: translateY(-36px) scale(1.375); }
+      }
+
+      /* A glossy streak sweeps across the logo once it has landed */
+      .cv-splash-shine {
+        position: absolute;
+        left: 50%;
+        top: var(--cv-sp-mid);
+        width: 176px;
+        height: 176px;
+        margin: -88px;
+        pointer-events: none;
+        -webkit-mask: url("/favicon.svg") center / contain no-repeat;
+        mask: url("/favicon.svg") center / contain no-repeat;
+        background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.85) 50%, transparent 60%) 160% 0 / 260% 100% no-repeat;
+        animation: cvSplashShine 0.8s ease-in-out 1.95s both;
+      }
+
+      @keyframes cvSplashShine {
+        to {
+          background-position: -60% 0;
+        }
+      }
+
+      .cv-splash .cv-splash-name {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: calc(50% + 66px);
+        text-align: center;
+        font-family: "Outfit", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        font-weight: 800;
+        font-style: italic;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        line-height: 1.2;
+        font-size: 2.1rem;
+        color: #f3f4f6;
+        text-shadow: 0 3px 14px rgba(0, 0, 0, 0.85), 0 1px 2px rgba(0, 0, 0, 0.7);
+        animation: cvSplashName 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) 1.5s both;
+      }
+
+      .cv-splash .cv-splash-name em {
+        color: #ffcd00;
+      }
+
+      /* ---------- Light theme ----------
+         The script below adds .cv-splash-light when the app will open in
+         its light theme (the visitor's saved choice, else the device's).
+         The dark theme's glow in a lighter key: white before the hit, then
+         a soft brand coral behind the logo fading out to white at the
+         edges, with dark lettering (white would wash out) and lighter
+         shadows. */
+      .cv-splash.cv-splash-light {
+        background: #fff;
+      }
+
+      .cv-splash.cv-splash-light::before {
+        background: radial-gradient(closest-side, #f08a72 0, #f4a491 8%, #f9cbc0 18%, #fdeae5 30%, #fff 44%, rgba(255, 255, 255, 0) 70%);
+      }
+
+      .cv-splash-light .cv-splash-logo {
+        filter: drop-shadow(0 0 10px rgba(255, 200, 90, 0.4)) drop-shadow(0 12px 18px rgba(120, 30, 20, 0.25)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+      }
+
+      .cv-splash.cv-splash-light .cv-splash-name {
+        color: #16181c;
+        text-shadow: 0 2px 10px rgba(255, 255, 255, 0.5);
+      }
+
+      .cv-splash.cv-splash-light .cv-splash-name em {
+        color: #b42318;
+      }
+
+      @keyframes cvSplashName {
+        from {
+          opacity: 0;
+          letter-spacing: 0.45em;
+          filter: blur(8px);
+          transform: translateY(10px);
+        }
+      }
+
+      /* Reduced motion: no delivery, just the ground, logo and name. */
       @media (prefers-reduced-motion: reduce) {
         .cv-splash,
+        .cv-splash::before,
         .cv-splash * {
           animation: none !important;
         }
 
-        .cv-splash-ball-x,
-        .cv-splash-stumps,
-        .cv-splash-impact {
+        .cv-splash-launch,
+        .cv-splash-shake,
+        .cv-splash-flash,
+        .cv-splash-wave,
+        .cv-splash-p,
+        .cv-splash-shine {
           display: none;
         }
 
-        .cv-splash-logo,
-        .cv-splash-name {
+        .cv-splash-logo {
           opacity: 1;
+          transform: translateY(-36px) scale(1.375);
         }
       }
     </style>
   </head>
   <body>
     <div class="cv-splash" id="cv-splash" aria-hidden="true">
-      <!-- The outer box carries the ball across, the inner one drops it,
-           bounces it and lifts it into the stumps. -->
-      <div class="cv-splash-ball-x">
-        <div class="cv-splash-ball-y">
-          <svg class="cv-splash-ball" viewBox="0 0 24 24">
-            <circle cx="12" cy="12" r="11" fill="#d7261e" />
-            <path d="M7 3.5q3 8.5 0 17M17 3.5q-3 8.5 0 17" stroke="#fff" stroke-width="1.2" fill="none" stroke-dasharray="1.6 1.4" />
-          </svg>
+
+      <div class="cv-splash-shake">
+        <img src="/favicon.svg" alt="" class="cv-splash-launch" />
+        <svg class="cv-splash-stumps" viewBox="0 0 60 100">
+          <defs>
+            <linearGradient id="cv-splash-stump" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#ffd23f" />
+              <stop offset="0.45" stop-color="#ff7a1f" />
+              <stop offset="1" stop-color="#d7261e" />
+            </linearGradient>
+          </defs>
+          <g fill="url(#cv-splash-stump)" stroke="#2a0f12" stroke-opacity="0.5" stroke-width="1.2">
+            <rect class="cv-splash-stump cv-splash-stump-l" x="9" y="14" width="8" height="86" rx="4" />
+            <rect class="cv-splash-stump cv-splash-stump-m" x="26" y="14" width="8" height="86" rx="4" />
+            <rect class="cv-splash-stump cv-splash-stump-r" x="43" y="14" width="8" height="86" rx="4" />
+          </g>
+          <g fill="#ffc400" stroke="#2a0f12" stroke-opacity="0.5" stroke-width="1">
+            <rect class="cv-splash-bail cv-splash-bail-l" x="8" y="8" width="24" height="5" rx="2.5" />
+            <rect class="cv-splash-bail cv-splash-bail-r" x="28" y="8" width="24" height="5" rx="2.5" />
+          </g>
+        </svg>
+        <div class="cv-splash-ball-x">
+          <div class="cv-splash-ball-y">
+            <span class="cv-splash-streak"></span>
+            <svg class="cv-splash-ball" viewBox="0 0 24 24">
+              <defs>
+                <radialGradient id="cv-splash-ball" cx="34%" cy="30%" r="78%">
+                  <stop offset="0" stop-color="#ff8070" />
+                  <stop offset="0.5" stop-color="#d7261e" />
+                  <stop offset="1" stop-color="#6e0a10" />
+                </radialGradient>
+              </defs>
+              <circle cx="12" cy="12" r="11" fill="url(#cv-splash-ball)" />
+              <path d="M7 3.5q3 8.5 0 17M17 3.5q-3 8.5 0 17" stroke="#fff" stroke-width="1.2" fill="none" stroke-dasharray="1.6 1.4" />
+            </svg>
+          </div>
         </div>
       </div>
 
-      <svg class="cv-splash-stumps" viewBox="0 0 60 100">
-        <defs>
-          <linearGradient id="cv-splash-stump" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#ffd23f" />
-            <stop offset="0.45" stop-color="#ff7a1f" />
-            <stop offset="1" stop-color="#d7261e" />
-          </linearGradient>
-        </defs>
-        <g fill="url(#cv-splash-stump)">
-          <rect class="cv-splash-stump" x="10" y="14" width="6" height="86" rx="2" />
-          <rect class="cv-splash-stump cv-splash-stump-mid" x="27" y="14" width="6" height="86" rx="2" />
-          <rect class="cv-splash-stump" x="44" y="14" width="6" height="86" rx="2" />
-        </g>
-        <g fill="#ffc400">
-          <rect class="cv-splash-bail cv-splash-bail-l" x="9" y="8" width="23" height="4" rx="2" />
-          <rect class="cv-splash-bail cv-splash-bail-r" x="28" y="8" width="23" height="4" rx="2" />
-        </g>
-      </svg>
-      <span class="cv-splash-impact"></span>
+      <div class="cv-splash-flash"></div>
+      <div class="cv-splash-wave"></div>
+        <i class="cv-splash-p" style="background:#ffd23f;box-shadow:0 0 8px #ffd23f;--dx:120px;--dy:0px"></i>
+        <i class="cv-splash-p" style="background:#ff7a1f;box-shadow:0 0 8px #ff7a1f;--dx:150px;--dy:87px"></i>
+        <i class="cv-splash-p" style="background:#fff;box-shadow:0 0 8px #fff;--dx:165px;--dy:154px"></i>
+        <i class="cv-splash-p" style="background:#ffcd00;box-shadow:0 0 8px #ffcd00;--dx:95px;--dy:140px"></i>
+        <i class="cv-splash-p" style="background:#d7261e;box-shadow:0 0 8px #d7261e;--dx:16px;--dy:221px"></i>
+        <i class="cv-splash-p" style="background:#ffd23f;box-shadow:0 0 8px #ffd23f;--dx:-25px;--dy:163px"></i>
+        <i class="cv-splash-p" style="background:#ff7a1f;box-shadow:0 0 8px #ff7a1f;--dx:-80px;--dy:203px"></i>
+        <i class="cv-splash-p" style="background:#fff;box-shadow:0 0 8px #fff;--dx:-126px;--dy:100px"></i>
+        <i class="cv-splash-p" style="background:#ffcd00;box-shadow:0 0 8px #ffcd00;--dx:-193px;--dy:92px"></i>
+        <i class="cv-splash-p" style="background:#d7261e;box-shadow:0 0 8px #d7261e;--dx:-153px;--dy:35px"></i>
+        <i class="cv-splash-p" style="background:#ffd23f;box-shadow:0 0 8px #ffd23f;--dx:-210px;--dy:0px"></i>
+        <i class="cv-splash-p" style="background:#ff7a1f;box-shadow:0 0 8px #ff7a1f;--dx:-132px;--dy:-77px"></i>
+        <i class="cv-splash-p" style="background:#fff;box-shadow:0 0 8px #fff;--dx:-151px;--dy:-140px"></i>
+        <i class="cv-splash-p" style="background:#ffcd00;box-shadow:0 0 8px #ffcd00;--dx:-84px;--dy:-123px"></i>
+        <i class="cv-splash-p" style="background:#d7261e;box-shadow:0 0 8px #d7261e;--dx:-14px;--dy:-201px"></i>
+        <i class="cv-splash-p" style="background:#ffd23f;box-shadow:0 0 8px #ffd23f;--dx:22px;--dy:-143px"></i>
+        <i class="cv-splash-p" style="background:#ff7a1f;box-shadow:0 0 8px #ff7a1f;--dx:72px;--dy:-184px"></i>
+        <i class="cv-splash-p" style="background:#fff;box-shadow:0 0 8px #fff;--dx:111px;--dy:-88px"></i>
+        <i class="cv-splash-p" style="background:#ffcd00;box-shadow:0 0 8px #ffcd00;--dx:175px;--dy:-84px"></i>
+        <i class="cv-splash-p" style="background:#d7261e;box-shadow:0 0 8px #d7261e;--dx:134px;--dy:-30px"></i>
 
-      <div class="cv-splash-brand">
-        <img src="/favicon.svg" alt="" class="cv-splash-logo" />
-        <span class="cv-splash-name">Run<em>Mitra</em></span>
-      </div>
+      <img src="/favicon.svg" alt="" class="cv-splash-logo" />
+      <span class="cv-splash-shine"></span>
+      <span class="cv-splash-name">Run<em>Mitra</em></span>
     </div>
     <script>
       // Once per browser session; a tap skips it. Runs before the first
       // paint, so a repeat visit never flashes it.
       (function () {
         var splash = document.getElementById("cv-splash");
+        // The theme the app will open in (as useDarkTheme decides): the
+        // visitor's saved choice while the device's setting is still the
+        // one it was made under, else the device's.
+        var deviceDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        var dark = deviceDark;
+        try {
+          var saved = (localStorage.getItem("crickverse_darkMode") || "").split(":");
+          if (saved.length > 1 && (saved[1] === "true") === deviceDark) dark = saved[0] === "true";
+        } catch (e) {
+          // Storage unavailable: the device's setting it is.
+        }
+        if (!dark) splash.className += " cv-splash-light";
         var remove = function () {
           if (splash.parentNode) splash.parentNode.removeChild(splash);
         };

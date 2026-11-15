@@ -15,7 +15,8 @@
     "android:apk": "npm run android:sync && cd android && gradlew assembleDebug",
     "android:sync:dev": "npm run build:dev && cap sync android",
     "android:run:dev": "npm run android:sync:dev && cap run android",
-    "android:apk:dev": "npm run android:sync:dev && cd android && gradlew assembleDebug"
+    "android:apk:dev": "npm run android:sync:dev && cd android && gradlew assembleDebug",
+    "test": "node --import tsx --test \"src/**/*.test.ts\""
   },
   "dependencies": {
     "@capacitor/android": "^8.6.0",
@@ -28,7 +29,6 @@
     "@hookform/resolvers": "^5.9.1",
     "@tanstack/react-query": "^5.102.8",
     "axios": "^1.20.0",
-    "bootstrap-icons": "^1.13.1",
     "qr-scanner": "^1.4.2",
     "qrcode": "^1.5.4",
     "react": "^19.2.8",
@@ -48,6 +48,7 @@
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.1.0",
     "oxlint": "^1.79.0",
+    "tsx": "^4.23.15",
     "typescript": "~6.0.2",
     "vite": "^8.2.2"
   },

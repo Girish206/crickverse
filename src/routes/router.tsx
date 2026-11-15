@@ -21,6 +21,8 @@ export const router = createBrowserRouter([
     errorElement: <RouteError full />,
     Component: ScrollToTop,
     children: [
+      // The live-stream scorebug (a see-through page for OBS), signed in or not.
+      { path: "/overlay/:id", lazy: page(() => import("../public/OverlayPage"), (m) => m.OverlayPage) },
       {
         element: <PublicOnlyRoute />,
         children: [

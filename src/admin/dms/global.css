@@ -17,7 +17,6 @@
 @import "./css/table.css";
 /* Last, so its dark overrides sit on top of everything above. */
 @import "./css/dark.css";
-@import "bootstrap-icons/font/bootstrap-icons.css";
 
 /* The public site ships Font Awesome 5 Free (fas/far/fab prefixes), but
    every ported DMS component uses Font Awesome 6/7's combined prefix

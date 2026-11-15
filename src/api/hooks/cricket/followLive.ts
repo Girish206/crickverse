@@ -12,7 +12,15 @@ import type { ApiEnvelope } from "../../types";
 // change stamps it.
 
 const NO_STAMP_MS = 4_000;
+// The server answers within ~25s; past this the connection has quietly died
+// (a phone moving between networks), so ask again.
+const ASK_TIMEOUT_MS = 40_000;
+// After a failure, wait 3s, then longer each time up to 30s, with a little
+// randomness so viewers don't all come back at the same moment after a deploy.
 const RETRY_MS = 3_000;
+const RETRY_MAX_MS = 30_000;
+const retryDelay = (failures: number) =>
+  Math.min(RETRY_MAX_MS, RETRY_MS * 2 ** Math.min(failures - 1, 4)) * (0.75 + Math.random() * 0.5);
 
 const sleep = (ms: number, signal: AbortSignal) =>
   new Promise<void>((resolve) => {
@@ -47,6 +55,7 @@ export function followLive<T>({
   const { signal } = stop;
 
   void (async () => {
+    let failures = 0;
     while (!signal.aborted) {
       if (document.hidden) {
         await visible(signal);
@@ -61,12 +70,14 @@ export function followLive<T>({
         const { data, status } = await apiClient.get<ApiEnvelope<T>>(url, {
           params: { known: params.known, since: params.since ?? undefined },
           signal,
+          timeout: ASK_TIMEOUT_MS,
         });
+        failures = 0;
         if (status !== 204 && !signal.aborted) apply(data.data);
         if (!params.since) await sleep(NO_STAMP_MS, signal);
       } catch {
         // Offline, a deploy, too many asks: try again shortly.
-        await sleep(RETRY_MS, signal);
+        await sleep(retryDelay(++failures), signal);
       }
     }
   })();
