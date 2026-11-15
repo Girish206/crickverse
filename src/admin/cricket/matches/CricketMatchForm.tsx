@@ -177,6 +177,7 @@ export function CricketMatchForm({
   const [ballsPerOver, setBallsPerOver] = useState(existing ? ballsPerOverOf(existing) : 6);
   const [bowlerLimit, setBowlerLimit] = useState(existing?.bowlerOverLimit ? String(existing.bowlerOverLimit) : "");
   const [lastManStands, setLastManStands] = useState(Boolean(existing?.lastManStands));
+  const [impactPlayer, setImpactPlayer] = useState(Boolean(existing?.impactPlayer));
   const [freeHit, setFreeHit] = useState(existing?.freeHit !== false);
   const [hasPowerplay, setHasPowerplay] = useState(Boolean(existing?.powerplayOvers));
   const [powerplayOvers, setPowerplayOvers] = useState(existing?.powerplayOvers ? String(existing.powerplayOvers) : "");
@@ -284,6 +285,7 @@ export function CricketMatchForm({
     if (t.ballsPerOver) setBallsPerOver(t.ballsPerOver);
     setBowlerLimit(t.bowlerOverLimit ? String(t.bowlerOverLimit) : "");
     setLastManStands(Boolean(t.lastManStands));
+    setImpactPlayer(Boolean(t.impactPlayer));
     setFreeHit(t.freeHit !== false);
     setHasPowerplay(Boolean(t.powerplayOvers));
     setPowerplayOvers(t.powerplayOvers ? String(t.powerplayOvers) : "");
@@ -470,6 +472,7 @@ export function CricketMatchForm({
       ballsPerOver,
       bowlerOverLimit: bowlerLimit.trim() ? Number(bowlerLimit) : null,
       lastManStands,
+      impactPlayer,
       freeHit,
       powerplayOvers: hasPowerplay ? Number(powerplayOvers) : null,
       isPublic,
@@ -545,6 +548,7 @@ export function CricketMatchForm({
         ballsPerOver === ballsPerOverOf(existing) &&
         limit === (existing.bowlerOverLimit ?? null) &&
         lastManStands === Boolean(existing.lastManStands) &&
+        impactPlayer === Boolean(existing.impactPlayer) &&
         freeHit === (existing.freeHit !== false) &&
         powerplay === (existing.powerplayOvers ?? null) &&
         isPublic === Boolean(existing.isPublic) &&
@@ -984,6 +988,13 @@ export function CricketMatchForm({
             note="The last batter bats on alone"
             on={lastManStands}
             onChange={setLastManStands}
+          />
+          <SwitchRow
+            icon="fa-solid fa-right-left"
+            label="Impact Player"
+            note="Each side may swap one player for a substitute once"
+            on={impactPlayer}
+            onChange={setImpactPlayer}
           />
           <SwitchRow
             icon="fa-solid fa-bolt"

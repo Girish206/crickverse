@@ -4,6 +4,7 @@ import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { useSwipeTabs } from "../../useSwipeTabs";
 import { AppIcon, type AppIconName } from "../../AppIcon";
 import "../css/BottomNav.css";
+import { useAppText } from "../../cricket/appText";
 
 interface Tab {
     to: string;
@@ -15,6 +16,7 @@ interface Tab {
 // tab bar along the bottom. The sidebar (via the navbar's menu button) still
 // has everything.
 const BottomNav = ({ onMore }: { onMore: () => void }) => {
+    const tr = useAppText();
     const { admin } = useAdminAuth();
 
     const tabs: Tab[] = admin?.isSuperAdmin
@@ -60,13 +62,13 @@ const BottomNav = ({ onMore }: { onMore: () => void }) => {
             {tabs.map((tab) => (
                 <NavLink key={tab.to} to={tab.to} end={tab.to === "/"} className={({ isActive }) => `cv-bottom-tab ${isActive ? "is-active" : ""}`}>
                     <AppIcon name={tab.icon} />
-                    <span>{tab.label}</span>
+                    <span>{tr(tab.label)}</span>
                 </NavLink>
             ))}
             {admin?.isSuperAdmin && (
                 <button type="button" className="cv-bottom-tab" onClick={onMore}>
                     <AppIcon name="more" />
-                    <span>More</span>
+                    <span>{tr("More")}</span>
                 </button>
             )}
         </nav>

@@ -1600,18 +1600,34 @@
   font-size: var(--fs-base);
   color: var(--theme-text-dark);
 }
-/* A decided match: the footer becomes a warm strip along the bottom of the card. */
+/* A decided match: the footer becomes a strip in the brand gradient along
+   the bottom of the card (like the page title icons), white text on it. */
 .cricket-hero-foot.is-won {
   margin: 0 -16px -14px;
   padding: 11px 16px 12px;
-  border-top: 1px solid rgba(var(--brand-amber-rgb), 0.24);
+  border-top: 0;
   border-bottom-left-radius: inherit;
   border-bottom-right-radius: inherit;
-  background: rgba(var(--brand-amber-rgb), 0.12);
+  /* Spreads out from the centre: deep red under the text, lightening to orange at the ends. */
+  background: linear-gradient(90deg, #f26a1b 0%, #d7261e 14%, #9a2219 32%, #6e1812 50%, #9a2219 68%, #d7261e 86%, #f26a1b 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+.cricket-hero-foot.is-won .cricket-hero-headline {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(60, 10, 6, 0.35);
 }
 .cricket-hero-headline.is-result i {
   margin-right: 6px;
   color: var(--brand-amber-deep);
+}
+.cricket-hero-foot.is-won .cricket-hero-headline.is-result i {
+  color: #fff;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.18));
+}
+/* Dark theme: the dark top bar's deep reds instead of the bright gradient. */
+:root[data-bs-theme="dark"] .cricket-hero-foot.is-won {
+  background: linear-gradient(90deg, #a8261c 0%, #6a1d17 32%, #45120e 50%, #6a1d17 68%, #a8261c 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 /* A tie or no result. */
 .cricket-hero-headline.is-level,
@@ -8327,4 +8343,102 @@ tbody tr:first-child .cricket-standings-rank {
 .cricket-batter-balls-score small {
   font-weight: 500;
   color: var(--muted-color);
+}
+
+/* Database page: the app's crash reports (AppErrorsSection.tsx). */
+.cricket-app-errors {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cricket-app-errors > li {
+  border: 1px solid var(--adm-line);
+  border-radius: 12px;
+  background: var(--adm-surface);
+  overflow: hidden;
+}
+.cricket-app-error-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  background: none;
+  color: var(--theme-text-dark);
+  text-align: left;
+  cursor: pointer;
+}
+.cricket-app-error-count {
+  flex: none;
+  min-width: 38px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(var(--danger-rgb), 0.1);
+  color: var(--danger);
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  text-align: center;
+}
+.cricket-app-error-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cricket-app-error-text strong {
+  overflow: hidden;
+  font-size: var(--fs-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cricket-app-error-text small {
+  color: var(--muted-color);
+  font-size: var(--fs-2xs);
+}
+.cricket-app-error-body {
+  padding: 0 12px 12px;
+  font-size: var(--fs-xs);
+}
+.cricket-app-error-body dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0 0 8px;
+}
+.cricket-app-error-body dt {
+  color: var(--muted-color);
+  font-weight: 600;
+}
+.cricket-app-error-body dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.cricket-app-error-body pre {
+  max-height: 220px;
+  margin: 0 0 8px;
+  padding: 10px;
+  overflow: auto;
+  border-radius: 8px;
+  background: var(--adm-raised);
+  font-size: 0.7rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.cricket-app-error-fixed {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--adm-line-strong);
+  border-radius: 999px;
+  background: var(--adm-surface);
+  color: var(--theme-text-dark);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  cursor: pointer;
 }

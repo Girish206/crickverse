@@ -27,8 +27,8 @@
   padding: env(safe-area-inset-top) 16px 0;
   /* The app's bars' gradient (Navbar.css), with white contents */
   background: var(--brand-gradient-bar);
+  /* Straight along the bottom, like the app's page headers. */
   border-bottom: 0;
-  border-radius: 0 0 20px 20px;
   box-shadow: 0 2px 10px rgba(var(--brand-navy-rgb), 0.18);
   color: #fff;
 }

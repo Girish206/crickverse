@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { useAppText } from "./appText";
 
 // Each home section's own colour (tinted panel and icon badge), so they're
 // easy to tell apart at a glance. The player Home and the admin dashboard
@@ -24,6 +25,7 @@ export function HomeSection({
   tour?: string;
   children: ReactNode;
 }) {
+  const tr = useAppText();
   return (
     <section className={`cricket-home-section is-${tone}`} data-tour={tour}>
       <div className="cricket-home-head">
@@ -31,7 +33,7 @@ export function HomeSection({
           <span className="cricket-home-icon" aria-hidden="true">
             <i className={icon}></i>
           </span>
-          {title}
+          {tr(title)}
           {badge}
         </h2>
         {link && (

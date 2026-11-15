@@ -844,6 +844,10 @@
 }
 
 /* ===== Head to head ===== */
+/* Space above it: on the Info tab it sits right under the organiser card. */
+.cricket-h2h {
+  margin-top: 20px;
+}
 .cricket-h2h-sub {
   margin-left: 6px;
   font-size: var(--fs-xs);

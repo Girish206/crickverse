@@ -7,6 +7,7 @@ import { useClearCricketFormat, useCricketTournament, useSetCricketFormat } from
 import type { CricketTournament } from "../../../api/types";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { canManageTournament } from "../canManage";
+import { FINISHED_NOTE } from "../tournaments/tournamentLifecycle";
 import { ListCard } from "../../components/ListCard";
 import { PageHeader } from "../../components/PageHeader";
 import { Button } from "../../components/Button";
@@ -101,11 +102,13 @@ export function CricketFormatPage() {
     ? "Tournament not found."
     : !canManage
       ? "Only the tournament's organiser can set its format."
-      : tournament.teams.length < 2
-        ? "Add at least two teams on the Teams tab first."
-        : played
-          ? "Format matches have already been played, so the format can't be changed now."
-          : null;
+      : tournament.finishedAt
+        ? FINISHED_NOTE
+        : tournament.teams.length < 2
+          ? "Add at least two teams on the Teams tab first."
+          : played
+            ? "Format matches have already been played, so the format can't be changed now."
+            : null;
 
   if (isLoading || loadingMatches || problem) {
     return (

@@ -10,6 +10,7 @@ import {
 import { isGeneratedTeam, type CricketPlayer } from "../../../api/types";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { canManageTournament } from "../canManage";
+import { FINISHED_NOTE, tournamentFinished, tournamentStarted } from "./tournamentLifecycle";
 import { roleOf } from "../playerRoles";
 import { ListCard } from "../../components/ListCard";
 import { PageHeader } from "../../components/PageHeader";
@@ -50,9 +51,11 @@ export function CricketAutoTeamsPage() {
   const playerById = useMemo(() => new Map((players ?? []).map((player) => [player.id, player])), [players]);
   const backTo = `/tournaments/${id}?tab=teams`;
 
-  // Generating reshuffles every team, so it's closed once a match is scheduled.
-  const scheduled = (matches ?? []).length > 0;
-  if (isLoading || loadingMatches || !tournament || !canManage || scheduled) {
+  // Generating reshuffles every team, so it's closed once a match starts
+  // (and while the tournament is marked finished).
+  const finished = tournamentFinished(tournament);
+  const started = tournamentStarted(matches);
+  if (isLoading || loadingMatches || !tournament || !canManage || started || finished) {
     return (
       <>
         <PageHeader title="Create Teams" back={backTo} backLabel="Back to teams" />
@@ -65,7 +68,9 @@ export function CricketAutoTeamsPage() {
                 ? "Tournament not found."
                 : !canManage
                   ? "Only the tournament's organiser can create its teams."
-                  : "Matches are already scheduled, so the teams can't be generated again. Open a team to move or swap its players."}
+                  : finished
+                    ? FINISHED_NOTE
+                    : "The tournament's matches have started, so the teams can't be generated again. Open a team to move or swap its players."}
             </p>
           </ListCard>
         )}

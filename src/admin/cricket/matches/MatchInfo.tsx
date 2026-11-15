@@ -13,6 +13,7 @@ import { BallTypeBadge } from "../CricketChoices";
 import { OrganiserCard } from "../OrganiserCard";
 import { labelOf, MATCH_TYPES, PITCH_TYPES } from "../cricketOptions";
 import { inningsPhases, inningsPlan, inningsSummary, isLegal, oversText, type NameOf } from "../stats";
+import { closedSpells, playedMs } from "./matchTiming";
 import { matchStageLabel } from "./matchUtils";
 
 const dateText = (value: string) =>
@@ -45,10 +46,14 @@ function eventText(event: CricketMatchEvent, nameOf: NameOf) {
       return event.fromId === null ? `${nameOf(event.toId)} joined the side` : `${nameOf(event.toId)} came in for ${nameOf(event.fromId)}`;
     case "squad-move":
       return `${nameOf(event.toId)} moved to ${event.toName ?? "the other side"}`;
+    case "impact-sub":
+      return `Impact Player: ${nameOf(event.toId)} in for ${nameOf(event.fromId)}`;
     case "rain":
       return event.overs === null ? "Rain: no more play" : `Rain: reduced to ${event.overs} overs`;
     case "reopened":
       return "Match reopened";
+    case "finished":
+      return "Match finished";
     default:
       return null;
   }
@@ -159,6 +164,41 @@ function InningsNotes({ match, innings, index, nameOf }: { match: CricketMatch; 
   );
 }
 
+// The whole match: first ball to its (latest) end, less every spell it sat
+// finished before a reopen. The innings break counts; closed time doesn't.
+function MatchTotal({ match }: { match: CricketMatch }) {
+  const ballTimes = match.innings.flatMap((innings) => innings.balls.map((ball) => (ball.at ? Date.parse(ball.at) : 0))).filter(Boolean);
+  if (ballTimes.length === 0) return null;
+  const startedAt = Math.min(...ballTimes);
+  const last = match.innings[match.innings.length - 1];
+  const live = match.status === "live";
+  const endedAt = live
+    ? Date.now()
+    : match.completedAt
+      ? Date.parse(match.completedAt)
+      : (last?.closedAt ? Date.parse(last.closedAt) : Math.max(...ballTimes));
+  const spells = closedSpells(match);
+  const closedFor = spells.reduce((sum, [from, to]) => sum + (to - from), 0);
+  return (
+    <div className="cricket-notes-innings">
+      <div className="cricket-notes-row">
+        <div className="cricket-notes-side">
+          <strong>Total match time</strong>
+          <small>
+            {spells.length > 0
+              ? `Reopened ${spells.length}× · ${minutesText(closedFor)} closed, not counted`
+              : "First ball to the end, innings break included"}
+          </small>
+        </div>
+        <div className="cricket-notes-time">
+          <strong>{minutesText(playedMs(startedAt, endedAt, spells))}</strong>
+          <small>{live ? "so far" : "played"}</small>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Each innings' start, end and minutes taken, headed by the batting side
 // whose scores sit below it. It started with its first ball and ended when
 // it was closed; times not recorded (older matches) show "–".
@@ -174,7 +214,11 @@ function MatchNotes({ match, nameOf }: { match: CricketMatch; nameOf: NameOf }) 
           const startedAt = innings.balls.find((ball) => ball.at)?.at ?? null;
           const endedAt = innings.closed ? (innings.closedAt ?? innings.balls.findLast((ball) => ball.at)?.at ?? null) : null;
           const legalBalls = innings.balls.filter(isLegal).length;
-          const taken = startedAt ? (endedAt ? new Date(endedAt).getTime() : Date.now()) - new Date(startedAt).getTime() : null;
+          // Reopened: the time it sat finished in between isn't counted.
+          const spells = closedSpells(match, index);
+          const taken = startedAt
+            ? playedMs(Date.parse(startedAt), endedAt ? Date.parse(endedAt) : Date.now(), spells)
+            : null;
           return (
             <div key={index} className="cricket-notes-innings">
               <div className="cricket-notes-row">
@@ -196,13 +240,17 @@ function MatchNotes({ match, nameOf }: { match: CricketMatch; nameOf: NameOf }) 
                 </div>
                 <div className="cricket-notes-time">
                   <strong>{taken === null ? "–" : minutesText(taken)}</strong>
-                  <small>{oversText(legalBalls, ballsPerOverOf(match))} ov</small>
+                  <small>
+                    {oversText(legalBalls, ballsPerOverOf(match))} ov
+                    {spells.length > 0 && ` · reopened ${spells.length}×`}
+                  </small>
                 </div>
               </div>
               <InningsNotes match={match} innings={innings} index={index} nameOf={nameOf} />
             </div>
           );
         })}
+        <MatchTotal match={match} />
       </div>
     </>
   );
@@ -215,6 +263,7 @@ function playingConditions(match: CricketMatch): [string, ReactNode][] {
   if (ballsPerOverOf(match) !== 6) rules.push(`${ballsPerOverOf(match)}-ball overs`);
   if (match.bowlerOverLimit) rules.push(`${match.bowlerOverLimit} overs a bowler`);
   if (match.lastManStands) rules.push("Last man stands");
+  if (match.impactPlayer) rules.push("Impact Player");
   if (match.freeHit === false) rules.push("No free hit");
   if (match.powerplayOvers) rules.push(`${match.powerplayOvers}-over powerplay`);
   return rules.length ? [["Rules", rules.join(" · ")]] : [];

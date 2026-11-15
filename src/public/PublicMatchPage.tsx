@@ -13,17 +13,22 @@ import { FanZone } from "../admin/cricket/matches/FanZone";
 import { setScorerPref, useScorerPrefs } from "../admin/cricket/matches/scorerPrefs";
 import { setBurstSoundsOn, useBurstSoundsOn } from "../admin/cricket/matches/burstSounds";
 import { Scorecard } from "../admin/cricket/matches/Scorecard";
+import { exportScorecardPdf } from "../admin/cricket/matches/scorecardExport";
+import { hasBalls } from "../admin/cricket/matches/result/resultText";
+import { isNativeApp } from "../app-shell/platform";
 import { LiveView } from "../admin/cricket/matches/LiveView";
 import { MatchHero } from "../admin/cricket/matches/MatchHero";
 import { MatchInfo } from "../admin/cricket/matches/MatchInfo";
 import { MatchStatusBadge } from "../admin/cricket/matches/matchUi";
 import { matchHeading, matchHeadingLine } from "../admin/cricket/matches/matchUtils";
 import { PublicShell, PublicState } from "./PublicShell";
+import { SectionBoundary } from "../app-shell/SectionBoundary";
 import "../admin/dms/css/adminDisplays.css";
 import "../admin/admin.css";
 import "../admin/cricket/cricket.css";
 import { useSwipeTabs } from "../admin/useSwipeTabs";
 import { SwipePanels } from "../admin/SwipePanels";
+import { useAppText } from "../admin/cricket/appText";
 
 type Tab = "info" | "live" | "scorecard" | "commentary" | "insights" | "overs" | "squads" | "mvp" | "heroes";
 
@@ -70,6 +75,7 @@ export function PublicMatchPage({ id }: { id: number }) {
 }
 
 function MatchView({ data: { match, tournament, players } }: { data: PublicMatchData }) {
+  const tr = useAppText();
   const nameOf = useNameOf(players);
   const { data: viewers } = useMatchViewers(match.id, { live: match.status === "live", isPublic: true });
   const [params, setParams] = useSearchParams();
@@ -107,8 +113,10 @@ function MatchView({ data: { match, tournament, players } }: { data: PublicMatch
   return (
     <div className="cricket-page">
       {/* A four, six or wicket plays over the page, as for signed-in followers. */}
-      <BallBurst match={match} nameOf={nameOf} />
-      <BallCalls match={match} nameOf={nameOf} />
+      <SectionBoundary where="public match: burst" silent>
+        <BallBurst match={match} nameOf={nameOf} />
+        <BallCalls match={match} nameOf={nameOf} />
+      </SectionBoundary>
 
       {/* Tournament logo, the match's status over its title, and Share. The
           card below names both teams, so the title is the match's round
@@ -163,6 +171,18 @@ function MatchView({ data: { match, tournament, players } }: { data: PublicMatch
             <i className={`fa-solid ${voice ? "fa-microphone-lines" : "fa-microphone-lines-slash"}`} aria-hidden="true"></i>
           </button>
         )}
+        {/* The scorecard as a PDF (in the app, settings has it with CSV too). */}
+        {hasBalls(match) && (
+          <button
+            type="button"
+            className="cv-pm-share"
+            aria-label={isNativeApp ? "Share scorecard" : "Download scorecard (PDF)"}
+            title={isNativeApp ? "Share scorecard" : "Download scorecard (PDF)"}
+            onClick={() => void exportScorecardPdf(match, nameOf)}
+          >
+            <i className="fa-solid fa-file-arrow-down" aria-hidden="true"></i>
+          </button>
+        )}
         <button type="button" className="cv-pm-share" aria-label="Share match" title="Share match" onClick={() => setSharing(true)}>
           <i className="fa-solid fa-share-nodes" aria-hidden="true"></i>
         </button>
@@ -181,7 +201,7 @@ function MatchView({ data: { match, tournament, players } }: { data: PublicMatch
             className={tab === t.value ? "active" : ""}
             onClick={() => setParams({ tab: t.value }, { replace: true, state: location.state })}
           >
-            {t.label}
+            {tr(t.label)}
             {LOCKED_TABS.has(t.value) && <i className="fa-solid fa-lock cv-pm-tab-lock" aria-label="Sign in to see"></i>}
           </button>
         ))}
@@ -190,6 +210,7 @@ function MatchView({ data: { match, tournament, players } }: { data: PublicMatch
       <SwipePanels swipe={swipeRef} values={tabs.map((t) => t.value)} current={tab} eager>
         {(tab) => (
           <ListCard title="" bodyClassName={tab === "live" ? "cricket-live-body" : undefined}>
+            <SectionBoundary where={`public match: ${tab}`} resetKey={tab}>
             {tab === "info" && (
               <>
                 <MatchInfo match={match} nameOf={nameOf} viewers={viewers} tournament={tournament ?? undefined} />
@@ -204,6 +225,7 @@ function MatchView({ data: { match, tournament, players } }: { data: PublicMatch
             )}
             {tab === "scorecard" && <Scorecard match={match} nameOf={nameOf} />}
             {LOCKED_TABS.has(tab) && <SignInToSee label={tabs.find((t) => t.value === tab)!.label} tab={tab} />}
+            </SectionBoundary>
           </ListCard>
         )}
       </SwipePanels>

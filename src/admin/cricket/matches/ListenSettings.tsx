@@ -33,7 +33,7 @@ export function ListenSettings() {
         <i className="fa-solid fa-language" aria-hidden="true"></i>
         <span>
           Language
-          <small>For the spoken calls and the scoring pad</small>
+          <small>For the menus, the scoring pad and the spoken calls</small>
         </span>
         {/* The app's own dropdown (as in the forms), not the browser's */}
         <SelectInput

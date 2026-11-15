@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useAppNode } from "../cricket/appText";
 
 export interface ListCardProps {
   // Left out (or "") when a tab already names the section; the header row
@@ -24,6 +25,7 @@ export interface ListCardProps {
 // The .card wrapper + .admin-page-header (title + optional "+ New" button)
 // used at the top of every admin list page.
 export function ListCard({ title, icon, subtitle, action, children, className, bodyClassName, plain }: ListCardProps) {
+  const tr = useAppNode();
   const body = (
     <>
       {(title || action) && (
@@ -37,12 +39,12 @@ export function ListCard({ title, icon, subtitle, action, children, className, b
                   </span>
                 )}
                 <div className="admin-page-title-text">
-                  <h1>{title}</h1>
-                  {subtitle && <p>{subtitle}</p>}
+                  <h1>{tr(title)}</h1>
+                  {subtitle && <p>{tr(subtitle)}</p>}
                 </div>
               </div>
             ) : (
-              <h1>{title}</h1>
+              <h1>{tr(title)}</h1>
             ))}
           {action}
         </div>

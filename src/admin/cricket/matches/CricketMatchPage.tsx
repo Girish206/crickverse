@@ -39,6 +39,7 @@ import { ListenSettings } from "./ListenSettings";
 import { copyOverlayLink } from "../../../public/overlayLink";
 import { setBurstSoundsOn, useBurstSoundsOn } from "./burstSounds";
 import { MatchStatusBadge } from "./matchUi";
+import { SectionBoundary } from "../../../app-shell/SectionBoundary";
 import { exportScorecardCsv, exportScorecardPdf } from "./scorecardExport";
 import { isNativeApp } from "../../../app-shell/platform";
 import { MatchAwards } from "./MatchAwards";
@@ -54,6 +55,8 @@ import { useMvpLock } from "./useMvpLock";
 import { MatchSquads } from "./MatchSquads";
 import { RescheduleSheet } from "./RescheduleSheet";
 import { existingInput } from "./CricketMatchForm";
+import { reopenableNow } from "./matchTiming";
+import { tournamentFinished } from "../tournaments/tournamentLifecycle";
 import { editableAfterFinish, formatMatchDate, matchHeading, matchHeadingLine, useMatchPlayerNames } from "./matchUtils";
 import { ResultSheet, type ResultSheetStart } from "./result/ResultSheet";
 import { KnockoutPrompt } from "./result/ResultNote";
@@ -68,6 +71,7 @@ import "../cricket.css";
 import { Loader } from "../../components/Loader";
 import { SwipePanels } from "../../SwipePanels";
 import { MatchPlayerProfiles } from "../players/PlayerProfileSheet";
+import { useAppText } from "../appText";
 
 type Tab = "info" | "live" | "scorecard" | "commentary" | "insights" | "overs" | "squads" | "mvp" | "heroes";
 
@@ -85,6 +89,7 @@ const MATCH_TIPS: TipStep[] = [
 ];
 
 export function CricketMatchPage() {
+  const tr = useAppText();
   const id = Number(useParams().id);
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
@@ -122,6 +127,9 @@ export function CricketMatchPage() {
   const ballQueue = useSendBallQueue(serverMatch, canManage);
   useMvpLock(match ? [match] : undefined, canManage);
   const organiser = access === "organise";
+  // A finished tournament is locked (the server checks it too): its matches
+  // can't be started, reopened, given a result or have their last ball undone.
+  const tournamentLocked = tournamentFinished(tournament);
   // Several people may be allowed to score, but only one does at a time:
   // the first to open the Live tab, until they hand it over or stop. The
   // rest follow the live view. (A live match opens on Live.)
@@ -423,7 +431,7 @@ export function CricketMatchPage() {
           </button>
         )}
 
-        {organiser && (
+        {organiser && !tournamentLocked && (
           <button type="button" className="cricket-settings-item" onClick={settingsThen(() => openResult())}>
             <i className="fa-solid fa-flag-checkered" aria-hidden="true"></i>
             <span>
@@ -433,17 +441,21 @@ export function CricketMatchPage() {
             <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
           </button>
         )}
-        {organiser && over && (
+        {organiser && over && !tournamentLocked && (
           <button
             type="button"
             className="cricket-settings-item"
-            disabled={reopenMatch.isPending}
+            disabled={reopenMatch.isPending || !reopenableNow(match)}
             onClick={settingsThen(handleReopen)}
           >
             <i className="fa-solid fa-rotate-left" aria-hidden="true"></i>
             <span>
               Reopen match
-              <small>Clear the result and carry on scoring</small>
+              <small>
+                {reopenableNow(match)
+                  ? "Clear the result and carry on scoring — within a day of when it first ended"
+                  : "Only possible within a day of when the match first ended"}
+              </small>
             </span>
           </button>
         )}
@@ -488,7 +500,8 @@ export function CricketMatchPage() {
             <span className={`cricket-shot-toggle-knob ${match.isPublic ? "is-on" : ""}`.trim()} aria-hidden="true"></span>
           </button>
         )}
-        {access === "organise" && (
+        {/* A finished tournament keeps its results; a fixture never played can go. */}
+        {access === "organise" && (!tournamentLocked || upcoming) && (
           <button
             type="button"
             className="cricket-settings-item is-danger"
@@ -575,9 +588,11 @@ export function CricketMatchPage() {
         {tips.element}
         {/* A four, six or wicket plays over the page on whichever tab, and the
             match's last ball still plays as it turns to the result. */}
-        <BallBurst match={match} nameOf={nameOf} />
-        <BallCalls match={match} nameOf={nameOf} />
-        {match.tournamentId !== null && <AutoNextRounds tournamentId={match.tournamentId} />}
+        <SectionBoundary where="match: burst" silent>
+          <BallBurst match={match} nameOf={nameOf} />
+          <BallCalls match={match} nameOf={nameOf} />
+        </SectionBoundary>
+        {match.tournamentId !== null && !tournamentLocked && <AutoNextRounds tournamentId={match.tournamentId} />}
         {onScoreScreen ? (
           <>
             <PageHeader
@@ -611,6 +626,7 @@ export function CricketMatchPage() {
               }
             />
             {seat.mine ? (
+              <SectionBoundary where="scorer">
               <LiveScorer
                 match={match}
                 nameOf={nameOf}
@@ -620,6 +636,7 @@ export function CricketMatchPage() {
                 onEnterResult={organiser ? () => openResult() : undefined}
                 queue={{ waiting, blocked, ...ballQueue }}
               />
+              </SectionBoundary>
             ) : seat.busy ? (
               <Loader />
             ) : (
@@ -691,7 +708,7 @@ export function CricketMatchPage() {
                   className={tab === t.value ? "active" : ""}
                   onClick={() => setParams({ tab: t.value }, { replace: true, state: location.state })}
                 >
-                  {t.label}
+                  {tr(t.label)}
                 </button>
               ))}
             </div>
@@ -705,6 +722,8 @@ export function CricketMatchPage() {
                   // nor round the insights, whose sections are cards of their own.
                   plain={tab === "overs" || tab === "insights"}
                 >
+                  {/* A crash in one tab stays in that tab. */}
+                  <SectionBoundary where={`match: ${tab}`} resetKey={tab}>
                   {tab === "info" && (
                     <>
                       <MatchInfo match={match} nameOf={nameOf} viewers={viewers} tournament={tournament} officials />
@@ -733,7 +752,7 @@ export function CricketMatchPage() {
                       </>
                     ) : (
                       <div className="cricket-summary">
-                        {organiser && needsKnockoutWinner(match) && (
+                        {organiser && !tournamentLocked && needsKnockoutWinner(match) && (
                           <KnockoutPrompt
                             match={match}
                             onEnter={() => openResult({ outcome: "win", method: match.status === "completed" ? "super-over" : "other" })}
@@ -747,6 +766,7 @@ export function CricketMatchPage() {
                         {match.status === "completed" &&
                           !match.resultMethod &&
                           hasBalls(match) &&
+                          !tournamentLocked &&
                           (organiser || (admin != null && String(match.scoringById) === admin.sub)) && (
                             <div className="cricket-potm-row">
                               <div className="cricket-potm-row-text">
@@ -771,6 +791,7 @@ export function CricketMatchPage() {
                   )}
                   {tab === "mvp" && <MatchMvp match={match} nameOf={nameOf} />}
                   {tab === "heroes" && <MatchHeroes match={match} nameOf={nameOf} />}
+                  </SectionBoundary>
                 </ListCard>
               )}
             </SwipePanels>
@@ -924,9 +945,13 @@ export function CricketMatchPage() {
             <Button variant="outline" onClick={() => setEditingDetails(true)}>
               Edit
             </Button>
-            <Button variant="primary" onClick={() => navigate(`/matches/${match.id}/setup`)}>
-              Start Match
-            </Button>
+            {tournamentLocked ? (
+              <small className="admin-hint">The tournament is finished — reopen it to play this match.</small>
+            ) : (
+              <Button variant="primary" onClick={() => navigate(`/matches/${match.id}/setup`)}>
+                Start Match
+              </Button>
+            )}
           </div>
         )}
 

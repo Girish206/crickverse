@@ -11,6 +11,7 @@ import { showMutationError } from "./api/mutationErrors";
 import { AppToaster } from "./admin/components/AppToaster";
 import { reloadOnceForNewBuild } from "./app-shell/chunkReload";
 import { isNativeApp } from "./app-shell/platform";
+import { reportUncaughtErrors } from "./app-shell/reportError";
 
 const queryClient = new QueryClient({
   mutationCache: new MutationCache({
@@ -45,6 +46,9 @@ const queryClient = new QueryClient({
 window.addEventListener("vite:preloadError", (event) => {
   if (reloadOnceForNewBuild()) event.preventDefault();
 });
+
+// Crashes nothing else caught go to the organisers' error list.
+reportUncaughtErrors();
 
 // The Android app: back button, share sheet and clipboard (app-shell/nativeShell).
 if (isNativeApp) void import("./app-shell/nativeShell").then(({ installNativeShell }) => installNativeShell());

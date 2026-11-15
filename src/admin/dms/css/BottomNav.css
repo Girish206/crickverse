@@ -25,7 +25,8 @@
   }
   /* Scrolling down (BottomNav.tsx): slid off the bottom. */
   .cv-bottom-nav.is-hidden {
-    transform: translateY(100%);
+    /* Extra distance so the raised active circle slides fully out too. */
+    transform: translateY(calc(100% + 40px));
   }
   /* Room for the bar under the last card. */
   .layout-wrapper:not(.is-subpage) .scrollable-main {
@@ -52,10 +53,13 @@
   text-decoration: none;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  transition: color 0.2s ease;
 }
 .cv-bottom-tab .app-icon {
+  box-sizing: content-box;
   font-size: 1.05rem;
-  transition: transform 0.15s ease;
+  border-radius: 50%;
+  transition: transform 0.2s ease, background-color 0.2s ease, color 0.2s ease, margin 0.2s ease;
 }
 .cv-bottom-tab span {
   max-width: 100%;
@@ -68,18 +72,25 @@
 .cv-bottom-tab:active .app-icon {
   transform: scale(0.9);
 }
+/* Active tab: the icon rises into a white circle above the bar. A ring in
+   the bar's red joins it to the bar, so it reads right over any content. */
 .cv-bottom-tab.is-active {
   color: #fff;
 }
-/* The active tab's marker: a short bar along the top edge. */
-.cv-bottom-tab.is-active::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: 28px;
-  height: 3px;
-  border-radius: 0 0 3px 3px;
+.cv-bottom-tab.is-active .app-icon {
+  padding: 11px;
+  margin-top: -26px;
   background: #fff;
-  transform: translateX(-50%);
+  color: var(--brand-accent-fill);
+  box-shadow:
+    0 0 0 4px #c42e21,
+    0 6px 14px rgba(var(--brand-navy-rgb), 0.35);
+}
+:root[data-bs-theme="dark"] .cv-bottom-tab.is-active .app-icon {
+  box-shadow:
+    0 0 0 4px #6a1d17,
+    0 6px 14px rgba(0, 0, 0, 0.5);
+}
+.cv-bottom-tab.is-active:active .app-icon {
+  transform: scale(0.94);
 }

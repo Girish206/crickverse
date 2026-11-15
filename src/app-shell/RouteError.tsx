@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { isRouteErrorResponse, useRouteError } from "react-router-dom";
 import { isChunkLoadError, reloadOnceForNewBuild } from "./chunkReload";
 import { NotFound } from "./NotFound";
+import { reportError } from "./reportError";
 import "./app-shell.css";
 
 // What a route shows when it crashes while rendering or its code fails to
@@ -14,8 +15,10 @@ export function RouteError({ full = false }: { full?: boolean }) {
   const [reloading] = useState(() => chunk && reloadOnceForNewBuild());
 
   useEffect(() => {
-    if (!reloading) console.error(error);
-  }, [error, reloading]);
+    if (reloading) return;
+    console.error(error);
+    if (!(isRouteErrorResponse(error) && error.status === 404)) reportError(error, full ? "app" : "page");
+  }, [error, reloading, full]);
 
   if (isRouteErrorResponse(error) && error.status === 404) return <NotFound full={full} />;
 

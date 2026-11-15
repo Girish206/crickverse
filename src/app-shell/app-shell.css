@@ -111,3 +111,45 @@
   outline: 2px solid var(--cv-shell-accent);
   outline-offset: 2px;
 }
+
+/* A part of a page that crashed (SectionBoundary.tsx): a quiet note in its
+   place, with a retry. */
+.cv-section-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+  padding: 12px 14px;
+  border: 1px dashed rgba(var(--danger-rgb, 180, 35, 24), 0.35);
+  border-radius: 12px;
+  background: rgba(var(--danger-rgb, 180, 35, 24), 0.05);
+  color: var(--theme-text-dark, inherit);
+  font-size: 0.875rem;
+}
+.cv-section-error > i {
+  color: var(--danger, #b42318);
+  font-size: 1.1rem;
+}
+.cv-section-error > div {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cv-section-error small {
+  color: var(--muted-color, #6b7280);
+}
+.cv-section-error button {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--adm-line-strong, rgba(0, 0, 0, 0.15));
+  border-radius: 999px;
+  background: var(--adm-surface, #fff);
+  color: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}

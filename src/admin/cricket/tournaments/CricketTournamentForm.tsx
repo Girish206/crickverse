@@ -94,6 +94,7 @@ export function tournamentInputOf(t: CricketTournament): CricketTournamentInput 
     ballsPerOver: t.ballsPerOver ?? null,
     bowlerOverLimit: t.bowlerOverLimit ?? null,
     lastManStands: t.lastManStands ?? null,
+    impactPlayer: t.impactPlayer ?? null,
     freeHit: t.freeHit ?? null,
     powerplayOvers: t.powerplayOvers ?? null,
   };
@@ -136,6 +137,7 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
   const [ballsPerOver, setBallsPerOver] = useState(start?.ballsPerOver ?? (start?.matchType === "hundred" ? 5 : 6));
   const [bowlerLimit, setBowlerLimit] = useState(start?.bowlerOverLimit ? String(start.bowlerOverLimit) : "");
   const [lastManStands, setLastManStands] = useState(Boolean(start?.lastManStands));
+  const [impactPlayer, setImpactPlayer] = useState(Boolean(start?.impactPlayer));
   const [freeHit, setFreeHit] = useState(start?.freeHit !== false);
   const [hasPowerplay, setHasPowerplay] = useState(Boolean(start?.powerplayOvers));
   const [powerplayOvers, setPowerplayOvers] = useState(start?.powerplayOvers ? String(start.powerplayOvers) : "");
@@ -162,6 +164,7 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
       if (previous.ballsPerOver) setBallsPerOver(previous.ballsPerOver);
       if (previous.bowlerOverLimit) setBowlerLimit(String(previous.bowlerOverLimit));
       setLastManStands(Boolean(previous.lastManStands));
+      setImpactPlayer(Boolean(previous.impactPlayer));
       setFreeHit(previous.freeHit !== false);
       setHasPowerplay(Boolean(previous.powerplayOvers));
       setPowerplayOvers(previous.powerplayOvers ? String(previous.powerplayOvers) : "");
@@ -258,6 +261,7 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
       ballsPerOver,
       bowlerOverLimit: bowlerLimit ? Number(bowlerLimit) : null,
       lastManStands,
+      impactPlayer,
       freeHit,
       powerplayOvers: hasPowerplay ? Number(powerplayOvers) : null,
     };
@@ -599,6 +603,13 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
             note="The last batter bats on alone"
             on={lastManStands}
             onChange={setLastManStands}
+          />
+          <SwitchRow
+            icon="fa-solid fa-right-left"
+            label="Impact Player"
+            note="Each side may swap one player for a substitute once"
+            on={impactPlayer}
+            onChange={setImpactPlayer}
           />
           <SwitchRow
             icon="fa-solid fa-bolt"

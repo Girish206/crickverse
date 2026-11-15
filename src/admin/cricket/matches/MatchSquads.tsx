@@ -46,7 +46,15 @@ export function MatchSquads({
   const xi = match.teams.map((team, slot) => byRole(started ? team.playerIds : roster(slot)));
   // Not someone who has moved across and is playing for the other side.
   const playing = new Set(match.teams.flatMap((team) => team.playerIds));
-  const bench = match.teams.map((_, slot) => (started ? byRole(roster(slot).filter((id) => !playing.has(id))) : []));
+  // Impact Player swaps: who came in (marked in the XI), and who went out
+  // (benched, marked as such).
+  const impactIn = new Set(match.teams.flatMap((team) => (team.impactInId != null ? [team.impactInId] : [])));
+  const impactOut = new Set(match.teams.flatMap((team) => (team.impactOutId != null ? [team.impactOutId] : [])));
+  const bench = match.teams.map((team, slot) =>
+    started
+      ? byRole([...new Set([...(team.impactOutId != null ? [team.impactOutId] : []), ...roster(slot)])].filter((id) => !playing.has(id)))
+      : [],
+  );
 
   const cell = (playerId: number | undefined, side: "left" | "right", benched: boolean) => {
     if (playerId === undefined) return <div className={`cricket-squad-cell is-${side}`}></div>;
@@ -59,7 +67,15 @@ export function MatchSquads({
           <strong title={name}>
             <PlayerLink playerId={playerId}>{name}</PlayerLink>
           </strong>
-          <small>{roleOf(player?.role ?? null)?.label ?? "Role not set"}</small>
+          <small>
+            {impactIn.has(playerId) ? (
+              <span className="cricket-squad-impact">Impact Player</span>
+            ) : impactOut.has(playerId) ? (
+              <span className="cricket-squad-impact is-out">Subbed out</span>
+            ) : (
+              (roleOf(player?.role ?? null)?.label ?? "Role not set")
+            )}
+          </small>
         </span>
       </div>
     );

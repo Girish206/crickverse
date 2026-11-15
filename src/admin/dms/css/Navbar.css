@@ -9,7 +9,7 @@
   /* The home-screen app draws under the status bar (black-translucent). */
   height: calc(64px + env(safe-area-inset-top));
   padding-top: env(safe-area-inset-top) !important;
-  background: var(--brand-gradient-bar);
+  background: var(--brand-gradient-top);
   border-bottom: 0;
   /* Rounded along the bottom, mirroring the bottom tab bar's top */
   border-radius: 0 0 20px 20px;
@@ -878,4 +878,12 @@
 /* The initials' circle, set off from the red behind it */
 .navbar .navbar-user-chip .user-avatar {
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55);
+}
+
+/* Account menu: the chosen language beside "Language". */
+.navbar-user-dropdown-note {
+  margin-left: 6px;
+  color: var(--muted-color);
+  font-size: var(--fs-2xs);
+  font-weight: 500;
 }
