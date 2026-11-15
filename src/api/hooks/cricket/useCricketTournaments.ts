@@ -35,6 +35,7 @@ export interface CricketTournamentInput {
   ballsPerOver?: number | null;
   bowlerOverLimit?: number | null;
   lastManStands?: boolean | null;
+  impactPlayer?: boolean | null;
   freeHit?: boolean | null;
   powerplayOvers?: number | null;
   // Left out keeps them as they are.

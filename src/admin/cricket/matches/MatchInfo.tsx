@@ -45,6 +45,8 @@ function eventText(event: CricketMatchEvent, nameOf: NameOf) {
       return event.fromId === null ? `${nameOf(event.toId)} joined the side` : `${nameOf(event.toId)} came in for ${nameOf(event.fromId)}`;
     case "squad-move":
       return `${nameOf(event.toId)} moved to ${event.toName ?? "the other side"}`;
+    case "impact-sub":
+      return `Impact Player: ${nameOf(event.toId)} in for ${nameOf(event.fromId)}`;
     case "rain":
       return event.overs === null ? "Rain: no more play" : `Rain: reduced to ${event.overs} overs`;
     case "reopened":
@@ -215,6 +217,7 @@ function playingConditions(match: CricketMatch): [string, ReactNode][] {
   if (ballsPerOverOf(match) !== 6) rules.push(`${ballsPerOverOf(match)}-ball overs`);
   if (match.bowlerOverLimit) rules.push(`${match.bowlerOverLimit} overs a bowler`);
   if (match.lastManStands) rules.push("Last man stands");
+  if (match.impactPlayer) rules.push("Impact Player");
   if (match.freeHit === false) rules.push("No free hit");
   if (match.powerplayOvers) rules.push(`${match.powerplayOvers}-over powerplay`);
   return rules.length ? [["Rules", rules.join(" · ")]] : [];

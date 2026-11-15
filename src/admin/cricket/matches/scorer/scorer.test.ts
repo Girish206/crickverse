@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import type { CricketMatch } from "../../../../api/types";
 import { allowedOnFreeHit, blankWicket, FREE_HIT_OUTS, OUT_KINDS, outEndOf, outKind } from "./wicket";
 import { EXTRA_ICONS, EXTRA_LABELS } from "./extras";
+import { cantGoOut } from "./impact";
 import { METHODS_FOR, needsKnockoutWinner, previewResult } from "../result/resultText";
 
 // The scorer's own rules: which outs it offers and how, what a free hit
@@ -136,5 +137,29 @@ describe("a knockout without a winner", () => {
     assert.equal(needsKnockoutWinner(match({ stage: "final", winner: 0 })), false);
     assert.equal(needsKnockoutWinner(match({ stage: "league" })), false);
     assert.equal(needsKnockoutWinner(match({ stage: "final", status: "live" })), false);
+  });
+});
+
+describe("the Impact Player swap", () => {
+  const live = (over: Record<string, unknown> = {}) =>
+    ({
+      ballsPerOver: 6,
+      innings: [{ battingTeam: 0, strikerId: 1, nonStrikerId: 2, bowlerId: 10, closed: false, balls: [{ extraType: null }], ...over }],
+    }) as unknown as CricketMatch;
+
+  it("keeps the batters at the crease", () => {
+    assert.equal(cantGoOut(live(), 0, 1), "At the crease");
+    assert.equal(cantGoOut(live(), 0, 2), "At the crease");
+    assert.equal(cantGoOut(live(), 0, 3), null);
+  });
+
+  it("keeps the bowler until the over ends", () => {
+    assert.equal(cantGoOut(live(), 1, 10), "Bowling this over");
+    assert.equal(cantGoOut(live({ balls: Array(6).fill({ extraType: null }) }), 1, 10), null);
+    assert.equal(cantGoOut(live({ balls: [{ extraType: "wide" }] }), 1, 10), null);
+  });
+
+  it("allows anyone between innings", () => {
+    assert.equal(cantGoOut(live({ closed: true }), 0, 1), null);
   });
 });

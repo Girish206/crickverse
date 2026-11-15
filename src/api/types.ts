@@ -222,6 +222,7 @@ export interface CricketTournament {
   ballsPerOver?: number | null;
   bowlerOverLimit?: number | null;
   lastManStands?: boolean | null;
+  impactPlayer?: boolean | null;
   freeHit?: boolean | null;
   powerplayOvers?: number | null;
   // How it's played (league, groups, playoffs, series...); null = not set
@@ -444,6 +445,7 @@ export type CricketMatchEventKind =
   | "ball-corrected"
   | "squad-change"
   | "squad-move"
+  | "impact-sub"
   | "rain"
   | "reopened";
 
@@ -483,6 +485,10 @@ export interface CricketMatchTeam {
   teamKey?: string | null;
   // The team's logo, copied onto the match like its name.
   logoUrl?: string | null;
+  // Its Impact Player swap, once made: who came in, and who went out (and
+  // takes no further part; their balls are still theirs).
+  impactInId?: number | null;
+  impactOutId?: number | null;
 }
 
 export type CricketMatchStatus = "scheduled" | "live" | "completed" | "abandoned";
@@ -549,6 +555,9 @@ export interface CricketMatch {
   bowlerOverLimit?: number | null;
   // The last batter bats on alone.
   lastManStands?: boolean | null;
+  // The Impact Player rule: each side may swap one player for a substitute
+  // once during the match (CricketMatchTeam.impactInId).
+  impactPlayer?: boolean | null;
   // A no-ball gives a free hit (null = yes, false = off).
   freeHit?: boolean | null;
   // Overs of powerplay at the start of each innings (null = no powerplay).

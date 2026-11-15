@@ -43,6 +43,7 @@ export interface CricketMatchInput {
   ballsPerOver?: number | null;
   bowlerOverLimit?: number | null;
   lastManStands?: boolean | null;
+  impactPlayer?: boolean | null;
   freeHit?: boolean | null;
   powerplayOvers?: number | null;
   isPublic?: boolean | null;
@@ -487,6 +488,14 @@ export function useChangeCricketSquad() {
   return useMatchMutation(
     ({ id, ...input }: { id: number; team: number; addId: number; replaceId: number | null }) =>
       apiClient.post(url(id, "/squad"), input),
+    { scoring: true },
+  );
+}
+
+// The Impact Player swap: one per side, in a match played with the rule.
+export function useImpactSub() {
+  return useMatchMutation(
+    ({ id, ...input }: { id: number; team: number; outId: number; inId: number }) => apiClient.post(url(id, "/impact-sub"), input),
     { scoring: true },
   );
 }

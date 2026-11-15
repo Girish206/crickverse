@@ -10,6 +10,7 @@ import { roleOf } from "../../playerRoles";
 import { inningsSummary, type NameOf } from "../../stats";
 import { hasPlayed } from "../matchUtils";
 import { AddPlayerSheet } from "./AddPlayerSheet";
+import { ImpactPlayerSheet } from "./ImpactPlayerSheet";
 
 // A side's size sets how many wickets end its innings, so a change can't
 // make or unmake an all-out (the API refuses it too).
@@ -40,8 +41,10 @@ export function ManageSquadSheet({ match, nameOf, onClose }: { match: CricketMat
   const playerById = new Map((players ?? []).map((player) => [player.id, player]));
   const [team, setTeam] = useState<0 | 1>(0);
   const [adding, setAdding] = useState(false);
+  const [impact, setImpact] = useState(false);
 
   if (adding) return <AddPlayerSheet match={match} nameOf={nameOf} initialTeam={team} onClose={() => setAdding(false)} />;
+  if (impact) return <ImpactPlayerSheet match={match} nameOf={nameOf} team={team} onClose={() => setImpact(false)} />;
 
   const side = match.teams[team];
   const other = match.teams[1 - team];
@@ -76,6 +79,26 @@ export function ManageSquadSheet({ match, nameOf, onClose }: { match: CricketMat
           </button>
         ))}
       </div>
+
+      {/* The Impact Player rule: one swap a side, shown once made. */}
+      {match.impactPlayer &&
+        (side.impactInId != null ? (
+          <p className="cricket-manage-impact is-used">
+            <i className="fa-solid fa-right-left" aria-hidden="true"></i>
+            <span>
+              Impact Player: <strong>{nameOf(side.impactInId)}</strong> in for {nameOf(side.impactOutId ?? null)}
+            </span>
+          </p>
+        ) : (
+          <button type="button" className="cricket-manage-impact" disabled={busy} onClick={() => setImpact(true)}>
+            <i className="fa-solid fa-right-left" aria-hidden="true"></i>
+            <span>
+              Bring in an Impact Player
+              <small>{side.name} can swap one player, once, even someone who has played</small>
+            </span>
+            <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
+          </button>
+        ))}
 
       <ul className="cricket-manage-list">
         {side.playerIds.map((playerId) => {
