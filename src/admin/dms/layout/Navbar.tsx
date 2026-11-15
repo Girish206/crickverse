@@ -5,6 +5,9 @@ import { QuickCreate } from "../../cricket/QuickCreate";
 import { GlobalSearch } from "../../cricket/GlobalSearch";
 import { formatMobile } from "../../cricket/mobile";
 import { useCricketMe } from "../../../api/hooks/cricket/useCricketPlayers";
+import { BottomSheet } from "../../cricket/BottomSheet";
+import { LANGS } from "../../cricket/i18n";
+import { setScorerPref, useScorerPrefs } from "../../cricket/matches/scorerPrefs";
 import "../css/Navbar.css";
 
 interface NavbarProps {
@@ -21,6 +24,9 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar, isDark, toggleTheme, onS
     const [scrolled, setScrolled] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement | null>(null);
+    // The app's language (shared with the scoring pad and spoken calls).
+    const [pickingLang, setPickingLang] = useState(false);
+    const { lang } = useScorerPrefs();
 
     const { logout, admin } = useAdminAuth();
     // The token has no mobile number; /me (cached, shared with My Profile) does.
@@ -159,6 +165,23 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar, isDark, toggleTheme, onS
                                     role="menuitem"
                                     onClick={() => {
                                         setMenuOpen(false);
+                                        setPickingLang(true);
+                                    }}
+                                >
+                                    <span className="navbar-user-dropdown-icon">
+                                        <i className="fa-solid fa-language" aria-hidden="true"></i>
+                                    </span>
+                                    <span className="navbar-user-dropdown-label">
+                                        Language <small className="navbar-user-dropdown-note">{LANGS.find((l) => l.value === lang)?.label}</small>
+                                    </span>
+                                    <i className="fa-solid fa-chevron-right navbar-user-dropdown-chevron" aria-hidden="true"></i>
+                                </button>
+                                <button
+                                    type="button"
+                                    className="navbar-user-dropdown-item"
+                                    role="menuitem"
+                                    onClick={() => {
+                                        setMenuOpen(false);
                                         onShareApp();
                                     }}
                                 >
@@ -181,7 +204,31 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar, isDark, toggleTheme, onS
                     </div>
                 </div>
             </nav>
-
+            {pickingLang && (
+                <BottomSheet title="Language" icon="fa-solid fa-language" onClose={() => setPickingLang(false)}>
+                    <p className="cricket-sheet-context">
+                        For the menus and tabs, the scoring pad and the spoken calls. Everything else stays in English for now.
+                    </p>
+                    <div className="cricket-settings-list">
+                        {LANGS.map((l) => (
+                            <button
+                                key={l.value}
+                                type="button"
+                                className="cricket-settings-item"
+                                role="radio"
+                                aria-checked={lang === l.value}
+                                onClick={() => {
+                                    setScorerPref("lang", l.value);
+                                    setPickingLang(false);
+                                }}
+                            >
+                                <span>{l.label}</span>
+                                {lang === l.value && <i className="fa-solid fa-check" aria-hidden="true"></i>}
+                            </button>
+                        ))}
+                    </div>
+                </BottomSheet>
+            )}
         </>
     );
 };

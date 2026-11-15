@@ -879,3 +879,11 @@
 .navbar .navbar-user-chip .user-avatar {
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.55);
 }
+
+/* Account menu: the chosen language beside "Language". */
+.navbar-user-dropdown-note {
+  margin-left: 6px;
+  color: var(--muted-color);
+  font-size: var(--fs-2xs);
+  font-weight: 500;
+}

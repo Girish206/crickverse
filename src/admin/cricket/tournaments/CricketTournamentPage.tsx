@@ -19,7 +19,6 @@ import { countsForTable, pointsTable } from "../stats";
 import { AutoNextRounds } from "../format/AutoNextRounds";
 import { ListCard } from "../../components/ListCard";
 import { useSwipeTabs } from "../../useSwipeTabs";
-import { useStuck } from "../../../hooks/useStuck";
 import { PageHeader } from "../../components/PageHeader";
 import { Button } from "../../components/Button";
 import { BottomSheet } from "../BottomSheet";
@@ -54,6 +53,7 @@ import "../cricket.css";
 import { Loader } from "../../components/Loader";
 import { TeamMark } from "../teams/TeamMark";
 import { SwipePanels } from "../../SwipePanels";
+import { useAppText } from "../appText";
 
 type Tab = "info" | "teams" | "players" | "auction" | "matches" | "points" | "heroes" | "stats" | "totals";
 
@@ -177,6 +177,7 @@ function TournamentLocked({ id, backTo }: { id: number; backTo: string }) {
 }
 
 export function CricketTournamentPage() {
+  const tr = useAppText();
   const id = Number(useParams().id);
   const navigate = useNavigate();
   // A running auction is watched live (checked every few seconds).
@@ -212,7 +213,6 @@ export function CricketTournamentPage() {
   const swipeRef = useSwipeTabs(tabs.map((t) => t.value), tab, (value) =>
     setParams({ tab: value }, { replace: true, state: location.state })
   );
-  const tabsRef = useStuck(swipeRef);
   const { data: matches } = useCricketMatches(id);
   const followItem = useFollowMenuItem({ kind: "tournament", targetId: id, teamIndex: null });
   useMvpLock(matches, canManage);
@@ -390,7 +390,7 @@ export function CricketTournamentPage() {
           <TournamentBanner tournament={tournament} matches={matches} />
         </div>
   
-        <div ref={tabsRef} className="cricket-match-tabs" role="tablist" aria-label="Tournament sections" data-tour="tabs">
+        <div ref={swipeRef} className="cricket-match-tabs" role="tablist" aria-label="Tournament sections" data-tour="tabs">
           {tabs.map((t) => (
             <button
               key={t.value}
@@ -400,7 +400,7 @@ export function CricketTournamentPage() {
               className={tab === t.value ? "active" : ""}
               onClick={() => setParams({ tab: t.value }, { replace: true, state: location.state })}
             >
-              {t.label}
+              {tr(t.label)}
             </button>
           ))}
         </div>

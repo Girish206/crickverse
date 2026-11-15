@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ModalContext, type CloseVia } from "../dms/components/modalContext";
+import { useAppText } from "./appText";
 
 // Open sheets, innermost last — Escape closes only the top one.
 const openSheets: object[] = [];
@@ -74,7 +75,8 @@ export function BottomSheet({
   }, [requestClose]);
 
   // A step of the content's own may retitle the sheet (see setHeading).
-  const shownTitle = heading?.title ?? title;
+  const tr = useAppText();
+  const shownTitle = tr(heading?.title ?? title);
   const shownIcon = heading ? heading.icon : icon;
 
   return createPortal(

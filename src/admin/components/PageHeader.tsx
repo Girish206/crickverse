@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "./PageHeader.css";
+import { useAppNode } from "../cricket/appText";
 
 export interface PageHeaderProps {
   title: ReactNode;
@@ -21,6 +22,8 @@ export interface PageHeaderProps {
 // the screen's own actions. Layout leaves the navbar out on these screens
 // and pads the page for it.
 export function PageHeader({ title, subtitle, titleAside, back, backLabel = "Back", actions }: PageHeaderProps) {
+  // Titles in the chosen language, where they're the app's own words.
+  const tr = useAppNode();
   const navigate = useNavigate();
   // A screen opened with `state: { from }` (e.g. from My Teams) goes back
   // there rather than to its usual parent; in-page steps still win.
@@ -44,9 +47,9 @@ export function PageHeader({ title, subtitle, titleAside, back, backLabel = "Bac
         <i className="fa-solid fa-arrow-left" aria-hidden="true"></i>
       </button>
       <div className="cv-page-header-title">
-        {subtitle && <small>{subtitle}</small>}
+        {subtitle && <small>{tr(subtitle)}</small>}
         <div className="cv-page-header-title-row">
-          <h1>{title}</h1>
+          <h1>{tr(title)}</h1>
           {titleAside}
         </div>
       </div>

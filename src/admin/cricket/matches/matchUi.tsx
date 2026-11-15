@@ -4,6 +4,7 @@ import type { CricketMatch, CricketMatchStatus } from "../../../api/types";
 import { BALL_TYPES } from "../cricketOptions";
 import { formatMatchDate, battingOrder, matchStageLabel, teamInitials, teamScore } from "./matchUtils";
 import { TeamMark } from "../teams/TeamMark";
+import { useAppText } from "../appText";
 
 const STATUS_LABELS: Record<CricketMatchStatus, string> = {
   scheduled: "Upcoming",
@@ -13,7 +14,8 @@ const STATUS_LABELS: Record<CricketMatchStatus, string> = {
 };
 
 export function MatchStatusBadge({ status }: { status: CricketMatchStatus }) {
-  return <span className={`cricket-match-status is-${status}`}>{STATUS_LABELS[status]}</span>;
+  const tr = useAppText();
+  return <span className={`cricket-match-status is-${status}`}>{tr(STATUS_LABELS[status])}</span>;
 }
 
 // Why a card is shown to this viewer (home page): a ribbon across the top,

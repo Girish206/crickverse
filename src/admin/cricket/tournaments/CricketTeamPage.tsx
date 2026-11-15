@@ -44,7 +44,6 @@ import "../../admin.css";
 import "../cricket.css";
 import { Loader } from "../../components/Loader";
 import { useSwipeTabs } from "../../useSwipeTabs";
-import { useStuck } from "../../../hooks/useStuck";
 import { SwipePanels } from "../../SwipePanels";
 
 type Tab = "info" | "players" | "matches" | "leaderboard" | "stats";
@@ -109,7 +108,6 @@ export function CricketTeamPage() {
   const swipeRef = useSwipeTabs(TABS.map((t) => t.value), tab, (value) =>
     setParams({ tab: value }, { replace: true, state: location.state })
   );
-  const tabsRef = useStuck(swipeRef);
   const { admin } = useAdminAuth();
   const { data: me } = useCricketMe();
   const canManage = canManageTournament(admin, tournament, me?.player?.id);
@@ -253,7 +251,7 @@ export function CricketTeamPage() {
           </div>
         </div>
 
-        <div ref={tabsRef} className="cricket-match-tabs" role="tablist" aria-label="Team sections" data-tour="tabs">
+        <div ref={swipeRef} className="cricket-match-tabs" role="tablist" aria-label="Team sections" data-tour="tabs">
           {TABS.map((t) => (
             <button
               key={t.value}

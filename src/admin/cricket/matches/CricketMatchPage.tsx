@@ -19,7 +19,6 @@ import { stepsBackOutOf } from "../../../app-shell/screenTrail";
 import { MatchShareSheet } from "./MatchShareSheet";
 import { useSwipeTabs } from "../../useSwipeTabs";
 import { useKeepScreenAwake } from "../../../hooks/useKeepScreenAwake";
-import { useStuck } from "../../../hooks/useStuck";
 import { useTips, type TipStep } from "../TipsTour";
 import { Button } from "../../components/Button";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
@@ -70,6 +69,7 @@ import "../cricket.css";
 import { Loader } from "../../components/Loader";
 import { SwipePanels } from "../../SwipePanels";
 import { MatchPlayerProfiles } from "../players/PlayerProfileSheet";
+import { useAppText } from "../appText";
 
 type Tab = "info" | "live" | "scorecard" | "commentary" | "insights" | "overs" | "squads" | "mvp" | "heroes";
 
@@ -87,6 +87,7 @@ const MATCH_TIPS: TipStep[] = [
 ];
 
 export function CricketMatchPage() {
+  const tr = useAppText();
   const id = Number(useParams().id);
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
@@ -188,7 +189,6 @@ export function CricketMatchPage() {
   const swipeRef = useSwipeTabs(tabs.map((t) => t.value), tab, (value) =>
     setParams({ tab: value }, { replace: true, state: location.state })
   );
-  const tabsRef = useStuck(swipeRef);
 
   // /matches is super admin only; players have their own list.
   const matchesList = admin?.isSuperAdmin ? "/matches" : "/my-matches";
@@ -688,7 +688,7 @@ export function CricketMatchPage() {
             {/* While it's live the Live tab shows the score, so the card is left out. */}
             {match.status !== "live" && <MatchHero match={match} />}
 
-            <div ref={tabsRef} className="cricket-match-tabs" role="tablist" aria-label="Match sections" data-tour="tabs">
+            <div ref={swipeRef} className="cricket-match-tabs" role="tablist" aria-label="Match sections" data-tour="tabs">
               {tabs.map((t) => (
                 <button
                   key={t.value}
@@ -698,7 +698,7 @@ export function CricketMatchPage() {
                   className={tab === t.value ? "active" : ""}
                   onClick={() => setParams({ tab: t.value }, { replace: true, state: location.state })}
                 >
-                  {t.label}
+                  {tr(t.label)}
                 </button>
               ))}
             </div>

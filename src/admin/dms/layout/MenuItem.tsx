@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import ReactDOM from "react-dom";
 import { AppIcon, type AppIconName } from "../../AppIcon";
+import { useAppText } from "../../cricket/appText";
 
 type SubItem = {
     id: string;
@@ -38,6 +39,7 @@ const TooltipPortal = ({
 }) => {
     const [coords, setCoords] = useState({ top: 0, left: 0 });
     const [show, setShow] = useState(false);
+    const tr = useAppText();
 
     useEffect(() => {
         if (visible && anchorRef.current) {
@@ -117,7 +119,7 @@ const TooltipPortal = ({
                 letterSpacing: "0.01em",
                 borderRadius: "0 9px 9px 0",
             }}>
-                {label}
+                {tr(label)}
             </div>
         </div>,
         document.body
@@ -135,6 +137,7 @@ export const MenuItem = ({
 }: MenuItemProps) => {
     const hasSubmenu = mainItem.submenu && mainItem.submenu.length > 0;
     const [tooltipVisible, setTooltipVisible] = useState(false);
+    const tr = useAppText();
     const linkRef = useRef<HTMLAnchorElement>(null);
 
     const handleMainClick = (e: React.MouseEvent) => {
@@ -169,7 +172,7 @@ export const MenuItem = ({
                 onMouseLeave={() => setTooltipVisible(false)}
             >
                 <AppIcon name={mainItem.icon} className="icon" />
-                {isSidebarOpen && <span>{mainItem.label}</span>}
+                {isSidebarOpen && <span>{tr(mainItem.label)}</span>}
                 {isSidebarOpen && hasSubmenu && (
                     <i
                         className={`fa-solid ms-auto ${
@@ -201,7 +204,7 @@ export const MenuItem = ({
                                 className="submenu-link"
                                 onClick={() => onNavigate?.()}
                             >
-                                <span>{item.label}</span>
+                                <span>{tr(item.label)}</span>
                             </Link>
                         </li>
                     ))}

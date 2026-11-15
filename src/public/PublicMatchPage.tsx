@@ -28,7 +28,7 @@ import "../admin/admin.css";
 import "../admin/cricket/cricket.css";
 import { useSwipeTabs } from "../admin/useSwipeTabs";
 import { SwipePanels } from "../admin/SwipePanels";
-import { useStuck } from "../hooks/useStuck";
+import { useAppText } from "../admin/cricket/appText";
 
 type Tab = "info" | "live" | "scorecard" | "commentary" | "insights" | "overs" | "squads" | "mvp" | "heroes";
 
@@ -75,6 +75,7 @@ export function PublicMatchPage({ id }: { id: number }) {
 }
 
 function MatchView({ data: { match, tournament, players } }: { data: PublicMatchData }) {
+  const tr = useAppText();
   const nameOf = useNameOf(players);
   const { data: viewers } = useMatchViewers(match.id, { live: match.status === "live", isPublic: true });
   const [params, setParams] = useSearchParams();
@@ -108,7 +109,6 @@ function MatchView({ data: { match, tournament, players } }: { data: PublicMatch
   const swipeRef = useSwipeTabs(tabs.map((t) => t.value), tab, (value) =>
     setParams({ tab: value }, { replace: true, state: location.state })
   );
-  const tabsRef = useStuck(swipeRef);
 
   return (
     <div className="cricket-page">
@@ -191,7 +191,7 @@ function MatchView({ data: { match, tournament, players } }: { data: PublicMatch
       {/* While it's live the Live tab shows the score, so the card is left out. */}
       {!live && <MatchHero match={match} />}
 
-      <div ref={tabsRef} className="cricket-match-tabs" role="tablist" aria-label="Match sections">
+      <div ref={swipeRef} className="cricket-match-tabs" role="tablist" aria-label="Match sections">
         {tabs.map((t) => (
           <button
             key={t.value}
@@ -201,7 +201,7 @@ function MatchView({ data: { match, tournament, players } }: { data: PublicMatch
             className={tab === t.value ? "active" : ""}
             onClick={() => setParams({ tab: t.value }, { replace: true, state: location.state })}
           >
-            {t.label}
+            {tr(t.label)}
             {LOCKED_TABS.has(t.value) && <i className="fa-solid fa-lock cv-pm-tab-lock" aria-label="Sign in to see"></i>}
           </button>
         ))}
