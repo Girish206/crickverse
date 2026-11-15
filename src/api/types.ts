@@ -228,6 +228,8 @@ export interface CricketTournament {
   // How it's played (league, groups, playoffs, series...); null = not set
   // up, and every match counts towards one points table. See format/.
   format?: CricketFormat | null;
+  // A player auction for its teams (null = never run); see AuctionPanel.
+  auction?: CricketAuction | null;
   // Players who may score (and edit) its matches / it; see canManage.ts.
   scorerIds: number[];
   // Co-organisers (players) who manage it like its creator; see canManage.ts.
@@ -642,4 +644,23 @@ export interface DbStats {
   } | null;
   collections: DbCollectionStats[];
   checkedAt: string;
+}
+
+// A tournament's player auction (the API's cricket-auction.ts): each team's
+// purse, the player under the hammer, and who went where for how much.
+export interface CricketAuctionSale {
+  playerId: number;
+  teamIndex: number;
+  price: number;
+}
+
+export interface CricketAuction {
+  purse: number;
+  basePrice: number;
+  increment: number;
+  maxPlayers: number | null;
+  status: "open" | "done";
+  current: { playerId: number; bid: number; teamIndex: number | null } | null;
+  sold: CricketAuctionSale[];
+  unsold: number[];
 }

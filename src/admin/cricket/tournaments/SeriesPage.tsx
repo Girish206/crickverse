@@ -11,6 +11,7 @@ import { TournamentLogo } from "./TournamentLogo";
 import { TournamentStats } from "./TournamentStats";
 import { bannerFor } from "./tournamentArt";
 import { useSwipeTabs } from "../../useSwipeTabs";
+import { useStuck } from "../../../hooks/useStuck";
 import { SwipePanels } from "../../SwipePanels";
 import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
@@ -43,6 +44,7 @@ export function SeriesPage() {
   const swipeRef = useSwipeTabs(TABS.map((t) => t.value), tab, (value) =>
     setParams({ tab: value }, { replace: true, state: location.state }),
   );
+  const tabsRef = useStuck(swipeRef);
   const backTo = admin?.isSuperAdmin ? "/tournaments" : "/my-tournaments";
 
   if (isLoading) {
@@ -97,7 +99,7 @@ export function SeriesPage() {
           </div>
         </div>
 
-        <div ref={swipeRef} className="cricket-match-tabs" role="tablist" aria-label="Series sections">
+        <div ref={tabsRef} className="cricket-match-tabs" role="tablist" aria-label="Series sections">
           {TABS.map((t) => (
             <button
               key={t.value}

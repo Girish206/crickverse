@@ -19,6 +19,7 @@ import { countsForTable, pointsTable } from "../stats";
 import { AutoNextRounds } from "../format/AutoNextRounds";
 import { ListCard } from "../../components/ListCard";
 import { useSwipeTabs } from "../../useSwipeTabs";
+import { useStuck } from "../../../hooks/useStuck";
 import { PageHeader } from "../../components/PageHeader";
 import { Button } from "../../components/Button";
 import { BottomSheet } from "../BottomSheet";
@@ -37,6 +38,7 @@ import { FormatView } from "../format/FormatView";
 import { TournamentBanner } from "./TournamentBanner";
 import { TournamentInfo } from "./TournamentInfo";
 import { TournamentPlayers } from "./TournamentPlayers";
+import { AuctionPanel } from "./AuctionPanel";
 import { TournamentStats } from "./TournamentStats";
 import { TOURNAMENT_SHARE_HEADINGS } from "./tournamentTabCards";
 import { NrrCalculatorSheet } from "./NrrCalculatorSheet";
@@ -53,7 +55,7 @@ import { Loader } from "../../components/Loader";
 import { TeamMark } from "../teams/TeamMark";
 import { SwipePanels } from "../../SwipePanels";
 
-type Tab = "info" | "teams" | "players" | "matches" | "points" | "heroes" | "stats" | "totals";
+type Tab = "info" | "teams" | "players" | "auction" | "matches" | "points" | "heroes" | "stats" | "totals";
 
 // How the teams are filled: generated from matched sets, or built by hand
 // (new teams or copies of other tournaments' teams).
@@ -66,6 +68,7 @@ const TABS: { value: Tab; label: string }[] = [
   { value: "matches", label: "Matches" },
   { value: "teams", label: "Teams" },
   { value: "players", label: "Players" },
+  { value: "auction", label: "Auction" },
   { value: "points", label: "Points Table" },
   { value: "heroes", label: "Heroes" },
   { value: "stats", label: "Leaderboard" },
@@ -176,7 +179,9 @@ function TournamentLocked({ id, backTo }: { id: number; backTo: string }) {
 export function CricketTournamentPage() {
   const id = Number(useParams().id);
   const navigate = useNavigate();
-  const { data: tournament, isLoading, error } = useCricketTournament(id);
+  // A running auction is watched live (checked every few seconds).
+  const [watchLive, setWatchLive] = useState(false);
+  const { data: tournament, isLoading, error } = useCricketTournament(id, true, watchLive);
   const setScorers = useSetCricketTournamentScorers();
   const updateTournament = useUpdateCricketTournament();
   const deleteTournament = useDeleteCricketTournament();
@@ -192,18 +197,24 @@ export function CricketTournamentPage() {
   const [nrrCalcOpen, setNrrCalcOpen] = useState(false);
   const [params, setParams] = useSearchParams();
   const location = useLocation();
-  const requested = params.get("tab") as Tab | null;
-  const tab: Tab = requested && TABS.some((t) => t.value === requested) ? requested : "matches";
-  const swipeRef = useSwipeTabs(TABS.map((t) => t.value), tab, (value) =>
-    setParams({ tab: value }, { replace: true, state: location.state })
-  );
-  const { data: matches } = useCricketMatches(id);
   // Players see their tournament read-only; its creator, co-organisers and
   // super admins manage it.
   const { admin } = useAdminAuth();
   const { data: me } = useCricketMe();
-  const followItem = useFollowMenuItem({ kind: "tournament", targetId: id, teamIndex: null });
   const canManage = canManageTournament(admin, tournament, me?.player?.id);
+  // The Auction tab: for organisers (to run one), and for everyone once
+  // there's been one.
+  const tabs = TABS.filter((t) => t.value !== "auction" || canManage || Boolean(tournament?.auction));
+  const requested = params.get("tab") as Tab | null;
+  const tab: Tab = requested && tabs.some((t) => t.value === requested) ? requested : "matches";
+  const auctionLive = tab === "auction" && tournament?.auction?.status === "open";
+  useEffect(() => setWatchLive(auctionLive), [auctionLive]);
+  const swipeRef = useSwipeTabs(tabs.map((t) => t.value), tab, (value) =>
+    setParams({ tab: value }, { replace: true, state: location.state })
+  );
+  const tabsRef = useStuck(swipeRef);
+  const { data: matches } = useCricketMatches(id);
+  const followItem = useFollowMenuItem({ kind: "tournament", targetId: id, teamIndex: null });
   useMvpLock(matches, canManage);
   const tips = useTips("tournament", TOURNAMENT_TIPS, Boolean(tournament));
 
@@ -230,6 +241,8 @@ export function CricketTournamentPage() {
   }
 
   const teamCount = tournament.teams.length;
+  // The auction has no picture of its own: sharing from it shares the teams.
+  const shareTab = tab === "auction" ? "teams" : tab;
   const generatedTeams = tournament.teams.filter(isGeneratedTeam);
   const onManualTeam = new Set(tournament.teams.filter((team) => !isGeneratedTeam(team)).flatMap((team) => team.playerIds));
   // Generating fills only the generated teams, from the matched players
@@ -312,7 +325,7 @@ export function CricketTournamentPage() {
               items={[
                 {
                   icon: "fa-solid fa-share-nodes",
-                  label: TOURNAMENT_SHARE_HEADINGS[tab],
+                  label: TOURNAMENT_SHARE_HEADINGS[shareTab],
                   description: "A picture of this tab, or the link",
                   onClick: () => setSharing(true),
                 },
@@ -377,8 +390,8 @@ export function CricketTournamentPage() {
           <TournamentBanner tournament={tournament} matches={matches} />
         </div>
   
-        <div ref={swipeRef} className="cricket-match-tabs" role="tablist" aria-label="Tournament sections" data-tour="tabs">
-          {TABS.map((t) => (
+        <div ref={tabsRef} className="cricket-match-tabs" role="tablist" aria-label="Tournament sections" data-tour="tabs">
+          {tabs.map((t) => (
             <button
               key={t.value}
               type="button"
@@ -397,7 +410,7 @@ export function CricketTournamentPage() {
           check and schedule. */}
       <AutoNextRounds tournamentId={tournament.id} card />
 
-      <SwipePanels swipe={swipeRef} values={TABS.map((t) => t.value)} current={tab} eager>
+      <SwipePanels swipe={swipeRef} values={tabs.map((t) => t.value)} current={tab} eager>
         {(tab) => (
           <>
             {tab === "info" && (
@@ -466,6 +479,12 @@ export function CricketTournamentPage() {
             {tab === "players" && (
               <ListCard>
                 <TournamentPlayers tournament={tournament} />
+              </ListCard>
+            )}
+
+            {tab === "auction" && (
+              <ListCard>
+                <AuctionPanel tournament={tournament} canManage={canManage} />
               </ListCard>
             )}
 
@@ -545,7 +564,7 @@ export function CricketTournamentPage() {
         <TournamentShareSheet
           tournament={tournament}
           matches={matches ?? []}
-          tab={tab}
+          tab={shareTab}
           note={
             isPublic
               ? "Anyone with the link can see it, even without signing in."

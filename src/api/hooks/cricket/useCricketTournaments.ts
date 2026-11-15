@@ -60,9 +60,11 @@ export function useCricketTournaments() {
   });
 }
 
-export function useCricketTournament(id: number, enabled = true) {
+// `live`: check every few seconds (a running auction, for everyone watching).
+export function useCricketTournament(id: number, enabled = true, live = false) {
   return useQuery({
     enabled,
+    refetchInterval: live ? 3000 : false,
     queryKey: ["cricket-tournaments", id],
     queryFn: async () => {
       const { data } = await apiClient.get<ApiEnvelope<CricketTournament>>(`/admin/cricket/tournaments/${id}`);
@@ -304,4 +306,29 @@ export function useDeleteCricketTournament() {
       queryClient.invalidateQueries({ queryKey: ["cricket-matches"] });
     },
   });
+}
+
+// ===== The player auction (organisers; AuctionPanel) =====
+
+const auctionUrl = (id: number, path = "") => `/admin/cricket/tournaments/${id}/auction${path}`;
+
+export function useSetUpAuction() {
+  return useTournamentMutation(
+    ({ id, ...setup }: { id: number; purse: number; basePrice: number; increment: number; maxPlayers: number | null }) =>
+      apiClient.put(auctionUrl(id), setup),
+  );
+}
+
+// Puts a player up: the one named, or a random one waiting (null).
+export function usePutUpPlayer() {
+  return useTournamentMutation(({ id, playerId }: { id: number; playerId: number | null }) => apiClient.post(auctionUrl(id, "/next"), { playerId }));
+}
+
+export function usePlaceBid() {
+  return useTournamentMutation(({ id, teamIndex }: { id: number; teamIndex: number }) => apiClient.post(auctionUrl(id, "/bid"), { teamIndex }));
+}
+
+// "sold", "unsold", "undo" (the last sale) or "end".
+export function useAuctionStep() {
+  return useTournamentMutation(({ id, step }: { id: number; step: "sold" | "unsold" | "undo" | "end" }) => apiClient.post(auctionUrl(id, `/${step}`)));
 }

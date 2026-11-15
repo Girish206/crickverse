@@ -31,6 +31,11 @@
   border-radius: 0 0 20px 20px;
   box-shadow: 0 2px 10px rgba(var(--brand-navy-rgb), 0.18);
   color: #fff;
+  transition: border-radius 0.15s ease;
+}
+/* The match tabs pinned right under it (useStuck): straight along the bottom. */
+:root[data-tabs-pinned] .cv-public-bar {
+  border-radius: 0;
 }
 .cv-public-brand {
   display: inline-flex;
