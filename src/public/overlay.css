@@ -1,0 +1,156 @@
+/* The live-stream scorebug (OverlayPage). Sized in vw so it reads the same
+   at 1280×720 or 1920×1080, and see-through behind everything. */
+html.cv-overlay-root,
+html.cv-overlay-root body,
+html.cv-overlay-root #root {
+  background: transparent !important;
+  overflow: hidden;
+}
+
+.cv-overlay {
+  --ov-bg: rgba(10, 18, 36, 0.92);
+  --ov-panel: rgba(255, 255, 255, 0.08);
+  --ov-text: #fff;
+  --ov-muted: rgba(255, 255, 255, 0.7);
+  --ov-accent: #f5b301;
+  position: fixed;
+  left: 2.5vw;
+  right: 2.5vw;
+  bottom: 3vw;
+  font-family: "Inter", system-ui, sans-serif;
+  color: var(--ov-text);
+  font-size: 1.35vw;
+  line-height: 1.2;
+}
+.cv-overlay.is-top {
+  top: 2vw;
+  bottom: auto;
+}
+
+.cv-overlay-bar {
+  display: flex;
+  align-items: stretch;
+  gap: 0.6vw;
+  padding: 0.5vw;
+  border-radius: 0.8vw;
+  background: var(--ov-bg);
+  box-shadow: 0 0.4vw 1.6vw rgba(0, 0, 0, 0.35);
+}
+.cv-overlay-bar > * {
+  display: flex;
+  align-items: center;
+  gap: 0.6vw;
+  padding: 0.45vw 0.9vw;
+  border-radius: 0.5vw;
+  background: var(--ov-panel);
+  white-space: nowrap;
+}
+.cv-overlay-bar.is-simple {
+  justify-content: space-between;
+  padding: 1vw 1.4vw;
+}
+.cv-overlay-bar.is-simple > * {
+  background: none;
+}
+.cv-overlay-bar.is-simple strong span {
+  color: var(--ov-muted);
+  font-weight: 500;
+}
+
+.cv-overlay-score {
+  background: var(--ov-accent) !important;
+  color: #111;
+}
+.cv-overlay-team {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.cv-overlay-score strong {
+  font-size: 1.9vw;
+  font-weight: 900;
+}
+.cv-overlay-vs {
+  opacity: 0.7;
+  font-size: 1vw;
+}
+
+.cv-overlay-batters {
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 1.4vw !important;
+}
+.cv-overlay-batters span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ov-muted);
+}
+.cv-overlay-batters .is-striker {
+  color: var(--ov-text);
+  font-weight: 700;
+}
+.cv-overlay-batters b,
+.cv-overlay-bowler b {
+  color: var(--ov-text);
+  font-weight: 800;
+}
+.cv-overlay small {
+  color: var(--ov-muted);
+  font-size: 0.85em;
+}
+
+.cv-overlay-over {
+  gap: 0.3vw !important;
+}
+.cv-overlay-over .cricket-ball-chip {
+  min-width: 1.9vw;
+  height: 1.9vw;
+  font-size: 0.85vw;
+}
+
+.cv-overlay-status b {
+  color: var(--ov-accent);
+}
+.cv-overlay-freehit {
+  color: var(--ov-accent);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+.cv-overlay-result {
+  flex: 1;
+  font-weight: 700;
+}
+
+.cv-overlay-odds {
+  display: flex;
+  margin-top: 0.4vw;
+  overflow: hidden;
+  border-radius: 0.4vw;
+  font-size: 0.9vw;
+  font-weight: 700;
+}
+.cv-overlay-odds span {
+  min-width: 12%;
+  padding: 0.2vw 0.6vw;
+  white-space: nowrap;
+  transition: width 0.6s ease;
+}
+.cv-overlay-odds span:first-child {
+  background: var(--ov-accent);
+  color: #111;
+}
+.cv-overlay-odds span:last-child {
+  background: rgba(10, 18, 36, 0.92);
+  text-align: right;
+}
+
+.cv-overlay-note {
+  position: fixed;
+  bottom: 2vw;
+  left: 2vw;
+  padding: 0.6vw 1vw;
+  border-radius: 0.5vw;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  font: 600 1.2vw system-ui, sans-serif;
+}

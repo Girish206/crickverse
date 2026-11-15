@@ -1,16 +1,92 @@
-// Sounds for a four, a six or a wicket, all made with Web Audio: the same
-// bat on ball for a four and a six, then a fanfare of their own; the stumps
-// rattling and a falling "wah-wah" for an out, a quack for a duck.
+// Sounds for a four, a six or a wicket, played with Web Audio: the same
+// recorded bat on ball for a four and a six (a six then gets the crowd); the
+// stumps rattling and a falling "wah-wah" for an out, a quack for a duck.
 // The browser only lets sound play once the page has been clicked or tapped,
-// so before that these stay silent.
+// so before that these stay silent. Viewers can turn them off; the choice is
+// remembered on this device.
+
+import { useSyncExternalStore } from "react";
+
+const MUTE_KEY = "cv-burst-sounds-off";
+let muted = (() => {
+  try {
+    return typeof window !== "undefined" && window.localStorage.getItem(MUTE_KEY) === "1";
+  } catch {
+    return false;
+  }
+})();
+const muteListeners = new Set<() => void>();
+
+export function setBurstSoundsOn(on: boolean) {
+  muted = !on;
+  try {
+    if (muted) window.localStorage.setItem(MUTE_KEY, "1");
+    else window.localStorage.removeItem(MUTE_KEY);
+  } catch {
+    // Private mode: the choice lasts for this visit only.
+  }
+  muteListeners.forEach((fn) => fn());
+}
+
+export function useBurstSoundsOn() {
+  return useSyncExternalStore(
+    (fn) => {
+      muteListeners.add(fn);
+      return () => muteListeners.delete(fn);
+    },
+    () => !muted,
+    () => true,
+  );
+}
 
 let ctx: AudioContext | null = null;
 
+// Not running: never started, or paused by the phone (screen locked, app
+// switched, a call; Safari calls that "interrupted").
+const isAsleep = (ac: AudioContext) => ac.state !== "running";
+
 function audio() {
   if (typeof window === "undefined" || !window.AudioContext) return null;
-  ctx ??= new AudioContext();
-  if (ctx.state === "suspended") void ctx.resume().catch(() => {});
+  if (!ctx) {
+    ctx = new AudioContext();
+    void loadBatHit(ctx);
+  }
+  if (isAsleep(ctx)) void ctx.resume().catch(() => {});
   return ctx;
+}
+
+// Wake the audio on every tap or key press while it's asleep, not just the
+// first: phones pause it whenever the screen locks or the app goes to the
+// background, and only a tap is allowed to start it again. Waking it early
+// also has the recorded hit decoded before a four is scored, so the first
+// one doesn't land after the animation has started.
+if (typeof window !== "undefined") {
+  const wake = () => {
+    if (ctx && !isAsleep(ctx)) return;
+    const ac = audio();
+    // iPhones only fully unlock sound once something has been played inside
+    // the tap itself: a single silent sample does it.
+    if (ac) {
+      try {
+        const src = ac.createBufferSource();
+        src.buffer = ac.createBuffer(1, 1, ac.sampleRate);
+        src.connect(ac.destination);
+        src.start();
+      } catch {
+        // Nothing to unlock with; the resume above is the best we can do.
+      }
+    }
+  };
+  // touchend and click: the events iOS counts as a tap for sound (it ignores
+  // pointerdown); pointerdown and keydown for everything else.
+  for (const type of ["pointerdown", "touchend", "click", "keydown"]) {
+    window.addEventListener(type, wake, { capture: true, passive: true });
+  }
+  // Back from another app or a locked screen: try straight away (Chrome
+  // allows it once the page has been tapped); a tap does it otherwise.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && ctx && isAsleep(ctx)) void ctx.resume().catch(() => {});
+  });
 }
 
 // A second of white noise, shared by everything that hisses or rattles.
@@ -62,108 +138,62 @@ function tone(ac: AudioContext, at: number, type: OscillatorType, freq: number, 
   return osc;
 }
 
-// A struck note: there at once, dying away fast, its pitch held steady.
-function ring(ac: AudioContext, at: number, freq: number, len: number, peak: number) {
-  const osc = ac.createOscillator();
-  osc.frequency.value = freq;
-  const g = ac.createGain();
-  g.gain.setValueAtTime(peak, at);
-  g.gain.exponentialRampToValueAtTime(0.0001, at + len);
-  osc.connect(g).connect(ac.destination);
-  osc.start(at);
-  osc.stop(at + len + 0.02);
+// Bat on ball, the same for a four and a six: a recorded hit, fetched and
+// decoded once, then reused.
+const BAT_BALL_URL = "/assets/sounds/bat-ball.mp3";
+let batBuffer: AudioBuffer | null = null;
+let batLoading: Promise<void> | null = null;
+
+// The file is fetched as soon as this module loads, so the first four isn't
+// kept waiting on the network; decoding needs the AudioContext, so it waits.
+const fetchBatHit = () =>
+  fetch(BAT_BALL_URL).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`HTTP ${r.status}`))));
+let batBytes: Promise<ArrayBuffer> | null = typeof window === "undefined" ? null : fetchBatHit();
+batBytes?.catch(() => {}); // Reported, if need be, when it's decoded.
+let batFailures = 0;
+
+function loadBatHit(ac: AudioContext) {
+  // After a few failures stop asking: the file isn't there.
+  if (batFailures >= 3) return Promise.resolve();
+  batLoading ??= (batBytes ?? fetchBatHit())
+    .then((data) => ac.decodeAudioData(data))
+    .then((buf) => {
+      batBuffer = buf;
+    })
+    .catch((err) => {
+      if (++batFailures === 1) console.warn("Couldn't load the bat-on-ball sound", err);
+      batBytes = null;
+      batLoading = null;
+    });
+  return batLoading;
 }
 
-// Bat on ball, the same for a four and a six: a clean willow "tock". The
-// leather's click, the blade ringing at its few wooden notes (each knocked
-// a shade sharp, settling as it dies) and a short low thud from the
-// handle — run through a compressor so it lands with a punch.
+// The recording's level against the synthesized sounds.
+const BAT_GAIN = 0.8;
+// Later than this after the boundary, the hit would land on the wrong moment.
+const BAT_LATE = 0.25;
+
 function batHit(ac: AudioContext, at: number) {
-  const out = ac.createDynamicsCompressor();
-  out.threshold.value = -18;
-  out.ratio.value = 4;
-  out.attack.value = 0.001;
-  out.release.value = 0.08;
-  out.connect(ac.destination);
-
-  const voice = (src: AudioNode, attack: number, peak: number, end: number) => {
+  const play = (when: number) => {
+    if (!batBuffer) return;
+    const src = ac.createBufferSource();
+    src.buffer = batBuffer;
     const g = ac.createGain();
-    g.gain.setValueAtTime(0.0001, at);
-    g.gain.exponentialRampToValueAtTime(peak, at + attack);
-    g.gain.exponentialRampToValueAtTime(0.0001, at + end);
-    src.connect(g).connect(out);
+    g.gain.value = BAT_GAIN;
+    src.connect(g).connect(ac.destination);
+    src.start(when);
   };
-
-  // The click: bright noise, over in a few milliseconds.
-  const click = noise(ac);
-  const clickFilter = ac.createBiquadFilter();
-  clickFilter.type = "highpass";
-  clickFilter.frequency.value = 2500;
-  click.connect(clickFilter);
-  voice(clickFilter, 0.0008, 0.9, 0.018);
-  click.start(at, Math.random() * 0.5);
-  click.stop(at + 0.03);
-
-  // The blade's wooden notes.
-  [
-    [840, 0.55, 0.13],
-    [1380, 0.32, 0.09],
-    [2240, 0.16, 0.06],
-  ].forEach(([freq, peak, len]) => {
-    const osc = ac.createOscillator();
-    osc.frequency.setValueAtTime(freq * 1.04, at);
-    osc.frequency.exponentialRampToValueAtTime(freq, at + 0.02);
-    voice(osc, 0.001, peak, len);
-    osc.start(at);
-    osc.stop(at + len + 0.02);
-  });
-
-  // The thud.
-  const thud = ac.createOscillator();
-  thud.frequency.setValueAtTime(150, at);
-  thud.frequency.exponentialRampToValueAtTime(85, at + 0.09);
-  voice(thud, 0.002, 0.45, 0.1);
-  thud.start(at);
-  thud.stop(at + 0.12);
+  if (batBuffer) play(at);
+  else
+    void loadBatHit(ac).then(() => {
+      if (ac.currentTime - at <= BAT_LATE) play(Math.max(at, ac.currentTime));
+    });
 }
 
-// Celebratory fanfare for a FOUR: the bat hit + cheerful rising 4-note arpeggio
-function playFourCelebration(ac: AudioContext, at: number) {
-  batHit(ac, at);
-
-  // Joyful rising celebration fanfare: C5 (523Hz) -> E5 (659Hz) -> G5 (784Hz) -> C6 (1046Hz)
-  const notes = [
-    { freq: 523.25, time: 0.14, len: 0.18, peak: 0.14 },
-    { freq: 659.25, time: 0.28, len: 0.18, peak: 0.16 },
-    { freq: 783.99, time: 0.42, len: 0.20, peak: 0.18 },
-    { freq: 1046.5, time: 0.58, len: 0.45, peak: 0.22 },
-  ];
-  notes.forEach((n) => {
-    tone(ac, at + n.time, "triangle", n.freq, n.len, n.peak);
-    ring(ac, at + n.time, n.freq * 2, n.len * 0.6, n.peak * 0.3);
-  });
-}
-
-// Celebratory fanfare for a SIX: the same bat hit + triumphant stadium fanfare chords
-function playSixCelebration(ac: AudioContext, at: number) {
-  batHit(ac, at);
-
-  // Stadium celebration shimmer
-  hiss(ac, at + 0.15, "bandpass", 1600, 1.5, 0.04, 0.22, 0.85);
-
-  // Triumphant dual-harmony brass chords:
-  // Chord 1: C5 + G5
-  tone(ac, at + 0.16, "triangle", 523.25, 0.24, 0.22);
-  tone(ac, at + 0.16, "sine", 783.99, 0.24, 0.18);
-
-  // Chord 2: E5 + C6
-  tone(ac, at + 0.38, "triangle", 659.25, 0.24, 0.24);
-  tone(ac, at + 0.38, "sine", 1046.5, 0.24, 0.20);
-
-  // Chord 3: Grand triumphant crescendo G5 + E6
-  tone(ac, at + 0.60, "triangle", 783.99, 0.65, 0.28);
-  tone(ac, at + 0.60, "sine", 1318.51, 0.65, 0.24);
-  ring(ac, at + 0.60, 2093.0, 0.55, 0.16);
+// The crowd going up for a six: a swell of filtered noise after the hit.
+function crowd(ac: AudioContext, at: number) {
+  hiss(ac, at, "bandpass", 900, 0.8, 0.25, 0.12, 1.4);
+  hiss(ac, at + 0.05, "bandpass", 2200, 1.2, 0.3, 0.06, 1.2);
 }
 
 // The stumps going: a few quick wooden knocks.
@@ -192,18 +222,26 @@ export type BurstSound = "four" | "six" | "out" | "duck";
 
 export function playBurstSound(kind: BurstSound) {
   const ac = audio();
-  if (!ac) return;
-  if (ac.state === "suspended") {
-    void ac.resume();
-  }
-
-  const t = ac.currentTime + 0.02;
-  if (kind === "four") {
-    playFourCelebration(ac, t);
+  if (!ac || muted) return;
+  // Asleep: wait for it to wake (audio() has asked), then play on its fresh
+  // clock; if it can't wake without a tap, the moment has passed anyway.
+  if (isAsleep(ac)) {
+    // Some browsers keep the wake pending until the next tap: by then the
+    // burst is long over, so it stays silent rather than playing late.
+    const asked = performance.now();
+    void ac.resume().then(() => {
+      if (performance.now() - asked < 1000) scheduleBurst(ac, kind);
+    }, () => {});
     return;
   }
-  if (kind === "six") {
-    playSixCelebration(ac, t);
+  scheduleBurst(ac, kind);
+}
+
+function scheduleBurst(ac: AudioContext, kind: BurstSound) {
+  const t = ac.currentTime;
+  if (kind === "four" || kind === "six") {
+    batHit(ac, t);
+    if (kind === "six") crowd(ac, t + 0.12);
     return;
   }
   // Out: timed with the stumps going on the burst, then the "wah-wah".

@@ -29,7 +29,7 @@ import "../../dms/css/adminDisplays.css";
 import "../../admin.css";
 import "../cricket.css";
 import "./MyProfilePage.css";
-import { Loader } from "../../components/Loader";
+import { BallSpinner, Loader } from "../../components/Loader";
 import { confirmAction } from "../../components/confirmDelete";
 
 // /profile — the signed-in user's own details: photo, name, mobile number
@@ -151,7 +151,7 @@ function ProfileForm({ me }: { me: CricketMe }) {
               />
               {player && (
                 <span className="cv-profile-cam" aria-hidden="true">
-                  <i className={`fa-solid ${setPhoto.isPending ? "fa-spinner fa-spin" : "fa-camera"}`}></i>
+                  {setPhoto.isPending ? <BallSpinner /> : <i className="fa-solid fa-camera"></i>}
                 </span>
               )}
             </label>

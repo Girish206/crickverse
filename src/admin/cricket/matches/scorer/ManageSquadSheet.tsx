@@ -62,12 +62,7 @@ export function ManageSquadSheet({ match, nameOf, onClose }: { match: CricketMat
 
   return (
     <BottomSheet title="Manage squads" icon="fa-solid fa-users-gear" onClose={onClose} fullScreen>
-      <p className="cricket-sheet-context">
-        <i className="fa-solid fa-circle-info" aria-hidden="true"></i> Only players who haven't batted, bowled or fielded
-        can be removed or moved
-      </p>
-
-      <div className="cricket-chip-choice" role="radiogroup" aria-label="Side">
+      <div className="cricket-manage-sides" role="radiogroup" aria-label="Side">
         {match.teams.map((item, i) => (
           <button
             key={i}
@@ -77,14 +72,10 @@ export function ManageSquadSheet({ match, nameOf, onClose }: { match: CricketMat
             className={team === i ? "active" : ""}
             onClick={() => setTeam(i as 0 | 1)}
           >
-            {item.name} <small>({item.playerIds.length})</small>
+            <span>{item.name}</span> <small>{item.playerIds.length}</small>
           </button>
         ))}
       </div>
-
-      <button type="button" className="cricket-manage-add" disabled={busy} onClick={() => setAdding(true)}>
-        <i className="fa-solid fa-user-plus" aria-hidden="true"></i> Add a player to {side.name}
-      </button>
 
       <ul className="cricket-manage-list">
         {side.playerIds.map((playerId) => {
@@ -124,6 +115,15 @@ export function ManageSquadSheet({ match, nameOf, onClose }: { match: CricketMat
           );
         })}
       </ul>
+
+      <button type="button" className="cricket-manage-add" disabled={busy} onClick={() => setAdding(true)}>
+        <i className="fa-solid fa-user-plus" aria-hidden="true"></i> Add a player to {side.name}
+      </button>
+
+      <p className="cricket-manage-hint">
+        <i className="fa-solid fa-circle-info" aria-hidden="true"></i> Players who've batted, bowled or fielded can't be
+        moved or removed.
+      </p>
     </BottomSheet>
   );
 }

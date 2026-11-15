@@ -98,6 +98,28 @@ export function usePlayerNames() {
   }, [players]);
 }
 
+// " (c)", " (wk)" or " (c & wk)" for a side's captain and keeper in this match.
+export function roleMarkOf(match: Pick<CricketMatch, "teams"> | undefined, playerId: number | null) {
+  if (!match || playerId === null) return "";
+  const team = match.teams.find((side) => side.playerIds.includes(playerId)) ??
+    match.teams.find((side) => side.captainId === playerId || side.keeperId === playerId);
+  if (!team) return "";
+  const marks = [team.captainId === playerId && "c", team.keeperId === playerId && "wk"].filter(Boolean);
+  return marks.length ? ` (${marks.join(" & ")})` : "";
+}
+
+// Removes the mark roleMarkOf added (for initials, colours and the like).
+export const withoutRoleMark = (name: string) => name.replace(/ \((c|wk|c & wk)\)$/, "");
+
+// Like usePlayerNames, with the match's captains and keepers marked.
+export function useMatchPlayerNames(match: Pick<CricketMatch, "teams"> | undefined) {
+  const nameOf = usePlayerNames();
+  return useMemo(
+    () => (playerId: number | null) => (playerId === null ? "" : nameOf(playerId) + roleMarkOf(match, playerId)),
+    [nameOf, match],
+  );
+}
+
 // id → photo URL lookup over the shared player list.
 export function usePlayerPhotos() {
   const { data: players } = useCricketPlayers();
@@ -107,15 +129,8 @@ export function usePlayerPhotos() {
   }, [players]);
 }
 
-// Which team a side is, the same rule as the server's effectiveTeamKey: a
-// tournament match's sides are its tournament teams, and an older one-off
-// side without a key is its name plus the match's creator, so two people's
-// same-named teams stay apart.
-export function teamKeyOf(match: CricketMatch, slot: number) {
-  const side = match.teams[slot];
-  if (match.tournamentId !== null) return `t:${match.tournamentId}:${side.teamIndex}`;
-  return side.teamKey ?? `legacy:${match.createdById ?? 0}:${side.name.trim().toLowerCase()}`;
-}
+// Kept in teamKey.ts (no app imports), so the analysis code can use it under Node.
+export { teamKeyOf } from "../teamKey";
 
 // Score of one side so far: "123/4 (15.2)", or nothing before they bat.
 export function teamScore(match: CricketMatch, teamSlot: number) {

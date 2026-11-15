@@ -1,4 +1,5 @@
 import React from "react";
+import { BallSpinner } from "../../components/Loader";
 import "../css/components/Button.css";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -39,11 +40,7 @@ const CustomButton: React.FC<ButtonProps> = ({
         >
             {loading ? (
                 <>
-                    <span
-                        className="spinner-border spinner-border-sm me-2"
-                        role="status"
-                        aria-hidden="true"
-                    ></span>
+                    <BallSpinner className="me-2" />
                     {loadingLabel}
                 </>
             ) : (

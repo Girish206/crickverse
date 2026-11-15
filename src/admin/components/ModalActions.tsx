@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useModalSlot } from "../dms/components/modalContext";
 
-// Renders action buttons in the enclosing DefaultModal's footer (right-
+// Renders action buttons in the enclosing BottomSheet's footer (right-
 // aligned); outside a modal they sit right-aligned under the content.
 export function ModalActions({ children }: { children: ReactNode }) {
   const modal = useModalSlot();

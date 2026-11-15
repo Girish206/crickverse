@@ -66,13 +66,9 @@ export function AddPlayerSheet({
         </button>
       }
     >
-      <p className="cricket-sheet-context">
-        <i className="fa-solid fa-user-clock" aria-hidden="true"></i> A late arrival, or a substitute for someone who
-        hasn't played yet
-      </p>
+      <p className="cricket-sheet-context">A late arrival, or a substitute for someone who hasn't played yet.</p>
 
-      <label className="cricket-sheet-label">Side</label>
-      <div className="cricket-chip-choice" role="radiogroup" aria-label="Side">
+      <div className="cricket-manage-sides" role="radiogroup" aria-label="Side">
         {match.teams.map((side, i) => (
           <button
             key={i}
@@ -82,7 +78,7 @@ export function AddPlayerSheet({
             className={team === i ? "active" : ""}
             onClick={() => chooseTeam(i as 0 | 1)}
           >
-            {side.name} <small>({side.playerIds.length})</small>
+            <span>{side.name}</span> <small>{side.playerIds.length}</small>
           </button>
         ))}
       </div>
@@ -102,9 +98,9 @@ export function AddPlayerSheet({
         />
       )}
       {shown.length === 0 ? (
-        <div className="admin-empty-state">
-          {candidates.length === 0 ? "No one else in this team — add them by mobile number above." : `No one matches "${search}".`}
-        </div>
+        <p className="cricket-manage-empty">
+          {candidates.length === 0 ? `Everyone in ${match.teams[team].name} is already playing.` : `No one matches "${search}".`}
+        </p>
       ) : (
         <div className="cricket-player-card-list">
           {shown.map((id) => (
@@ -123,9 +119,9 @@ export function AddPlayerSheet({
       {replaceable.length === 0 ? (
         <p className="admin-hint">Everyone on {match.teams[team].name} has played — the player joins as an extra.</p>
       ) : (
-        <div className="cricket-chip-choice" role="radiogroup" aria-label="Replacing">
+        <div className="cricket-chip-choice cricket-manage-replace" role="radiogroup" aria-label="Replacing">
           <button type="button" role="radio" aria-checked={replaceId === null} className={replaceId === null ? "active" : ""} onClick={() => setReplaceId(null)}>
-            No one — add them
+            No one
           </button>
           {replaceable.map((id) => (
             <button
@@ -141,6 +137,13 @@ export function AddPlayerSheet({
           ))}
         </div>
       )}
+      {replaceable.length > 0 && <p className="cricket-manage-replace-hint">
+        <i className="fa-solid fa-circle-info" aria-hidden="true"></i>{" "}
+        {replaceId === null
+          ? `The player joins as an extra, so ${match.teams[team].name} go up to ${match.teams[team].playerIds.length + 1} players. Pick someone above to swap them out instead.`
+          : `${nameOf(replaceId)} leaves ${match.teams[team].name} and the new player takes their place, so the side stays at ${match.teams[team].playerIds.length}.`}{" "}
+        Only players who haven't batted, bowled or fielded can be replaced.
+      </p>}
     </BottomSheet>
   );
 }

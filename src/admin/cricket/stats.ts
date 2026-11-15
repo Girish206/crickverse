@@ -20,7 +20,7 @@ const BOWLER_WICKETS = ["bowled", "caught", "caught-behind", "lbw", "stumped", "
 const creditsBowler = (ball: CricketBall) => ball.wicketType !== null && BOWLER_WICKETS.includes(ball.wicketType);
 // Byes and leg-byes aren't charged to the bowler — nor are those run off a
 // no-ball (only its one-run penalty is), nor penalty runs.
-const conceded = (ball: CricketBall) =>
+export const conceded = (ball: CricketBall) =>
   ball.runs +
   (ball.extraType === "wide" ? ball.extras : ball.extraType === "no-ball" ? (ball.byeType ? 1 : ball.extras) : 0);
 
@@ -251,6 +251,8 @@ export interface BattingRow {
   playerId: number;
   runs: number;
   balls: number;
+  // Legal balls they scored nothing off the bat from.
+  dots: number;
   fours: number;
   sixes: number;
   // The ball they got out (or retired) on; null = not out.
@@ -279,6 +281,7 @@ export function battingCard(innings: CricketInnings): BattingRow[] {
       playerId,
       runs: faced.reduce((sum, ball) => sum + ball.runs, 0),
       balls: faced.filter((ball) => ball.extraType !== "wide" && !ball.noDelivery).length,
+      dots: faced.filter((ball) => isLegal(ball) && ball.runs === 0).length,
       fours: faced.filter(isFour).length,
       sixes: faced.filter(isSix).length,
       outBall: backIn ? null : lastOut,

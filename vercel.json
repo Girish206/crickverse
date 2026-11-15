@@ -1,9 +1,63 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy-Report-Only",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-hashes' 'sha256-f8OtB5ki4hLz2RoG3l8O45Deda1HhX7gZbV/KP5CExM=' 'sha256-MhtPZXr7+LpJUY5qtMutB+qWfQtMaPccfe7QXtCcEYc='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(self), microphone=(), geolocation=(), payment=()"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=31536000; includeSubDomains"
+        }
+      ]
+    },
+    {
+      "source": "/assets/:file([^/]+-[A-Za-z0-9_-]{8}\\.[a-z0-9]+)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/:path*",
-      "has": [{ "type": "host", "value": "dev-app\\.runmitra\\.in" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "dev-app\\.runmitra\\.in"
+        }
+      ],
       "destination": "https://dev-api.runmitra.in/api/:path*"
     },
     {
@@ -18,7 +72,10 @@
           "key": "user-agent",
           "value": ".*(WhatsApp|facebookexternalhit|Facebot|Twitterbot|TelegramBot|Slackbot|LinkedInBot|Discordbot|SkypeUriPreview|Pinterest|redditbot|Applebot|Googlebot|bingbot).*"
         },
-        { "type": "host", "value": "(?<host>dev-app\\.runmitra\\.in)" }
+        {
+          "type": "host",
+          "value": "(?<host>dev-app\\.runmitra\\.in)"
+        }
       ],
       "destination": "https://dev-api.runmitra.in/api/cricket-preview?host=:host&path=tournaments/:rest*"
     },
@@ -30,7 +87,10 @@
           "key": "user-agent",
           "value": ".*(WhatsApp|facebookexternalhit|Facebot|Twitterbot|TelegramBot|Slackbot|LinkedInBot|Discordbot|SkypeUriPreview|Pinterest|redditbot|Applebot|Googlebot|bingbot).*"
         },
-        { "type": "host", "value": "(?<host>dev-app\\.runmitra\\.in)" }
+        {
+          "type": "host",
+          "value": "(?<host>dev-app\\.runmitra\\.in)"
+        }
       ],
       "destination": "https://dev-api.runmitra.in/api/cricket-preview?host=:host&path=matches/:rest*"
     },
@@ -42,7 +102,10 @@
           "key": "user-agent",
           "value": ".*(WhatsApp|facebookexternalhit|Facebot|Twitterbot|TelegramBot|Slackbot|LinkedInBot|Discordbot|SkypeUriPreview|Pinterest|redditbot|Applebot|Googlebot|bingbot).*"
         },
-        { "type": "host", "value": "(?<host>.*)" }
+        {
+          "type": "host",
+          "value": "(?<host>.*)"
+        }
       ],
       "destination": "https://api.runmitra.in/api/cricket-preview?host=:host&path=tournaments/:rest*"
     },
@@ -54,7 +117,10 @@
           "key": "user-agent",
           "value": ".*(WhatsApp|facebookexternalhit|Facebot|Twitterbot|TelegramBot|Slackbot|LinkedInBot|Discordbot|SkypeUriPreview|Pinterest|redditbot|Applebot|Googlebot|bingbot).*"
         },
-        { "type": "host", "value": "(?<host>.*)" }
+        {
+          "type": "host",
+          "value": "(?<host>.*)"
+        }
       ],
       "destination": "https://api.runmitra.in/api/cricket-preview?host=:host&path=matches/:rest*"
     },

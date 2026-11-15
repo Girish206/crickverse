@@ -1,8 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../../client";
 import { isAxiosError } from "axios";
 import { followLive } from "./followLive";
+import { toast } from "sonner";
+import { messageFor, UserFacingError } from "../../mutationErrors";
+import { clearQueue, dequeue, enqueue, isSaved, onNudge, readQueue, useBallQueue, type QueuedItem } from "./ballQueue";
 import type {
   ApiEnvelope,
   CricketBall,
@@ -148,10 +151,22 @@ export function useCricketMatch(id: number) {
 
 // Every match action returns the updated match: seed its cache entry so the
 // scorer sees the new state at once, and refresh the lists.
-function useMatchMutation<TVars>(request: (vars: TVars) => Promise<{ data: ApiEnvelope<CricketMatch> }>) {
+// Scoring actions (`scoring`) wait while balls scored offline are still to
+// be sent: the API would apply them to the score without those balls.
+function useMatchMutation<TVars>(
+  request: (vars: TVars) => Promise<{ data: ApiEnvelope<CricketMatch> }>,
+  { scoring = false } = {},
+) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (vars: TVars) => (await request(vars)).data.data,
+    mutationFn: async (vars: TVars) => {
+      if (scoring) {
+        const id = typeof vars === "number" ? vars : (vars as { id: number }).id;
+        const waiting = readQueue(id).length;
+        if (waiting) throw new QueuedBallsError(waiting);
+      }
+      return (await request(vars)).data.data;
+    },
     onSuccess: (match) => {
       queryClient.setQueryData(["cricket-matches", match.id], match);
       queryClient.invalidateQueries({ queryKey: ["cricket-matches", "list"] });
@@ -161,6 +176,15 @@ function useMatchMutation<TVars>(request: (vars: TVars) => Promise<{ data: ApiEn
 }
 
 const url = (id: number, path = "") => `/admin/cricket/matches/${id}${path}`;
+
+// A scoring action tried while balls are waiting to be sent (see ballQueue).
+export class QueuedBallsError extends UserFacingError {
+  constructor(waiting: number) {
+    super(
+      `${waiting} ${waiting === 1 ? "ball is" : "balls are"} still waiting to send — this can be done once ${waiting === 1 ? "it's" : "they're"} saved`,
+    );
+  }
+}
 
 export function useCreateCricketMatch() {
   return useMatchMutation((
@@ -208,56 +232,54 @@ export function useLastLeaders(id: number) {
 
 export function useSetCricketCurrentPlayers() {
   return useMatchMutation(
-    ({ id, ...input }: { id: number; strikerId?: number | null; nonStrikerId?: number | null; bowlerId?: number | null }) =>
+    ({
+      id,
+      ...input
+    }: {
+      id: number;
+      strikerId?: number | null;
+      nonStrikerId?: number | null;
+      bowlerId?: number | null;
+      // The batter being changed was a wrong pick: their balls move to the new one.
+      wrongBatter?: boolean;
+    }) =>
       apiClient.put(url(id, "/current"), input),
+    { scoring: true },
   );
 }
 
-// A ball on its way to the API, kept on the device until it's saved, so a
-// dropped connection (or a reload) doesn't lose it: usePendingBall sends it
-// again. The innings and ball count it was scored at go with it, so the API
-// records it at most once — a ball it already has comes back as a 409.
-export interface PendingBall {
-  ball: CricketBallInput;
-  inningsIndex: number;
-  expectedBalls: number;
-}
-
-const pendingKey = (id: number) => `cricdesk_pending_ball_${id}`;
-
-export function readPendingBall(id: number): PendingBall | null {
-  try {
-    const raw = localStorage.getItem(pendingKey(id));
-    return raw ? (JSON.parse(raw) as PendingBall) : null;
-  } catch {
-    return null;
-  }
-}
-
-function writePendingBall(id: number, pending: PendingBall | null) {
-  try {
-    if (pending) localStorage.setItem(pendingKey(id), JSON.stringify(pending));
-    else localStorage.removeItem(pendingKey(id));
-  } catch {
-    // Not kept on this device; the ball still goes now.
-  }
+// "The bowler is running in": live pages show it until the ball is scored.
+export function useMarkCricketBowling() {
+  return useMatchMutation(({ id }: { id: number }) => apiClient.post(url(id, "/bowling")), { scoring: true });
 }
 
 // The API refused a score change made on an older copy of the match.
 export const isStaleScore = (error: unknown) =>
   isAxiosError(error) && error.response?.status === 409 && error.response.data?.error?.code === "STALE_SCORE";
 
-// Sends a ball. Network trouble leaves it pending (see PendingBall); any
-// answer from the API — saved, or refused — clears it. A stale copy is
-// refreshed so the scorer sees what's really there.
+// No answer at all (offline, timed out), or one worth asking again (the
+// server busy or failing): a waiting ball keeps waiting.
+const isTransient = (error: unknown) =>
+  isAxiosError(error) && (!error.response || error.response.status >= 500 || error.response.status === 429);
+
+// Sends a ball, online with nothing waiting (LiveScorer queues it
+// otherwise; see ballQueue). The innings and ball count it was scored at go
+// with it, so the API records it at most once — a ball it already has
+// comes back as a 409. If it doesn't get through it waits in the queue, to
+// go again once the connection's back.
 export function useAddCricketBall() {
   const queryClient = useQueryClient();
   return useMutation({
     networkMode: "always",
-    meta: { skipGlobalErrorFor: isStaleScore },
-    mutationFn: async ({ id, pending, ...ball }: CricketBallInput & { id: number; pending?: PendingBall }) => {
+    // A stale score refreshes itself; one that didn't get through waits in
+    // the queue, which the scorer's banner shows.
+    meta: { skipGlobalErrorFor: (error: unknown) => isStaleScore(error) || isTransient(error) },
+    mutationFn: async ({ id, ...ball }: CricketBallInput & { id: number }) => {
+      const waiting = readQueue(id).length;
+      if (waiting) throw new QueuedBallsError(waiting);
       const held = queryClient.getQueryData<CricketMatch>(["cricket-matches", id]);
-      const send: PendingBall = pending ?? {
+      const send: QueuedItem = {
+        kind: "ball",
         ball,
         inningsIndex: Math.max(0, (held?.innings.length ?? 1) - 1),
         expectedBalls: held?.innings[held.innings.length - 1]?.balls.length ?? 0,
@@ -268,11 +290,9 @@ export function useAddCricketBall() {
           inningsIndex: send.inningsIndex,
           expectedBalls: send.expectedBalls,
         });
-        writePendingBall(id, null);
         return data.data;
       } catch (error) {
-        if (isAxiosError(error) && error.response) writePendingBall(id, null);
-        else writePendingBall(id, send);
+        if (isTransient(error)) enqueue(id, send);
         throw error;
       }
     },
@@ -287,36 +307,116 @@ export function useAddCricketBall() {
   });
 }
 
-// The ball waiting to be sent for this match (if any), and a retry that
-// goes when the connection comes back (and once on opening the scorer).
-// A ball the match has moved past is dropped: it was saved, or the scorer
-// carried on without it.
-export function usePendingBall(match: CricketMatch | undefined, retry: (pending: PendingBall) => void, busy: boolean) {
+// Sends the waiting balls (and bowlers) for a live match, one at a time in
+// order, whenever there's a connection: on opening, on coming back online,
+// every few seconds after a failure, or on the scorer's Retry
+// (nudgeBallQueue). Ones the server already has are dropped. If the API
+// turns one down (the score moved on, on another device), the rest were
+// scored on top of it, so they're dropped too and the scorer is told.
+const QUEUE_RETRY_MS = 5_000;
+
+const subscribeOnline = (fn: () => void) => {
+  window.addEventListener("online", fn);
+  window.addEventListener("offline", fn);
+  return () => {
+    window.removeEventListener("online", fn);
+    window.removeEventListener("offline", fn);
+  };
+};
+
+export function useSendBallQueue(match: CricketMatch | undefined, enabled: boolean) {
+  const queryClient = useQueryClient();
   const id = match?.id ?? 0;
-  const pending = match ? readPendingBall(id) : null;
-  const inningsIndex = match ? match.innings.length - 1 : -1;
-  const ballCount = match?.innings[inningsIndex]?.balls.length ?? 0;
-  const stillDue = pending !== null && pending.inningsIndex === inningsIndex && pending.expectedBalls === ballCount;
+  const items = useBallQueue(id);
+  const [paused, setPaused] = useState(false);
+  const online = useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true);
+  const { isPending, mutate } = useMutation({
+    networkMode: "always",
+    meta: { skipGlobalError: true },
+    mutationFn: async (item: QueuedItem) => {
+      if (item.kind === "bowler") {
+        // /current has no stale check of its own: make sure the server's
+        // copy is where the bowler was picked (end of that over, no bowler).
+        const held = queryClient.getQueryData<CricketMatch>(["cricket-matches", id]);
+        const innings = held?.innings[item.inningsIndex];
+        if (
+          !held ||
+          held.innings.length - 1 !== item.inningsIndex ||
+          innings?.balls.length !== item.expectedBalls ||
+          innings.bowlerId !== null
+        ) {
+          throw new Error("the score changed on another device");
+        }
+      }
+      const { data } =
+        item.kind === "ball"
+          ? await apiClient.post<ApiEnvelope<CricketMatch>>(url(id, "/balls"), {
+              ...item.ball,
+              inningsIndex: item.inningsIndex,
+              expectedBalls: item.expectedBalls,
+            })
+          : await apiClient.put<ApiEnvelope<CricketMatch>>(url(id, "/current"), { bowlerId: item.bowlerId });
+      // The saved match first, then off the queue, so the page never shows
+      // the ball missing in between.
+      queryClient.setQueryData(["cricket-matches", id], data.data);
+      dequeue(id, item);
+      return data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cricket-matches", "list"] });
+      queryClient.invalidateQueries({ queryKey: ["cricket-me"] });
+    },
+    onError: (error) => {
+      if (isTransient(error)) {
+        setPaused(true);
+        return;
+      }
+      const lost = readQueue(id).length;
+      clearQueue(id);
+      queryClient.invalidateQueries({ queryKey: ["cricket-matches", id] });
+      const why = isAxiosError(error) ? messageFor(error) : error instanceof Error ? error.message : messageFor(error);
+      toast.error(`${lost} ${lost === 1 ? "ball" : "balls"} couldn't be saved: ${why}`, { duration: 10_000 });
+    },
+  });
+
+  // After a failure: try again shortly, at once when back online or on Retry.
   useEffect(() => {
-    if (pending && !stillDue) writePendingBall(id, null);
-  }, [id, pending, stillDue]);
+    if (!paused) return;
+    const resume = () => setPaused(false);
+    const timer = setTimeout(resume, QUEUE_RETRY_MS);
+    const stopNudge = onNudge(resume);
+    return () => {
+      clearTimeout(timer);
+      stopNudge();
+    };
+  }, [paused]);
+
   useEffect(() => {
-    if (!stillDue || busy || !match || match.status !== "live") return;
-    const send = () => navigator.onLine && retry(readPendingBall(id)!);
-    send();
-    window.addEventListener("online", send);
-    return () => window.removeEventListener("online", send);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stillDue, busy, id]);
-  return stillDue ? pending : null;
+    if (!enabled || !match || items.length === 0) return;
+    // The match was finished (or abandoned) elsewhere: these can't go now.
+    if (match.status !== "live" && match.status !== "scheduled") {
+      clearQueue(id);
+      toast.error(`${items.length} ${items.length === 1 ? "ball wasn't" : "balls weren't"} saved: the match has ended`, { duration: 10_000 });
+      return;
+    }
+    if (!online || match.status !== "live" || isPending || paused) return;
+    const saved = items.filter((item) => isSaved(match, item));
+    if (saved.length) {
+      saved.forEach((item) => dequeue(id, item));
+      return;
+    }
+    mutate(items[0]);
+  }, [enabled, online, match, isPending, paused, items, id, mutate]);
+
+  return { sending: isPending, paused };
 }
 
 export function useUndoCricketBall() {
-  return useMatchMutation((id: number) => apiClient.delete(url(id, "/balls/last")));
+  return useMatchMutation((id: number) => apiClient.delete(url(id, "/balls/last")), { scoring: true });
 }
 
 export function useEndCricketInnings() {
-  return useMatchMutation((id: number) => apiClient.post(url(id, "/end-innings")));
+  return useMatchMutation((id: number) => apiClient.post(url(id, "/end-innings")), { scoring: true });
 }
 
 // Rain: the batting side's overs from now on, or null for no more play in
@@ -324,11 +424,12 @@ export function useEndCricketInnings() {
 export function useCricketInterruption() {
   return useMatchMutation(({ id, overs }: { id: number; overs: number | null }) =>
     apiClient.post(url(id, "/interruption"), { overs }),
+    { scoring: true },
   );
 }
 
 export function useAbandonCricketMatch() {
-  return useMatchMutation((id: number) => apiClient.post(url(id, "/abandon")));
+  return useMatchMutation((id: number) => apiClient.post(url(id, "/abandon")), { scoring: true });
 }
 
 // A result the organiser enters by hand: a super over, walkover or forfeit,
@@ -341,7 +442,10 @@ export interface CricketResultInput {
 }
 
 export function useDeclareCricketResult() {
-  return useMatchMutation(({ id, ...input }: CricketResultInput & { id: number }) => apiClient.post(url(id, "/result"), input));
+  return useMatchMutation(
+    ({ id, ...input }: CricketResultInput & { id: number }) => apiClient.post(url(id, "/result"), input),
+    { scoring: true },
+  );
 }
 
 // Organisers: a finished or abandoned match goes back to live (or not
@@ -362,12 +466,18 @@ export interface CricketBallEdit {
   excellentCatch?: boolean;
   // A dropped catch or misfield on this ball; null takes it off.
   fieldingLapse?: { type: CricketFieldingLapse; fielderId: number } | null;
+  // The other batter faced this ball.
+  swapStrike?: boolean;
+  // Whether the balls after it move to the other batter to match ("auto"),
+  // or stay as recorded for the scorer to fix one by one ("manual").
+  strikeAfter?: "auto" | "manual";
 }
 
 export function useEditCricketBall() {
   return useMatchMutation(
     ({ id, inningsIndex, ballIndex, ...edit }: CricketBallEdit & { id: number; inningsIndex: number; ballIndex: number }) =>
       apiClient.put(url(id, `/balls/${inningsIndex}/${ballIndex}`), edit),
+    { scoring: true },
   );
 }
 
@@ -377,17 +487,24 @@ export function useChangeCricketSquad() {
   return useMatchMutation(
     ({ id, ...input }: { id: number; team: number; addId: number; replaceId: number | null }) =>
       apiClient.post(url(id, "/squad"), input),
+    { scoring: true },
   );
 }
 
 // Takes someone who hasn't played out of a live match's side.
 export function useRemoveCricketPlayer() {
-  return useMatchMutation(({ id, playerId }: { id: number; playerId: number }) => apiClient.delete(url(id, `/squad/${playerId}`)));
+  return useMatchMutation(
+    ({ id, playerId }: { id: number; playerId: number }) => apiClient.delete(url(id, `/squad/${playerId}`)),
+    { scoring: true },
+  );
 }
 
 // Sends someone who hasn't played to the other side of a live match.
 export function useMoveCricketPlayer() {
-  return useMatchMutation(({ id, playerId }: { id: number; playerId: number }) => apiClient.post(url(id, `/squad/${playerId}/move`)));
+  return useMatchMutation(
+    ({ id, playerId }: { id: number; playerId: number }) => apiClient.post(url(id, `/squad/${playerId}/move`)),
+    { scoring: true },
+  );
 }
 
 // Only one person scores a match at a time, and the seat stays theirs —
@@ -496,6 +613,21 @@ export function useTeamPlayers(teamKey: string | null, enabled = true) {
       });
       return data.data.playerIds;
     },
+  });
+}
+
+// A team's captain and keeper from its last match, by its key (teamKeyOf),
+// to start a new match's squad with.
+export function useTeamLastLeaders(teamKey: string | null) {
+  return useQuery({
+    enabled: teamKey !== null,
+    queryKey: ["cricket-matches", "team-last-leaders", teamKey],
+    queryFn: async () =>
+      (
+        await apiClient.get<ApiEnvelope<CricketLastLeaders>>("/admin/cricket/teams/last-leaders", {
+          params: { key: teamKey },
+        })
+      ).data.data,
   });
 }
 

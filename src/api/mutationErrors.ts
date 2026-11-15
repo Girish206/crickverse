@@ -4,7 +4,12 @@ import { toast } from "sonner";
 // The API's error envelope is { error: { message, code } } (see the server's
 // errorHandler) — prefer its message, e.g. "This record is still in use by
 // other records and can't be deleted", over a generic one.
+// An error raised in the app (not by the API) whose message is written for
+// the person using it.
+export class UserFacingError extends Error {}
+
 export function messageFor(error: unknown): string {
+  if (error instanceof UserFacingError) return error.message;
   if (isAxiosError(error)) {
     const apiMessage = (error.response?.data as { error?: { message?: string } } | undefined)?.error?.message;
     if (apiMessage) return apiMessage;

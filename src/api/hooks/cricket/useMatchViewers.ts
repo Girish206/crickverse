@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../../client";
-import type { ApiEnvelope, CricketMatchViewers } from "../../types";
+import type { ApiEnvelope, CricketFans, CricketMatchViewers, CricketReaction } from "../../types";
 
 const VIEWER_ID_KEY = "cricdesk_viewer_id";
 // A page open on a live match checks in this often (the API counts someone as
@@ -46,4 +46,19 @@ export function useMatchViewers(id: number, { live, isPublic = false }: { live: 
       return data.data;
     },
   });
+}
+
+// A fan picking who wins (null takes it back) or sending a reaction; the
+// answer's tallies go straight into the viewer counts the page holds. A
+// plain call, not a mutation: the live score holds back while any mutation
+// runs (useCricketMatch), and a burst of reactions mustn't stall it.
+export function useFanAction(id: number, isPublic = false) {
+  const queryClient = useQueryClient();
+  return async (action: { vote?: 0 | 1 | null; react?: CricketReaction }) => {
+    const { data } = isPublic
+      ? await apiClient.post<ApiEnvelope<CricketFans>>(`/admin/cricket/public/matches/${id}/fans`, { viewerId: viewerId(), ...action })
+      : await apiClient.post<ApiEnvelope<CricketFans>>(`/admin/cricket/matches/${id}/fans`, action);
+    queryClient.setQueryData<CricketMatchViewers>(["cricket-match-viewers", id], (held) => held && { ...held, fans: data.data });
+    return data.data;
+  };
 }

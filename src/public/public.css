@@ -25,39 +25,45 @@
   box-sizing: border-box;
   height: calc(var(--cv-header-h) + env(safe-area-inset-top));
   padding: env(safe-area-inset-top) 16px 0;
-  background: var(--adm-surface);
-  border-bottom: 1px solid var(--adm-line);
-  color: var(--adm-text);
+  /* The app's bars' gradient (Navbar.css), with white contents */
+  background: var(--brand-gradient-bar);
+  border-bottom: 0;
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 2px 10px rgba(var(--brand-navy-rgb), 0.18);
+  color: #fff;
 }
 .cv-public-brand {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: var(--adm-text);
+  color: #fff;
   font-family: var(--cv-display);
   font-size: var(--fs-md);
   font-weight: 700;
   text-decoration: none;
 }
 .cv-public-brand:hover {
-  color: var(--adm-text);
+  color: #fff;
 }
 .cv-public-brand img {
   width: 28px;
   height: 28px;
+  /* The logo's red would vanish on the red bar */
+  filter: brightness(0) invert(1);
 }
 .cv-public-signin {
   padding: 6px 16px;
-  border: 1px solid var(--adm-line-strong);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: var(--radius-md);
-  color: var(--adm-text-2);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
   font-size: var(--fs-sm);
   font-weight: 600;
   text-decoration: none;
 }
 .cv-public-signin:hover {
-  background: var(--adm-hover);
-  color: var(--adm-text);
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
 }
 
 .cv-public-main {
@@ -347,6 +353,11 @@
 .cv-pm-share:focus-visible {
   background: var(--primary);
   color: #fff;
+}
+
+/* Sounds and Share sit together, a little closer than the header's gap. */
+.cv-pm-share + .cv-pm-share {
+  margin-left: -6px;
 }
 
 .cv-pm-badge {

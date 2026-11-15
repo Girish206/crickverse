@@ -17,7 +17,7 @@ export interface RowActionsProps {
 // (view = navy, edit = orange, delete = crimson — see RowActions.css). View opens
 // a read-only DetailView modal with every field (the card/row itself only
 // shows a truncated summary); Edit opens that row's record in the shared
-// DefaultModal form (see the owning List component) rather than navigating
+// BottomSheet form (see the owning List component) rather than navigating
 // to a separate page.
 export function RowActions({ onView, onEdit, onDelete, deleteLabel = "Delete", children }: RowActionsProps) {
   return (

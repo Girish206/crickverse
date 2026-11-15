@@ -1,5 +1,6 @@
 /* Fixed header for the screens outside the main menu (PageHeader.tsx): a bar
-   like the navbar, with a touch of the accent and some cricket art. Its height
+   like the navbar (Navbar.css): the brand gradient, rounded along the bottom,
+   with white contents and some cricket art. Its height
    is --cv-header-h (styles/crickverse.css).
 
    The seam runs below the text, and the scene sits faintly behind it. */
@@ -15,19 +16,11 @@
   gap: 12px;
   height: calc(var(--cv-header-h) + env(safe-area-inset-top));
   padding: env(safe-area-inset-top) max(16px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left));
-  background:
-    linear-gradient(90deg, rgba(var(--primary-rgb), 0.07), rgba(var(--primary-rgb), 0.02) 50%, transparent 80%),
-    var(--adm-surface);
-  border-bottom: 1px solid rgba(var(--primary-rgb), 0.18);
-  color: var(--adm-text);
-}
-
-/* The light theme's text accent is a muted brick, which looks dull at this
-   size next to the dark theme's vivid orange: here it's the logo's red, with
-   a deeper black for the title. */
-:where(:root:not([data-bs-theme="dark"])) .cv-page-header {
-  --primary: var(--primary-fill);
-  --adm-text: #0a0b0f;
+  background: var(--brand-gradient-bar);
+  border-bottom: 0;
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 2px 10px rgba(var(--brand-navy-rgb), 0.18);
+  color: #fff;
 }
 
 /* A ball's seam along the bottom edge, in the strip below the text. */
@@ -38,8 +31,10 @@
   right: 0;
   bottom: 1px;
   height: 5px;
-  background: repeating-linear-gradient(115deg, rgba(var(--primary-rgb), 0.2) 0 2px, transparent 2px 9px);
+  background: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.18) 0 2px, transparent 2px 9px);
   pointer-events: none;
+  /* Kept inside the rounded corners */
+  margin: 0 20px;
 }
 
 .cv-page-header-title {
@@ -51,8 +46,8 @@
   line-height: 1.2;
 }
 /* The cricket scene, faint behind the title. It spans the title's space, up
-   to the actions, and shrinks to fit so all of it shows. Drawn in --primary
-   through a mask, so it follows the theme. */
+   to the actions, and shrinks to fit so all of it shows. Drawn in white
+   through a mask, faint over the gradient. */
 .cv-page-header-title::after {
   content: "";
   position: absolute;
@@ -62,8 +57,8 @@
   right: 0;
   height: var(--cv-header-h);
   transform: translateY(-50%);
-  background: var(--primary);
-  opacity: 0.4;
+  background: #fff;
+  opacity: 0.22;
   /* Quieter on the left, where the text is. */
   -webkit-mask:
     linear-gradient(90deg, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3) 50%, #000 80%),
@@ -75,13 +70,15 @@
   mask-composite: intersect;
   pointer-events: none;
 }
-/* The same art reads dimmer on the charcoal. */
+/* The dark theme's gradient is darker, so the art can show a little more. */
 :root[data-bs-theme="dark"] .cv-page-header-title::after {
-  opacity: 0.55;
+  opacity: 0.3;
 }
 .cv-page-header-title-row {
   display: flex;
-  align-items: baseline;
+  /* Centred, so a small badge after the title (a match's status) sits
+     level with the middle of the title, not on its baseline */
+  align-items: center;
   gap: 8px;
   min-width: 0;
 }
@@ -96,13 +93,22 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.cv-page-header .cv-page-header-title h1 {
+  color: #fff;
+}
+/* A soft shadow under the white text, so it holds up over the gradient's
+   bright orange middle */
+.cv-page-header-title h1,
+.cv-page-header-title small {
+  text-shadow: 0 1px 2px rgba(60, 10, 6, 0.35);
+}
 .cv-page-header-title small {
   overflow: hidden;
   font-size: var(--fs-2xs);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--primary);
+  color: rgba(255, 255, 255, 0.92);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -121,33 +127,33 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(var(--primary-rgb), 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: var(--radius-md);
-  background: var(--adm-surface);
-  color: var(--primary);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
   font-size: var(--fs-sm);
   cursor: pointer;
   transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease, transform 0.1s ease;
 }
 .cv-page-header-btn:hover,
 .cv-page-header-btn:focus-visible {
-  background: var(--adm-hover);
-  color: var(--adm-text);
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
 }
 .cv-page-header-btn:active {
   transform: scale(0.94);
 }
 .cv-page-header-btn.is-danger:hover,
 .cv-page-header-btn.is-danger:focus-visible {
-  border-color: rgba(var(--danger-rgb), 0.4);
-  background: rgba(var(--danger-rgb), 0.06);
-  color: var(--danger);
+  border-color: #fff;
+  background: #fff;
+  color: var(--danger-fill);
 }
-/* On (following): filled with the accent. */
+/* On (following): filled white, the icon in the brand red. */
 .cv-page-header-btn.is-active {
-  background: var(--primary-fill);
-  border-color: var(--primary-fill);
-  color: #fff;
+  background: #fff;
+  border-color: #fff;
+  color: var(--brand-accent-fill);
 }
 .cv-page-header-btn:disabled {
   opacity: 0.5;

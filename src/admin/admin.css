@@ -1229,7 +1229,7 @@ body.admin-page {
 }
 
 /* ---------- Modal footer actions ----------
-   Forms portal their Cancel/Save buttons into the DefaultModal footer slot
+   Forms portal their Cancel/Save buttons into the BottomSheet footer slot
    (see SubmitButton / ModalActions); the slot hides itself while empty. */
 .admin-modal-footer-slot {
   display: flex;

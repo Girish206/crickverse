@@ -1,5 +1,4 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
-import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import {
   isStaleScore,
@@ -8,17 +7,18 @@ import {
   useAddCricketBall,
   useEndCricketInnings,
   useEditCricketBall,
-  usePendingBall,
   useSetCricketCurrentPlayers,
+  useMarkCricketBowling,
   useUndoCricketBall,
   type CricketBallInput,
 } from "../../../api/hooks/cricket/useCricketMatches";
+import { canQueueBowler, clearQueue, enqueue, nudgeBallQueue, popQueue, whyNotQueued } from "../../../api/hooks/cricket/ballQueue";
+import { BowlerArt } from "./BowlingNow";
 import {
   ballsPerOverOf,
   type CricketExtraType,
   type CricketInnings,
   type CricketMatch,
-  type CricketWicketType,
 } from "../../../api/types";
 import { Button } from "../../components/Button";
 import { confirmAction } from "../../components/confirmDelete";
@@ -27,17 +27,26 @@ import { PlayerAvatar } from "../players/PlayerAvatar";
 import { OutArt } from "./OutArt";
 import { PlayerPicker, type PickItem } from "./PlayerPicker";
 import { ScoreHead, type ScoreHeadData } from "./ScoreHead";
-import { ScrollableOverBalls } from "./Scorecard";
-import { usePlayerPhotos } from "./matchUtils";
-import { COMMON_SHOTS, flightOf, SHOT_TYPES, ShotGround, shotHoldMs, shotZoneAt } from "./ShotMap";
+import { usePlayerPhotos, withoutRoleMark } from "./matchUtils";
+import { isBurstPlaying, useBurstPlaying } from "./burstPlaying";
+import { shotZoneAt } from "./ShotMap";
 import { ManageSquadSheet } from "./scorer/ManageSquadSheet";
-import { BowlerOversTable } from "./scorer/BowlerOversTable";
 import { CorrectBallSheet } from "./scorer/CorrectBallSheet";
 import { EndChaseSheet } from "./scorer/EndChaseSheet";
 import { InningsBreakCard } from "./scorer/InningsBreakCard";
 import { PenaltySheet } from "./scorer/PenaltySheet";
+import { ShortRunSheet } from "./scorer/ShortRunSheet";
 import { RainSheet } from "./scorer/RainSheet";
-import { RunChoice } from "./scorer/RunChoice";
+import { WicketSheet } from "./scorer/WicketSheet";
+import { ExtrasSheet } from "./scorer/ExtrasSheet";
+import { PitchSheet } from "./scorer/PitchSheet";
+import { buzz, setScorerPref, useScorerPrefs } from "./scorerPrefs";
+import { t } from "../i18n";
+import { MoreRunsSheet } from "./scorer/MoreRunsSheet";
+import { ShotSheet } from "./scorer/ShotSheet";
+import { OversPopover } from "./scorer/OversPopover";
+import { ScorerSettingsSheet } from "./scorer/ScorerSettingsSheet";
+import { outKind, outEndOf, type WicketDraft } from "./scorer/wicket";
 import "./scorer/scorer.css";
 import {
   useCricketPlayers,
@@ -71,94 +80,8 @@ import {
   type NameOf,
 } from "../stats";
 
-const EXTRA_LABELS: Record<CricketExtraType, string> = {
-  wide: "Wide",
-  "no-ball": "No ball",
-  bye: "Bye",
-  "leg-bye": "Leg bye",
-  penalty: "Penalty runs",
-};
-
-const EXTRA_ICONS: Record<CricketExtraType, string> = {
-  wide: "fa-arrows-left-right",
-  "no-ball": "fa-ban",
-  bye: "fa-person-running",
-  "leg-bye": "fa-shoe-prints",
-  penalty: "fa-gavel",
-};
-
-// The wicket sheet's out types. Caught & bowled and a Mankad are tiles of
-// their own but stored as a catch (the bowler the fielder) and a run-out
-// between deliveries.
-type OutKey = CricketWicketType | "caught-and-bowled" | "mankad";
-
-interface OutKind {
-  key: OutKey;
-  label: string;
-  stored: CricketWicketType;
-  // Who's out: the striker, the non-striker, either one at the crease, or
-  // the next batter before they come in.
-  who: "striker" | "non-striker" | "either" | "incoming";
-  // What records it: the tile; picking the batter; or Record, after the
-  // fielder (or, for a run-out, everything; for a hit wicket, the delivery)
-  // is picked.
-  step: "instant" | "batter" | "fielder" | "run-out" | "delivery";
-  // No ball is bowled: always, or as the scorer says (retired hurt).
-  noDelivery?: "always" | "choice";
-  // Can come off a wide (and, unless stumped, a no ball).
-  offExtras?: boolean;
-  // The wicket-keeper is the fielder, unless the scorer changes it.
-  keeper?: boolean;
-  // Asks where the ball went afterwards.
-  shot?: boolean;
-  // Runs completed before it count (a run-out, an obstruction), so it's
-  // asked for and recorded with Record rather than on the batter's tap.
-  runs?: boolean;
-  // Under "Show more".
-  more?: boolean;
-}
-
-const OUT_KINDS: OutKind[] = [
-  { key: "bowled", label: "Bowled", stored: "bowled", who: "striker", step: "instant" },
-  { key: "caught", label: "Caught", stored: "caught", who: "striker", step: "fielder", shot: true },
-  { key: "caught-behind", label: "Caught behind", stored: "caught-behind", who: "striker", step: "fielder", keeper: true },
-  { key: "caught-and-bowled", label: "Caught & bowled", stored: "caught", who: "striker", step: "instant", shot: true },
-  { key: "run-out", label: "Run out", stored: "run-out", who: "either", step: "run-out", offExtras: true, shot: true, runs: true },
-  { key: "lbw", label: "LBW", stored: "lbw", who: "striker", step: "instant" },
-  { key: "stumped", label: "Stumped", stored: "stumped", who: "striker", step: "fielder", offExtras: true, keeper: true },
-  { key: "retired-hurt", label: "Retired hurt", stored: "retired-hurt", who: "either", step: "batter", noDelivery: "choice", offExtras: true },
-  { key: "mankad", label: "Run out (Mankad)", stored: "run-out", who: "non-striker", step: "instant", noDelivery: "always", more: true },
-  { key: "hit-wicket", label: "Hit wicket", stored: "hit-wicket", who: "striker", step: "delivery", offExtras: true, more: true },
-  { key: "absent-hurt", label: "Absent hurt", stored: "absent-hurt", who: "incoming", step: "batter", noDelivery: "always", more: true },
-  { key: "retired-out", label: "Retired out", stored: "retired-out", who: "either", step: "batter", noDelivery: "always", more: true },
-  { key: "hit-ball-twice", label: "Hit the ball twice", stored: "hit-ball-twice", who: "striker", step: "instant", more: true },
-  { key: "obstructing-field", label: "Obstructing the field", stored: "obstructing-field", who: "either", step: "batter", offExtras: true, runs: true, more: true },
-  { key: "timed-out", label: "Timed out", stored: "timed-out", who: "incoming", step: "batter", noDelivery: "always", more: true },
-  { key: "retired", label: "Retired", stored: "retired", who: "either", step: "batter", noDelivery: "always", more: true },
-];
-const outKind = (key: OutKey) => OUT_KINDS.find((kind) => kind.key === key)!;
-
-// On a free hit only these get a batter out (as the server rules); anything
-// between deliveries (a Mankad, timed out...) still can.
-const FREE_HIT_OUTS: CricketWicketType[] = ["run-out", "obstructing-field", "hit-ball-twice", "retired-hurt", "retired", "retired-out"];
-const allowedOnFreeHit = (kind: OutKind) => FREE_HIT_OUTS.includes(kind.stored) || kind.noDelivery === "always";
-
-// What a wicket came off. Byes and leg-byes only for a run-out (the runs
-// completed are then extras, not the batter's).
-const DELIVERIES = [
-  { value: "normal", label: "Legal ball", icon: "fa-circle-check" },
-  { value: "wide", label: "Wide", icon: "fa-arrows-left-right" },
-  { value: "no-ball", label: "No ball", icon: "fa-ban" },
-  { value: "bye", label: "Bye", icon: "fa-person-running" },
-  { value: "leg-bye", label: "Leg bye", icon: "fa-shoe-prints" },
-] as const;
-type Delivery = (typeof DELIVERIES)[number]["value"];
-
 // Overs a bowler has had a part in (as the server counts them against a
 // bowler's limit).
-// How many overs the bowlers & overs sheet starts with.
-const LAST_OVERS_SHOWN = 3;
-
 function oversBowled(innings: CricketInnings, bowlerId: number, perOver: number) {
   const overs = new Set<number>();
   let legal = 0;
@@ -203,9 +126,13 @@ interface LiveScorerProps {
   // Opens the match page's "Enter result" sheet (rain, a forfeit...); when
   // given, ending the chase offers it.
   onEnterResult?: () => void;
+  // Balls scored offline, still to send (the match page sends them; `match`
+  // already shows them). `blocked`: the first can't be shown until it's
+  // sent (a wicket that didn't get through), so the pad waits.
+  queue: { waiting: number; blocked: boolean; sending: boolean; paused: boolean };
 }
 
-export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, matchSettings, onEnterResult }: LiveScorerProps) {
+export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, matchSettings, onEnterResult, queue }: LiveScorerProps) {
   const innings = match.innings[match.innings.length - 1];
   const battingXi = match.teams[innings.battingTeam].playerIds;
   const bowlingXi = match.teams[1 - innings.battingTeam].playerIds;
@@ -214,6 +141,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   const chase = innings === match.innings[1] ? chaseInfo(match) : null;
 
   const setPlayers = useSetCricketCurrentPlayers();
+  const markBowling = useMarkCricketBowling();
   const editBall = useEditCricketBall();
   const { data: allPlayers } = useCricketPlayers();
   const updatePlayerStyle = useUpdateCricketPlayerStyle();
@@ -255,21 +183,12 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   const interruption = useCricketInterruption();
   const busy = setPlayers.isPending || editBall.isPending || interruption.isPending || addBall.isPending || undoBall.isPending || endInnings.isPending || abandon.isPending;
 
-  // Sends a ball. If another phone got there first the match refreshes
-  // itself, so say so gently rather than as an error.
-  const sendBall = (vars: Parameters<typeof addBall.mutate>[0]) =>
-    addBall.mutate(vars, {
-      onError: (error) => {
-        if (isStaleScore(error)) toast("Score updated from another device");
-      },
-    });
-
   const ballsScrollRef = useRef<HTMLDivElement>(null);
 
-  const [offlineOrFailed, setOfflineOrFailed] = useState(!navigator.onLine);
+  const [offline, setOffline] = useState(!navigator.onLine);
   useEffect(() => {
-    const handleOnline = () => setOfflineOrFailed(false);
-    const handleOffline = () => setOfflineOrFailed(true);
+    const handleOnline = () => setOffline(false);
+    const handleOffline = () => setOffline(true);
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
     return () => {
@@ -277,11 +196,38 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
       window.removeEventListener("offline", handleOffline);
     };
   }, []);
+  // Offline, or balls already waiting (a new one goes behind them): scoring
+  // carries on, kept on this device (see ballQueue).
+  const queueing = offline || queue.waiting > 0;
+  const waitingNote = queue.waiting
+    ? `${queue.waiting} ${queue.waiting === 1 ? "ball" : "balls"} waiting to send`
+    : "you're offline";
 
-  // A ball kept on this device while offline: it goes again once the
-  // connection's back (or on Retry); the pad waits for it meanwhile.
-  const pendingBall = usePendingBall(match, (pending) => sendBall({ id: match.id, ...pending.ball, pending }), busy);
-  const hasSendFailure = Boolean(pendingBall && (offlineOrFailed || addBall.isError));
+  // Sends a ball, or keeps it to send later. If another phone got there
+  // first the match refreshes itself, so say so gently rather than as an error.
+  const sendBall = ({ id, ...ball }: Parameters<typeof addBall.mutate>[0]) => {
+    if (queueing) {
+      if (queue.blocked) {
+        toast.error("The last ball has to send first — check the connection or tap Retry");
+        return;
+      }
+      const why = whyNotQueued(match, ball);
+      if (why) {
+        toast.error(`${why} (${waitingNote})`);
+        return;
+      }
+      enqueue(id, { kind: "ball", ball, inningsIndex: match.innings.length - 1, expectedBalls: innings.balls.length });
+      return;
+    }
+    addBall.mutate(
+      { id, ...ball },
+      {
+        onError: (error) => {
+          if (isStaleScore(error)) toast("Score updated from another device");
+        },
+      },
+    );
+  };
 
   const [picks, setPicks] = useState<{ strikerId: number | null; nonStrikerId: number | null; bowlerId: number | null }>({
     strikerId: null,
@@ -289,20 +235,17 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
     bowlerId: null,
   });
   const [smallShotsOn, setSmallShotsOn] = useState(readShotMap);
-  // A ball waiting for its spot on the shot map, and the spot tapped so far.
+  // The pad's language, vibration and the pitch map (kept on this device).
+  const prefs = useScorerPrefs();
+  const lang = prefs.lang;
+  // A ball waiting for where it pitched (PitchSheet).
+  const [pendingPitch, setPendingPitch] = useState<Partial<CricketBallInput> | null>(null);
+  // A ball waiting for its spot on the shot map (ShotSheet).
   const [pendingShot, setPendingShot] = useState<Partial<CricketBallInput> | null>(null);
-  const [shotSpot, setShotSpot] = useState<{ x: number; y: number } | null>(null);
-  // The sheet's two steps: name the shot, then mark it on the wagon wheel.
-  const [shotStep, setShotStep] = useState<"type" | "spot">("type");
-  const [shotType, setShotType] = useState<string | null>(null);
-  // The shot step's "Show more" (the rarer shots).
-  const [moreShots, setMoreShots] = useState(false);
+  // The extras sheet open for a wide, no ball, bye or leg bye.
   const [extraModal, setExtraModal] = useState<CricketExtraType | null>(null);
-  const [extraRuns, setExtraRuns] = useState(0);
-  // A no ball's runs: off the bat (null), or byes / leg-byes.
-  const [noBallByes, setNoBallByes] = useState<"bye" | "leg-bye" | null>(null);
-  const [noBallFreeHit, setNoBallFreeHit] = useState<boolean>(true);
   const [penaltyOpen, setPenaltyOpen] = useState(false);
+  const [shortRunOpen, setShortRunOpen] = useState(false);
   const [rainOpen, setRainOpen] = useState(false);
   // Correcting a ball: the one tapped, or null to choose from the list.
   // `lapseOnly` is the "Drop or misfield" button: just that part of the sheet.
@@ -310,49 +253,12 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   const [managingSquads, setManagingSquads] = useState(false);
   const [endChaseOpen, setEndChaseOpen] = useState(false);
   const [wicketModal, setWicketModal] = useState(false);
-  // The "5, 7…" sheet: runs beyond the pad's (overthrows, all-run fives).
-  const [moreRuns, setMoreRuns] = useState<number | null>(null);
-  // A 4 or 6 the batters ran (it didn't reach the rope).
-  const [allRun, setAllRun] = useState(false);
-  type WicketDraft = {
-    // Null until a tile is tapped.
-    key: OutKey | null;
-    dismissedId: number | null;
-    fielderId: number | null;
-    // A run-out's second fielder, when two were involved; none on a direct hit.
-    secondFielderId: number | null;
-    directHit: boolean;
-    excellentCatch: boolean;
-    runs: number;
-    delivery: Delivery;
-    // A run-out: the end where the wicket was broken; null = the out
-    // batter's own end.
-    outEnd: "striker" | "non-striker" | null;
-    // Retired hurt: whether it happened on a ball that counts.
-    countBall: boolean;
-  };
-  const blankWicket: WicketDraft = {
-    key: null,
-    dismissedId: null,
-    fielderId: null,
-    secondFielderId: null,
-    directHit: false,
-    excellentCatch: false,
-    runs: 0,
-    delivery: "normal",
-    outEnd: null,
-    countBall: false,
-  };
-  // The wicket sheet's "Show more" (the rarer out types).
-  const [moreOuts, setMoreOuts] = useState(false);
-  // Choosing the incoming batter for a timed out / absent hurt.
-  const [pickingIncoming, setPickingIncoming] = useState(false);
-  // The fielding side's list, opened from one of the wicket sheet's fielder
-  // cards (a run-out can name a second fielder).
-  const [pickingFielder, setPickingFielder] = useState<"fielderId" | "secondFielderId" | null>(null);
+  // The "5, 6…" sheet: runs beyond the pad's (overthrows, all-run fives).
+  const [moreRunsOpen, setMoreRunsOpen] = useState(false);
+  // The wicket sheet opens on the rarer out types too (from the "next
+  // batter" panel).
+  const [wicketMoreOuts, setWicketMoreOuts] = useState(false);
   const photoOf = usePlayerPhotos();
-  const [wicket, setWicket] = useState<WicketDraft>(blankWicket);
-  const kind = wicket.key ? outKind(wicket.key) : null;
 
   const out = new Set(innings.balls.filter(cantBat).map((ball) => ball.dismissedId));
   const atCrease = [innings.strikerId, innings.nonStrikerId];
@@ -448,11 +354,25 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
     if (thisOverBalls.length > 0) setAskingWhy(true);
     else setChanging("bowlerId");
   }
+  // Changing a batter who has played asks why too: a wrong pick moves their
+  // runs and balls to the right batter; retired hurt keeps them and they
+  // can bat again later.
+  const [askingWhyBatter, setAskingWhyBatter] = useState<"strikerId" | "nonStrikerId" | null>(null);
+  const [wrongBatter, setWrongBatter] = useState(false);
+  function startBatterChange(slot: "strikerId" | "nonStrikerId") {
+    if (hasPlayed(innings[slot])) setAskingWhyBatter(slot);
+    else setChanging(slot);
+  }
+  // Who can take a wrong pick's balls: only someone not on the card yet.
+  const yetToBatItems = () => batterItems(null).filter((item) => !hasPlayed(item.id) && !retiredAs.has(item.id));
   function change(slot: Slot, id: number) {
     setChanging(null);
     if (slot === "bowlerId" && wrongBowler && thisOverBalls.length > 0) {
       setWrongBowler(false);
       editBall.mutate({ id: match.id, inningsIndex: match.innings.length - 1, ballIndex: thisOverBalls[0], bowlerId: id });
+    } else if (slot !== "bowlerId" && wrongBatter) {
+      setWrongBatter(false);
+      setPlayers.mutate({ id: match.id, [slot]: id, wrongBatter: true });
     } else {
       setPlayers.mutate({ id: match.id, [slot]: id });
     }
@@ -482,14 +402,21 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
 
   // When an over finishes, the picker for the next bowler (or, after a
   // wicket off the last ball, the next batter first) opens by itself. Keyed
-  // by innings + ball count so it opens once per over.
+  // by innings + ball count so it opens once per over. A four, six or wicket
+  // plays out on screen first; the picker opens once it's done.
+  const burstPlaying = useBurstPlaying();
+  // Meanwhile the page behind it stays as it was — the scorer, not the
+  // "next batter in" / "end of over" pickers — until the moment is over.
+  const holdForBurst = burstPlaying && innings.balls.length > 0;
+  const showPickers = needsPlayers && !holdForBurst;
   const overKey = `${match.innings.length}-${legal.length}`;
   const [overPromptSeen, setOverPromptSeen] = useState<string | null>(null);
   useEffect(() => {
     if (!overEndPending || overPromptSeen === overKey || pickerFor !== null || busy) return;
+    if (burstPlaying || isBurstPlaying()) return;
     setOverPromptSeen(overKey);
     setPickerFor(emptySlots[0] ?? null);
-  }, [overEndPending, overPromptSeen, overKey, pickerFor, busy, emptySlots]);
+  }, [overEndPending, overPromptSeen, overKey, pickerFor, busy, emptySlots, burstPlaying]);
   // Likewise mid-over: once a batter is out (or retires), the list for the
   // next one opens by itself — once per ball, so closing it leaves it shut.
   const batterKey = `${match.innings.length}-${innings.balls.length}`;
@@ -497,35 +424,15 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   useEffect(() => {
     if (overEndPending || !incomingDue || innings.balls.length === 0 || availableBatters.length === 0) return;
     if (batterPromptSeen === batterKey || pickerFor !== null || busy) return;
+    if (burstPlaying || isBurstPlaying()) return;
     setBatterPromptSeen(batterKey);
     setPickerFor(innings.strikerId === null ? "strikerId" : "nonStrikerId");
-  }, [overEndPending, incomingDue, innings.balls.length, innings.strikerId, availableBatters.length, batterPromptSeen, batterKey, pickerFor, busy]);
+  }, [overEndPending, incomingDue, innings.balls.length, innings.strikerId, availableBatters.length, batterPromptSeen, batterKey, pickerFor, busy, burstPlaying]);
   // Closed without a pick, the strip keeps showing the finished over (all
   // its balls); once the next bowler is in, it starts empty for the new one.
-  const showOver = !overJustEnded || (overEndPending && overPromptSeen === overKey) ? thisOver : undefined;
+  const showOver = !overJustEnded || holdForBurst || (overEndPending && overPromptSeen === overKey) ? thisOver : undefined;
   const [prevOversOpen, setPrevOversOpen] = useState(false);
-  const [prevOversClosing, setPrevOversClosing] = useState(false);
-  // The sheet shows the last few overs until asked for them all.
-  const [allOversShown, setAllOversShown] = useState(false);
   const [ballsOverflow, setBallsOverflow] = useState({ left: false, right: false });
-
-  function closePrevOvers() {
-    if (prevOversClosing) return;
-    setPrevOversClosing(true);
-    setTimeout(() => {
-      setPrevOversOpen(false);
-      setPrevOversClosing(false);
-    }, 200);
-  }
-
-  useEffect(() => {
-    if (!prevOversOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closePrevOvers();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [prevOversOpen, prevOversClosing]);
 
   function updateBallsOverflow() {
     const el = ballsScrollRef.current;
@@ -558,7 +465,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   }, [showOver?.balls.length]);
 
   // The pad stays live between overs — tapping it brings the prompt back.
-  const padDisabled = busy || (hasSendFailure && !navigator.onLine) || (needsPlayers && !overEndPending);
+  const padDisabled = busy || queue.blocked || (needsPlayers && !overEndPending);
   const scoreOr = (action: () => void) => () => (overEndPending ? setOverPromptSeen(null) : action());
 
   // Saves the picks for the empty slots (called once the last one is chosen).
@@ -567,6 +474,14 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
     if (innings.strikerId === null && chosen.strikerId !== null) input.strikerId = chosen.strikerId;
     if (innings.nonStrikerId === null && chosen.nonStrikerId !== null) input.nonStrikerId = chosen.nonStrikerId;
     if (innings.bowlerId === null && chosen.bowlerId !== null) input.bowlerId = chosen.bowlerId;
+    // Offline, the next over's bowler can wait with the balls; batters
+    // (after a wicket, which needs the connection anyway) can't.
+    const onlyBowler = input.bowlerId !== undefined && input.strikerId === undefined && input.nonStrikerId === undefined;
+    if (queueing && onlyBowler && canQueueBowler(match, input.bowlerId!)) {
+      enqueue(match.id, { kind: "bowler", bowlerId: input.bowlerId!, inningsIndex: match.innings.length - 1, expectedBalls: innings.balls.length });
+      setPicks({ strikerId: null, nonStrikerId: null, bowlerId: null });
+      return;
+    }
     setPlayers.mutate(
       { id: match.id, ...input },
       { onSettled: () => setPicks({ strikerId: null, nonStrikerId: null, bowlerId: null }) },
@@ -577,6 +492,15 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   // take back the last ball of an over before picking the new bowler.
   const canUndo = innings.balls.length + (match.innings.length - 1) > 0;
   async function undo() {
+    // Not sent yet: just take it off this device.
+    if (queue.waiting > 0) {
+      setPickerFor(null);
+      setOverPromptSeen(null);
+      setBatterPromptSeen(null);
+      setPicks({ strikerId: null, nonStrikerId: null, bowlerId: null });
+      popQueue(match.id);
+      return;
+    }
     // With no ball bowled in the chase there's no ball to take back: this
     // drops the second innings and reopens the first, so it asks first.
     if (
@@ -598,12 +522,16 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
     undoBall.mutate(match.id);
   }
 
-  const record = (ball: Partial<CricketBallInput>) => sendBall({ id: match.id, ...blankBall, ...ball });
+  // With the pitch map on, a delivery first asks where it pitched (PitchSheet);
+  // events between balls and penalty runs don't. `pitchLine: null` = skipped.
+  const record = (ball: Partial<CricketBallInput>) => {
+    if (prefs.pitchMap && !ball.noDelivery && ball.extraType !== "penalty" && ball.pitchLine === undefined) {
+      setPendingPitch(ball);
+      return;
+    }
+    sendBall({ id: match.id, ...blankBall, ...ball });
+  };
   function askWhere(ball: Partial<CricketBallInput>) {
-    setShotSpot(null);
-    setShotType(null);
-    setShotStep("type");
-    setMoreShots(false);
     setPendingShot(ball);
   }
   // Fours and sixes first ask where the shot went; 1s, 2s and 3s only with
@@ -628,111 +556,17 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
     if (!pendingShot) return;
     record({ ...pendingShot, shotType: type, ...(spot && { shotX: spot.x, shotY: spot.y, shotZone: shotZoneAt(spot.x, spot.y) }) });
     setPendingShot(null);
-    setShotSpot(null);
-    setShotType(null);
-  }
-  // A tap on the ground records the ball: the line to the spot shows for a
-  // moment first. Further taps meanwhile are ignored.
-  function tapShot(x: number, y: number) {
-    if (shotSpot) return;
-    const spot = { x, y };
-    setShotSpot(spot);
-    setTimeout(() => saveShot(spot, shotType), shotHoldMs(shotFlight));
-  }
-  function pickShotType(type: string) {
-    setShotType(type);
-    setShotStep("spot");
-  }
-  const shotFlight = pendingShot ? flightOf(pendingShot.runs, pendingShot.boundary, Boolean(pendingShot.wicketType)) : null;
-  // Fours and sixes must name the shot; for anything else it's optional.
-  const shotNeedsType = Boolean(pendingShot) && !pendingShot?.wicketType && (pendingShot?.runs === 4 || pendingShot?.runs === 6);
-  const shotWord = !pendingShot
-    ? ""
-    : pendingShot.wicketType
-      ? "wicket"
-      : pendingShot.runs === 4
-        ? "four"
-        : pendingShot.runs === 6
-          ? "six"
-          : `${pendingShot.runs} run${pendingShot.runs === 1 ? "" : "s"}`;
-
-  function submitExtra() {
-    if (!extraModal) return;
-    if (extraModal === "wide") record({ extraType: "wide", extras: 1 + extraRuns });
-    // Byes or leg-byes off a no ball are extras on top of its penalty.
-    if (extraModal === "no-ball" && noBallByes && extraRuns > 0) {
-      record({ extraType: "no-ball", runs: 0, extras: 1 + extraRuns, byeType: noBallByes, freeHit: noBallFreeHit });
-    } else if (extraModal === "no-ball") {
-      recordShot({ extraType: "no-ball", extras: 1, runs: noBallByes ? 0 : extraRuns, freeHit: noBallFreeHit });
-    }
-    if (extraModal === "bye" || extraModal === "leg-bye") record({ extraType: extraModal, extras: Math.max(extraRuns, 1) });
-    setExtraModal(null);
   }
 
   // Opens the wicket sheet; from the "next batter" panel, on the rarer out
   // types (timed out / absent hurt are among them).
   function openWicket(showMore = false) {
-    setWicket({ ...blankWicket, dismissedId: facing });
-    setMoreOuts(showMore);
+    setWicketMoreOuts(showMore);
     setWicketModal(true);
   }
 
-  // Taps a tile: the ones needing nothing more record there and then; the
-  // others fill in what they already know (the keeper as fielder).
-  function chooseOut(next: OutKind) {
-    const keeperId = match.teams[1 - innings.battingTeam].keeperId ?? null;
-    const draft: WicketDraft = {
-      ...wicket,
-      key: next.key,
-      dismissedId: next.who === "striker" ? facing : next.who === "non-striker" && !lastMan ? innings.nonStrikerId : null,
-      fielderId: next.keeper && keeperId !== null && bowlingXi.includes(keeperId) ? keeperId : next.step === "fielder" ? null : wicket.fielderId,
-      // Neither stumped nor hit wicket off a no ball; byes only for a run-out.
-      delivery:
-        ((next.key === "stumped" || next.key === "hit-wicket") && wicket.delivery === "no-ball") ||
-        (next.key !== "run-out" && (wicket.delivery === "bye" || wicket.delivery === "leg-bye"))
-          ? "normal"
-          : wicket.delivery,
-      outEnd: null,
-      excellentCatch: false,
-    };
-    if (next.step === "instant") submitWicket(draft);
-    else setWicket(draft);
-  }
-
-  // A wicket sheet card for a fielder: "Choose fielder" until one is picked,
-  // then their photo and name. Tapping it opens the fielding side's list.
-  function fielderSlot(slot: "fielderId" | "secondFielderId", label: string | null) {
-    const playerId = wicket[slot];
-    return (
-      <button
-        type="button"
-        className={`cricket-slot cricket-fielder-slot ${playerId !== null ? "is-chosen" : ""}`.trim()}
-        disabled={busy}
-        onClick={() => setPickingFielder(slot)}
-      >
-        {playerId !== null ? (
-          <PlayerAvatar name={nameOf(playerId)} photoUrl={photoOf(playerId)} className="cricket-fielder-avatar" />
-        ) : (
-          <span className="cricket-slot-icon">
-            <i className="fa-solid fa-user-plus" aria-hidden="true"></i>
-          </span>
-        )}
-        <span className="cricket-slot-text">
-          <small>
-            {playerId === null
-              ? `${label ? `${label} · ` : ""}Optional`
-              : `${label ?? "Fielder"}${playerId === innings.bowlerId ? " · Bowler" : ""}`}
-          </small>
-          <strong>{playerId === null ? `Choose ${label?.toLowerCase() ?? "fielder"}` : nameOf(playerId)}</strong>
-        </span>
-        <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
-      </button>
-    );
-  }
-
-  // Records the wicket as drafted, or as just picked (passed in, so a tap
-  // can record before the draft in state has caught up).
-  function submitWicket(draft: WicketDraft = wicket) {
+  // Records the wicket as drafted in the sheet.
+  function submitWicket(draft: WicketDraft) {
     if (!draft.key || busy) return;
     const out = outKind(draft.key);
     const noDelivery = out.noDelivery === "always" || (out.noDelivery === "choice" && !draft.countBall);
@@ -759,14 +593,10 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
       extraType: noDelivery || delivery === "normal" || (byes && completed === 0) ? null : delivery,
       extras: noDelivery ? 0 : delivery === "wide" ? 1 + completed : delivery === "no-ball" ? 1 : byes ? completed : 0,
       // Batting on alone there's no other end to send anyone to.
-      outEnd: out.stored === "run-out" && !lastMan ? outEndOf(draft) : null,
+      outEnd: out.stored === "run-out" && !lastMan ? outEndOf(draft, innings.nonStrikerId) : null,
     });
     setWicketModal(false);
   }
-
-  // Where a run-out happened: as chosen, or the out batter's own end.
-  const outEndOf = (draft: WicketDraft) =>
-    draft.outEnd ?? (draft.dismissedId !== null && draft.dismissedId === innings.nonStrikerId ? "non-striker" : "striker");
 
   async function handleEndInnings() {
     const last = match.innings.length === 2;
@@ -841,7 +671,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   // the fixed header could stay pushed up under the status bar. Back to the
   // top on arriving, and whenever the keyboard closes (its field may have
   // moved the page to stay in view).
-  const pageLocked = !needsPlayers || inningsBreak;
+  const pageLocked = !showPickers || inningsBreak;
   useEffect(() => {
     if (!pageLocked) return;
     window.scrollTo(0, 0);
@@ -880,14 +710,14 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   return (
     // .is-fit: on phones and tablets, the scorer fills the screen in two
     // halves (see cricket.css) — except while players are being picked.
-    <div className={`cricket-scorer${needsPlayers ? "" : " is-fit"}${inningsBreak ? " is-break" : ""}`}>
+    <div className={`cricket-scorer${showPickers ? "" : " is-fit"}${inningsBreak ? " is-break" : ""}`}>
       {/* Top half: score, chase and who's in. */}
       <div className="cricket-scorer-top">
       {inningsBreak && chase && <InningsBreakCard match={match} chase={chase} perOver={perOver} nameOf={nameOf} />}
       {!inningsBreak && (
       <ScoreHead data={head} />
       )}
-      {needsPlayers ? (
+      {showPickers ? (
         <section className="cricket-panel cricket-pickers">
           {slotGroups.map((group) => (
           <Fragment key={group.title}>
@@ -1011,7 +841,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
                   type="button"
                   className={`cricket-crease-player-row ${isStriker ? "is-striker" : ""}`}
                   disabled={playerId === null || busy}
-                  onClick={() => setChanging(slot)}
+                  onClick={() => startBatterChange(slot)}
                   title={playerId === null ? undefined : `Change ${isStriker ? "striker" : "non-striker"}`}
                 >
                   <span className="cricket-crease-avatar-wrap">
@@ -1031,11 +861,11 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
                   <span className="cricket-crease-who">
                     <span className="cricket-crease-name-line">
                       <span className="cricket-crease-name">
-                        {playerId === null ? "—" : nameOf(playerId)}
+                        {playerId === null ? "—" : withoutRoleMark(nameOf(playerId))}
                         {isStriker && playerId !== null && <span className="cricket-crease-star">*</span>}
                       </span>
                       {roles.length > 0 && (
-                        <span className="cricket-crease-role-tag">{roles.join(" · ")}</span>
+                        <CreaseRoleBadges roles={roles} />
                       )}
                       {playerId !== null && (() => {
                         const p = allPlayers?.find((item) => item.id === playerId);
@@ -1106,11 +936,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
               <button
                 type="button"
                 className="cricket-prev-overs-trigger-btn"
-                onClick={() => {
-                  setAllOversShown(false);
-                  setPrevOversClosing(false);
-                  setPrevOversOpen(true);
-                }}
+                onClick={() => setPrevOversOpen(true)}
                 title="View the bowlers and the last overs"
               >
                 <i className="fa-solid fa-baseball" aria-hidden="true"></i>
@@ -1141,7 +967,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
             <span className="cricket-crease-who">
               <span className="cricket-crease-name-line">
                 <span className="cricket-crease-name">
-                  {innings.bowlerId === null ? "—" : nameOf(innings.bowlerId)}
+                  {innings.bowlerId === null ? "—" : withoutRoleMark(nameOf(innings.bowlerId))}
                 </span>
                 {innings.bowlerId !== null && (() => {
                   const bowlTeam = match.teams[1 - innings.battingTeam];
@@ -1149,7 +975,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
                   if (bowlTeam.captainId === innings.bowlerId) roles.push("C");
                   else if (bowlTeam.viceCaptainId === innings.bowlerId) roles.push("VC");
                   return roles.length > 0 ? (
-                    <span className="cricket-crease-role-tag">{roles.join(" · ")}</span>
+                    <CreaseRoleBadges roles={roles} />
                   ) : null;
                 })()}
                 {innings.bowlerId !== null && (() => {
@@ -1241,162 +1067,28 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
       {!inningsBreak && (
       <>
       {/* Animated popover: the bowlers, then the last overs. */}
-      {prevOversOpen &&
-        (() => {
-          const allOvers = oversOf(innings, perOver);
-          const reversedOvers = [...allOvers].reverse();
-          const shownOvers = allOversShown ? reversedOvers : reversedOvers.slice(0, LAST_OVERS_SHOWN);
-
-          let cumR = 0;
-          let cumW = 0;
-          const overScores = new Map<number, { score: string }>();
-          for (const ov of allOvers) {
-            cumR += ov.runs;
-            cumW += ov.balls.filter(isWicket).length;
-            overScores.set(ov.number, { score: `${cumR}/${cumW}` });
-          }
-
-          return createPortal(
-            <div
-              className={`cricket-popover-backdrop${prevOversClosing ? " is-closing" : ""}`}
-              onClick={closePrevOvers}
-            >
-              <div
-                className={`cricket-popover-card${prevOversClosing ? " is-closing" : ""}`}
-                role="dialog"
-                aria-modal="true"
-                aria-label="Bowlers"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="cricket-popover-handle-wrap" aria-hidden="true">
-                  <span className="cricket-popover-handle" />
-                </div>
-                <div className="cricket-popover-header">
-                  <span className="cricket-prev-overs-title">
-                    <i className="fa-solid fa-baseball" aria-hidden="true"></i>
-                    <span>Bowlers ({bowling.length})</span>
-                  </span>
-                  <button
-                    type="button"
-                    className="cricket-popover-close"
-                    onClick={closePrevOvers}
-                    aria-label="Close"
-                  >
-                    <i className="fa-solid fa-xmark" aria-hidden="true"></i>
-                  </button>
-                </div>
-
-                <div className="cricket-popover-body">
-                  {reversedOvers.length === 0 ? (
-                    <div className="cricket-popover-empty">
-                      <i className="fa-solid fa-baseball" aria-hidden="true"></i>
-                      <span>No deliveries bowled in this innings yet.</span>
-                    </div>
-                  ) : (
-                    <>
-                    <BowlerOversTable
-                      rows={bowling}
-                      currentBowlerId={innings.bowlerId}
-                      perOver={perOver}
-                      overLimit={overLimit}
-                      oversUsed={(bowlerId) => oversBowled(innings, bowlerId, perOver)}
-                      nameOf={nameOf}
-                    />
-                    <h3 className="cricket-popover-section">
-                      {allOversShown || allOvers.length <= LAST_OVERS_SHOWN ? `Overs (${allOvers.length})` : `Last ${LAST_OVERS_SHOWN} overs`}
-                    </h3>
-                    <div className="cricket-prev-overs-list">
-                      {shownOvers.map((over) => {
-                        const overWkts = over.balls.filter(isWicket).length;
-                        const scoreAtEnd = overScores.get(over.number)?.score;
-                        const legalBalls = over.balls.filter(isLegal).length;
-                        const isIncomplete = legalBalls < perOver;
-                        const isCurrentOver = over === showOver;
-                        const remainingBalls = isIncomplete ? Math.max(0, perOver - legalBalls) : 0;
-
-                        return (
-                          <div
-                            key={over.number}
-                            className={`cricket-prev-over-item${isCurrentOver ? " is-current-over" : ""}`}
-                          >
-                            <div className="cricket-prev-over-meta">
-                              <div className="cricket-prev-over-left">
-                                <span className="cricket-prev-over-badge">Over {over.number + 1}</span>
-                                <span className="cricket-prev-over-bowler">{nameOf(over.bowlerId)}</span>
-                                {isIncomplete && (
-                                  <span className="cricket-over-incomplete-badge is-live">
-                                    <span className="cricket-over-live-dot" aria-hidden="true" />
-                                    {over.number}.{legalBalls} ov
-                                  </span>
-                                )}
-                              </div>
-                              <div className="cricket-prev-over-right">
-                                <span className="cricket-prev-over-runs">
-                                  <strong>{over.runs}</strong> {over.runs === 1 ? "run" : "runs"}
-                                  {overWkts > 0 && (
-                                    <span className="cricket-prev-over-wkts">
-                                      {" "}
-                                      · {overWkts} {overWkts === 1 ? "wkt" : "wkts"}
-                                    </span>
-                                  )}
-                                </span>
-                                {scoreAtEnd && <span className="cricket-prev-over-score">({scoreAtEnd})</span>}
-                              </div>
-                            </div>
-                            <ScrollableOverBalls className="cricket-prev-over-balls-wrap">
-                              {over.balls.map((ball, bi) => {
-                                const originalIndex = innings.balls.indexOf(ball);
-                                return (
-                                  <button
-                                    key={bi}
-                                    type="button"
-                                    className={`${ballChipClass(ball)} cricket-chip-btn`}
-                                    disabled={busy || ball.extraType === "penalty"}
-                                    onClick={() => {
-                                      closePrevOvers();
-                                      setCorrecting({ ballIndex: originalIndex });
-                                    }}
-                                    title="Tap to correct this ball"
-                                  >
-                                    {ballLabel(ball)}
-                                  </button>
-                                );
-                              })}
-                              {remainingBalls > 0 &&
-                                Array.from({ length: remainingBalls }, (_, i) => (
-                                  <span
-                                    key={`empty-${i}`}
-                                    className="cricket-ball-slot-empty"
-                                    title="Remaining ball in this over"
-                                    aria-hidden="true"
-                                  />
-                                ))}
-                            </ScrollableOverBalls>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    {/* Tapping a ball corrects it, so the older ones stay in reach. */}
-                    {!allOversShown && allOvers.length > LAST_OVERS_SHOWN && (
-                      <button type="button" className="cricket-popover-more" onClick={() => setAllOversShown(true)}>
-                        Show all {allOvers.length} overs
-                      </button>
-                    )}
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>,
-            document.body,
-          );
-        })()}
+      {prevOversOpen && (
+        <OversPopover
+          innings={innings}
+          perOver={perOver}
+          bowling={bowling}
+          overLimit={overLimit}
+          oversUsed={(bowlerId) => oversBowled(innings, bowlerId, perOver)}
+          currentOver={showOver}
+          nameOf={nameOf}
+          // A ball not sent yet can't be corrected.
+          busy={busy || queueing}
+          onCorrect={(ballIndex) => setCorrecting({ ballIndex })}
+          onClosed={() => setPrevOversOpen(false)}
+        />
+      )}
 
       {/* Fixed to the bottom of the screen on phones. */}
       <div className="cricket-scorer-dock" ref={dockRef}>
       {/* The next ball's a free hit: said here rather than on a line of its own, so
           the pad keeps its height on a short screen. */}
-      <div className={`cricket-this-over${freeHit && !needsPlayers ? " is-free-hit" : ""}`}>
-        {freeHit && !needsPlayers ? (
+      <div className={`cricket-this-over${freeHit && !showPickers ? " is-free-hit" : ""}`}>
+        {freeHit && !showPickers ? (
           <span className="cricket-this-over-label" role="status" title="Only a run-out gets the batter out">
             <span>
               <i className="fa-solid fa-bolt" aria-hidden="true"></i> Free
@@ -1456,29 +1148,32 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
         </span>
       </div>
 
-      {hasSendFailure && (
+      {queue.waiting > 0 && (
         <div className="cricket-pending-ball" role="status">
-          <i className="fa-solid fa-cloud-arrow-up" aria-hidden="true"></i>
-          <span>Failed to send ball score — check connection or tap Retry</span>
+          <i className={`fa-solid ${queue.sending ? "fa-spinner fa-spin" : "fa-cloud-arrow-up"}`} aria-hidden="true"></i>
+          <span>
+            {queue.sending
+              ? `Sending ${waitingNote.replace(" waiting to send", "")}…`
+              : queue.blocked
+                ? "The last ball didn't send — check the connection or tap Retry"
+                : `${waitingNote[0].toUpperCase()}${waitingNote.slice(1)} — kept on this phone${offline ? " until you're back online" : ""}`}
+          </span>
           <div className="d-flex gap-2 align-items-center ms-auto">
-            <Button
-              variant="outline"
-              disabled={busy}
-              onClick={() => sendBall({ id: match.id, ...pendingBall!.ball, pending: pendingBall! })}
-            >
+            <Button variant="outline" disabled={queue.sending || offline} onClick={nudgeBallQueue}>
               Retry
             </Button>
             <button
               type="button"
               className="btn btn-sm btn-link text-white text-decoration-none p-1"
-              title="Dismiss"
-              onClick={() => {
-                try {
-                  localStorage.removeItem(`cricdesk_pending_ball_${match.id}`);
-                } catch {
-                  // ignore
-                }
-                addBall.reset();
+              title="Discard"
+              aria-label="Discard the balls waiting to send"
+              onClick={async () => {
+                const ok = await confirmAction(
+                  `Discard ${waitingNote.replace(" waiting to send", "")}?`,
+                  "They haven't reached the server, so they'll be lost from the score.",
+                  "Discard",
+                );
+                if (ok) clearQueue(match.id);
               }}
             >
               <i className="fa-solid fa-xmark" aria-hidden="true"></i>
@@ -1497,7 +1192,21 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
             2: 5, 6...
             3: No ball
             4: Out (corner button at bottom right) */}
-      <div className="cricket-pad-container">
+      {/* "Bowling": tells the live pages the bowler is running in, until
+          this ball is scored. */}
+      {innings.bowlerId && innings.strikerId && !overEndPending && (
+        <button
+          type="button"
+          className={`cricket-bowling-btn ${match.bowlingAt ? "is-on" : ""}`.trim()}
+          disabled={padDisabled || markBowling.isPending || queueing}
+          onClick={() => markBowling.mutate({ id: match.id })}
+        >
+          <BowlerArt />
+          <span>{match.bowlingAt ? t("bowlingOn", lang) : t("bowlingOff", lang)}</span>
+        </button>
+      )}
+      {/* A short buzz on any pad tap, so the scorer knows it took without looking. */}
+      <div className="cricket-pad-container" onPointerDown={() => buzz()}>
         <div className="cricket-pad-main">
           {[
             [0, 1, 2],
@@ -1518,7 +1227,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
                   >
                     <span className="cricket-pad-num">{key}</span>
                     {(isBoundary || key === 0) && (
-                      <small className="cricket-pad-word">{key === 4 ? "Four" : key === 6 ? "Six" : "Dot"}</small>
+                      <small className="cricket-pad-word">{t(key === 4 ? "four" : key === 6 ? "six" : "dot", lang)}</small>
                     )}
                   </button>
                 );
@@ -1530,15 +1239,10 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
                   type="button"
                   className="cricket-pad-btn is-extra"
                   disabled={padDisabled}
-                  onClick={scoreOr(() => {
-                    setExtraRuns(type === "bye" || type === "leg-bye" ? 1 : 0);
-                    setNoBallByes(null);
-                    setNoBallFreeHit(match.freeHit !== false);
-                    setExtraModal(type);
-                  })}
+                  onClick={scoreOr(() => setExtraModal(type))}
                 >
                   <OutArt type={type} className="cricket-pad-art" />
-                  <span>{EXTRA_LABELS[type]}</span>
+                  <span>{t(type, lang)}</span>
                 </button>
               );
             })}
@@ -1553,33 +1257,25 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
             title="Undo last ball"
           >
             <i className="fa-solid fa-rotate-left cricket-pad-art" aria-hidden="true"></i>
-            <span>Undo</span>
+            <span>{t("undo", lang)}</span>
           </button>
           <button
             type="button"
             className="cricket-pad-btn is-extra"
             disabled={padDisabled}
-            onClick={scoreOr(() => {
-              setAllRun(false);
-              setMoreRuns(5);
-            })}
+            onClick={scoreOr(() => setMoreRunsOpen(true))}
           >
             <OutArt type="runs" className="cricket-pad-art" />
-            <span>5, 6…</span>
+            <span>{t("moreRuns", lang)}</span>
           </button>
           <button
             type="button"
             className="cricket-pad-btn is-extra"
             disabled={padDisabled}
-            onClick={scoreOr(() => {
-              setExtraRuns(0);
-              setNoBallByes(null);
-              setNoBallFreeHit(match.freeHit !== false);
-              setExtraModal("no-ball");
-            })}
+            onClick={scoreOr(() => setExtraModal("no-ball"))}
           >
             <OutArt type="no-ball" className="cricket-pad-art" />
-            <span>No ball</span>
+            <span>{t("no-ball", lang)}</span>
           </button>
           <button
             type="button"
@@ -1588,7 +1284,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
             onClick={scoreOr(openWicket)}
           >
             <OutArt type="out" className="cricket-pad-art" />
-            <span>Out</span>
+            <span>{t("out", lang)}</span>
           </button>
         </div>
       </div>
@@ -1675,173 +1371,30 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
       )}
 
       {settingsOpen && (
-        <BottomSheet title="Match settings" icon="fa-solid fa-gear" onClose={onCloseSettings}>
-          <h3 className="cricket-sheet-label">Players</h3>
-          <div className="cricket-settings-list">
-            {(
-              [
-                ["strikerId", "Change striker", "fa-baseball-bat-ball"],
-                ["nonStrikerId", "Change non-striker", "fa-user"],
-                ["bowlerId", "Change bowler", "fa-baseball"],
-              ] as const
-            ).map(([slot, label, icon]) => (
-              <button
-                key={slot}
-                type="button"
-                className="cricket-settings-item"
-                disabled={busy || innings[slot] === null}
-                onClick={() => {
-                  onCloseSettings();
-                  // The bowler goes through the same "why?" step as tapping them.
-                  if (slot === "bowlerId") startBowlerChange();
-                  else setChanging(slot);
-                }}
-              >
-                <i className={`fa-solid ${icon}`} aria-hidden="true"></i>
-                <span>
-                  {label}
-                  <small>{innings[slot] === null ? "Not picked yet" : nameOf(innings[slot])}</small>
-                </span>
-                <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
-              </button>
-            ))}
-            <button
-              type="button"
-              className="cricket-settings-item"
-              disabled={busy || innings.strikerId === null || innings.nonStrikerId === null}
-              onClick={() => {
-                onCloseSettings();
-                setPlayers.mutate({ id: match.id, strikerId: innings.nonStrikerId, nonStrikerId: innings.strikerId });
-              }}
-            >
-              <i className="fa-solid fa-arrow-right-arrow-left fa-rotate-90" aria-hidden="true"></i>
-              <span>
-                Swap strike
-                <small>{nameOf(innings.nonStrikerId)} faces the next ball</small>
-              </span>
-            </button>
-          </div>
-
-          <h3 className="cricket-sheet-label">Scoring</h3>
-          <div className="cricket-settings-list">
-            <button
-              type="button"
-              className="cricket-settings-item"
-              disabled={busy || innings.balls.length === 0}
-              onClick={() => {
-                onCloseSettings();
-                setCorrecting({ ballIndex: null });
-              }}
-            >
-              <i className="fa-solid fa-pen" aria-hidden="true"></i>
-              <span>
-                Correct a ball
-                <small>Fix a fielder, the runs, how a batter was out or who bowled</small>
-              </span>
-              <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
-            </button>
-            <button
-              type="button"
-              className="cricket-settings-item"
-              disabled={busy}
-              onClick={() => {
-                onCloseSettings();
-                setManagingSquads(true);
-              }}
-            >
-              <i className="fa-solid fa-users-gear" aria-hidden="true"></i>
-              <span>
-                Manage squads
-                <small>Add a player, remove one, or move one to the other side</small>
-              </span>
-              <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
-            </button>
-            <button
-              type="button"
-              className="cricket-settings-item"
-              role="switch"
-              aria-checked={smallShotsOn}
-              onClick={toggleSmallShots}
-            >
-              <i className="fa-solid fa-bullseye" aria-hidden="true"></i>
-              <span>
-                Shot map for 1s, 2s and 3s
-                <small>Fours, sixes, catches and run-outs always ask where the ball went</small>
-              </span>
-              <span className={`cricket-shot-toggle-knob ${smallShotsOn ? "is-on" : ""}`.trim()} aria-hidden="true"></span>
-            </button>
-            <button
-              type="button"
-              className="cricket-settings-item"
-              disabled={busy || pendingBall !== null || needsPlayers}
-              onClick={() => {
-                onCloseSettings();
-                setPenaltyOpen(true);
-              }}
-            >
-              <i className="fa-solid fa-gavel text-warning" aria-hidden="true"></i>
-              <span>
-                Penalty runs
-                <small>Award 5 penalty runs to batting or fielding side</small>
-              </span>
-              <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
-            </button>
-          </div>
-
-          {matchSettings}
-
-          <h3 className="cricket-sheet-label">End play</h3>
-          <div className="cricket-settings-list">
-            <button
-              type="button"
-              className="cricket-settings-item"
-              disabled={busy || pendingBall !== null}
-              onClick={() => {
-                onCloseSettings();
-                setRainOpen(true);
-              }}
-            >
-              <i className="fa-solid fa-cloud-showers-heavy" aria-hidden="true"></i>
-              <span>
-                Rain interruption (DLS)
-                <small>Cut the overs or stop play; the target is worked out by Duckworth-Lewis</small>
-              </span>
-              <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
-            </button>
-            <button
-              type="button"
-              className="cricket-settings-item"
-              disabled={busy}
-              onClick={() => {
-                onCloseSettings();
-                void handleEndInnings();
-              }}
-            >
-              <i className="fa-solid fa-flag-checkered" aria-hidden="true"></i>
-              <span>
-                {match.innings.length === 2 ? "End match" : "End innings"}
-                <small>
-                  {match.innings.length === 2 ? "Close the chase and work out the result" : "The other side bats next"}
-                </small>
-              </span>
-            </button>
-            <button
-              type="button"
-              className="cricket-settings-item is-danger"
-              disabled={busy}
-              onClick={() => {
-                onCloseSettings();
-                void handleAbandon();
-              }}
-            >
-              <i className="fa-solid fa-cloud-rain" aria-hidden="true"></i>
-              <span>
-                Abandon match
-                <small>Recorded as a no result</small>
-              </span>
-            </button>
-          </div>
-        </BottomSheet>
+        <ScorerSettingsSheet
+          match={match}
+          nameOf={nameOf}
+          busy={busy}
+          queueing={queueing}
+          needsPlayers={needsPlayers}
+          smallShotsOn={smallShotsOn}
+          hapticsOn={prefs.haptics}
+          pitchMapOn={prefs.pitchMap}
+          onToggleHaptics={() => setScorerPref("haptics", !prefs.haptics)}
+          onTogglePitchMap={() => setScorerPref("pitchMap", !prefs.pitchMap)}
+          matchSettings={matchSettings}
+          onClose={onCloseSettings}
+          onChangePlayer={(slot) => (slot === "bowlerId" ? startBowlerChange() : startBatterChange(slot))}
+          onSwapStrike={() => setPlayers.mutate({ id: match.id, strikerId: innings.nonStrikerId, nonStrikerId: innings.strikerId })}
+          onCorrect={() => setCorrecting({ ballIndex: null })}
+          onManageSquads={() => setManagingSquads(true)}
+          onToggleSmallShots={toggleSmallShots}
+          onShortRun={() => setShortRunOpen(true)}
+          onPenalty={() => setPenaltyOpen(true)}
+          onRain={() => setRainOpen(true)}
+          onEndInnings={() => void handleEndInnings()}
+          onAbandon={() => void handleAbandon()}
+        />
       )}
 
       {rainOpen && (
@@ -1852,6 +1405,44 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
           onRecord={(overs) =>
             interruption.mutate({ id: match.id, overs }, { onSuccess: () => setRainOpen(false) })
           }
+        />
+      )}
+
+      {shortRunOpen && innings.strikerId !== null && (
+        <ShortRunSheet
+          bowler={nameOf(innings.bowlerId)}
+          striker={{ id: innings.strikerId, name: nameOf(innings.strikerId), photoUrl: photoOf(innings.strikerId) }}
+          nonStriker={
+            innings.nonStrikerId !== null && innings.nonStrikerId !== innings.strikerId
+              ? { id: innings.nonStrikerId, name: nameOf(innings.nonStrikerId), photoUrl: photoOf(innings.nonStrikerId) }
+              : null
+          }
+          overEnds={(legal.length + 1) % perOver === 0}
+          busy={busy}
+          onClose={() => setShortRunOpen(false)}
+          onRecord={(ball, nextStrikerId) => {
+            // The strike may change after it, which needs the connection.
+            if (queueing) {
+              toast.error(`Short runs need a connection (${waitingNote})`);
+              return;
+            }
+            const inningsIndex = match.innings.length - 1;
+            addBall.mutate(
+              { id: match.id, ...blankBall, ...ball },
+              {
+                // The scorer said the other batter faces next: swap them.
+                onSuccess: (saved) => {
+                  const now = saved.innings[inningsIndex];
+                  if (!now || now.closed || now.strikerId === nextStrikerId || now.nonStrikerId !== nextStrikerId) return;
+                  setPlayers.mutate({ id: saved.id, strikerId: now.nonStrikerId, nonStrikerId: now.strikerId });
+                },
+                onError: (error) => {
+                  if (isStaleScore(error)) toast("Score updated from another device");
+                },
+              },
+            );
+            setShortRunOpen(false);
+          }}
         />
       )}
 
@@ -2098,6 +1689,57 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
         </BottomSheet>
       )}
 
+      {askingWhyBatter && innings[askingWhyBatter] !== null && (() => {
+        const batterId = innings[askingWhyBatter];
+        const row = batting.find((r) => r.playerId === batterId);
+        const score = `${row?.runs ?? 0} (${row?.balls ?? 0})`;
+        const options = [
+          {
+            wrong: true,
+            icon: "fa-solid fa-user-pen",
+            label: "Wrong batter picked",
+            description: `Someone else has been batting. ${score} and every ball so far move to them.`,
+            disabled: yetToBatItems().length === 0,
+          },
+          {
+            wrong: false,
+            icon: "fa-solid fa-user-injured",
+            label: "Retired hurt",
+            description: `${nameOf(batterId)} leaves on ${score}, not out, and can bat again later.`,
+            disabled: false,
+          },
+        ];
+        return (
+          <BottomSheet title="Change batter" icon="fa-solid fa-baseball-bat-ball" onClose={() => setAskingWhyBatter(null)}>
+            <p className="cricket-sheet-context">
+              <strong>{nameOf(batterId)}</strong> is on {score}. Why the change?
+            </p>
+            <div className="cricket-settings-list">
+              {options.map((option) => (
+                <button
+                  key={option.label}
+                  type="button"
+                  className="cricket-settings-item"
+                  disabled={option.disabled}
+                  onClick={() => {
+                    setAskingWhyBatter(null);
+                    setWrongBatter(option.wrong);
+                    setChanging(askingWhyBatter);
+                  }}
+                >
+                  <i className={option.icon} aria-hidden="true"></i>
+                  <span>
+                    {option.label}
+                    <small>{option.disabled ? "Everyone else has batted already." : option.description}</small>
+                  </span>
+                  <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                </button>
+              ))}
+            </div>
+          </BottomSheet>
+        );
+      })()}
+
       {changing && innings[changing] !== null && (
         <PlayerPicker
           key={`change-${changing}`}
@@ -2106,9 +1748,11 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
               ? wrongBowler
                 ? "Who bowled this over?"
                 : "Change bowler"
-              : changing === "strikerId"
-                ? "Change striker"
-                : "Change non-striker"
+              : wrongBatter
+                ? "Who has been batting?"
+                : changing === "strikerId"
+                  ? "Change striker"
+                  : "Change non-striker"
           }
           hint={
             changing === "bowlerId" && wrongBowler ? (
@@ -2122,6 +1766,12 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
                 <i className="fa-solid fa-baseball" aria-hidden="true"></i> Who finishes the over for{" "}
                 <strong>{nameOf(innings.bowlerId)}</strong>? Their figures so far stay with them.
               </>
+            ) : wrongBatter ? (
+              <>
+                <i className="fa-solid fa-user-pen" aria-hidden="true"></i> All of{" "}
+                <strong>{nameOf(innings[changing])}</strong>'s runs and balls this innings move to who you pick. Only
+                players yet to bat are shown.
+              </>
             ) : (
               <>
                 <i className="fa-solid fa-baseball-bat-ball" aria-hidden="true"></i> Who comes in for{" "}
@@ -2133,512 +1783,104 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
             )
           }
           icon={`fa-solid ${changing === "bowlerId" ? "fa-baseball" : "fa-baseball-bat-ball"}`}
-          items={changing === "bowlerId" ? changeBowlerItems : batterItems(null)}
+          items={changing === "bowlerId" ? changeBowlerItems : wrongBatter ? yetToBatItems() : batterItems(null)}
           nameOf={nameOf}
           selectedId={null}
           onPick={(id) => change(changing, id)}
           onClose={() => {
             setChanging(null);
             setWrongBowler(false);
+            setWrongBatter(false);
           }}
+        />
+      )}
+
+      {pendingPitch && (
+        <PitchSheet
+          bowlerName={nameOf(innings.bowlerId)}
+          leftHanded={allPlayers?.find((p) => p.id === innings.strikerId)?.battingStyle === "left-hand"}
+          busy={busy}
+          onPick={(spot) => {
+            const ball = pendingPitch;
+            setPendingPitch(null);
+            record({ ...ball, pitchLine: spot?.line ?? null, pitchLength: spot?.length ?? null });
+          }}
+          onClose={() => setPendingPitch(null)}
         />
       )}
 
       {pendingShot && (
-        <BottomSheet
-          title={
-            shotStep === "type"
-              ? pendingShot.wicketType
-                ? "What shot was played?"
-                : `What shot was the ${shotWord}?`
-              : pendingShot.wicketType === "caught"
-                ? "Where was the catch taken?"
-                : pendingShot.wicketType
-                  ? "Where was the ball fielded?"
-                  : `Where did the ${shotWord} go?`
-          }
-          icon="fa-solid fa-bullseye"
-          // Once a spot is tapped the ball is on its way in; it can't be dropped.
-          onClose={() => !shotSpot && setPendingShot(null)}
-          footer={
-            shotStep === "spot" ? (
-              <button type="button" className="cricket-sheet-undo" disabled={busy || Boolean(shotSpot)} onClick={() => saveShot(null, shotType)}>
-                Skip — record the {shotWord} without a spot
-              </button>
-            ) : shotNeedsType ? undefined : (
-              <button type="button" className="cricket-sheet-undo" onClick={() => setShotStep("spot")}>
-                Skip — don't name the shot
-              </button>
-            )
-          }
-        >
-          {shotStep === "type" ? (
-            <>
-              <p className="cricket-sheet-context">
-                <i className="fa-solid fa-baseball-bat-ball" aria-hidden="true"></i> {nameOf(innings.strikerId)} · pick the shot
-                {shotNeedsType ? "" : " (optional)"}
-              </p>
-              <div className="cricket-out-grid cricket-shot-tiles" role="group" aria-label="Shot played">
-                {(moreShots ? SHOT_TYPES : SHOT_TYPES.slice(0, COMMON_SHOTS)).map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    aria-pressed={shotType === type}
-                    className={`cricket-out-tile ${shotType === type ? "active" : ""}`.trim()}
-                    onClick={() => pickShotType(type)}
-                  >
-                    <span className="cricket-out-icon">
-                      <OutArt type={`shot:${type}`} />
-                    </span>
-                    <span className="cricket-out-label">{type}</span>
-                  </button>
-                ))}
-              </div>
-              <div className="d-flex justify-content-center">
-                <button type="button" className="cricket-out-more" onClick={() => setMoreShots((v) => !v)}>
-                  {moreShots ? "Show less" : "Show more"}
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <p className="cricket-sheet-context">
-                <i className="fa-solid fa-baseball-bat-ball" aria-hidden="true"></i> {nameOf(innings.strikerId)}
-                {shotType && ` · ${shotType}`} ·{" "}
-                {shotSpot ? (
-                  <strong>
-                    <i className="fa-solid fa-check" aria-hidden="true"></i> {shotZoneAt(shotSpot.x, shotSpot.y)}
-                  </strong>
-                ) : (
-                  "tap where the ball went to record it"
-                )}
-              </p>
-              <ShotGround
-                marker={shotSpot}
-                markerFlight={shotFlight}
-                onPick={tapShot}
-                leftHanded={allPlayers?.find((p) => p.id === innings.strikerId)?.battingStyle === "left-hand"}
-                label="Tap where the ball went"
-              />
-              <div className="d-flex justify-content-center">
-                <button type="button" className="cricket-out-more" disabled={Boolean(shotSpot)} onClick={() => setShotStep("type")}>
-                  <i className="fa-solid fa-arrow-left" aria-hidden="true"></i> {shotType ? "Change shot" : "Name the shot"}
-                </button>
-              </div>
-            </>
-          )}
-          {!pendingShot.wicketType && (
-            <div className="d-flex justify-content-center mt-2">
-              <button type="button" className="cricket-shot-toggle" role="switch" aria-checked={smallShotsOn} onClick={toggleSmallShots}>
-                <span className={`cricket-shot-toggle-knob ${smallShotsOn ? "is-on" : ""}`.trim()} aria-hidden="true"></span>
-                Ask for 1s, 2s and 3s too
-              </button>
-            </div>
-          )}
-        </BottomSheet>
-      )}
-
-      {extraModal && (
-        <BottomSheet
-          title={EXTRA_LABELS[extraModal]}
-          icon={`fa-solid ${EXTRA_ICONS[extraModal]}`}
-          onClose={() => setExtraModal(null)}
-          footer={
-            <button type="button" className="cricket-sheet-submit" onClick={submitExtra} disabled={busy}>
-              <i className="fa-solid fa-check" aria-hidden="true"></i> Record {EXTRA_LABELS[extraModal].toLowerCase()}
-              {extraModal === "wide" || extraModal === "no-ball" ? ` + ${extraRuns}` : ` ${Math.max(extraRuns, 1)}`}
-            </button>
-          }
-        >
-          <p className="cricket-sheet-context">
-            <i className="fa-solid fa-baseball" aria-hidden="true"></i> {nameOf(innings.bowlerId)} to {nameOf(innings.strikerId)}
-          </p>
-          {extraModal === "no-ball" && (
-            <>
-              <label className="cricket-sheet-label">The runs were</label>
-              <div className="cricket-chip-choice" role="radiogroup" aria-label="The runs were">
-                {(
-                  [
-                    [null, "Off the bat"],
-                    ["bye", "Byes"],
-                    ["leg-bye", "Leg byes"],
-                  ] as const
-                ).map(([value, label]) => (
-                  <button
-                    key={label}
-                    type="button"
-                    role="radio"
-                    aria-checked={noBallByes === value}
-                    className={noBallByes === value ? "active" : ""}
-                    onClick={() => setNoBallByes(value)}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-          <label className="cricket-sheet-label">
-            {extraModal === "no-ball"
-              ? noBallByes
-                ? `${noBallByes === "bye" ? "Byes" : "Leg byes"} run (1-run penalty added)`
-                : "Runs off the bat (1-run penalty added)"
-              : extraModal === "wide"
-                ? "Runs run as well (1-run penalty added)"
-                : "Runs run"}
-          </label>
-          <RunChoice
-            value={extraRuns}
-            onChange={setExtraRuns}
-            min={extraModal === "bye" || extraModal === "leg-bye" ? 1 : 0}
-          />
-          {extraModal === "no-ball" && (
-            <div className="cricket-freehit-choice mt-3 pt-2 border-top">
-              <label className="cricket-sheet-label mb-1">Free hit on next ball?</label>
-              <div className="cricket-chip-choice" role="radiogroup" aria-label="Free hit on next ball">
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={noBallFreeHit}
-                  className={noBallFreeHit ? "active" : ""}
-                  onClick={() => setNoBallFreeHit(true)}
-                >
-                  <i className="fa-solid fa-bolt text-warning me-1" aria-hidden="true"></i> Yes (Free hit)
-                </button>
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={!noBallFreeHit}
-                  className={!noBallFreeHit ? "active" : ""}
-                  onClick={() => setNoBallFreeHit(false)}
-                >
-                  <i className="fa-solid fa-ban me-1" aria-hidden="true"></i> No free hit
-                </button>
-              </div>
-            </div>
-          )}
-        </BottomSheet>
-      )}
-
-      {moreRuns !== null && (
-        <BottomSheet
-          title="Runs"
-          icon="fa-solid fa-person-running"
-          onClose={() => setMoreRuns(null)}
-          footer={
-            <button
-              type="button"
-              className="cricket-sheet-submit"
-              onClick={() => {
-                // A 4 or 6 the batters ran: not a boundary.
-                recordShot(allRun && (moreRuns === 4 || moreRuns === 6) ? { runs: moreRuns, boundary: false } : { runs: moreRuns });
-                setMoreRuns(null);
-              }}
-              disabled={busy}
-            >
-              <i className="fa-solid fa-check" aria-hidden="true"></i> Record {moreRuns} run{moreRuns === 1 ? "" : "s"}
-            </button>
-          }
-        >
-          <p className="cricket-sheet-context">
-            <i className="fa-solid fa-baseball" aria-hidden="true"></i> {nameOf(innings.bowlerId)} to {nameOf(innings.strikerId)}
-          </p>
-          <label className="cricket-sheet-label">Runs off the bat</label>
-          {/* The server takes up to 7 off one ball. */}
-          <RunChoice value={moreRuns} onChange={setMoreRuns} min={4} max={7} />
-          {(moreRuns === 4 || moreRuns === 6) && (
-            <div className="d-flex mt-2">
-              <button type="button" className="cricket-shot-toggle" role="switch" aria-checked={allRun} onClick={() => setAllRun((v) => !v)}>
-                <span className={`cricket-shot-toggle-knob ${allRun ? "is-on" : ""}`.trim()} aria-hidden="true"></span>
-                All run — didn't reach the boundary
-              </button>
-            </div>
-          )}
-        </BottomSheet>
-      )}
-
-      {wicketModal && pickingFielder && (
-        <PlayerPicker
-          title={pickingFielder === "secondFielderId" ? "Fielder 2" : kind?.keeper ? "Wicket-keeper" : kind?.key === "caught" ? "Caught by" : "Fielder"}
-          icon="fa-solid fa-hand"
-          items={bowlingXi
-            .filter((id) => id !== (pickingFielder === "fielderId" ? wicket.secondFielderId : wicket.fielderId))
-            .map((id) => ({ id, tag: id === innings.bowlerId ? "Bowler" : undefined }))}
-          nameOf={nameOf}
-          selectedId={wicket[pickingFielder]}
-          onPick={(id) => {
-            setWicket((w) => ({ ...w, [pickingFielder]: id }));
-            setPickingFielder(null);
-          }}
-          onClose={() => setPickingFielder(null)}
+        <ShotSheet
+          ball={pendingShot}
+          strikerName={nameOf(innings.strikerId)}
+          leftHanded={allPlayers?.find((p) => p.id === innings.strikerId)?.battingStyle === "left-hand"}
+          busy={busy}
+          smallShotsOn={smallShotsOn}
+          onToggleSmallShots={toggleSmallShots}
+          onRecord={saveShot}
+          onClose={() => setPendingShot(null)}
         />
       )}
 
-      {wicketModal && pickingIncoming && (
-        <PlayerPicker
-          title={kind?.key === "timed-out" ? "Who was timed out?" : "Who can't bat?"}
-          icon="fa-solid fa-user-clock"
-          items={batterItems(null)}
-          nameOf={nameOf}
-          selectedId={wicket.dismissedId}
-          onPick={(id) => {
-            setWicket((w) => ({ ...w, dismissedId: id }));
-            setPickingIncoming(false);
-          }}
-          onClose={() => setPickingIncoming(false)}
+      {extraModal && (
+        <ExtrasSheet
+          type={extraModal}
+          bowlerName={nameOf(innings.bowlerId)}
+          strikerName={nameOf(innings.strikerId)}
+          freeHitDefault={match.freeHit !== false}
+          busy={busy}
+          onRecord={record}
+          onRecordShot={recordShot}
+          onClose={() => setExtraModal(null)}
+        />
+      )}
+
+      {moreRunsOpen && (
+        <MoreRunsSheet
+          bowlerName={nameOf(innings.bowlerId)}
+          strikerName={nameOf(innings.strikerId)}
+          busy={busy}
+          onRecord={recordShot}
+          onClose={() => setMoreRunsOpen(false)}
         />
       )}
 
       {wicketModal && (
-        <BottomSheet
-          title="Wicket"
-          icon="fa-solid fa-hand-point-up"
+        <WicketSheet
+          match={match}
+          nameOf={nameOf}
+          busy={busy}
+          incomingDue={incomingDue}
+          freeHit={freeHit}
+          lastMan={lastMan}
+          facing={facing}
+          incomingItems={batterItems(null)}
+          showMoreOuts={wicketMoreOuts}
+          onSubmit={submitWicket}
           onClose={() => setWicketModal(false)}
-          footer={
-            kind && (kind.step === "fielder" || kind.step === "run-out" || kind.step === "delivery" || kind.runs || kind.who === "incoming") ? (
-              <button
-                type="button"
-                className="cricket-sheet-submit is-danger"
-                onClick={() => submitWicket()}
-                disabled={busy || wicket.dismissedId === null}
-              >
-                <i className="fa-solid fa-check" aria-hidden="true"></i> Record {kind.label.toLowerCase()}
-              </button>
-            ) : undefined
-          }
-        >
-          <p className="cricket-sheet-context">
-            <i className="fa-solid fa-baseball" aria-hidden="true"></i>{" "}
-            {incomingDue ? "The next batter is due" : `${nameOf(innings.bowlerId)} to ${nameOf(innings.strikerId)}`}
-          </p>
-          {freeHit && !incomingDue && (
-            <p className="cricket-sheet-note">
-              <i className="fa-solid fa-bolt" aria-hidden="true"></i> Free hit — only a run-out, obstructing the field, hitting the ball
-              twice or a retirement
-            </p>
-          )}
-          <label className="cricket-sheet-label">{wicket.key ? "Out type" : "Select out type"}</label>
-          {/* Once one is chosen only it shows; tapping it again brings the
-              rest back. */}
-          <div className={`cricket-out-grid ${wicket.key ? "is-chosen" : ""}`.trim()} role="radiogroup" aria-label="How out">
-            {OUT_KINDS.filter((k) => (wicket.key ? k.key === wicket.key : moreOuts || !k.more)).map((k) => {
-              // Timed out / absent hurt only while the next batter is due,
-              // and nothing else then.
-              const freeHitBlocked = freeHit && !incomingDue && !allowedOnFreeHit(k);
-              const unavailable = (k.who === "incoming") !== incomingDue || freeHitBlocked;
-              return (
-                <button
-                  key={k.key}
-                  type="button"
-                  role="radio"
-                  aria-checked={wicket.key === k.key}
-                  className={`cricket-out-tile ${wicket.key === k.key ? "active" : ""}`.trim()}
-                  disabled={busy || unavailable}
-                  title={
-                    freeHitBlocked
-                      ? "Not out on a free hit"
-                      : unavailable
-                        ? incomingDue
-                          ? "Pick the next batter first"
-                          : "Only when the next batter is due"
-                        : undefined
-                  }
-                  onClick={() => (wicket.key === k.key ? setWicket((w) => ({ ...w, key: null })) : chooseOut(k))}
-                >
-                  <span className="cricket-out-icon">
-                    <OutArt type={k.key} />
-                  </span>
-                  <span className="cricket-out-label">{k.label}</span>
-                  {wicket.key === k.key && (
-                    <span className="cricket-out-change">
-                      <i className="fa-solid fa-rotate" aria-hidden="true"></i> Change
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-          {!wicket.key && (
-            <div className="d-flex justify-content-center">
-              <button type="button" className="cricket-out-more" onClick={() => setMoreOuts((v) => !v)}>
-                {moreOuts ? "Show less" : "Show more"}
-              </button>
-            </div>
-          )}
-
-          {kind?.noDelivery === "choice" && (
-            <div className="d-flex justify-content-center mt-2">
-              <button
-                type="button"
-                className="cricket-shot-toggle"
-                role="switch"
-                aria-checked={wicket.countBall}
-                onClick={() => setWicket((w) => ({ ...w, countBall: !w.countBall }))}
-              >
-                <span className={`cricket-shot-toggle-knob ${wicket.countBall ? "is-on" : ""}`.trim()} aria-hidden="true"></span>
-                Count the ball
-              </button>
-            </div>
-          )}
-
-          {kind?.offExtras && (kind.noDelivery !== "choice" || wicket.countBall) && (
-            <>
-              <label className="cricket-sheet-label">Delivery</label>
-              <div className="cricket-chip-choice">
-                {/* Neither stumped nor hit wicket is out off a no ball; byes and
-                    leg byes only for a run-out. */}
-                {DELIVERIES.filter(
-                  (d) =>
-                    (d.value !== "no-ball" || (kind.key !== "stumped" && kind.key !== "hit-wicket")) &&
-                    ((d.value !== "bye" && d.value !== "leg-bye") || kind.key === "run-out"),
-                ).map((d) => (
-                  <button
-                    key={d.value}
-                    type="button"
-                    className={wicket.delivery === d.value ? "active" : ""}
-                    onClick={() => setWicket((w) => ({ ...w, delivery: d.value }))}
-                  >
-                    <i className={`fa-solid ${d.icon}`} aria-hidden="true"></i> {d.label}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-
-          {kind?.who === "either" && (
-            <>
-              <label className="cricket-sheet-label">Which batter</label>
-              <div className="cricket-batter-pick" role="radiogroup" aria-label="Which batter">
-                {(lastMan ? [facing] : [innings.strikerId, innings.nonStrikerId]).map((playerId, i) => (
-                  <button
-                    key={playerId}
-                    type="button"
-                    role="radio"
-                    aria-checked={wicket.dismissedId === playerId}
-                    className={`cricket-batter-pick-card ${wicket.dismissedId === playerId ? "active" : ""}`.trim()}
-                    disabled={busy || playerId === null}
-                    onClick={() => {
-                      const next = { ...wicket, dismissedId: playerId, outEnd: null };
-                      // Picking the batter records it, unless there's more to
-                      // pick (a run-out's fielders, an obstruction's runs).
-                      if (kind.step === "batter" && !kind.runs) submitWicket(next);
-                      else setWicket(next);
-                    }}
-                  >
-                    <PlayerAvatar name={nameOf(playerId)} photoUrl={playerId === null ? null : photoOf(playerId)} className="cricket-fielder-avatar" />
-                    <span className="cricket-slot-text">
-                      <small>{i === 0 ? "Striker" : "Non-striker"}</small>
-                      <strong>{nameOf(playerId)}</strong>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-
-          {kind?.who === "incoming" && (
-            <>
-              <label className="cricket-sheet-label">{kind.key === "timed-out" ? "Timed out" : "Can't bat"}</label>
-              <button
-                type="button"
-                className={`cricket-slot cricket-fielder-slot ${wicket.dismissedId !== null ? "is-chosen" : ""}`.trim()}
-                disabled={busy}
-                onClick={() => setPickingIncoming(true)}
-              >
-                {wicket.dismissedId !== null ? (
-                  <PlayerAvatar name={nameOf(wicket.dismissedId)} photoUrl={photoOf(wicket.dismissedId)} className="cricket-fielder-avatar" />
-                ) : (
-                  <span className="cricket-slot-icon">
-                    <i className="fa-solid fa-user-clock" aria-hidden="true"></i>
-                  </span>
-                )}
-                <span className="cricket-slot-text">
-                  <small>Next batter</small>
-                  <strong>{wicket.dismissedId === null ? "Choose the batter" : nameOf(wicket.dismissedId)}</strong>
-                </span>
-                <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
-              </button>
-            </>
-          )}
-
-          {(kind?.step === "fielder" || kind?.step === "run-out") && (
-            <>
-              {/* A run-out: the thrower and the one at the stumps, or one
-                  fielder alone for a direct hit (switched at the row's end). */}
-              <div className="cricket-sheet-label-row">
-                <label className="cricket-sheet-label">
-                  {kind.key === "caught" ? "Caught by" : kind.keeper ? "Wicket-keeper" : "Fielders"}
-                </label>
-                {kind.step === "run-out" && (
-                  <button
-                    type="button"
-                    className="cricket-shot-toggle"
-                    role="switch"
-                    aria-checked={wicket.directHit}
-                    onClick={() => setWicket((w) => ({ ...w, directHit: !w.directHit }))}
-                  >
-                    <span className={`cricket-shot-toggle-knob ${wicket.directHit ? "is-on" : ""}`.trim()} aria-hidden="true"></span>
-                    Direct hit
-                  </button>
-                )}
-                {(kind.key === "caught" || kind.key === "caught-behind") && (
-                  <button
-                    type="button"
-                    className="cricket-shot-toggle"
-                    role="switch"
-                    aria-checked={wicket.excellentCatch}
-                    disabled={wicket.fielderId === null}
-                    title={wicket.fielderId === null ? "Choose who took the catch first" : undefined}
-                    onClick={() => setWicket((w) => ({ ...w, excellentCatch: !w.excellentCatch }))}
-                  >
-                    <span className={`cricket-shot-toggle-knob ${wicket.excellentCatch ? "is-on" : ""}`.trim()} aria-hidden="true"></span>
-                    Excellent catch
-                  </button>
-                )}
-              </div>
-              <div className="cricket-fielder-slots">
-                {fielderSlot("fielderId", kind.step !== "run-out" ? null : wicket.directHit ? "Fielder" : "Fielder 1")}
-                {kind.step === "run-out" && !wicket.directHit && fielderSlot("secondFielderId", "Fielder 2")}
-              </div>
-            </>
-          )}
-
-          {kind?.runs && (
-            <>
-              <label className="cricket-sheet-label">
-                Runs completed before the {kind.step === "run-out" ? "run-out" : "obstruction"}
-              </label>
-              <RunChoice value={wicket.runs} max={5} onChange={(runs) => setWicket((w) => ({ ...w, runs }))} />
-            </>
-          )}
-
-          {kind?.key === "run-out" && !lastMan && wicket.dismissedId !== null && (
-            <>
-              {/* The survivor goes to the other end. */}
-              <label className="cricket-sheet-label">Where was the wicket broken</label>
-              <div className="cricket-chip-choice" role="radiogroup" aria-label="Run-out end">
-                {(
-                  [
-                    ["striker", "Striker's end"],
-                    ["non-striker", "Non-striker's end"],
-                  ] as const
-                ).map(([value, label]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    role="radio"
-                    aria-checked={outEndOf(wicket) === value}
-                    className={outEndOf(wicket) === value ? "active" : ""}
-                    onClick={() => setWicket((w) => ({ ...w, outEnd: value }))}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </BottomSheet>
+        />
       )}
     </div>
+  );
+}
+
+const ROLE_BADGE_TITLES: Record<string, string> = { C: "Captain", VC: "Vice-captain", WK: "Wicket-keeper" };
+
+// Round C / VC / WK badges beside a crease player's name, so they don't read
+// like the batting / bowling style pills.
+function CreaseRoleBadges({ roles }: { roles: string[] }) {
+  return (
+    <>
+      {roles.map((role) => (
+        <span
+          key={role}
+          className={`cricket-crease-role-tag is-${role.toLowerCase()}`}
+          title={ROLE_BADGE_TITLES[role]}
+          aria-label={ROLE_BADGE_TITLES[role]}
+        >
+          {role}
+        </span>
+      ))}
+    </>
   );
 }

@@ -100,13 +100,22 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar, isDark, toggleTheme, onS
                     <QuickCreate />
                     <button
                         type="button"
-                        className="navbar-theme-btn"
+                        className="navbar-theme-btn navbar-theme-toggle"
                         onClick={(event) => toggleTheme(event.currentTarget)}
                         title={isDark ? "Switch to light mode" : "Switch to dark mode"}
                         aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
                     >
-                        {/* Bootstrap's sun: Font Awesome's reads as a settings cog at this size. */}
-                        <i className={isDark ? "bi bi-sun-fill" : "fa-solid fa-moon"} aria-hidden="true"></i>
+                        {/* The theme it switches to: a moon in light mode, a sun in dark.
+                            The sun is drawn here (a disc and eight rounded rays):
+                            Font Awesome's reads as a settings cog at this size. */}
+                        {isDark ? (
+                            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="4.2" fill="currentColor" />
+                                <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4" />
+                            </svg>
+                        ) : (
+                            <i className="fa-solid fa-moon" aria-hidden="true"></i>
+                        )}
                     </button>
                     <div className="navbar-user-menu" ref={menuRef} data-tour="account">
                         <button

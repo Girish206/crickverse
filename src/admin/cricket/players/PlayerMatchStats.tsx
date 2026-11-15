@@ -1,6 +1,7 @@
 import { ballsPerOverOf, type CricketMatch, type CricketPlayer } from "../../../api/types";
 import { roleOf } from "../playerRoles";
 import { PlayerAvatar } from "./PlayerAvatar";
+import { PlayerBallLog } from "./PlayerBallLog";
 import { Scoreline } from "../me/SummaryBanner";
 import { MvpSources } from "../matches/MvpBreakdown";
 import { usePlayerNames } from "../matches/matchUtils";
@@ -64,6 +65,13 @@ export function PlayerMatchStats({ player, match }: { player: CricketPlayer; mat
     </h4>
   );
 
+  const ballLog = (index: number, as: "batter" | "bowler") => (
+    <>
+      <h5 className="cricket-player-ball-log-title">Ball by ball</h5>
+      <PlayerBallLog innings={match.innings[index]} playerId={player.id} as={as} perOver={perOver} nameOf={nameOf} />
+    </>
+  );
+
   const runs = batting.reduce((sum, b) => sum + b.card.runs, 0);
   const wickets = bowling.reduce((sum, b) => sum + b.card.wickets, 0);
   const dismissals = row ? row.catches + row.stumpings + row.runOuts : 0;
@@ -125,10 +133,12 @@ export function PlayerMatchStats({ player, match }: { player: CricketPlayer; mat
                   ["Runs", `${card.runs}${out && isWicket(card.outBall!) ? "" : "*"}`],
                   ["Balls", card.balls],
                   ["Strike rate", strikeRate(card.runs, card.balls)],
+                  ["Dots", card.dots],
                   ["4s / 6s", `${card.fours} / ${card.sixes}`],
                   ["Batted at", `#${position}`],
                   ["Status", out ? dismissalText(card.outBall!, nameOf) || "Out" : "Not out"],
                 ])}
+                {ballLog(index, "batter")}
               </div>
             );
           })}
@@ -143,6 +153,7 @@ export function PlayerMatchStats({ player, match }: { player: CricketPlayer; mat
                 ["Dots", card.dots],
                 ["Wides / No-balls", `${card.wides} / ${card.noBalls}`],
               ])}
+              {ballLog(index, "bowler")}
             </div>
           ))}
           {dismissals > 0 && (

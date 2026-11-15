@@ -10,7 +10,7 @@ export interface SubmitButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonE
 
 // The form-submit button used at the bottom of every admin form, rendered
 // through the ported DMS CustomButton so it picks up the theme's --primary
-// color. Inside a DefaultModal it moves into the modal's footer, right-aligned
+// color. Inside a BottomSheet it moves into the modal's footer, right-aligned
 // next to a Cancel button; elsewhere it sits right-aligned under the form.
 export function SubmitButton({
   loading = false,

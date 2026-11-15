@@ -180,7 +180,7 @@
   color: #fff;
 }
 .cv-form-line > small {
-  font-size: var(--fs-3xs);
+  font-size: var(--fs-2xs);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -191,14 +191,23 @@
   gap: 5px;
 }
 .cv-form-chip {
-  width: 22px;
-  height: 22px;
+  width: 16px;
+  height: 16px;
   display: grid;
   place-items: center;
-  border-radius: var(--radius-sm);
+  border-radius: 4px;
   font-size: var(--fs-2xs);
+  line-height: 1;
   font-weight: 700;
+  letter-spacing: 0;
+  text-align: center;
+  padding: 0;
   color: #fff;
+}
+/* Trim the font's ascender/descender space so the capital letter itself
+   is what gets centred in the box, not its taller line box. */
+.cv-form-chip > span {
+  text-box: trim-both cap alphabetic;
 }
 .cv-form-chip.is-W {
   background: var(--success-fill);
@@ -209,10 +218,10 @@
 .cv-form-chip.is-T {
   background: rgba(255, 255, 255, 0.28);
 }
-/* On the red hero: a red loss would vanish, so win is white, loss is dark. */
+/* On the red hero: a red loss would vanish, so win is green, loss is dark. */
 .cricket-home-hero .cv-form-chip.is-W {
-  background: #fff;
-  color: #15803d;
+  background: #16a34a;
+  color: #fff;
 }
 .cricket-home-hero .cv-form-chip.is-L {
   background: rgba(0, 0, 0, 0.38);
@@ -727,10 +736,13 @@
   padding: 0;
   border: 0;
 }
+.cv-hero-compact .cv-form-line > small {
+  font-size: var(--fs-3xs);
+}
 .cv-hero-compact .cv-form-chip {
-  width: 18px;
-  height: 18px;
-  border-radius: var(--radius-sm);
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
   font-size: var(--fs-3xs);
 }
 .cv-hero-compact .cv-form-chip:first-child {

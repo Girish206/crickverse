@@ -6,7 +6,7 @@ export interface ModalFormProps {
   children: ReactNode;
 }
 
-// Bare <form> used inside a DefaultModal — the modal chrome + title already
+// Bare <form> used inside a BottomSheet — the modal chrome + title already
 // provide the framing, and DMS's own InputComp/TextareaInput/SelectInput
 // fields are fully self-styled, so no extra wrapper class is needed. Its id
 // lets the SubmitButton (portaled into the modal footer) still submit it.

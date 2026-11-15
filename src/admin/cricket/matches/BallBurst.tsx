@@ -1,14 +1,15 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import type { CricketBall, CricketMatch } from "../../../api/types";
 import { battingCard, dismissalText, isFour, isSix, isWicket, type NameOf } from "../stats";
+import { setBurstPlaying as setPlaying } from "./burstPlaying";
 import { playBurstSound } from "./burstSounds";
 
 type Kind = "four" | "six" | "out";
 type Burst = { kind: Kind; ball: CricketBall; key: string; line: string; duck: "duck" | "golden" | null };
 
 // How long each one plays (ms); a duck stays a little longer for the duck.
-const DURATION = { boundary: 4000, out: 4000, duck: 5200 };
+const DURATION = { boundary: 3500, out: 4000, duck: 5200 };
 
 // How they were out, for the ribbon under "OUT!".
 function outLabel(ball: CricketBall) {
@@ -37,7 +38,8 @@ function outLabel(ball: CricketBall) {
 // not on load or after an undo. Animated with SMIL, so each one plays from
 // the start as it's mounted. Mounted once on the match page (so the last
 // ball of the match still plays as the page turns to the result) and drawn
-// over everything, above the next-bowler / next-batter sheets.
+// over everything; the scorer's next-bowler / next-batter pickers wait for it
+// (useBurstPlaying).
 export function BallBurst({ match, nameOf }: { match: CricketMatch; nameOf: NameOf }) {
   // The innings the newest ball is in: after an innings' last ball the next
   // one has started empty, so it's the latest one with balls.
@@ -46,7 +48,9 @@ export function BallBurst({ match, nameOf }: { match: CricketMatch; nameOf: Name
   const seen = useRef(count);
   const [burst, setBurst] = useState<Burst | null>(null);
 
-  useEffect(() => {
+  // A layout effect, so the flag is up before any passive effect (like the
+  // scorer opening its pickers) sees the new ball.
+  useLayoutEffect(() => {
     const added = count > seen.current;
     seen.current = count;
     const ball = innings?.balls.at(-1);
@@ -56,8 +60,10 @@ export function BallBurst({ match, nameOf }: { match: CricketMatch; nameOf: Name
     // The game has moved on: don't leave the last moment over the next ball.
     if (!kind) {
       setBurst(null);
+      setPlaying(false);
       return;
     }
+    setPlaying(true);
     const who = kind === "out" ? ball.dismissedId : ball.batterId;
     const row = battingCard(innings).find((r) => r.playerId === who);
     const score = row ? ` · ${row.runs}${kind === "out" ? "" : "*"} (${row.balls})` : "";
@@ -69,9 +75,13 @@ export function BallBurst({ match, nameOf }: { match: CricketMatch; nameOf: Name
   const duration = !burst ? 0 : burst.duck ? DURATION.duck : burst.kind === "out" ? DURATION.out : DURATION.boundary;
   useEffect(() => {
     if (!burst) return;
-    const timer = setTimeout(() => setBurst(null), duration);
+    const timer = setTimeout(() => {
+      setBurst(null);
+      setPlaying(false);
+    }, duration);
     return () => clearTimeout(timer);
   }, [burst, duration]);
+  useEffect(() => () => setPlaying(false), []);
 
   if (!burst) return null;
   const { kind, ball, duck } = burst;
@@ -156,7 +166,6 @@ function BurstFx({ kind }: { kind: Kind }) {
             style={{ "--y": `${streak.y}px`, "--delay": `${streak.delay}s` } as CSSProperties}
           ></span>
         ))}
-      {kind !== "out" && <span className="cricket-burst-flyball"></span>}
       {kind === "six" &&
         FIREWORKS.map((firework) => (
           <span
@@ -325,7 +334,7 @@ function OutScene() {
       </circle>
       <g>
         <Ball r={5} />
-        <animateMotion path="M-10 72 Q55 62 98 88" dur="0.4s" fill="freeze" rotate="auto" />
+        <animateMotion path="M-10 58 Q30 66 60 101 Q80 92 98 88" dur="0.4s" fill="freeze" rotate="auto" />
         <animateMotion path="M98 88 Q120 94 142 103" begin="0.4s" dur="0.35s" fill="freeze" rotate="auto" />
       </g>
     </svg>

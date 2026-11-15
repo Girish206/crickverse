@@ -42,6 +42,15 @@
   --brand-orange-bright: var(--brand-accent-bright);
   --brand-amber-bright: #d9bd74;
 
+  /* The logo name's gradient, deep red to orange: the edge line of the top
+     and bottom bars (Navbar.css, BottomNav.css) */
+  --brand-gradient: linear-gradient(90deg, #9a2219 0%, #d7261e 45%, #f26a1b 100%);
+  /* The top and bottom bars' fill: the brand's red spreading sideways from
+     the centre, brightest there (a touch of the orange) and deepening
+     evenly to the left and right ends; the same from top to bottom. Deep
+     enough throughout for the white icons and text on it. */
+  --brand-gradient-bar: linear-gradient(90deg, #a8261c 0%, #bb2a1e 20%, #d6372a 38%, #ea5a2a 50%, #d6372a 62%, #bb2a1e 80%, #a8261c 100%);
+
   /* Charcoal surfaces (dark theme) */
   --brand-navy-night: #121418;
   --brand-navy-surface: #1b1e24;
