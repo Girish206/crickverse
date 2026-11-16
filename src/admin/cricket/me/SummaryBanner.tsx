@@ -19,15 +19,19 @@ export function Scoreline({ stats }: { stats: ScoreStat[] }) {
   );
 }
 
-// The win rate as a ring ("–" before any completed match).
-export function WinRing({ won, played, label = "won" }: { won: number; played: number; label?: string }) {
+// The win rate as a ring ("–" before any completed match). `against`: my
+// wins against the teams shown (said in full to screen readers; the short
+// label is what fits inside the ring).
+export function WinRing({ won, played, label = "won", against = false }: { won: number; played: number; label?: string; against?: boolean }) {
   const rate = played > 0 ? Math.round((won / played) * 100) : null;
   return (
     <span
       className="cv-win-ring"
       style={{ "--win": `${rate ?? 0}%` } as CSSProperties}
       role="img"
-      aria-label={rate === null ? "No completed matches yet" : `Won ${rate}% of completed matches`}
+      aria-label={
+        rate === null ? "No completed matches yet" : `Won ${rate}% of completed matches${against ? " against them" : ""}`
+      }
     >
       <strong>{rate === null ? "–" : `${rate}%`}</strong>
       <small>{label}</small>

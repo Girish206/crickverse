@@ -104,8 +104,9 @@ function useTournamentMutation<TVars>(
   });
 }
 
+// `imagesFrom`: an earlier season whose logo and banner the new one keeps.
 export function useCreateCricketTournament() {
-  return useTournamentMutation((input: CricketTournamentInput) =>
+  return useTournamentMutation((input: CricketTournamentInput & { imagesFrom?: number }) =>
     apiClient.post("/admin/cricket/tournaments", input),
   );
 }

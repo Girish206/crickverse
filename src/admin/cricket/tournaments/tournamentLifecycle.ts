@@ -13,4 +13,5 @@ export const tournamentStarted = (matches: CricketMatch[] | undefined) =>
 export const tournamentFinished = (tournament: Pick<CricketTournament, "finishedAt"> | undefined) =>
   Boolean(tournament?.finishedAt);
 
-export const FINISHED_NOTE = "This tournament is finished, so its teams, matches and format are locked. Reopen it from the settings to make changes.";
+export const FINISHED_NOTE =
+  "This tournament has finished, so its teams, matches and format are locked. Reopen it from the tournament's settings to change them.";

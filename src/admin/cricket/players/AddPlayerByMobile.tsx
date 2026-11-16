@@ -12,9 +12,9 @@ import { PlayerAvatar } from "./PlayerAvatar";
 type Lookup = { kind: "found"; player: CricketPlayer } | { kind: "new"; mobile: string };
 
 // Brings in someone who isn't listed, by mobile number (the whole player list
-// is too long to show): enter a number and tap Next — a matching player's
-// card shows with "Add"; an unknown number asks for a name and creates the
-// player. Not a <form>, so it can sit inside one (e.g. the team form).
+// is too long to show): enter a number and tap Next — a matching player is
+// added straight away (or their card shows why they can't be); an unknown
+// number asks for a name and creates the player. Not a <form>, so it can sit inside one (e.g. the team form).
 export function AddPlayerByMobile({
   blockedReason = () => null,
   onAdded,
@@ -43,7 +43,16 @@ export function AddPlayerByMobile({
     setLooking(true);
     try {
       const found = await lookupCricketPlayer(number);
-      setLookup(found ? { kind: "found", player: { ...found, mobile: number } } : { kind: "new", mobile: number });
+      if (!found) return setLookup({ kind: "new", mobile: number });
+      const player = { ...found, mobile: number };
+      // Already on RunMitra and free to add: straight in, no second tap.
+      // One who can't be added shows their card with why.
+      if (!blockedReason(player.id)) {
+        add(player);
+        toast.success(`${player.name} added`);
+        return;
+      }
+      setLookup({ kind: "found", player });
     } catch (err) {
       setError(messageFor(err));
     } finally {

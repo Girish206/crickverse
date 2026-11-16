@@ -1,5 +1,4 @@
-import { useState, type CSSProperties, type ReactElement, type ReactNode } from "react";
-import { avatarColorFor } from "../avatarColor";
+import { useState, type ReactElement, type ReactNode } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useMyFollows } from "../../../api/hooks/cricket/useCricketFollows";
 import { useTournamentsMatches } from "../../../api/hooks/cricket/useCricketMatches";
@@ -16,7 +15,7 @@ import { MatchCard, type MatchTag } from "../matches/matchUi";
 import { roleMarkOf, teamKeyOf, usePlayerNames } from "../matches/matchUtils";
 import { CricketPlayerProfile } from "../players/CricketPlayerProfile";
 import { battingCard, bowlingCard, oversText, playerOfMatch, playerStats } from "../stats";
-import { TeamFootnote, TournamentCard, TournamentsBoard, tournamentPhase } from "../tournaments/TournamentCard";
+import { TeamFootnote, TournamentCard, TournamentsBoard, tournamentLine, tournamentPhase } from "../tournaments/TournamentCard";
 import { PlayerAvatar } from "../players/PlayerAvatar";
 import { roleOf } from "../playerRoles";
 import "../../dms/css/adminDisplays.css";
@@ -216,7 +215,7 @@ function HomeFeed({ me }: { me: CricketMe }) {
   const { data: tournaments } = useCricketTournaments();
   const { followedIds, footnote } = useFollowedPlayerLines();
   const tournamentNames = new Map(
-    [...(tournaments ?? []), ...me.tournaments, ...me.followedTournaments].map((t) => [t.id, t.name]),
+    [...(tournaments ?? []), ...me.tournaments, ...me.followedTournaments].map((t) => [t.id, tournamentLine(t)]),
   );
   const playerId = me.player!.id;
   const mine = [...new Map([...me.matches, ...organisingMatches(me)].map((m) => [m.id, m])).values()];
@@ -818,7 +817,6 @@ function TeamCard({ team }: { team: MyTeam }) {
   return (
     <div
       className="cv-team-card"
-      style={{ "--team-color": avatarColorFor(team.name) } as CSSProperties}
       role="button"
       tabIndex={0}
       onClick={open}
@@ -850,14 +848,17 @@ function TeamCard({ team }: { team: MyTeam }) {
       </dl>
       {played > 0 && (
         <>
+          {/* Won, tied and lost as rounded pieces of one bar; a piece with
+              nothing in it is left out, so no empty gap shows. */}
           <div className="cv-team-bar" role="img" aria-label={`${mineWon} won, ${mineLost} lost of ${played}`}>
-            <span style={{ width: `${(mineWon / played) * 100}%` }}></span>
-            <span style={{ width: `${(mineLost / played) * 100}%` }}></span>
+            {mineWon > 0 && <span className="is-won" style={{ flexGrow: mineWon }}></span>}
+            {played - mineWon - mineLost > 0 && <span className="is-tied" style={{ flexGrow: played - mineWon - mineLost }}></span>}
+            {mineLost > 0 && <span className="is-lost" style={{ flexGrow: mineLost }}></span>}
           </div>
           <div className="cv-team-bar-legend">
-            <span>{mineWon} won</span>
-            {played - mineWon - mineLost > 0 && <span>{played - mineWon - mineLost} tied</span>}
-            <span>{mineLost} lost</span>
+            <span className="is-won">{mineWon} won</span>
+            {played - mineWon - mineLost > 0 && <span className="is-tied">{played - mineWon - mineLost} tied</span>}
+            <span className="is-lost">{mineLost} lost</span>
           </div>
         </>
       )}
@@ -878,7 +879,7 @@ function TeamsBanner({ teams, filter }: { teams: MyTeam[]; filter: TeamFilter })
   return (
     <SummaryBanner
       art="my-teams"
-      lead={<WinRing won={won} played={played} label={filter === "opponents" ? "you won" : "won"} />}
+      lead={<WinRing won={won} played={played} against={filter === "opponents"} />}
       stats={[
         { label: "Teams", value: teams.length },
         { label: "Played", value: played, title: "Completed matches" },

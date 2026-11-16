@@ -788,3 +788,57 @@
 .sidebar .sidebar-footer .logout-btn .icon {
   color: inherit !important;
 }
+
+/* ---------- Collapsed (desktop) ----------
+   Just the photo at the top, no red disc behind it, with the toggle level
+   with its middle on the sidebar's edge. Share and Logout as small plain
+   icons. The class is repeated to outrank the dark theme's footer rules. */
+.sidebar-profile.is-collapsed {
+  margin: 12px auto 6px;
+  padding: 0;
+  background: none;
+  overflow: visible;
+}
+.sidebar-close .sidebar-toggle-btn {
+  top: 19px;
+}
+.sidebar.sidebar-close .sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 0 !important;
+}
+.sidebar.sidebar-close.sidebar-close.sidebar-close .sidebar-footer .share-app-btn,
+.sidebar.sidebar-close.sidebar-close.sidebar-close .sidebar-footer .logout-btn {
+  width: 40px;
+  height: 36px;
+  min-height: 0;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: var(--radius-md);
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.sidebar.sidebar-close.sidebar-close.sidebar-close .sidebar-footer .share-app-btn {
+  color: var(--adm-text-2) !important;
+}
+.sidebar.sidebar-close.sidebar-close.sidebar-close .sidebar-footer .logout-btn {
+  color: var(--danger) !important;
+}
+.sidebar.sidebar-close.sidebar-close.sidebar-close .sidebar-footer .share-app-btn:hover {
+  background: var(--adm-hover) !important;
+  color: var(--adm-text) !important;
+}
+.sidebar.sidebar-close.sidebar-close.sidebar-close .sidebar-footer .logout-btn:hover {
+  background: rgba(var(--danger-rgb), 0.12) !important;
+  color: var(--danger) !important;
+}
+.sidebar.sidebar-close .sidebar-footer .nav-link .icon {
+  width: auto;
+  min-width: 0;
+  height: auto;
+  background: none;
+  font-size: var(--fs-md);
+}

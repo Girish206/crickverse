@@ -1,4 +1,4 @@
-/* Toasts as the app's cards: its surface and text, a coloured edge and icon
+/* Toasts as the app's cards: its surface and text, a tint and icon colour
    per kind. Sonner adds its CSS after ours, so these selectors are written
    to outweigh its rules (the toaster's repeated where it sets the same
    variables per theme). */
@@ -16,10 +16,20 @@
   --toast-close-button-transform: translate(35%, -35%);
 }
 
+/* Sonner marks the toast's text with data-title, which the app's global
+   tooltip (style.css) would show as an empty black bubble on hover. */
+[data-sonner-toaster] [data-sonner-toast] [data-title]::before,
+[data-sonner-toaster] [data-sonner-toast] [data-title]::after {
+  content: none;
+  display: none;
+}
+[data-sonner-toaster] [data-sonner-toast] [data-title] {
+  cursor: inherit;
+}
+
 [data-sonner-toaster] [data-sonner-toast][data-styled="true"] {
   --toast-accent: var(--primary);
   padding: 12px 14px;
-  border-left: 4px solid var(--toast-accent);
   font-family: inherit;
   font-weight: 600;
   box-shadow: var(--shadow-float);
@@ -79,13 +89,6 @@
   color: inherit;
   opacity: 0.85;
 }
-[data-sonner-toaster] [data-sonner-toast][data-styled="true"][data-type="success"],
-[data-sonner-toaster] [data-sonner-toast][data-styled="true"][data-type="error"],
-[data-sonner-toaster] [data-sonner-toast][data-styled="true"][data-type="warning"],
-[data-sonner-toaster] [data-sonner-toast][data-styled="true"][data-type="info"] {
-  border-left-width: 4px;
-}
-
 /* Dark: brighter accents so they read on the dark surface. */
 :root[data-bs-theme="dark"] [data-sonner-toaster] [data-sonner-toast][data-styled="true"][data-type="success"] {
   --normal-bg: #0f2a1a;

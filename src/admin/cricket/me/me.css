@@ -134,6 +134,14 @@
 .cv-win-ring small {
   position: relative;
 }
+/* The label stays inside the ring's opening: a longer one wraps rather
+   than running into the ring. More specific than the shared label rule
+   below, which spaces it wider. */
+span.cv-win-ring small {
+  max-width: calc(100% - 16px);
+  text-align: center;
+  letter-spacing: 0.04em;
+}
 .cv-win-ring strong {
   font-size: var(--fs-md);
   font-weight: 700;
@@ -355,14 +363,6 @@
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
-/* The team's own colour as a thin bar along the top. */
-.cv-team-card::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto;
-  height: 4px;
-  background: var(--team-color, var(--primary));
-}
 .cv-team-card:hover,
 .cv-team-card:focus-visible {
   border-color: rgba(var(--primary-rgb), 0.35);
@@ -491,27 +491,56 @@
   color: var(--muted-color);
 }
 /* Won / lost as one bar: green for wins, red for losses. */
+/* Won / tied / lost: slim rounded pieces with a small gap between. */
 .cv-team-bar {
   display: flex;
-  height: 6px;
-  overflow: hidden;
+  gap: 3px;
+  height: 5px;
+}
+.cv-team-bar span {
+  flex-basis: 0;
+  min-width: 5px;
   border-radius: 999px;
+}
+.cv-team-bar .is-won {
+  background: var(--success);
+}
+.cv-team-bar .is-tied {
   background: var(--border-color);
 }
-.cv-team-bar span:first-child {
-  background: var(--success-fill);
+.cv-team-bar .is-lost {
+  background: var(--danger);
+  opacity: 0.75;
 }
-.cv-team-bar span:last-child {
-  margin-left: auto;
-  background: var(--danger-fill);
-}
+/* Each count with a dot in its piece's colour. */
 .cv-team-bar-legend {
   display: flex;
   justify-content: space-between;
-  margin-top: -8px;
+  margin-top: -6px;
   font-size: var(--fs-2xs);
   font-weight: 600;
   color: var(--muted-color);
+}
+.cv-team-bar-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.cv-team-bar-legend span::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.cv-team-bar-legend .is-won::before {
+  background: var(--success);
+}
+.cv-team-bar-legend .is-tied::before {
+  background: var(--border-color);
+}
+.cv-team-bar-legend .is-lost::before {
+  background: var(--danger);
+  opacity: 0.75;
 }
 
 /* ---------- My Stats' section cards ---------- */
@@ -851,6 +880,15 @@
 }
 .cv-sheet-list li + li {
   border-top: 1px solid var(--border-color);
+}
+/* A tournament's seasons, under its own row. */
+.cv-sheet-list.is-seasons {
+  margin-left: 52px;
+  border-left: 2px solid var(--border-color);
+  padding-left: 8px;
+}
+.cv-sheet-list.is-seasons li + li {
+  border-top: 0;
 }
 .cv-sheet-row {
   width: 100%;

@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { useLocation, useParams, useSearchParams } from "react-router-dom";
 import { useTournamentsMatches } from "../../../api/hooks/cricket/useCricketMatches";
 import { useCricketTournaments } from "../../../api/hooks/cricket/useCricketTournaments";
@@ -6,7 +7,11 @@ import { ListCard } from "../../components/ListCard";
 import { Loader } from "../../components/Loader";
 import { PageHeader } from "../../components/PageHeader";
 import { LeaderboardGrid } from "../leaderboard/CricketLeaderboard";
-import { TournamentCard, seasonsOf, seriesOf } from "./TournamentCard";
+import { useCricketMe } from "../../../api/hooks/cricket/useCricketPlayers";
+import { BottomSheet } from "../BottomSheet";
+import { canManageTournament } from "../canManage";
+import { CricketTournamentForm } from "./CricketTournamentForm";
+import { SeasonTitles, TournamentCard, seasonLabelOf, seasonsOf, seriesOf } from "./TournamentCard";
 import { TournamentLogo } from "./TournamentLogo";
 import { TournamentStats } from "./TournamentStats";
 import { bannerFor } from "./tournamentArt";
@@ -24,8 +29,9 @@ const TABS: { value: Tab; label: string }[] = [
   { value: "stats", label: "Stats" },
 ];
 
-// A recurring tournament's seasons in one place, with the leaderboard and
-// stats across all of them. Only the seasons the viewer can open count
+// A tournament with seasons (APL): its seasons, each shown by its season
+// name only, and the leaderboard and stats across all of them. Its
+// organisers add the next season here. Only the seasons the viewer can open count
 // towards the stats.
 export function SeriesPage() {
   const { name = "" } = useParams();
@@ -44,11 +50,17 @@ export function SeriesPage() {
     setParams({ tab: value }, { replace: true, state: location.state }),
   );
   const backTo = admin?.isSuperAdmin ? "/tournaments" : "/my-tournaments";
+  const { data: me } = useCricketMe();
+  const [adding, setAdding] = useState(false);
+  const titles = useMemo(
+    () => new Map(seasons.map((t) => [t.id, seasonLabelOf(t, tournaments ?? [])])),
+    [seasons, tournaments],
+  );
 
   if (isLoading) {
     return (
       <>
-        <PageHeader title="Series" back={backTo} />
+        <PageHeader title="Tournament" back={backTo} />
         <Loader />
       </>
     );
@@ -56,22 +68,23 @@ export function SeriesPage() {
   if (seasons.length === 0) {
     return (
       <>
-        <PageHeader title="Series" back={backTo} />
+        <PageHeader title="Tournament" back={backTo} />
         <ListCard title={name}>
-          <div className="admin-empty-state">No tournaments in this series.</div>
+          <div className="admin-empty-state">No seasons of this tournament.</div>
         </ListCard>
       </>
     );
   }
 
   const latest = seasons[0];
+  const canAddSeason = canManageTournament(admin, latest, me?.player?.id);
   const seriesName = seriesOf(latest).name;
   const teams = new Set(seasons.flatMap((t) => t.teams.map((team) => team.name.trim().toLowerCase()))).size;
   const players = new Set(seasons.flatMap((t) => t.playerIds)).size;
 
   return (
     <div className="cricket-page">
-      <PageHeader title={seriesName} subtitle="Series" back={backTo} backLabel="Back" />
+      <PageHeader title={seriesName} subtitle="Tournament" back={backTo} backLabel="Back" />
       <div className="cricket-th-sticky">
         <div className="card cricket-th-card">
           <div className="cricket-th">
@@ -97,7 +110,7 @@ export function SeriesPage() {
           </div>
         </div>
 
-        <div ref={swipeRef} className="cricket-match-tabs" role="tablist" aria-label="Series sections">
+        <div ref={swipeRef} className="cricket-match-tabs" role="tablist" aria-label="Tournament sections">
           {TABS.map((t) => (
             <button
               key={t.value}
@@ -118,14 +131,18 @@ export function SeriesPage() {
           <>
             {tab === "seasons" && (
               <ListCard>
-                <div className="cricket-match-grid">
-                  {seasons.map((t) => (
-                    <div key={t.id} className="cricket-series-season">
-                      <span className="cricket-series-season-label">{seriesOf(t).season}</span>
-                      <TournamentCard tournament={t} matches={matches} />
-                    </div>
-                  ))}
-                </div>
+                {canAddSeason && (
+                  <button type="button" className="btn btn-outline-custom-primary w-100 mb-3" onClick={() => setAdding(true)}>
+                    <i className="fa-solid fa-plus me-1" aria-hidden="true"></i> New season of {seriesName}
+                  </button>
+                )}
+                <SeasonTitles.Provider value={titles}>
+                  <div className="cricket-match-grid">
+                    {seasons.map((t) => (
+                      <TournamentCard key={t.id} tournament={t} matches={matches} />
+                    ))}
+                  </div>
+                </SeasonTitles.Provider>
               </ListCard>
             )}
             {tab === "leaderboard" && (
@@ -135,6 +152,11 @@ export function SeriesPage() {
           </>
         )}
       </SwipePanels>
+      {adding && (
+        <BottomSheet title={`New season of ${seriesName}`} onClose={() => setAdding(false)} wide>
+          <CricketTournamentForm seasonOf={key} onSaved={() => setAdding(false)} />
+        </BottomSheet>
+      )}
     </div>
   );
 }

@@ -18,7 +18,8 @@ function inviteText(invite: PlayerInviteCode) {
 // `mobile` (organisers see it) opens the chat with the player directly.
 function InviteCode({ invite, mobile }: { invite: PlayerInviteCode; mobile?: string | null }) {
   const text = inviteText(invite);
-  const to = mobile && mobile.length === 10 ? `91${mobile}` : "";
+  const number = mobile || invite.mobile;
+  const to = number && number.length === 10 ? `91${number}` : "";
   return (
     <div className="cricket-invite-code">
       <span className="cricket-invite-digits" aria-label={`Invite code ${invite.code.split("").join(" ")}`}>

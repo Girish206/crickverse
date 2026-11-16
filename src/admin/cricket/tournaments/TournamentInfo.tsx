@@ -8,18 +8,19 @@ import { OrganiserCard } from "../OrganiserCard";
 import { usePlayerNames, usePlayerPhotos } from "../matches/matchUtils";
 import { PlayerAvatar } from "../players/PlayerAvatar";
 import { PlayerLink } from "../players/PlayerProfileSheet";
-import { seasonsOf, seriesOf, seriesPath } from "./TournamentCard";
+import { seasonOf, seriesPath } from "./TournamentCard";
 
 export const dateText = (value: string) =>
   new Date(value)
     .toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" })
     .replace(/ /g, "-");
 
-// Who scores the tournament's matches, each a link to their profile.
-function ScorerChips({ playerIds }: { playerIds: number[] }) {
+// Who scores (or co-organises) the tournament, each a link to their
+// profile, where the creator can send one not on RunMitra an invite code.
+function ScorerChips({ playerIds, none = "Match captains" }: { playerIds: number[]; none?: string }) {
   const nameOf = usePlayerNames();
   const photoOf = usePlayerPhotos();
-  if (playerIds.length === 0) return <>Match captains</>;
+  if (playerIds.length === 0) return <>{none}</>;
   return (
     <span className="cricket-scorer-chips">
       {playerIds.map((playerId) => (
@@ -36,17 +37,16 @@ function ScorerChips({ playerIds }: { playerIds: number[] }) {
 export function TournamentInfo({ tournament: t, matches }: { tournament: CricketTournament; matches: CricketMatch[] }) {
   const completed = matches.filter((m) => m.status === "completed").length;
   const venue = [t.ground, t.city].filter(Boolean).join(", ");
-  // Part of a series: named as one, or other seasons share its name.
+  // A season of a tournament (APL): which one, with a link to all of them.
   const { data: tournaments } = useCricketTournaments();
-  const series = seriesOf(t);
-  const inSeries = Boolean(t.seriesName) || seasonsOf(tournaments ?? [], series.key).length > 1;
+  const asSeason = seasonOf(t, tournaments ?? []);
   const rows: [string, ReactNode][] = [
-    ...(inSeries
+    ...(asSeason
       ? ([
           [
-            "Series",
-            <Link key="series" to={seriesPath(series.name)} className="cricket-info-link">
-              {series.name} · {series.season}
+            "Tournament",
+            <Link key="series" to={seriesPath(asSeason.tournament)} className="cricket-info-link">
+              {asSeason.tournament} · {asSeason.season}
             </Link>,
           ],
         ] as [string, ReactNode][])
@@ -65,6 +65,9 @@ export function TournamentInfo({ tournament: t, matches }: { tournament: Cricket
     ["Pitch type", labelOf(PITCH_TYPES, t.pitchType) ?? "Not set"],
     ["Teams", t.teams.length ? t.teams.map((team) => team.name).join(", ") : "Not picked yet"],
     ["Scorers", <ScorerChips key="scorers" playerIds={t.scorerIds} />],
+    ...((t.organiserIds ?? []).length
+      ? ([["Co-organisers", <ScorerChips key="organisers" playerIds={t.organiserIds ?? []} none="None" />]] as [string, ReactNode][])
+      : []),
     ["Squad", `${t.playerIds.length} player${t.playerIds.length === 1 ? "" : "s"}`],
     ["Matches", matches.length ? `${matches.length} (${completed} completed)` : "None yet"],
     ["Tournament ID", t.id],

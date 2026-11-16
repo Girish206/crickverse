@@ -1,5 +1,6 @@
-import { useState, type ChangeEvent, type FormEvent } from "react";
-import { lookupCricketPlayer, useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
+import { toast } from "sonner";
+import { useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from "react";
+import { lookupCricketPlayer, useCricketMe, useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
 import { useSetCricketTournamentOrganisers } from "../../../api/hooks/cricket/useCricketTournaments";
 import { messageFor } from "../../../api/mutationErrors";
 import type { CricketPlayer, CricketTournament } from "../../../api/types";
@@ -10,6 +11,110 @@ import { roleOf } from "../playerRoles";
 import { PlayerAvatar } from "../players/PlayerAvatar";
 import { useSwipeTabs } from "../../useSwipeTabs";
 import { SwipePanels } from "../../SwipePanels";
+
+// Co-organisers picked while creating a tournament, in a sheet of their own
+// (no squads yet, so by mobile number only). The list is the form's: each
+// change goes straight back to it, and Done closes. The sheet sits inside
+// the create form, so it isn't a <form>: Enter and the buttons do the lookup.
+export function CoOrganisersSheet({
+  value,
+  onChange,
+  onClose,
+}: {
+  value: CricketPlayer[];
+  onChange: (players: CricketPlayer[]) => void;
+  onClose: () => void;
+}) {
+  const { data: me } = useCricketMe();
+  const [mobile, setMobile] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [looking, setLooking] = useState(false);
+
+  // A number on RunMitra goes straight onto the list, no second tap.
+  async function add() {
+    const number = normalizeMobile(mobile);
+    if (!number) return setError("Enter a valid 10-digit mobile number");
+    setLooking(true);
+    try {
+      const player = await lookupCricketPlayer(number);
+      if (!player) setError("No player has this number — they need to sign up first");
+      else if (player.id === me?.player?.id) setError("That's you — you're already the organiser");
+      else if (value.some((p) => p.id === player.id)) setError(`${player.name} is already added`);
+      else {
+        onChange([...value, player]);
+        setMobile("");
+        toast.success(`${player.name} added`);
+      }
+    } catch (err) {
+      setError(messageFor(err));
+    } finally {
+      setLooking(false);
+    }
+  }
+
+  return (
+    <BottomSheet
+      title="Co-organisers"
+      icon="fa-solid fa-user-tie"
+      onClose={onClose}
+      footer={
+        <button type="button" className="cricket-sheet-submit" onClick={onClose}>
+          <i className="fa-solid fa-check" aria-hidden="true"></i> Done
+        </button>
+      }
+    >
+      <p className="admin-hint mb-1">They manage the tournament with you. You can change this later in its settings.</p>
+      <div className="cricket-add-player-row">
+        <InputComp
+          label="Co-organiser's mobile number"
+          floating
+          type="tel"
+          inputMode="tel"
+          autoComplete="off"
+          autoFocus
+          value={mobile}
+          error={error ?? undefined}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => {
+            setMobile(e.target.value);
+            setError(null);
+          }}
+          onKeyDown={(e: KeyboardEvent<HTMLInputElement>) => {
+            // Enter looks the number up instead of submitting the form behind.
+            if (e.key === "Enter") {
+              e.preventDefault();
+              if (mobile.trim() && !looking) void add();
+            }
+          }}
+        />
+        <button type="button" className="cricket-add-player-btn" disabled={!mobile.trim() || looking} onClick={add}>
+          {looking ? "Finding..." : "Add"}
+        </button>
+      </div>
+
+      {value.length > 0 && (
+        <section className="mt-2">
+          <h3 className="cricket-add-player-title">Added ({value.length})</h3>
+          <div className="cricket-scorer-chips">
+            {value.map((player) => (
+              <span key={player.id} className="cricket-scorer-chip is-removable">
+                <PlayerAvatar name={player.name} photoUrl={player.photoUrl} className="cricket-scorer-chip-avatar" />
+                <span className="cricket-scorer-chip-name">{player.name}</span>
+                <button
+                  type="button"
+                  aria-label={`Remove ${player.name}`}
+                  title={`Remove ${player.name}`}
+                  onClick={() => onChange(value.filter((p) => p.id !== player.id))}
+                >
+                  <i className="fa-solid fa-xmark" aria-hidden="true"></i>
+                </button>
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
+    </BottomSheet>
+  );
+}
 
 // Co-organisers: players who run the tournament alongside its creator —
 // edit it, its teams, format and matches. The sibling of ScorersSheet:
@@ -55,7 +160,12 @@ export function OrganisersSheet({ tournament, onClose }: { tournament: CricketTo
       const player = await lookupCricketPlayer(number);
       if (!player) setError("No player has this number — they need to sign up first");
       else if (ids.includes(player.id)) setError(`${player.name} is already an organiser`);
-      else setFound(player);
+      else {
+        // Found: straight onto the list, no second tap.
+        toggle(player.id);
+        reset();
+        toast.success(`${player.name} added`);
+      }
     } catch (err) {
       setError(messageFor(err));
     } finally {

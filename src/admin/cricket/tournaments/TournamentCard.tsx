@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type { CricketMatch, CricketTournament } from "../../../api/types";
 import { championOf, makeResolver } from "../format/formatEngine";
@@ -114,6 +114,8 @@ export function TournamentCard({
   footnote?: ReactNode;
 }) {
   const navigate = useNavigate();
+  const seasonTitle = useContext(SeasonTitles)?.get(tournament.id);
+  const title = tournamentTitle(tournament);
   const open = () => navigate(`/tournaments/${tournament.id}`);
   const phase = tournamentPhase(tournament, matches);
   const place = placeOf(tournament);
@@ -140,7 +142,15 @@ export function TournamentCard({
       </div>
 
       <div className="cricket-tour-card-body">
-        <h3 className="cricket-tour-card-name">{tournament.name}</h3>
+        {seasonTitle ? (
+          // Inside its tournament: just the season's name.
+          <h3 className="cricket-tour-card-name">{seasonTitle}</h3>
+        ) : (
+          <>
+            {title.season && <span className="cricket-tour-card-season">{title.name}</span>}
+            <h3 className="cricket-tour-card-name">{title.season ?? title.name}</h3>
+          </>
+        )}
         <div className="cricket-tour-card-meta">
           <span>
             <i className="fa-regular fa-calendar" aria-hidden="true"></i>
@@ -208,19 +218,58 @@ export function parseTournamentSeries(name: string): { seriesName: string; seaso
 // When a tournament is (or was) on, for putting seasons in order.
 const startOf = (t: CricketTournament) => t.startDate ?? t.createdAt;
 
-// The series a tournament belongs to and its season: the organiser's own
-// series name and season when set, else read from its name ("KPL Season 2").
-// A season with no label goes by its year.
-export function seriesOf(t: CricketTournament) {
+// The tournament (series) a season belongs to: the organiser's own series
+// name when set, else read from its name ("KPL Season 2" is KPL's).
+// `season` is its own label, if it has one (see seasonLabelOf).
+// Only its names are needed, so slimmer tournament objects work too.
+export type NamedTournament = Pick<CricketTournament, "name"> & Partial<Pick<CricketTournament, "seriesName" | "season">>;
+
+export function seriesOf(t: NamedTournament) {
   const parsed = parseTournamentSeries(t.name);
   const name = t.seriesName?.trim() || parsed.seriesName;
-  const season = t.season?.trim() || (t.seriesName ? null : parsed.seasonLabel) || startOf(t).slice(0, 4);
+  const season = t.season?.trim() || (t.seriesName ? null : parsed.seasonLabel) || null;
   return { name, key: name.toLowerCase(), season };
 }
 
 // Every season of a series, newest first.
 export const seasonsOf = (tournaments: CricketTournament[], key: string) =>
   tournaments.filter((t) => seriesOf(t).key === key).sort((a, b) => startOf(b).localeCompare(startOf(a)));
+
+// A season's name inside its tournament: its own label, else "Season n"
+// counting from the first one.
+export function seasonLabelOf(t: CricketTournament, tournaments: CricketTournament[]) {
+  const { key, season } = seriesOf(t);
+  if (season) return season;
+  const seasons = seasonsOf(tournaments, key);
+  const index = seasons.findIndex((s) => s.id === t.id);
+  return `Season ${index === -1 ? 1 : seasons.length - index}`;
+}
+
+// A season's tournament and label, when it is one (named as a series, or
+// sharing its series with other seasons); null for a one-off tournament.
+export function seasonOf(t: CricketTournament, tournaments: CricketTournament[]) {
+  const { name, key } = seriesOf(t);
+  if (!t.seriesName && seasonsOf(tournaments, key).length < 2) return null;
+  return { tournament: name, season: seasonLabelOf(t, tournaments) };
+}
+
+// Inside a tournament's own lists, cards show just their season's name.
+export const SeasonTitles = createContext<Map<number, string> | null>(null);
+
+// How a tournament is named on cards and headers: a season shows its own
+// name ("Season 38", "Diwali Edition") big, with its tournament's name as a
+// small line above; a one-off just its name.
+export function tournamentTitle(t: NamedTournament): { name: string; season: string | null } {
+  const { name, season } = seriesOf(t);
+  return season ? { name, season } : { name: t.name, season: null };
+}
+
+// The same on one line, for match pages and match cards:
+// "Appu Premier League · Season 38".
+export function tournamentLine(t: NamedTournament) {
+  const { name, season } = tournamentTitle(t);
+  return season ? `${name} · ${season}` : name;
+}
 
 export const seriesPath = (name: string) => `/series/${encodeURIComponent(name)}`;
 
@@ -235,6 +284,7 @@ function TournamentSeriesGroup({
     return [...group.items].sort((a, b) => startOf(b.tournament).localeCompare(startOf(a.tournament)));
   }, [group.items]);
 
+  const titles = useMemo(() => new Map(group.items.map((item) => [item.tournament.id, item.seasonLabel])), [group.items]);
   const [activeId, setActiveId] = useState<number>(sorted[0].tournament.id);
   const activeTournament = sorted.find((item) => item.tournament.id === activeId)?.tournament ?? sorted[0].tournament;
   // Swipes on this group's card move between its seasons.
@@ -248,7 +298,7 @@ function TournamentSeriesGroup({
   return (
     <div className="cricket-tour-series-group">
       <div className="cricket-tour-series-bar">
-        <Link to={seriesPath(group.seriesName)} className="cricket-tour-series-title" title="All seasons and series stats">
+        <Link to={seriesPath(group.seriesName)} className="cricket-tour-series-title" title="All seasons and combined stats">
           <i className="fa-solid fa-layer-group me-1" aria-hidden="true"></i> {group.seriesName}
           <i className="fa-solid fa-chevron-right ms-1" aria-hidden="true"></i>
         </Link>
@@ -268,7 +318,7 @@ function TournamentSeriesGroup({
           ))}
         </div>
       </div>
-      {renderCard(activeTournament)}
+      <SeasonTitles.Provider value={titles}>{renderCard(activeTournament)}</SeasonTitles.Provider>
     </div>
   );
 }
@@ -293,11 +343,12 @@ export function TournamentsBoard({
     const visible = tournaments.filter((t) => filter === "all" || tournamentPhase(t, matches) === filter);
     const grouped = new Map<string, { seriesName: string; items: { tournament: CricketTournament; seasonLabel: string }[] }>();
     for (const t of visible) {
-      const { name, key, season } = seriesOf(t);
+      const { name, key } = seriesOf(t);
       if (!grouped.has(key)) {
         grouped.set(key, { seriesName: name, items: [] });
       }
-      grouped.get(key)!.items.push({ tournament: t, seasonLabel: season });
+      // Numbered across all its seasons, not just the ones this tab shows.
+      grouped.get(key)!.items.push({ tournament: t, seasonLabel: seasonLabelOf(t, tournaments) });
     }
     return visible.length === 0 ? (
       <div className="admin-empty-state">{tournaments.length === 0 ? empty : "No tournaments here."}</div>

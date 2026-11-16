@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { lookupCricketPlayer, useCricketPlayers } from "../../api/hooks/cricket/useCricketPlayers";
 import { messageFor } from "../../api/mutationErrors";
@@ -84,7 +85,13 @@ export function ScorersSheet({
       if (!player) setError("No player has this number — they need to sign up first");
       else if (handOver?.excludeIds.includes(player.id)) setError("That's you");
       else if (!handOver && ids.includes(player.id)) setError(`${player.name} is already a scorer`);
-      else setFound(player);
+      // Adding a scorer to the list takes no second tap; handing over
+      // scoring (an action, not a list) still shows who it goes to first.
+      else if (!handOver) {
+        toggle(player.id);
+        reset();
+        toast.success(`${player.name} added`);
+      } else setFound(player);
     } catch (err) {
       setError(messageFor(err));
     } finally {

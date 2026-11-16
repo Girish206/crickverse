@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
 import { lookupCricketTeamPlayer, useAddCricketTeamPlayers } from "../../../api/hooks/cricket/useCricketTournaments";
@@ -57,8 +58,8 @@ export function AddTeamPlayersSheet({
 }
 
 // Add players to a team by mobile number, several in one go: enter a number
-// and tap Next — a matching player's card shows with "Add"; an unknown number
-// asks for a name. Or scan players' QR codes (My Profile → My QR code), one
+// and tap Next — a matching player goes straight into the list (or their
+// card shows why they can't); an unknown number asks for a name. Or scan players' QR codes (My Profile → My QR code), one
 // after another. Nothing is saved until "Done", which creates the new
 // players and adds everyone (through onSave).
 export function AddPlayersByMobileSheet({
@@ -109,11 +110,17 @@ export function AddPlayersByMobileSheet({
       setLooking(true);
       try {
         const found = await lookupPlayer(number);
-        setLookup(
-          found
-            ? { kind: "found", player: { ...found, mobile: number }, blocked: blockedReason(found) }
-            : { kind: "new", mobile: number },
-        );
+        if (!found) return setLookup({ kind: "new", mobile: number });
+        if (queued.some((entry) => entry.player?.id === found.id)) return setError("Already in the list below");
+        const blocked = blockedReason(found);
+        // Already on RunMitra and free to add: into the list, no second tap.
+        // One who can't be added shows their card with why.
+        if (!blocked) {
+          queue({ key: number, mobile: number, name: found.name, player: { ...found, mobile: number } });
+          toast.success(`${found.name} added to the list`);
+          return;
+        }
+        setLookup({ kind: "found", player: { ...found, mobile: number }, blocked });
       } catch (err) {
         setError(messageFor(err));
       } finally {

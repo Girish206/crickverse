@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { useCricketMatches } from "../../../api/hooks/cricket/useCricketMatches";
+
+import { tournamentLine } from "../tournaments/TournamentCard";import { useCricketMatches } from "../../../api/hooks/cricket/useCricketMatches";
 import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
 import { useCricketTournaments } from "../../../api/hooks/cricket/useCricketTournaments";
 import type { CricketMatch } from "../../../api/types";
@@ -21,7 +22,7 @@ export function CricketDashboard() {
   const { data: tournaments } = useCricketTournaments();
   const { data: matches, isLoading } = useCricketMatches();
   const all = matches ?? [];
-  const tournamentNames = new Map((tournaments ?? []).map((t) => [t.id, t.name]));
+  const tournamentNames = new Map((tournaments ?? []).map((t) => [t.id, tournamentLine(t)]));
 
   const live = all.filter((m) => m.status === "live");
   const upcoming = all.filter((m) => m.status === "scheduled").sort((a, b) => byDate(a.scheduledAt, b.scheduledAt));
