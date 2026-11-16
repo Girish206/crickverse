@@ -88,13 +88,11 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar, isDark, toggleTheme, onS
                         </Link>
 
                         <div className="navbar-brand-container d-flex align-items-center">
-                            {/* The logo with the name beside it; the narrowest
-                                phones get the mark alone, so it never crowds
-                                the buttons on the right. */}
-                            <picture>
-                                <source media="(min-width: 360px)" srcSet="/logo.svg" />
-                                <img src="/logo-mark.svg" alt="RunMitra" className="navbar-logo" />
-                            </picture>
+                            {/* The logo mark with the name beside it. */}
+                            <img src="/logo-mark.svg" alt="" className="navbar-logo" />
+                            <span className="navbar-brand-name">
+                                Run<span className="navbar-brand-name-gold">Mitra</span>
+                            </span>
                         </div>
                     </div>
 

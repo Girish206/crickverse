@@ -7,6 +7,7 @@ import { AddPlayerByMobile } from "../../players/AddPlayerByMobile";
 import { PlayerCard } from "../../players/PlayerCard";
 import type { NameOf } from "../../stats";
 import { hasPlayed, teamKeyOf } from "../matchUtils";
+import { SearchField } from "../../SearchField";
 
 // A late arrival joins a side mid-match — or comes in for someone who
 // hasn't played yet.
@@ -89,13 +90,7 @@ export function AddPlayerSheet({
         onAdded={(player) => setAddId(player.id)}
       />
       {candidates.length > 6 && (
-        <input
-          type="search"
-          className="cricket-picker-search"
-          placeholder="Search players"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <SearchField label="Search players" value={search} onChange={setSearch} />
       )}
       {shown.length === 0 ? (
         <p className="cricket-manage-empty">

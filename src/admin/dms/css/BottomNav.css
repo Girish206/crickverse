@@ -15,8 +15,8 @@
     align-items: stretch;
     height: calc(62px + env(safe-area-inset-bottom));
     padding: 0 6px env(safe-area-inset-bottom);
-    /* The top bar's gradient fill (Navbar.css), with white tabs */
-    background: var(--brand-gradient-bar);
+    /* The brand red, darkest in the centre, with white tabs */
+    background: var(--brand-gradient-center);
     border-top: 0;
     /* Rounded along the top, mirroring the top bar's bottom */
     border-radius: 20px 20px 0 0;

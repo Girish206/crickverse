@@ -14,11 +14,10 @@
 :root[data-bs-theme="dark"] {
   color-scheme: dark;
 
-  /* The top and bottom bars' fill (brand.css), for the dark theme: darkest
-     at the centre, lightening sideways to the deep red at the ends */
-  --brand-gradient-bar: linear-gradient(90deg, #a8261c 0%, #6a1d17 32%, #45120e 50%, #6a1d17 68%, #a8261c 100%);
-  /* The top bars, the other way round: deep red at the centre, darkening to the ends. */
-  --brand-gradient-top: linear-gradient(90deg, #45120e 0%, #6a1d17 32%, #a8261c 50%, #6a1d17 68%, #45120e 100%);
+  /* The bars in the dark theme: the dark profile card's red, a shade darker,
+     so the cards stay the brightest red on the page. */
+  --brand-gradient-top: linear-gradient(90deg, #86251f 0%, #86251f 40%, #6a1d18 70%, #4e140f 100%); /* the top bar: the dark profile card's red (--hero-fill), a shade darker, light (left) to dark (right) */
+  --brand-gradient-center: linear-gradient(90deg, #86251f 0%, #85251f 5%, #81231d 10%, #7a211c 15%, #731f19 20%, #6a1c17 25%, #611a15 30%, #5a1812 35%, #531611 40%, #4f140f 45%, #4e140f 50%, #4f140f 55%, #531611 60%, #5a1812 65%, #611a15 70%, #6a1c17 75%, #731f19 80%, #7a211c 85%, #81231d 90%, #85251f 95%, #86251f 100%); /* the bottom tab bar: the same red, darkest in the centre */
 
   --adm-bg: var(--brand-navy-night);
   --adm-surface: var(--brand-navy-surface);

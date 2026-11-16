@@ -2179,16 +2179,12 @@
     height: 80vh;
   }
 }
-.cricket-picker-search {
-  width: 100%;
-  height: 40px;
+/* SearchField: the search box above a list. */
+.cricket-list-search {
   margin-bottom: 8px;
-  padding: 0 12px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  background: var(--background-color);
-  color: var(--theme-text-dark);
-  font-size: var(--fs-base);
+}
+.cricket-list-search > .m-1 {
+  margin: 0 !important;
 }
 .cricket-picker-list {
   list-style: none;
@@ -2853,9 +2849,9 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
 .cricket-th-locked {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 0 var(--th-gutter, 12px) var(--th-gutter, 12px);
-  padding: 6px 10px;
+  gap: 10px;
+  margin: 4px var(--th-gutter, 12px) var(--th-gutter, 12px);
+  padding: 6px 12px;
   border-radius: var(--radius-md);
   background: rgba(var(--primary-rgb), 0.06);
   font-size: var(--fs-xs);
@@ -2870,6 +2866,16 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
 }
 .cricket-th-locked strong {
   color: var(--theme-text-dark);
+}
+/* A finished tournament's plain note under the banner. */
+.cricket-th-note {
+  margin: 0 var(--th-gutter, 12px) var(--th-gutter, 12px);
+  padding-top: 8px;
+  font-size: var(--fs-xs);
+  color: var(--muted-color);
+}
+.cricket-th-note i {
+  margin-right: 4px;
 }
 .cricket-th-locked button {
   flex: none;
@@ -4011,7 +4017,9 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
   position: sticky;
   top: calc(var(--cv-header-h) + env(safe-area-inset-top));
   z-index: 30;
-  margin: 0;
+  /* Sits closer to the banner above and the content below than the
+     page's usual section gap. */
+  margin: -6px 0;
   padding: 0 4px;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
@@ -4075,7 +4083,7 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
   }
   /* Tab bar runs edge to edge, cancelling the 6px cricket page gutter. */
   .cricket-match-tabs {
-    margin: 0 -6px;
+    margin: -5px -6px;
     padding: 0;
     border-left: 0;
     border-right: 0;
@@ -4608,6 +4616,38 @@ span.has-team-logo:not(.cricket-match-card-badge):not(.cricket-faceoff-badge):no
 }
 .cricket-roster-who small {
   color: var(--muted-color);
+}
+/* A tick beside a player's name once they've signed in to the app
+   (organisers, captains and super admins only). The name still truncates;
+   the tick stays visible. */
+.cricket-roster-who .cricket-roster-name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+/* A player's playing role on the right of their row (Players tabs). */
+.cricket-roster-aside {
+  flex: none;
+  margin-left: auto;
+  padding-left: 8px;
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-color);
+  white-space: nowrap;
+}
+.cricket-roster-name > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cricket-login-tick {
+  flex: none;
+  font-size: 0.85em;
+  color: #198754;
+}
+:root[data-bs-theme="dark"] .cricket-login-tick {
+  color: #4cc38a;
 }
 /* Batting role, then the side's C / VC / WK as labelled badges. */
 .cricket-roster-meta {
@@ -6930,7 +6970,7 @@ span.cricket-slot-photo {
   color: var(--primary);
 }
 /* The add-by-mobile panel above a pick list. */
-.cricket-add-player + .cricket-picker-search,
+.cricket-add-player + .cricket-list-search,
 .cricket-add-player + .cricket-squad-toolbar,
 .cricket-add-player + .cricket-player-card-group,
 .cricket-add-player + .admin-empty-state {
@@ -8325,14 +8365,103 @@ tbody tr:first-child .cricket-standings-rank {
   font-weight: 700;
 }
 
-/* Standings tab: NRR Calculator and How NRR works side by side. */
+/* Standings tab: NRR Calculator and How NRR works under the table, as two
+   cards — side by side, stacked on phones (NrrToolCard). */
 .cricket-standings-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+.cricket-nrr-tool {
   display: flex;
-  flex: 1;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 8px;
+  align-items: center;
+  gap: 12px;
   width: 100%;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: rgba(var(--primary-rgb), 0.03);
+  color: var(--theme-text-dark);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+}
+.cricket-nrr-tool:hover,
+.cricket-nrr-tool:focus-visible {
+  border-color: rgba(var(--primary-rgb), 0.45);
+  background: rgba(var(--primary-rgb), 0.07);
+}
+.cricket-nrr-tool:active {
+  transform: scale(0.99);
+}
+.cricket-nrr-tool-icon {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(var(--primary-rgb), 0.12);
+  color: var(--primary);
+  font-size: 1.15rem;
+}
+.cricket-nrr-tool-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.35;
+}
+.cricket-nrr-tool-text strong {
+  font-size: var(--fs-md);
+}
+.cricket-nrr-tool-text small {
+  color: var(--muted-color);
+  font-size: 0.82rem;
+}
+.cricket-nrr-tool-go {
+  flex: none;
+  color: var(--muted-color);
+  font-size: 0.8rem;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+.cricket-nrr-tool:hover .cricket-nrr-tool-go {
+  color: var(--primary);
+  transform: translateX(2px);
+}
+/* Phones: one compact row each, stacked — small icon, name and the
+   description in full. */
+@media (max-width: 560px) {
+  .cricket-standings-actions {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .cricket-nrr-tool {
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+  }
+  .cricket-nrr-tool-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    font-size: 0.9rem;
+  }
+  .cricket-nrr-tool-text {
+    gap: 0;
+  }
+  .cricket-nrr-tool-text strong {
+    font-size: 0.9rem;
+  }
+  .cricket-nrr-tool-text small {
+    font-size: 0.75rem;
+  }
 }
 
 /* A squad group's "Select all" / "Clear", at the end of its title. */

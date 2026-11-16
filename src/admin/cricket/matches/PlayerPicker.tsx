@@ -3,6 +3,7 @@ import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers"
 import { BottomSheet } from "../BottomSheet";
 import { PlayerCard } from "../players/PlayerCard";
 import type { NameOf } from "../stats";
+import { SearchField } from "../SearchField";
 
 export interface PickItem {
   id: number;
@@ -39,13 +40,7 @@ export function PlayerPicker({ title, icon, items, nameOf, selectedId, onPick, o
     <BottomSheet title={title} icon={icon} onClose={onClose} footer={footer} fullScreen>
       {hint && <p className="cricket-sheet-context">{hint}</p>}
       {items.length > 6 && (
-        <input
-          type="search"
-          className="cricket-picker-search"
-          placeholder="Search players"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <SearchField label="Search players" value={search} onChange={setSearch} />
       )}
       {shown.length === 0 ? (
         <div className="admin-empty-state">{items.length === 0 ? "No one available." : `No one matches "${search}".`}</div>

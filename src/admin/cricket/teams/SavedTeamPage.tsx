@@ -9,10 +9,12 @@ import {
   useDeleteCricketSavedTeam,
   useSetCricketSavedTeamLogo,
   useSetCricketSavedTeamRoles,
+  useSavedTeamPlayerMobiles,
   useUpdateCricketSavedTeam,
 } from "../../../api/hooks/cricket/useCricketSavedTeams";
 import type { CricketMatch, CricketSavedTeam } from "../../../api/types";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
+import { formatMobile } from "../mobile";
 import { Button } from "../../components/Button";
 import { confirmAction } from "../../components/confirmDelete";
 import { ListCard } from "../../components/ListCard";
@@ -217,6 +219,12 @@ export function SavedTeamPage() {
   const { data: team, isLoading } = useCricketSavedTeam(id);
   const { data: me } = useCricketMe();
   const { data: players } = useCricketPlayers();
+  // Its managers (creator, captain, super admins) see each player's number.
+  const managesTeam =
+    Boolean(admin?.isSuperAdmin) ||
+    (team !== undefined && admin !== null && admin !== undefined && String(team.createdById) === admin.sub) ||
+    (team !== undefined && me?.player != null && team.captainId === me.player.id);
+  const { data: mobiles } = useSavedTeamPlayerMobiles(id, managesTeam);
   // Only super admins can list every friendly match; players see the ones
   // they play in, follow or organise.
   const { data: allFriendlies } = useCricketMatches("none", { enabled: Boolean(admin?.isSuperAdmin) });
@@ -414,7 +422,13 @@ export function SavedTeamPage() {
                   <ul className="cricket-roster">
                     {team.playerIds.map((playerId) => (
                       <li key={playerId}>
-                        <RosterPlayer player={playerById.get(playerId)} tags={canManage ? [] : roleTagsFor(team, playerId)} />
+                        <RosterPlayer
+                          player={playerById.get(playerId)}
+                          tags={canManage ? [] : roleTagsFor(team, playerId)}
+                          showLogin={canManage}
+                          roleOnRight
+                          detail={mobiles?.get(playerId) ? formatMobile(mobiles.get(playerId)!) : undefined}
+                        />
                         {canManage && (
                           <>
                             <TeamRoleChips

@@ -1,16 +1,29 @@
 import { Link } from "react-router-dom";
 import type { CricketBracketSlot, CricketFormat, CricketMatch, CricketPhase } from "../../../api/types";
 import { teamScore } from "../matches/matchUtils";
+import { TeamMark } from "../teams/TeamMark";
 import { slotFixture, slotMatch, sourceLabel, type Resolver } from "./formatEngine";
 
-const CARD_W = 196;
-const CARD_H = 92;
+const CARD_W = 216;
+const CARD_H = 96;
 const COL_GAP = 40;
 const ROW_GAP = 18;
-// Card rows (see .cricket-bracket-card): a 30px head, then two 28px teams.
-const HOME_ROW = 48;
-const AWAY_ROW = 76;
-const ROW_SPLIT = 62;
+// Card rows (see .cricket-bracket-card): a 1px border, a 30px head, then
+// two 32px teams. Connectors meet a team's row in its middle.
+const HOME_ROW = 47;
+const AWAY_ROW = 79;
+const ROW_SPLIT = 63;
+
+// "Balaji Boys won by 6 wickets" → "Won by 6 wickets": the winner's row is
+// already marked, so the head just gives the margin.
+function marginOf(resultText: string | null, winnerName: string | null) {
+  if (!resultText) return "Result";
+  if (winnerName && resultText.startsWith(`${winnerName} `)) {
+    const rest = resultText.slice(winnerName.length + 1);
+    return rest.charAt(0).toUpperCase() + rest.slice(1);
+  }
+  return resultText;
+}
 
 const shortDate = (value: string | null) =>
   value
@@ -65,6 +78,7 @@ export function BracketChart({
   matches,
   resolve,
   teamName,
+  logoOf,
   onSchedule,
 }: {
   format: CricketFormat;
@@ -72,6 +86,8 @@ export function BracketChart({
   matches: CricketMatch[];
   resolve: Resolver;
   teamName: (index: number) => string;
+  // A tournament team's logo, for the badges.
+  logoOf?: (index: number) => string | null | undefined;
   // Organisers: schedule a match whose teams are known.
   onSchedule?: (slot: CricketBracketSlot) => void;
 }) {
@@ -107,8 +123,9 @@ export function BracketChart({
           const sides = match
             ? match.teams.map((team, index) => ({
                 name: team.name,
+                logo: logoOf?.(team.teamIndex) ?? null,
                 known: true,
-                score: teamScore(match, index)?.runs ?? null,
+                score: teamScore(match, index),
                 won: match.status === "completed" && match.winner === index,
                 lost: match.status === "completed" && match.winner === 1 - index,
               }))
@@ -116,6 +133,7 @@ export function BracketChart({
                 const index = resolve(source);
                 return {
                   name: index === null ? sourceLabel(format, source, teamName) : teamName(index),
+                  logo: index === null ? null : (logoOf?.(index) ?? null),
                   known: index !== null,
                   score: null,
                   won: false,
@@ -132,23 +150,45 @@ export function BracketChart({
               ? "Live"
               : match.status === "scheduled"
                 ? shortDate(match.scheduledAt)
-                : (match.resultText ?? "Result");
+                : match.status === "abandoned"
+                  ? "No result"
+                  : marginOf(match.resultText, match.winner !== null ? match.teams[match.winner].name : null);
+          const statusTone =
+            match?.status === "live" ? "is-live" : match?.status === "completed" ? "is-done" : ready ? "is-ready" : undefined;
           const body = (
             <>
               <span className="cricket-bracket-head">
-                <strong>{slot.label}</strong>
-                <span className={match?.status === "live" ? "is-live" : undefined}>{status}</span>
+                <strong>
+                  {slot.stage === "final" && <i className="fa-solid fa-trophy" aria-hidden="true"></i>}
+                  {slot.label}
+                </strong>
+                <span className={statusTone} title={match?.resultText ?? undefined}>
+                  {match?.status === "live" && <i className="fa-solid fa-circle" aria-hidden="true"></i>}
+                  {status}
+                </span>
               </span>
               {sides.map((side, index) => (
                 <span
                   key={index}
                   className={`cricket-bracket-team ${side.known ? "" : "is-tbd"} ${side.won ? "is-won" : ""} ${side.lost ? "is-lost" : ""}`}
                 >
+                  {side.known ? (
+                    <TeamMark className="cricket-bracket-badge" name={side.name} logoUrl={side.logo} />
+                  ) : (
+                    <span className="cricket-bracket-badge is-tbd" aria-hidden="true">
+                      ?
+                    </span>
+                  )}
                   <span className="cricket-bracket-name" title={side.name}>
                     {side.name}
                   </span>
-                  {side.score && <span className="cricket-bracket-score">{side.score}</span>}
-                  {side.won && <i className="fa-solid fa-caret-left" aria-label="Winner"></i>}
+                  {side.score && (
+                    <span className="cricket-bracket-score">
+                      <strong>{side.score.runs}</strong>
+                      <small>({side.score.overs})</small>
+                    </span>
+                  )}
+                  {side.won && <i className="fa-solid fa-circle-check" aria-label="Winner"></i>}
                 </span>
               ))}
             </>

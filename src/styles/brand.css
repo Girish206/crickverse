@@ -48,11 +48,12 @@
   /* The top and bottom bars' fill: spreading sideways from the centre,
      deep maroon there and lightening evenly through the brand red to
      orange at the left and right ends (like the match card's result strip). */
-  --brand-gradient-bar: linear-gradient(90deg, #f26a1b 0%, #d7261e 14%, #9a2219 32%, #6e1812 50%, #9a2219 68%, #d7261e 86%, #f26a1b 100%);
+  --brand-gradient-bar: var(--brand-gradient-top); /* bars match the top bar */
   /* The top bars' fill (Navbar.css, PageHeader.css): the other way round,
      orange at the centre deepening through the brand red to maroon at the
      left and right ends. */
-  --brand-gradient-top: linear-gradient(90deg, #6e1812 0%, #9a2219 18%, #d7261e 36%, #f26a1b 50%, #d7261e 64%, #9a2219 82%, #6e1812 100%);
+  --brand-gradient-top: linear-gradient(90deg, #d0473b 0%, var(--brand-accent) 35%, #a12a22 65%, #7a1d17 100%); /* the top bar: the profile card's red, light (left) to dark (right) */
+  --brand-gradient-center: linear-gradient(90deg, #d0473b 0%, #ce463a 5%, #c84338 10%, #be3e34 15%, #b2382f 20%, #a53229 25%, #982c23 30%, #8c261e 35%, #82211a 40%, #7c1e18 45%, #7a1d17 50%, #7c1e18 55%, #82211a 60%, #8c261e 65%, #982c23 70%, #a53229 75%, #b2382f 80%, #be3e34 85%, #c84338 90%, #ce463a 95%, #d0473b 100%); /* the bottom tab bar: dark in the centre, easing lighter to both ends (eased stops, so there's no crease in the middle) */
 
   /* Charcoal surfaces (dark theme) */
   --brand-navy-night: #121418;

@@ -22,7 +22,7 @@ export interface CricketPlayer {
   // numbers were required. Players see neither field for anyone.
   mobile?: string | null;
   // Whether they can sign in to see their own stats (an account with the
-  // same mobile and cricket access).
+  // same mobile and cricket access). Sent to everyone, not just super admins.
   hasLogin?: boolean;
   // Super admins only: how they came to be on RunMitra (see the API's
   // cricket-joined.ts) and when.

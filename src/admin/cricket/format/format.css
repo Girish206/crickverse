@@ -29,40 +29,114 @@
   flex-direction: column;
   gap: 18px;
 }
+/* The champion: one slim brand-gradient row — the team's badge with a gold
+   trophy on it, CHAMPIONS, the name and who they beat. Opens the final. */
 .cricket-champion {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 18px;
-  border-radius: var(--radius-lg);
-  background: var(--adm-raised);
-  color: var(--theme-text-dark);
-  border: 1px solid var(--adm-line);
+  gap: 12px;
+  padding: 10px 14px 10px 10px;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: var(--radius-md);
+  background: var(--brand-gradient);
+  box-shadow: 0 4px 14px rgba(var(--brand-crimson-rgb), 0.22);
+  color: #fff;
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
-.cricket-champion > i {
-  color: var(--brand-amber-deep);
-  font-size: 1.8rem;
+a.cricket-champion:hover,
+a.cricket-champion:focus-visible {
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(var(--brand-crimson-rgb), 0.32);
+}
+a.cricket-champion:active {
+  transform: scale(0.99);
+}
+/* A faint tilted trophy on the right. */
+.cricket-champion::after {
+  content: "\f091";
+  position: absolute;
+  right: 26px;
+  top: 50%;
+  z-index: -1;
+  font-family: "Font Awesome 7 Free", "Font Awesome 6 Free";
+  font-weight: 900;
+  font-size: 3.6rem;
+  color: rgba(255, 255, 255, 0.1);
+  transform: translateY(-50%) rotate(-12deg);
+  pointer-events: none;
+}
+.cricket-champion-badge {
+  position: relative;
+  flex: none;
+}
+.cricket-champion-logo {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--brand-amber-bright);
+  border-radius: 50%;
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+.cricket-champion-medal {
+  position: absolute;
+  right: -5px;
+  bottom: -3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #f5d98a, var(--brand-amber-deep));
+  color: #fff;
+  font-size: 0.55rem;
+}
+.cricket-champion-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.cricket-champion-text > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .cricket-champion small {
-  display: block;
-  color: var(--muted-color);
-  font-size: var(--fs-2xs);
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  color: #ffe2a0;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 .cricket-champion strong {
-  font-size: var(--fs-lg);
+  font-size: var(--fs-md);
+  font-weight: 800;
 }
-:root[data-bs-theme="dark"] .cricket-champion > i {
-  color: var(--brand-amber-bright);
+.cricket-champion-text > span {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: var(--fs-2xs);
+}
+.cricket-champion-go {
+  flex: none;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.75rem;
 }
 
 /* Phase timeline: numbered dots joined by a line. */
 .cricket-phase-steps {
   display: flex;
-  margin: 0 0 6px;
-  padding: 0;
+  margin: 0;
+  padding: 4px 0 0;
   overflow-x: auto;
   list-style: none;
   scrollbar-width: none;
@@ -70,11 +144,11 @@
 .cricket-phase-steps > li {
   position: relative;
   display: flex;
-  flex: 1 0 84px;
+  flex: 1 0 96px;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  min-width: 84px;
+  gap: 4px;
+  min-width: 96px;
   text-align: center;
 }
 .cricket-phase-steps > li + li::before {
@@ -107,49 +181,183 @@
   border-color: var(--primary);
   color: var(--primary);
 }
+/* The phase being played now: a soft ring round its dot. */
+.cricket-phase-steps > li.is-playing .cricket-phase-dot {
+  box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.15);
+}
 .cricket-phase-steps > li.is-done .cricket-phase-dot {
   border-color: var(--primary);
   background: var(--primary);
   color: #fff;
 }
 .cricket-phase-name {
+  margin-top: 2px;
   color: var(--theme-text-dark);
   font-size: var(--fs-xs);
+  font-weight: 700;
+}
+.cricket-phase-sub {
+  color: var(--muted-color);
+  font-size: var(--fs-2xs);
+}
+.cricket-phase-steps > li.is-playing .cricket-phase-sub {
+  color: var(--primary);
   font-weight: 600;
 }
 
 .cricket-format-phase + .cricket-format-phase {
-  margin-top: 18px;
+  margin-top: 8px;
 }
 .cricket-format-phase-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 .cricket-format-phase-head h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
   margin: 0;
   color: var(--theme-text-dark);
   font-size: var(--fs-md);
   font-weight: 700;
 }
+.cricket-format-phase-icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: rgba(var(--primary-rgb), 0.1);
+  color: var(--primary);
+  font-size: 0.85rem;
+}
 .cricket-phase-state {
   flex: none;
-  padding: 3px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 1px solid var(--border-color);
   border-radius: 999px;
-  background: rgba(var(--primary-rgb), 0.08);
   color: var(--muted-color);
   font-size: var(--fs-2xs);
   font-weight: 700;
 }
+.cricket-phase-state.is-playing i {
+  font-size: 0.45rem;
+  animation: cricket-phase-pulse 1.4s ease-in-out infinite;
+}
 .cricket-phase-state.is-playing,
 .cricket-phase-state.is-ready {
+  border-color: rgba(var(--primary-rgb), 0.35);
+  background: rgba(var(--primary-rgb), 0.08);
   color: var(--primary);
 }
 .cricket-phase-state.is-done {
+  border-color: rgba(var(--success-rgb), 0.35);
+  background: rgba(var(--success-rgb), 0.1);
+  color: var(--success);
+}
+@keyframes cricket-phase-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cricket-phase-state.is-playing i {
+    animation: none;
+  }
+}
+
+/* Under a group's table: matches played as a bar, and how many go through. */
+.cricket-group-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: rgba(var(--primary-rgb), 0.04);
+}
+.cricket-group-progress-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
+  color: var(--muted-color);
+  font-size: var(--fs-xs);
+}
+.cricket-group-progress-row strong {
+  color: var(--theme-text-dark);
+}
+.cricket-group-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.1);
+  color: var(--primary);
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+}
+.cricket-group-progress-bar {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.12);
+}
+.cricket-group-progress-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
   background: var(--primary);
-  color: #fff;
+  transition: width 0.3s ease;
+}
+.cricket-group-progress > small {
+  color: var(--muted-color);
+  font-size: var(--fs-2xs);
+}
+
+/* Organisers: a row to change the format. */
+.cricket-format-change {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--theme-text-dark);
+  text-decoration: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.cricket-format-change:hover,
+.cricket-format-change:focus-visible {
+  border-color: rgba(var(--primary-rgb), 0.45);
+  background: rgba(var(--primary-rgb), 0.05);
+  color: var(--theme-text-dark);
+}
+.cricket-format-change > i:first-child {
+  color: var(--primary);
+}
+.cricket-format-change > span {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+.cricket-format-change small,
+.cricket-format-change > i:last-child {
+  color: var(--muted-color);
+  font-size: var(--fs-2xs);
 }
 
 /* Group tables side by side when there's room. */
@@ -299,7 +507,7 @@
 
 /* Bracket: absolutely placed cards over an SVG of connectors; it scrolls
    sideways inside its card on phones. Card rows match BracketChart's
-   HOME_ROW / AWAY_ROW: a 34px head, then two 28px teams. */
+   HOME_ROW / AWAY_ROW: a 30px head, then two 32px teams. */
 .cricket-bracket-scroll {
   overflow-x: auto;
   padding-bottom: 4px;
@@ -316,6 +524,7 @@
   fill: none;
   stroke: rgba(var(--primary-rgb), 0.45);
   stroke-width: 2;
+  stroke-linejoin: round;
 }
 .cricket-bracket-lines path.is-loser {
   stroke: var(--muted-color);
@@ -331,23 +540,34 @@
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   background: var(--bs-body-bg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   color: var(--theme-text-dark);
   font: inherit;
   text-align: left;
   text-decoration: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 a.cricket-bracket-card:hover,
-button.cricket-bracket-card:hover {
-  border-color: rgba(var(--primary-rgb), 0.6);
-  box-shadow: none;
+a.cricket-bracket-card:focus-visible,
+button.cricket-bracket-card:hover,
+button.cricket-bracket-card:focus-visible {
+  border-color: rgba(var(--primary-rgb), 0.55);
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.12);
   color: var(--theme-text-dark);
+  transform: translateY(-1px);
 }
+/* The Final: a gold edge and a warm head. */
 .cricket-bracket-card.is-final {
-  border-color: var(--adm-line-strong);
+  border-color: rgba(var(--brand-amber-rgb), 0.6);
+}
+.cricket-bracket-card.is-final .cricket-bracket-head {
+  background: linear-gradient(90deg, rgba(var(--brand-amber-rgb), 0.18), rgba(var(--brand-amber-rgb), 0.05));
+}
+.cricket-bracket-card.is-final .cricket-bracket-head > strong > i {
+  color: var(--brand-amber-deep);
 }
 .cricket-bracket-card.is-live {
-  border-color: rgba(var(--danger-rgb), 0.45);
+  border-color: rgba(var(--danger-rgb), 0.5);
 }
 .cricket-bracket-card.is-ready {
   border-style: dashed;
@@ -358,38 +578,78 @@ button.cricket-bracket-card:hover {
   flex: none;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
-  height: 34px;
+  gap: 8px;
+  height: 30px;
   padding: 0 10px;
   border-bottom: 1px solid var(--border-color);
   background: var(--adm-raised);
   font-size: var(--fs-2xs);
 }
 .cricket-bracket-head > strong {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
   white-space: nowrap;
 }
 .cricket-bracket-head > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
   overflow: hidden;
   color: var(--muted-color);
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.cricket-bracket-card.is-ready .cricket-bracket-head > span {
+.cricket-bracket-head > span.is-done {
+  color: var(--success);
+}
+.cricket-bracket-head > span.is-ready {
   color: var(--primary);
   font-weight: 700;
 }
 .cricket-bracket-head > span.is-live {
   color: var(--danger);
-  font-weight: 700;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.cricket-bracket-head > span.is-live > i {
+  font-size: 0.4rem;
+  animation: cricket-phase-pulse 1.4s ease-in-out infinite;
 }
 .cricket-bracket-team {
+  position: relative;
   display: flex;
   flex: none;
   align-items: center;
-  gap: 6px;
-  height: 28px;
+  gap: 8px;
+  height: 32px;
   padding: 0 10px;
   font-size: var(--fs-xs);
+}
+.cricket-bracket-team + .cricket-bracket-team {
+  border-top: 1px solid rgba(var(--primary-rgb), 0.06);
+}
+.cricket-bracket-badge {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+}
+.cricket-bracket-badge.is-tbd {
+  border: 1px dashed var(--muted-color);
+  background: transparent;
+  color: var(--muted-color);
 }
 .cricket-bracket-name {
   flex: 1;
@@ -402,17 +662,52 @@ button.cricket-bracket-card:hover {
   color: var(--muted-color);
   font-style: italic;
 }
+/* The winner: a tinted row with an accent on its left edge. */
 .cricket-bracket-team.is-won {
+  background: rgba(var(--primary-rgb), 0.06);
   font-weight: 700;
 }
+.cricket-bracket-team.is-won::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 0;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--primary);
+}
 .cricket-bracket-team.is-won > i {
+  flex: none;
   color: var(--primary);
+  font-size: 0.8rem;
 }
 .cricket-bracket-team.is-lost {
   color: var(--muted-color);
 }
+.cricket-bracket-team.is-lost .cricket-bracket-badge {
+  opacity: 0.6;
+}
 .cricket-bracket-score {
+  flex: none;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
   font-variant-numeric: tabular-nums;
+}
+.cricket-bracket-score strong {
+  font-weight: 800;
+}
+.cricket-bracket-team.is-lost .cricket-bracket-score strong {
+  font-weight: 600;
+}
+.cricket-bracket-score small {
+  color: var(--muted-color);
+  font-size: 0.65rem;
+  font-weight: 500;
+}
+:root[data-bs-theme="dark"] .cricket-bracket-card.is-final .cricket-bracket-head > strong > i {
+  color: var(--brand-amber-bright);
 }
 
 /* Schedule fields: clearing the end date, and the weekday chips. */

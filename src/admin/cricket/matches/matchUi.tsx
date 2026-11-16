@@ -2,7 +2,7 @@ import { Fragment } from "react";
 import { useNavigate } from "react-router-dom";
 import type { CricketMatch, CricketMatchStatus } from "../../../api/types";
 import { BALL_TYPES } from "../cricketOptions";
-import { formatMatchDate, battingOrder, matchStageLabel, teamInitials, teamScore } from "./matchUtils";
+import { formatMatchDate, battingOrder, matchStageLabel, stageTone, teamInitials, teamScore } from "./matchUtils";
 import { TeamMark } from "../teams/TeamMark";
 import { useAppText } from "../appText";
 
@@ -96,7 +96,7 @@ export function MatchCard(props: {
       )}
       <div className="cricket-match-card-top">
         <span className="cricket-match-card-meta">
-          <span className="cricket-match-card-stage">{matchStageLabel(match)}</span>
+          <span className={`cricket-match-card-stage${stageTone(match)}`}>{matchStageLabel(match)}</span>
           {tournamentName && (
             <span className="cricket-match-card-context" title={tournamentName}>
               {tournamentName}

@@ -4,6 +4,7 @@ import { AddPlayerByMobile } from "../players/AddPlayerByMobile";
 import { PlayerCard } from "../players/PlayerCard";
 import type { NameOf } from "../stats";
 import { TeamRoleChips } from "../tournaments/TeamRoleChips";
+import { SearchField } from "../SearchField";
 
 export interface SquadGroup {
   label: string;
@@ -84,13 +85,7 @@ export function SquadChecklist({
     <>
       <AddPlayerByMobile blockedReason={blockedReason} onAdded={(player) => onAdded(player.id)} />
       {total > 6 && (
-        <input
-          type="search"
-          className="cricket-picker-search"
-          placeholder="Search players"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <SearchField label="Search players" value={search} onChange={setSearch} />
       )}
       {shown.length === 0 ? (
         <div className="admin-empty-state">

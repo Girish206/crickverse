@@ -56,7 +56,8 @@
   --theme-text-light: #ffffff;
 
   /* Surfaces, in both themes (dark.css has the charcoal ones). */
-  --adm-bg: #eceef2;
+  /* The page behind the cards: near-white, so the white cards sit lightly on it. */
+  --adm-bg: #f7f8fa;
   --adm-surface: #ffffff;
   --adm-raised: #f8f9fb;
   --adm-glass: #ffffff;

@@ -9,6 +9,7 @@ import { PlayerCard } from "../../players/PlayerCard";
 import type { NameOf } from "../../stats";
 import { teamKeyOf } from "../matchUtils";
 import { cantGoOut } from "./impact";
+import { SearchField } from "../../SearchField";
 
 // The Impact Player rule: a side swaps one player for a substitute, once.
 // Unlike a squad change, the player going out may have batted or bowled
@@ -88,13 +89,7 @@ export function ImpactPlayerSheet({ match, nameOf, team, onClose }: { match: Cri
         onAdded={(player) => setInId(player.id)}
       />
       {candidates.length > 6 && (
-        <input
-          type="search"
-          className="cricket-picker-search"
-          placeholder="Search players"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <SearchField label="Search players" value={search} onChange={setSearch} />
       )}
       {shown.length === 0 ? (
         <p className="cricket-manage-empty">

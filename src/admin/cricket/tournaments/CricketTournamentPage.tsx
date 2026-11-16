@@ -36,7 +36,7 @@ import { useMvpLock } from "../matches/useMvpLock";
 import { FormatView } from "../format/FormatView";
 import { TournamentBanner } from "./TournamentBanner";
 import { TournamentInfo } from "./TournamentInfo";
-import { seasonOf } from "./TournamentCard";
+import { hasChampion, seasonOf } from "./TournamentCard";
 import { TournamentPlayers } from "./TournamentPlayers";
 import { AuctionPanel } from "./AuctionPanel";
 import { TournamentStats } from "./TournamentStats";
@@ -58,6 +58,9 @@ import { SwipePanels } from "../../SwipePanels";
 import { useAppText } from "../appText";
 
 type Tab = "info" | "teams" | "players" | "auction" | "matches" | "points" | "heroes" | "stats" | "totals";
+
+// The player auction is switched off for now; flip to bring its tab back.
+const AUCTION_ENABLED = false;
 
 // How the teams are filled: generated from matched sets, or built by hand
 // (new teams or copies of other tournaments' teams).
@@ -126,6 +129,23 @@ function TeamCards({
         );
       })}
     </div>
+  );
+}
+
+// Under the points table: a tappable card for each NRR tool — icon, name,
+// what it's for.
+function NrrToolCard({ icon, title, text, onClick }: { icon: string; title: string; text: string; onClick: () => void }) {
+  return (
+    <button type="button" className="cricket-nrr-tool" title={text} onClick={onClick}>
+      <span className="cricket-nrr-tool-icon" aria-hidden="true">
+        <i className={`fa-solid ${icon}`}></i>
+      </span>
+      <span className="cricket-nrr-tool-text">
+        <strong>{title}</strong>
+        <small>{text}</small>
+      </span>
+      <i className="fa-solid fa-chevron-right cricket-nrr-tool-go" aria-hidden="true"></i>
+    </button>
   );
 }
 
@@ -210,8 +230,10 @@ export function CricketTournamentPage() {
   const { data: allTournaments } = useCricketTournaments();
   const asSeason = tournament ? seasonOf(tournament, allTournaments ?? []) : null;
   // The Auction tab: for organisers (to run one), and for everyone once
-  // there's been one.
-  const tabs = TABS.filter((t) => t.value !== "auction" || canManage || Boolean(tournament?.auction));
+  // there's been one. Hidden for now (AUCTION_ENABLED) until it's ready.
+  const tabs = TABS.filter(
+    (t) => t.value !== "auction" || (AUCTION_ENABLED && (canManage || Boolean(tournament?.auction))),
+  );
   const requested = params.get("tab") as Tab | null;
   const tab: Tab = requested && tabs.some((t) => t.value === requested) ? requested : "matches";
   const auctionLive = tab === "auction" && tournament?.auction?.status === "open";
@@ -260,9 +282,14 @@ export function CricketTournamentPage() {
   const finished = tournamentFinished(tournament);
   const started = tournamentStarted(matches);
   const canEdit = canManage && !finished;
+  // Its champion decided, it shows as completed (TournamentBanner), so no
+  // new matches or teams are offered — results can still be corrected, and
+  // marking it finished locks the rest.
+  const championDecided = !finished && hasChampion(tournament, matches ?? [], true);
+  const canAdd = canEdit && !championDecided;
   // Generating reshuffles the generated teams, so it's only offered until the
   // first match starts (fixtures not played yet follow the new rosters).
-  const canAutoBuild = canEdit && !started;
+  const canAutoBuild = canAdd && !started;
   const teamsOutdated =
     canAutoBuild && tournament.generatedAt !== null && !sameMembers(generatedPlayerIds, matchedIds);
 
@@ -286,7 +313,7 @@ export function CricketTournamentPage() {
         )
       : await confirmAction(
           "Mark the tournament finished?",
-          `It shows as completed everywhere and is locked: no new matches, results stay as they are, and teams, the auction and the format can't change.${
+          `It shows as completed everywhere and is locked: no new matches, results stay as they are, and the teams and format can't change.${
             unplayed ? ` ${unplayed} match${unplayed === 1 ? "" : "es"} not played yet won't be playable.` : ""
           } You can reopen it any time.`,
           "Mark finished",
@@ -410,16 +437,22 @@ export function CricketTournamentPage() {
       <div className="cricket-th-sticky">
         <div className="card cricket-th-card">
           <TournamentBanner tournament={tournament} matches={matches} />
-          {/* Its organisers see why nothing can be changed, and undo it here. */}
+          {/* Its organisers see why nothing can be changed; reopening it is
+              in the settings menu. */}
           {canManage && finished && (
-            <div className="cricket-th-locked" title="Its teams, matches and format can't be changed until it's reopened.">
-              <i className="fa-solid fa-lock" aria-hidden="true"></i>
+            <p className="cricket-th-note" role="status">
+              <i className="fa-solid fa-lock" aria-hidden="true"></i> Tournament completed. Reopen it from Settings to make changes.
+            </p>
+          )}
+          {canManage && championDecided && (
+            <div className="cricket-th-locked" title="The champion is decided, so no new matches or teams can be added.">
+              <i className="fa-solid fa-trophy" aria-hidden="true"></i>
               <span>
-                <strong>Locked for editing</strong>
-                <span className="visually-hidden">: its teams, matches and format can't be changed until it's reopened.</span>
+                <strong>Champion decided</strong>
+                <span className="visually-hidden">: no new matches or teams can be added.</span>
               </span>
               <button type="button" onClick={toggleFinished} disabled={updateTournament.isPending}>
-                Reopen
+                Mark finished
               </button>
             </div>
           )}
@@ -468,7 +501,9 @@ export function CricketTournamentPage() {
               <>
               <ListCard>
                 {teamCount === 0 ? (
-                  <div className="admin-empty-state">No teams yet — create them automatically or add them by hand below.</div>
+                  <div className="admin-empty-state">
+                    {canAdd ? "No teams yet — create them automatically or add them by hand below." : "No teams yet."}
+                  </div>
                 ) : (
                   <>
                     {teamsOutdated && (
@@ -481,6 +516,7 @@ export function CricketTournamentPage() {
                 )}
               </ListCard>
 
+              {canAdd && (
               <ListCard title="Add Teams">
                 <p className="admin-hint">
                   {canAutoBuild ? "Build balanced teams from matched players, make" : "Make"} a new team and pick its players, or
@@ -507,7 +543,7 @@ export function CricketTournamentPage() {
                   </Button>
                 </div>
               </ListCard>
-
+              )}
               </>
             )}
 
@@ -527,7 +563,7 @@ export function CricketTournamentPage() {
               <ListCard
                 plain
                 action={
-                  canEdit ? (
+                  canAdd ? (
                     <Button variant="primary" onClick={() => setSchedulingMatch(true)}>
                       <i className="fa-solid fa-plus" aria-hidden="true" style={{ marginRight: 6 }}></i>
                       New Match
@@ -535,30 +571,34 @@ export function CricketTournamentPage() {
                   ) : undefined
                 }
               >
-                <MatchesBoard matches={matches ?? []} onNew={canEdit ? () => setSchedulingMatch(true) : undefined} />
+                <MatchesBoard matches={matches ?? []} onNew={canAdd ? () => setSchedulingMatch(true) : undefined} />
               </ListCard>
             )}
 
             {tab === "points" && (
-              <ListCard
-                action={
-                  <div className="cricket-standings-actions">
-                    <Button size="sm" variant="outline" onClick={() => setNrrCalcOpen(true)}>
-                      <i className="fa-solid fa-calculator me-1" aria-hidden="true"></i> NRR Calculator
-                    </Button>
-                    <NrrGuide
-                      rows={pointsTable(tournament, matches ?? [])}
-                      matches={(matches ?? []).filter(countsForTable)}
-                      button={(open) => (
-                        <Button size="sm" variant="outline" onClick={open}>
-                          <i className="fa-solid fa-circle-question me-1" aria-hidden="true"></i> How NRR works
-                        </Button>
-                      )}
-                    />
-                  </div>
-                }
-              >
+              <ListCard>
                 <FormatView tournament={tournament} matches={matches ?? []} canManage={canEdit} />
+                {/* Under the table: the NRR tools, each with what it's for. */}
+                <div className="cricket-standings-actions">
+                  <NrrToolCard
+                    icon="fa-calculator"
+                    title="NRR Calculator"
+                    text="How fast a team must chase, or how few runs it must give away, to pass another team on NRR."
+                    onClick={() => setNrrCalcOpen(true)}
+                  />
+                  <NrrGuide
+                    rows={pointsTable(tournament, matches ?? [])}
+                    matches={(matches ?? []).filter(countsForTable)}
+                    button={(open) => (
+                      <NrrToolCard
+                        icon="fa-circle-question"
+                        title="How NRR works"
+                        text="How net run rate is worked out, step by step with this table's numbers."
+                        onClick={open}
+                      />
+                    )}
+                  />
+                </div>
               </ListCard>
             )}
 

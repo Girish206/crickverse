@@ -9,8 +9,10 @@ import {
   useSetCricketSquad,
   useSetCricketTeamRoles,
   useSwapCricketPlayers,
+  useTournamentPlayerMobiles,
   useUpdateCricketTeam,
 } from "../../../api/hooks/cricket/useCricketTournaments";
+import { formatMobile } from "../mobile";
 import type { CricketPlayer } from "../../../api/types";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { canManageTournament } from "../canManage";
@@ -119,6 +121,11 @@ export function CricketTeamPage() {
   const playerById = useMemo(() => new Map((players ?? []).map((player) => [player.id, player])), [players]);
 
   const team = tournament?.teams[teamIndex];
+  // Organisers, super admins and this team's captain see each player's
+  // number and whether they're on the app (even once it's finished).
+  const canSeeContacts =
+    canManageTournament(admin, tournament, me?.player?.id) || (me?.player != null && team?.captainId === me.player.id);
+  const { data: mobiles } = useTournamentPlayerMobiles(id, canSeeContacts);
   const backTo = `/tournaments/${id}?tab=teams`;
   if (isLoading || !tournament || !team) {
     return (
@@ -136,8 +143,7 @@ export function CricketTeamPage() {
   }
 
   // The team's captain can add players too (but not move, swap or edit).
-  const canAddPlayers = canManage || (!finished && me?.player != null && team.captainId === me.player.id);
-  const teamMatches = (matches ?? []).filter((match) => match.teams.some((t) => t.teamIndex === teamIndex));
+  const canAddPlayers = canManage || (!finished && me?.player != null && team.captainId === me.player.id);  const teamMatches = (matches ?? []).filter((match) => match.teams.some((t) => t.teamIndex === teamIndex));
   const standings = pointsTable(tournament, matches ?? []);
   const position = standings.findIndex((row) => row.teamIndex === teamIndex);
   const record = standings[position];
@@ -309,7 +315,13 @@ export function CricketTeamPage() {
                   <ul className="cricket-roster">
                     {team.playerIds.map((playerId) => (
                       <li key={playerId}>
-                        <RosterPlayer player={playerById.get(playerId)} tags={canManage ? [] : roleTagsFor(team, playerId)} />
+                        <RosterPlayer
+                          player={playerById.get(playerId)}
+                          tags={canManage ? [] : roleTagsFor(team, playerId)}
+                          showLogin={canSeeContacts}
+                          roleOnRight
+                          detail={mobiles?.get(playerId) ? formatMobile(mobiles.get(playerId)!) : undefined}
+                        />
                         {canManage && (
                           <TeamRoleChips
                             roles={rolesOf(team)}
@@ -482,12 +494,20 @@ export function RosterPlayer({
   tags = [],
   linked = true,
   detail,
+  roleOnRight = false,
+  showLogin = false,
 }: {
   player: CricketPlayer | undefined;
   tags?: string[];
   linked?: boolean;
   // An extra line under the name.
   detail?: string;
+  // Players tabs: the playing role on the row's right-hand side, leaving the
+  // line under the name for `detail` (a mobile number).
+  roleOnRight?: boolean;
+  // For organisers, captains and super admins: a tick beside the name of a
+  // player who has signed in to the app.
+  showLogin?: boolean;
 }) {
   const name = player?.name ?? "Removed player";
   const role = roleOf(player?.role ?? null);
@@ -511,17 +531,28 @@ export function RosterPlayer({
         )}
       </span>
       <span className="cricket-roster-who">
-        <strong>
-          {name}
-        </strong>
-        {(role || roleNames) && (
+        {showLogin && player?.hasLogin ? (
+          // A tick beside the name: they've signed in to the app.
+          <strong className="cricket-roster-name">
+            <span>{name}</span>
+            <i
+              className="fa-solid fa-circle-check cricket-login-tick"
+              title="Signed in to the app"
+              aria-label="Signed in to the app"
+            ></i>
+          </strong>
+        ) : (
+          <strong>{name}</strong>
+        )}
+        {((role && !roleOnRight) || roleNames) && (
           <small className="cricket-roster-meta">
-            {role && <span>{role.label}</span>}
+            {role && !roleOnRight && <span>{role.label}</span>}
             {roleNames && <span className="visually-hidden">{roleNames}</span>}
           </small>
         )}
         {detail && <small>{detail}</small>}
       </span>
+      {role && roleOnRight && <small className="cricket-roster-aside">{role.label}</small>}
     </>
   );
   return (

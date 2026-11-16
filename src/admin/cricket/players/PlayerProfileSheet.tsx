@@ -78,7 +78,8 @@ function ProfileSheetHost({ match, children }: { match?: CricketMatch; children:
           ) : (
             <CricketPlayerProfileLoader player={player} />
           )}
-          {mayInvite && player.id !== myPlayerId && (
+          {/* Only players who don't sign in to the app yet need an invite. */}
+          {mayInvite && player.id !== myPlayerId && player.hasLogin === false && (
             <div className="cricket-invite-row">
               <PlayerInvite key={player.id} playerId={player.id} mobile={player.mobile} />
             </div>
