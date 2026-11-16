@@ -141,23 +141,35 @@
   text-transform: uppercase;
   white-space: nowrap;
 }
+/* Soft tints like the stage badge beside it; live stays solid red so it
+   still catches the eye. */
 .cricket-match-status.is-scheduled {
-  background: #d9bd74;
-  color: #171a20;
+  background: rgba(37, 99, 235, 0.12);
+  color: #1d4ed8;
 }
 .cricket-match-status.is-live {
   background: #d7261e;
   color: #fff;
 }
-/* The outline keeps the white pill visible on a white page. */
 .cricket-match-status.is-completed {
-  background: #fff;
-  color: #171a20;
-  box-shadow: inset 0 0 0 1px rgba(23, 26, 32, 0.16);
+  background: rgba(25, 135, 84, 0.13);
+  color: #157347;
 }
 .cricket-match-status.is-abandoned {
-  background: #444850;
-  color: #fff;
+  background: rgba(108, 117, 125, 0.16);
+  color: #4b5258;
+}
+:root[data-bs-theme="dark"] .cricket-match-status.is-scheduled {
+  background: rgba(96, 165, 250, 0.16);
+  color: #93c5fd;
+}
+:root[data-bs-theme="dark"] .cricket-match-status.is-completed {
+  background: rgba(76, 195, 138, 0.16);
+  color: #6ee7a8;
+}
+:root[data-bs-theme="dark"] .cricket-match-status.is-abandoned {
+  background: rgba(173, 181, 189, 0.16);
+  color: #c4cad0;
 }
 /* Beside a match page's title. */
 .cv-page-header-title-row .cricket-match-status {
@@ -184,6 +196,19 @@
 }
 /* Live, on the red header: turned round to a white pill with red text, so
    it reads instead of melting into the bar */
+/* On the red header (both themes): a white pill with the status colour. */
+.cv-page-header-title-row .cricket-match-status:not(.is-live) {
+  background: #fff;
+}
+:root .cv-page-header-title-row .cricket-match-status.is-scheduled {
+  color: #1d4ed8;
+}
+:root .cv-page-header-title-row .cricket-match-status.is-completed {
+  color: #157347;
+}
+:root .cv-page-header-title-row .cricket-match-status.is-abandoned {
+  color: #4b5258;
+}
 .cv-page-header-title-row .cricket-match-status.is-live {
   background: #fff;
   color: var(--brand-accent-fill);
@@ -264,6 +289,17 @@
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+/* Knockout rounds stand out: the final in gold, the rest in the brand colour. */
+.cricket-match-card-stage.is-knockout {
+  background: rgba(var(--primary-rgb), 0.12);
+  color: var(--primary);
+  font-weight: 700;
+}
+.cricket-match-card-stage.is-final {
+  background: linear-gradient(135deg, #f7d774, #e0a82e);
+  color: #5a3d00;
+  font-weight: 700;
 }
 .cricket-match-card-context {
   overflow: hidden;

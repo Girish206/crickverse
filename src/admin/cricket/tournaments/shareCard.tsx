@@ -197,7 +197,8 @@ export function useShareCard({ shareTitle, what, fileName, text, draw }: ShareCa
     const file = image && new File([image.blob], fileName, { type: "image/png" });
     try {
       if (file && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: shareTitle, text });
+        // No title with a picture: some apps (WhatsApp) then drop the text.
+        await navigator.share({ files: [file], text });
       } else if (navigator.share) {
         await navigator.share({ title: shareTitle, text });
       } else {

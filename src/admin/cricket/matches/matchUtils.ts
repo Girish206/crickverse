@@ -34,6 +34,23 @@ export function hasPlayed(match: CricketMatch, playerId: number) {
 
 export const stageLabel = (stage: CricketMatchStage | null) => STAGES.find((s) => s.value === stage)?.label ?? "League";
 
+// Knockout rounds stand out on a match card's stage badge: the final in
+// gold, the other knockouts in the brand colour (a CSS modifier class, with
+// its leading space; "" for league, group and friendly matches).
+const KNOCKOUTS = new Set<CricketMatchStage>([
+  "round-of-16",
+  "quarter-final",
+  "eliminator",
+  "qualifier-1",
+  "qualifier-2",
+  "semi-final",
+  "third-place",
+]);
+export function stageTone(match: CricketMatch) {
+  if (match.stage === "final") return " is-final";
+  return match.stage && KNOCKOUTS.has(match.stage) ? " is-knockout" : "";
+}
+
 // A match's stage. Outside a tournament there's no league, so a standalone
 // match with no stage (or the old "league" default) is just a "Match".
 // A format's group match names its group ("Group A"), and a series match

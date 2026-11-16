@@ -2,11 +2,13 @@ import { useMemo, useState } from "react";
 import { useCricketPlayers } from "../../../api/hooks/cricket/useCricketPlayers";
 import { useTournamentPlayerMobiles } from "../../../api/hooks/cricket/useCricketTournaments";
 import type { CricketPlayer, CricketPlayerJoinedVia, CricketTournament } from "../../../api/types";
+import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { Loader } from "../../components/Loader";
 import { formatMobile } from "../mobile";
 import { RosterPlayer } from "./CricketTeamPage";
 import { NO_ROLES, roleTagsFor } from "./TeamRoleChips";
 import { dateText } from "./TournamentInfo";
+import { SearchField } from "../SearchField";
 
 const JOINED_LABELS: Record<CricketPlayerJoinedVia, string> = {
   "signed-up": "Signed up themselves",
@@ -34,6 +36,7 @@ function playerDetail(player: CricketPlayer | undefined, mobile: string | undefi
 export function TournamentPlayers({ tournament }: { tournament: CricketTournament }) {
   const { data: players, isLoading } = useCricketPlayers();
   const { data: mobiles } = useTournamentPlayerMobiles(tournament.id);
+  const { admin } = useAdminAuth();
   const [search, setSearch] = useState("");
   const playerById = useMemo(() => new Map((players ?? []).map((player) => [player.id, player])), [players]);
 
@@ -66,14 +69,7 @@ export function TournamentPlayers({ tournament }: { tournament: CricketTournamen
         {total} player{total === 1 ? "" : "s"} in this tournament
       </p>
       {total > 6 && (
-        <input
-          type="search"
-          className="cricket-picker-search"
-          placeholder="Search players"
-          aria-label="Search players"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <SearchField label="Search players" value={search} onChange={setSearch} />
       )}
       {shown.length === 0 ? (
         <div className="admin-empty-state">No one matches "{search}".</div>
@@ -91,6 +87,10 @@ export function TournamentPlayers({ tournament }: { tournament: CricketTournamen
                     player={playerById.get(playerId)}
                     tags={roleTagsFor(group.roles, playerId)}
                     detail={playerDetail(playerById.get(playerId), mobiles?.get(playerId))}
+                    roleOnRight
+                    // Whoever may see a player's number (super admins, the
+                    // organisers, their team's captain) sees if they're on the app.
+                    showLogin={Boolean(admin?.isSuperAdmin) || Boolean(mobiles?.has(playerId))}
                   />
                 </li>
               ))}

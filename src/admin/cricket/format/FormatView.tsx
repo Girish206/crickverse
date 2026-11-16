@@ -27,6 +27,7 @@ import {
   type ScheduleOptions,
 } from "./formatEngine";
 import { defaultSchedule, ScheduleFields } from "./ScheduleFields";
+import { TeamMark } from "../teams/TeamMark";
 import "./format.css";
 
 const STATE_LABEL: Record<PhaseState, string> = {
@@ -35,6 +36,51 @@ const STATE_LABEL: Record<PhaseState, string> = {
   playing: "In progress",
   done: "Completed",
 };
+
+const STATE_ICON: Record<PhaseState, string> = {
+  waiting: "fa-regular fa-clock",
+  ready: "fa-solid fa-calendar-plus",
+  playing: "fa-solid fa-circle",
+  done: "fa-solid fa-check",
+};
+
+// Each phase's heading icon: a league table, a bracket or a series.
+const KIND_ICON: Record<CricketPhase["kind"], string> = {
+  "round-robin": "fa-solid fa-table-list",
+  knockout: "fa-solid fa-sitemap",
+  series: "fa-solid fa-handshake",
+};
+
+// Under a group's table: how far through its matches it is, and how many
+// go through.
+function GroupProgress({ played, total, qualify, carryPoints }: { played: number; total: number; qualify: number; carryPoints: boolean }) {
+  const percent = total > 0 ? Math.min(100, Math.round((played / total) * 100)) : 0;
+  return (
+    <div className="cricket-group-progress">
+      <div className="cricket-group-progress-row">
+        <span>
+          <strong>{played}</strong> of {total} matches played
+        </span>
+        {qualify > 0 && (
+          <span className="cricket-group-chip">
+            <i className="fa-solid fa-arrow-turn-up" aria-hidden="true"></i> Top {qualify} go through
+          </span>
+        )}
+      </div>
+      <div
+        className="cricket-group-progress-bar"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={total}
+        aria-valuenow={played}
+        aria-label="Matches played"
+      >
+        <span style={{ width: `${percent}%` }} />
+      </div>
+      {carryPoints && <small>Includes results against each other from the earlier round.</small>}
+    </div>
+  );
+}
 
 // The Points Table tab: the format phase by phase — group tables with their
 // qualification line, the knockout bracket, a series' scoreline — and the
@@ -81,31 +127,42 @@ export function FormatView({
   return (
     <div className="cricket-format">
       {champion !== null && (
-        <div className="cricket-champion">
-          <i className="fa-solid fa-trophy" aria-hidden="true"></i>
-          <div>
-            <small>Champions</small>
-            <strong>{teamName(champion)}</strong>
-          </div>
-        </div>
+        <ChampionCard
+          tournament={tournament}
+          format={format}
+          matches={matches}
+          champion={champion}
+          teamName={teamName}
+        />
       )}
 
-      <ol className="cricket-phase-steps" aria-label="Phases">
-        {format.phases.map((phase, index) => (
-          <li key={phase.id} className={`is-${states[index]}`}>
-            <span className="cricket-phase-dot" aria-hidden="true">
-              {states[index] === "done" ? <i className="fa-solid fa-check"></i> : index + 1}
-            </span>
-            <span className="cricket-phase-name">{phase.name}</span>
-          </li>
-        ))}
-      </ol>
+      {format.phases.length > 1 && (
+        <ol className="cricket-phase-steps" aria-label="Phases">
+          {format.phases.map((phase, index) => (
+            <li key={phase.id} className={`is-${states[index]}`}>
+              <span className="cricket-phase-dot" aria-hidden="true">
+                {states[index] === "done" ? <i className="fa-solid fa-check"></i> : index + 1}
+              </span>
+              <span className="cricket-phase-name">{phase.name}</span>
+              {states[index] !== "done" && <span className="cricket-phase-sub">{STATE_LABEL[states[index]]}</span>}
+            </li>
+          ))}
+        </ol>
+      )}
 
       {format.phases.map((phase, index) => (
         <section key={phase.id} className="cricket-format-phase">
           <header className="cricket-format-phase-head">
-            <h3>{phase.name}</h3>
-            <span className={`cricket-phase-state is-${states[index]}`}>{STATE_LABEL[states[index]]}</span>
+            <h3>
+              <span className="cricket-format-phase-icon" aria-hidden="true">
+                <i className={KIND_ICON[phase.kind]}></i>
+              </span>
+              {phase.name}
+            </h3>
+            <span className={`cricket-phase-state is-${states[index]}`}>
+              <i className={STATE_ICON[states[index]]} aria-hidden="true"></i>
+              {STATE_LABEL[states[index]]}
+            </span>
           </header>
           {phase.kind === "knockout" ? (
             <BracketChart
@@ -114,6 +171,7 @@ export function FormatView({
               matches={matches}
               resolve={resolve}
               teamName={teamName}
+              logoOf={(index) => tournament.teams[index]?.logoUrl}
               onSchedule={canManage ? (slot) => setSlotToSchedule({ phase, slot }) : undefined}
             />
           ) : phase.kind === "series" ? (
@@ -130,9 +188,14 @@ export function FormatView({
       ))}
 
       {canManage && (
-        <p className="admin-hint mb-0">
-          <Link to={`/tournaments/${tournament.id}/format`}>Change the format</Link> — allowed until its first match is played.
-        </p>
+        <Link to={`/tournaments/${tournament.id}/format`} className="cricket-format-change">
+          <i className="fa-solid fa-sliders" aria-hidden="true"></i>
+          <span>
+            <strong>Change the format</strong>
+            <small>Allowed until its first match is played</small>
+          </span>
+          <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
+        </Link>
       )}
 
       {starting && (
@@ -156,6 +219,80 @@ export function FormatView({
         />
       )}
     </div>
+  );
+}
+
+// The match that decided the title: the final of a knockout, the last
+// result of a series; a league has none.
+function decidingMatch(format: CricketFormat, matches: CricketMatch[]): CricketMatch | null {
+  const last = format.phases[format.phases.length - 1];
+  const own = matches.filter((match) => match.phaseId === last.id && match.status === "completed");
+  if (last.kind === "knockout") {
+    const final = last.slots.find((slot) => slot.stage === "final") ?? last.slots[last.slots.length - 1];
+    return own.find((match) => match.slot === final?.code) ?? null;
+  }
+  if (last.kind === "series") {
+    return own.sort((a, b) => (b.completedAt ?? "").localeCompare(a.completedAt ?? ""))[0] ?? null;
+  }
+  return null;
+}
+
+// The champion, celebrated: brand gradient, gold medal, the team's badge,
+// who they beat and how (with the final one tap away).
+function ChampionCard({
+  tournament,
+  format,
+  matches,
+  champion,
+  teamName,
+}: {
+  tournament: CricketTournament;
+  format: CricketFormat;
+  matches: CricketMatch[];
+  champion: number;
+  teamName: (index: number) => string;
+}) {
+  const last = format.phases[format.phases.length - 1];
+  const final = decidingMatch(format, matches);
+  const runnerUp = final?.teams.find((team) => team.teamIndex !== champion)?.teamIndex ?? null;
+  const line =
+    runnerUp !== null
+      ? `Beat ${teamName(runnerUp)} in the ${last.kind === "series" ? "series" : "final"}`
+      : last.kind === "round-robin"
+        ? `Top of the ${last.name} table`
+        : null;
+  const body = (
+    <>
+      <div className="cricket-champion-badge">
+        <TeamMark
+          className="cricket-champion-logo"
+          name={teamName(champion)}
+          logoUrl={tournament.teams[champion]?.logoUrl}
+        />
+        <span className="cricket-champion-medal" aria-hidden="true">
+          <i className="fa-solid fa-trophy"></i>
+        </span>
+      </div>
+      <div className="cricket-champion-text">
+        <small>Champions</small>
+        <strong>{teamName(champion)}</strong>
+        {line && <span>{line}</span>}
+      </div>
+      {final && <i className="fa-solid fa-chevron-right cricket-champion-go" aria-hidden="true"></i>}
+    </>
+  );
+  // With a final to show, the whole card opens it; its result is the tooltip.
+  return final ? (
+    <Link
+      to={`/matches/${final.id}`}
+      className="cricket-champion"
+      title={final.resultText ?? undefined}
+      aria-label={`Champions: ${teamName(champion)}. ${line ?? ""} Open the ${last.kind === "series" ? "last match" : "final"}.`}
+    >
+      {body}
+    </Link>
+  ) : (
+    <div className="cricket-champion">{body}</div>
   );
 }
 
@@ -209,11 +346,12 @@ function GroupTables({
               matches={groupTableMatches(format, phase, group, matches)}
               nrrHelp={false}
               note={
-                <small className="admin-hint d-block mt-1">
-                  {played} of {expectedMatches(phase, group)} matches played
-                  {phase.qualify > 0 && ` · top ${phase.qualify} go through`}
-                  {phase.carryPoints && " · includes results against each other from the earlier round"}
-                </small>
+                <GroupProgress
+                  played={played}
+                  total={expectedMatches(phase, group)}
+                  qualify={phase.qualify}
+                  carryPoints={Boolean(phase.carryPoints)}
+                />
               }
             />
           </div>

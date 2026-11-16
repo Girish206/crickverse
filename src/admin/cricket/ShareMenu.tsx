@@ -137,12 +137,25 @@ export function ShareSheet({
   }
 
   const openUrl = (href: string) => window.open(href, "_blank", "noopener");
-  const whatsapp: LinkTile = {
-    icon: "fa-brands fa-whatsapp",
-    label: "WhatsApp",
-    tone: "is-whatsapp",
-    onClick: () => openUrl(`https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`),
-  };
+  // With a picture on a phone, WhatsApp sends the picture (with the message
+  // as its caption), the same as Share image: a web page can only hand a
+  // file to WhatsApp through the phone's share sheet, where WhatsApp is
+  // picked. Elsewhere it opens WhatsApp with the link.
+  const whatsapp: LinkTile = canShareImage
+    ? {
+        icon: "fa-brands fa-whatsapp",
+        label: "WhatsApp",
+        tone: "is-whatsapp",
+        onClick: share,
+        disabled: !cardImage || !linkReady,
+        keepOpen: true,
+      }
+    : {
+        icon: "fa-brands fa-whatsapp",
+        label: "WhatsApp",
+        tone: "is-whatsapp",
+        onClick: () => openUrl(`https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`),
+      };
   const telegram: LinkTile = {
     icon: "fa-brands fa-telegram",
     label: "Telegram",

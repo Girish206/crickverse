@@ -75,9 +75,10 @@ export function useCricketTournament(id: number, enabled = true, live = false) {
 
 // The mobile numbers the viewer may see in this tournament's player list:
 // everyone's for its organisers, a captain's own team, otherwise none.
-export function useTournamentPlayerMobiles(id: number) {
+export function useTournamentPlayerMobiles(id: number, enabled = true) {
   return useQuery({
     queryKey: ["cricket-tournaments", id, "player-mobiles"],
+    enabled,
     queryFn: async () => {
       const { data } = await apiClient.get<ApiEnvelope<{ playerId: number; mobile: string }[]>>(
         `/admin/cricket/tournaments/${id}/player-mobiles`,

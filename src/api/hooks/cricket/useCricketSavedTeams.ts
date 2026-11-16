@@ -22,7 +22,21 @@ function useSavedTeamMutation<TVars>(request: (vars: TVars) => Promise<{ data: A
     mutationFn: async (vars: TVars) => (await request(vars)).data.data,
     onSuccess: (team) => {
       queryClient.setQueryData(["cricket-saved-team", team.id], team);
+      queryClient.invalidateQueries({ queryKey: ["cricket-saved-team", team.id, "player-mobiles"] });
       queryClient.invalidateQueries({ queryKey: ["cricket-me"] });
+    },
+  });
+}
+
+// Its players' mobile numbers, for whoever manages the team (its creator,
+// its captain, super admins).
+export function useSavedTeamPlayerMobiles(id: number, enabled: boolean) {
+  return useQuery({
+    queryKey: ["cricket-saved-team", id, "player-mobiles"],
+    enabled,
+    queryFn: async () => {
+      const { data } = await apiClient.get<ApiEnvelope<{ playerId: number; mobile: string }[]>>(url(id, "/player-mobiles"));
+      return new Map(data.data.map((row) => [row.playerId, row.mobile]));
     },
   });
 }

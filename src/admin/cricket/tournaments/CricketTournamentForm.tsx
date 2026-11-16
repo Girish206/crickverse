@@ -39,6 +39,7 @@ import {
   TOURNAMENT_LOGO,
   type CompressOptions,
 } from "../../../utils/compressImage";
+import { SearchField } from "../SearchField";
 
 // Stored dates are UTC midnight; <input type="date"> wants "YYYY-MM-DD".
 const toDateInput = (value: string | null | undefined) => (value ? value.slice(0, 10) : "");
@@ -127,14 +128,7 @@ function SeriesSheet({
     <BottomSheet title="Your tournaments" icon="fa-solid fa-layer-group" count={series.length} onClose={onClose}>
       <p className="admin-hint">Tournaments you organised or co-organised. Pick one to add its next season.</p>
       {series.length > 5 && (
-        <input
-          type="search"
-          className="cricket-picker-search"
-          placeholder="Search your tournaments"
-          aria-label="Search your tournaments"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <SearchField label="Search your tournaments" value={search} onChange={setSearch} />
       )}
       {shown.length === 0 ? (
         <div className="admin-empty-state">No tournament of yours matches "{search}".</div>

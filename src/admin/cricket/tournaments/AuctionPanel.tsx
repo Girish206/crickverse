@@ -8,6 +8,7 @@ import { PlayerAvatar } from "../players/PlayerAvatar";
 import { roleOf } from "../playerRoles";
 import { TeamMark } from "../teams/TeamMark";
 import "./auction.css";
+import { SearchField } from "../SearchField";
 
 // The Auction tab: the organiser runs a player auction for the teams in the
 // room (put a player up, tap the team that bids, Sold); everyone else
@@ -260,7 +261,7 @@ export function AuctionPanel({
             Waiting <small>{waiting.length}</small>
           </h3>
           {waiting.length > 8 && (
-            <input type="search" className="cricket-picker-search" placeholder="Search players" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <SearchField label="Search players" value={search} onChange={setSearch} />
           )}
           <ul className="cricket-auction-list">
             {[...fresh, ...unsold]
