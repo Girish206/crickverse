@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { CricketMatch, CricketTournament } from "../../../api/types";
 import { ImageViewer, viewerTrigger } from "../ImageViewer";
 import { bannerFor, logoFor } from "./tournamentArt";
-import { hasChampion } from "./TournamentCard";
+import { hasChampion, tournamentTitle } from "./TournamentCard";
 
 const shortDate = (value: string) =>
   new Date(value).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
@@ -31,6 +31,7 @@ export function TournamentBanner({ tournament: t, matches }: { tournament: Crick
     ? `${shortDate(t.startDate)}${t.endDate && t.endDate !== t.startDate ? ` – ${shortDate(t.endDate)}` : ""}`
     : null;
   const phase = phaseOf(t, matches);
+  const title = tournamentTitle(t);
   // The logo or the banner, opened full size.
   const [viewing, setViewing] = useState<{ src: string; alt: string; round?: boolean } | null>(null);
 
@@ -52,7 +53,8 @@ export function TournamentBanner({ tournament: t, matches }: { tournament: Crick
           {...viewerTrigger(() => setViewing({ src: logoFor(t), alt: `${t.name} logo`, round: true }))}
         />
         <div className="cricket-th-title">
-          <h1>{t.name}</h1>
+          {title.season && <span className="cricket-th-season">{title.name}</span>}
+          <h1>{title.season ?? title.name}</h1>
           {(phase || dates || place) && (
             <div className="cricket-th-meta">
               {phase && <span className={`cricket-th-phase ${phase.tone}`}>{phase.label}</span>}

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { tournamentLine } from "../tournaments/TournamentCard";
 import { Link } from "react-router-dom";
 import { useMatchCreator } from "../../../api/hooks/cricket/useCricketMatches";
 import {
@@ -269,7 +270,8 @@ function playingConditions(match: CricketMatch): [string, ReactNode][] {
   return rules.length ? [["Rules", rules.join(" · ")]] : [];
 }
 
-type InfoTournament = Pick<CricketTournament, "name"> & Partial<Pick<CricketTournament, "organiserName" | "organiserMobile">>;
+type InfoTournament = Pick<CricketTournament, "name"> &
+  Partial<Pick<CricketTournament, "organiserName" | "organiserMobile" | "seriesName" | "season">>;
 
 // Who ran the match: its tournament's organiser (else whoever made it), and
 // the people who actually scored it.
@@ -322,7 +324,7 @@ export function MatchInfo({
         "None (one-off match)"
       ) : (
         <Link key="tournament" to={`/tournaments/${match.tournamentId}`} className="cricket-info-link">
-          {tournament?.name ?? "Tournament"} <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
+          {tournament ? tournamentLine(tournament) : "Tournament"} <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
         </Link>
       ),
     ],

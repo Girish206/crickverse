@@ -809,6 +809,16 @@
   font-weight: 700;
   color: var(--theme-text-dark);
 }
+/* A season's tournament name, small above the season's own. */
+.cricket-tour-card-season {
+  margin: 0 0 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--primary);
+}
 /* Date, overs and place on one wrapping line. */
 .cricket-tour-card-meta {
   display: flex;

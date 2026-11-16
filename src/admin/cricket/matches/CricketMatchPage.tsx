@@ -38,6 +38,9 @@ import { HeadToHead } from "./HeadToHead";
 import { ListenSettings } from "./ListenSettings";
 import { copyOverlayLink } from "../../../public/overlayLink";
 import { setBurstSoundsOn, useBurstSoundsOn } from "./burstSounds";
+import { setPinnedMatch, usePinnedMatch } from "./pinnedMatch";
+import { pinScore } from "./scoreWindow";
+import { toast } from "sonner";
 import { MatchStatusBadge } from "./matchUi";
 import { SectionBoundary } from "../../../app-shell/SectionBoundary";
 import { exportScorecardCsv, exportScorecardPdf } from "./scorecardExport";
@@ -57,6 +60,7 @@ import { RescheduleSheet } from "./RescheduleSheet";
 import { existingInput } from "./CricketMatchForm";
 import { reopenableNow } from "./matchTiming";
 import { tournamentFinished } from "../tournaments/tournamentLifecycle";
+import { tournamentLine } from "../tournaments/TournamentCard";
 import { editableAfterFinish, formatMatchDate, matchHeading, matchHeadingLine, useMatchPlayerNames } from "./matchUtils";
 import { ResultSheet, type ResultSheetStart } from "./result/ResultSheet";
 import { KnockoutPrompt } from "./result/ResultNote";
@@ -108,6 +112,10 @@ export function CricketMatchPage() {
   // The share sheet, opened from the settings sheet's Share row.
   const [sharing, setSharing] = useState(false);
   const soundsOn = useBurstSoundsOn();
+  const pinnedMatch = usePinnedMatch();
+  const pinnedHere = pinnedMatch === id;
+  // Only a live match can be pinned; one already pinned can always be unpinned.
+  const canPin = serverMatch?.status === "live" || pinnedHere;
   const [editingDetails, setEditingDetails] = useState(false);
   const [rescheduling, setRescheduling] = useState(false);
   const detailsForm = useRef<HTMLFormElement>(null);
@@ -329,6 +337,28 @@ export function CricketMatchPage() {
           </span>
           <span className={`cricket-shot-toggle-knob ${soundsOn ? "is-on" : ""}`.trim()} aria-hidden="true"></span>
         </button>
+        {canPin && (
+          <button
+            type="button"
+            className="cricket-settings-item"
+            role="switch"
+            aria-checked={pinnedHere}
+            onClick={() => (pinnedHere ? setPinnedMatch(null) : void pinScore(match.id))}
+          >
+            <i className="fa-solid fa-thumbtack" aria-hidden="true"></i>
+            <span>
+              Pin live score
+              <small>
+                {pinnedHere
+                  ? "Floating on every screen of the app — tap it to come back here"
+                  : pinnedMatch !== null
+                    ? "Shows this match's score on every screen, in place of the one pinned now"
+                    : "Keep this match's score on screen while you use the rest of the app"}
+              </small>
+            </span>
+            <span className={`cricket-shot-toggle-knob ${pinnedHere ? "is-on" : ""}`.trim()} aria-hidden="true"></span>
+          </button>
+        )}
         <ListenSettings />
         {/* Hidden for now: flip SHOW_OVERLAY_LINK to bring it back. */}
         {SHOW_OVERLAY_LINK && canManage && (
@@ -668,7 +698,9 @@ export function CricketMatchPage() {
                   : matchHeading(match)
               }
               subtitle={
-                match.status === "live" || match.tournamentId === null ? matchHeadingLine(match, tournament?.name) : tournament?.name
+                match.status === "live" || match.tournamentId === null
+                  ? matchHeadingLine(match, tournament && tournamentLine(tournament))
+                  : tournament && tournamentLine(tournament)
               }
               titleAside={<MatchStatusBadge status={match.status} />}
               back={() => {
@@ -686,13 +718,35 @@ export function CricketMatchPage() {
                 else navigate(steps);
               }}
               actions={
-                <PageHeaderAction
-                  icon={canManage ? "fa-solid fa-gear" : "fa-solid fa-share-nodes"}
-                  label={canManage ? "Match settings" : "Share match"}
-                  tour="match-settings"
-                  active={settingsOpen}
-                  onClick={openSettings}
-                />
+                <>
+                  {canPin && (
+                    <PageHeaderAction
+                      icon="fa-solid fa-thumbtack"
+                      label={pinnedHere ? "Unpin live score" : "Pin live score"}
+                      active={pinnedHere}
+                      onClick={() => {
+                        if (pinnedHere) {
+                          setPinnedMatch(null);
+                          return;
+                        }
+                        void pinScore(match.id).then((popped) =>
+                          toast.success(
+                            popped
+                              ? "Score pinned — its window stays on top of other tabs and apps"
+                              : "Score pinned — it stays on screen across the app",
+                          ),
+                        );
+                      }}
+                    />
+                  )}
+                  <PageHeaderAction
+                    icon={canManage ? "fa-solid fa-gear" : "fa-solid fa-share-nodes"}
+                    label={canManage ? "Match settings" : "Share match"}
+                    tour="match-settings"
+                    active={settingsOpen}
+                    onClick={openSettings}
+                  />
+                </>
               }
             />
             {/* While it's live the Live tab shows the score, so the card is left out. */}

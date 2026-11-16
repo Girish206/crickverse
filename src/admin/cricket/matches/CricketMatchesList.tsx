@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { tournamentLine } from "../tournaments/TournamentCard";
 import { useCricketMatches } from "../../../api/hooks/cricket/useCricketMatches";
 import { useCricketTournaments } from "../../../api/hooks/cricket/useCricketTournaments";
 import type { CricketMatch, CricketMatchStatus } from "../../../api/types";
@@ -130,7 +131,7 @@ export function CricketMatchesList() {
   const { data: matches, isLoading } = useCricketMatches(tournamentId ?? undefined);
   const { data: tournaments } = useCricketTournaments();
   const [creating, setCreating] = useState(false);
-  const tournamentNames = new Map((tournaments ?? []).map((t) => [t.id, t.name]));
+  const tournamentNames = new Map((tournaments ?? []).map((t) => [t.id, tournamentLine(t)]));
   const all = matches ?? [];
 
   return (

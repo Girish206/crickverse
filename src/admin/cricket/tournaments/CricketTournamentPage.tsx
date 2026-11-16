@@ -36,11 +36,12 @@ import { useMvpLock } from "../matches/useMvpLock";
 import { FormatView } from "../format/FormatView";
 import { TournamentBanner } from "./TournamentBanner";
 import { TournamentInfo } from "./TournamentInfo";
+import { seasonOf } from "./TournamentCard";
 import { TournamentPlayers } from "./TournamentPlayers";
 import { AuctionPanel } from "./AuctionPanel";
 import { TournamentStats } from "./TournamentStats";
 import { TOURNAMENT_SHARE_HEADINGS } from "./tournamentTabCards";
-import { FINISHED_NOTE, tournamentFinished, tournamentStarted } from "./tournamentLifecycle";
+import { tournamentFinished, tournamentStarted } from "./tournamentLifecycle";
 import { NrrCalculatorSheet } from "./NrrCalculatorSheet";
 import { NrrGuide } from "../leaderboard/NrrGuide";
 import { FollowButton, useFollowMenuItem } from "../follow/FollowButton";
@@ -204,6 +205,10 @@ export function CricketTournamentPage() {
   const { admin } = useAdminAuth();
   const { data: me } = useCricketMe();
   const canManage = canManageTournament(admin, tournament, me?.player?.id);
+  // A season of a tournament is headed by the season's name, with the
+  // tournament's name as the small line.
+  const { data: allTournaments } = useCricketTournaments();
+  const asSeason = tournament ? seasonOf(tournament, allTournaments ?? []) : null;
   // The Auction tab: for organisers (to run one), and for everyone once
   // there's been one.
   const tabs = TABS.filter((t) => t.value !== "auction" || canManage || Boolean(tournament?.auction));
@@ -330,8 +335,9 @@ export function CricketTournamentPage() {
     <div className="cricket-page">
       {tips.element}
       <PageHeader
-        title={tournament.name}
-        subtitle="Tournament"
+        // A season: its own name big, its tournament's name small.
+        title={asSeason?.season ?? tournament.name}
+        subtitle={asSeason?.tournament ?? "Tournament"}
         back={backTo}
         backLabel={admin?.isSuperAdmin ? "All tournaments" : "My tournaments"}
         actions={
@@ -404,6 +410,19 @@ export function CricketTournamentPage() {
       <div className="cricket-th-sticky">
         <div className="card cricket-th-card">
           <TournamentBanner tournament={tournament} matches={matches} />
+          {/* Its organisers see why nothing can be changed, and undo it here. */}
+          {canManage && finished && (
+            <div className="cricket-th-locked" title="Its teams, matches and format can't be changed until it's reopened.">
+              <i className="fa-solid fa-lock" aria-hidden="true"></i>
+              <span>
+                <strong>Locked for editing</strong>
+                <span className="visually-hidden">: its teams, matches and format can't be changed until it's reopened.</span>
+              </span>
+              <button type="button" onClick={toggleFinished} disabled={updateTournament.isPending}>
+                Reopen
+              </button>
+            </div>
+          )}
         </div>
   
         <div ref={swipeRef} className="cricket-match-tabs" role="tablist" aria-label="Tournament sections" data-tour="tabs">
@@ -421,8 +440,6 @@ export function CricketTournamentPage() {
           ))}
         </div>
       </div>
-
-      {canManage && finished && <div className="admin-banner mb-3">{FINISHED_NOTE}</div>}
 
       {/* The next round, once its teams are known, for the organiser to
           check and schedule. */}

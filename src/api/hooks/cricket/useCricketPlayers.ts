@@ -252,6 +252,8 @@ export interface PlayerInviteCode {
   playerId: number;
   name: string;
   code: string;
+  // Sent to whoever may invite them, so WhatsApp opens their chat.
+  mobile?: string | null;
 }
 
 export function usePlayerInvite() {

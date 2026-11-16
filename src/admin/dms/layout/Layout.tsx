@@ -6,6 +6,8 @@ import { PullToRefresh } from "./PullToRefresh";
 import { BrandSignature } from "../../components/BrandSignature";
 import { ShareAppSheet } from "../../cricket/ShareMenu";
 import { PlayerQrSheet } from "../../cricket/qr/ShowQrSheets";
+import { PinnedScore } from "../../cricket/matches/PinnedScore";
+import { SectionBoundary } from "../../../app-shell/SectionBoundary";
 import { useCricketMe } from "../../../api/hooks/cricket/useCricketPlayers";
 import { useAdminBodyClass } from "../../useAdminBodyClass";
 import { useAdminTheme } from "../../useAdminTheme";
@@ -157,6 +159,10 @@ const Layout = ({
             {showingQr && me?.player && <PlayerQrSheet player={me.player} onClose={() => setShowingQr(false)} />}
 
             {isMainScreen && <BottomNav onMore={() => setSidebarOpen(true)} />}
+
+            <SectionBoundary where="pinned score" silent>
+                <PinnedScore />
+            </SectionBoundary>
 
             <main
                 className={`scrollable-main ${

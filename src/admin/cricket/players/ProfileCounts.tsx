@@ -10,6 +10,7 @@ import { formatMatchDate, teamInitials, teamScore } from "../matches/matchUtils"
 import { roleOf } from "../playerRoles";
 import { TeamMark } from "../teams/TeamMark";
 import { TournamentLogo } from "../tournaments/TournamentLogo";
+import { seasonLabelOf, seasonOf, seriesOf, seriesPath } from "../tournaments/TournamentCard";
 import { PlayerAvatar } from "./PlayerAvatar";
 import { useOpenPlayerProfile } from "./PlayerProfileSheet";
 import "../me/me.css";
@@ -49,8 +50,10 @@ export function ProfileCounts({
   const target = { kind: "player", targetId: player.id, teamIndex: null } as const;
   const { data: counts } = useFollowCounts(target);
   const [open, setOpen] = useState<CountKey | null>(null);
+  // Seasons of one tournament count once.
+  const tournamentCount = new Set(tournaments.map((t) => seriesOf(t).key)).size;
   const items: { key: CountKey; label: string; value: number | string }[] = [
-    { key: "tournaments", label: plural(tournaments.length, "Tournament", "Tournaments"), value: tournaments.length },
+    { key: "tournaments", label: plural(tournamentCount, "Tournament", "Tournaments"), value: tournamentCount },
     { key: "friendlies", label: plural(friendlies.length, "Friendly", "Friendlies"), value: friendlies.length },
     { key: "followers", label: plural(counts?.followers ?? 0, "Follower", "Followers"), value: counts?.followers ?? "–" },
     { key: "following", label: "Following", value: counts ? (counts.following ?? 0) : "–" },
@@ -103,24 +106,58 @@ function Row({ badge, title, sub }: { badge: ReactNode; title: ReactNode; sub?: 
   );
 }
 
+// The player's tournaments, newest first. One with seasons is a single row
+// (to all its seasons, with how many they played) and the seasons they
+// played under it, each by its season name.
 function TournamentRows({ tournaments, onPick }: { tournaments: CricketTournament[]; onPick: () => void }) {
+  // Every tournament the viewer can see, so seasons are numbered right
+  // even when the player missed some.
+  const { data: all } = useCricketTournaments();
   if (tournaments.length === 0) return <Empty>No tournaments yet.</Empty>;
+  const known = [...new Map([...(all ?? []), ...tournaments].map((t) => [t.id, t])).values()];
   const when = (t: CricketTournament) => t.startDate ?? t.createdAt;
+  const groups = new Map<string, CricketTournament[]>();
+  for (const t of [...tournaments].sort((a, b) => when(b).localeCompare(when(a)))) {
+    const key = seriesOf(t).key;
+    groups.set(key, [...(groups.get(key) ?? []), t]);
+  }
+  const place = (t: CricketTournament) =>
+    [t.city, t.startDate && new Date(t.startDate).getFullYear()].filter(Boolean).join(" · ") || null;
   return (
     <ul className="cv-sheet-list">
-      {[...tournaments]
-        .sort((a, b) => when(b).localeCompare(when(a)))
-        .map((t) => (
-          <li key={t.id}>
-            <Link to={`/tournaments/${t.id}`} className="cv-sheet-row" onClick={onPick}>
+      {[...groups.values()].map((played) => {
+        const latest = played[0];
+        const asSeason = seasonOf(latest, known);
+        if (!asSeason) {
+          return (
+            <li key={latest.id}>
+              <Link to={`/tournaments/${latest.id}`} className="cv-sheet-row" onClick={onPick}>
+                <Row badge={<TournamentLogo tournament={latest} className="cv-sheet-badge" />} title={latest.name} sub={place(latest)} />
+              </Link>
+            </li>
+          );
+        }
+        return (
+          <li key={`series-${asSeason.tournament}`}>
+            <Link to={seriesPath(asSeason.tournament)} className="cv-sheet-row" onClick={onPick}>
               <Row
-                badge={<TournamentLogo tournament={t} className="cv-sheet-badge" />}
-                title={t.name}
-                sub={[t.city, t.startDate && new Date(t.startDate).getFullYear()].filter(Boolean).join(" · ") || null}
+                badge={<TournamentLogo tournament={latest} className="cv-sheet-badge" />}
+                title={asSeason.tournament}
+                sub={`${played.length} ${plural(played.length, "season", "seasons")} played`}
               />
             </Link>
+            <ul className="cv-sheet-list is-seasons">
+              {played.map((t) => (
+                <li key={t.id}>
+                  <Link to={`/tournaments/${t.id}`} className="cv-sheet-row" onClick={onPick}>
+                    <Row badge={null} title={seasonLabelOf(t, known)} sub={place(t)} />
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </li>
-        ))}
+        );
+      })}
     </ul>
   );
 }

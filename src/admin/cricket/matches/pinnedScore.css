@@ -1,0 +1,353 @@
+/* The pinned score (PinnedScore.tsx): a small scoreboard card floating at
+   the bottom right of every screen. The app's card surface (light or dark)
+   with the brand's gradient as a strip along the top; a head row with the
+   status, stage and buttons, the two sides with their badges and scores,
+   and the state of play or result along the foot. */
+.cv-pinned-score {
+  --ps-accent: var(--primary);
+  position: fixed;
+  right: 20px;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  z-index: 1040;
+  display: flex;
+  flex-direction: column;
+  width: min(300px, calc(100vw - 32px));
+  overflow: hidden;
+  color: var(--adm-text);
+  background: var(--adm-surface, #fff);
+  border: 1px solid var(--adm-line, rgba(0, 0, 0, 0.08));
+  border-radius: 16px;
+  box-shadow:
+    0 12px 32px rgba(15, 23, 42, 0.22),
+    0 2px 6px rgba(15, 23, 42, 0.08);
+  animation: cv-pinned-score-in 0.25s ease;
+}
+
+.cv-pinned-score::before {
+  content: "";
+  height: 4px;
+  flex: none;
+  background: var(--brand-gradient-bar);
+}
+
+@keyframes cv-pinned-score-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+/* ---- Head: status pill, stage, buttons ---- */
+.cv-pinned-score-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 6px 2px 12px;
+}
+
+.cv-pinned-score-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  color: var(--adm-text-2);
+  background: var(--adm-hover, rgba(0, 0, 0, 0.05));
+}
+
+.cv-pinned-score.is-live .cv-pinned-score-status {
+  color: #fff;
+  background: #e5382f;
+}
+
+.cv-pinned-score.is-result .cv-pinned-score-status {
+  color: var(--success);
+  background: rgba(var(--success-rgb, 22, 163, 74), 0.12);
+}
+
+.cv-pinned-score-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+  animation: cv-pinned-score-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes cv-pinned-score-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.cv-pinned-score-stage {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted-color);
+}
+
+.cv-pinned-score-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 13px;
+  color: var(--muted-color);
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.cv-pinned-score-icon:hover,
+.cv-pinned-score-icon:focus-visible {
+  color: var(--adm-text);
+  background: var(--adm-hover, rgba(0, 0, 0, 0.06));
+}
+
+/* ---- The two sides ---- */
+.cv-pinned-score-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px 10px;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.cv-pinned-score-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cv-pinned-score-badge {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.cv-pinned-score-badge.has-team-logo {
+  box-shadow: 0 0 0 1px var(--adm-line, rgba(0, 0, 0, 0.1));
+}
+
+.cv-pinned-score-team {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cv-pinned-score-bat {
+  flex: none;
+  font-size: 11px;
+  color: var(--ps-accent);
+}
+
+.cv-pinned-score-trophy {
+  flex: none;
+  font-size: 11px;
+  color: #e0a50b;
+}
+
+.cv-pinned-score-runs {
+  flex: none;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.cv-pinned-score-runs strong {
+  font-size: 16px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.cv-pinned-score-runs small {
+  font-size: 11px;
+  color: var(--muted-color);
+  font-variant-numeric: tabular-nums;
+}
+
+.cv-pinned-score-runs.is-empty {
+  font-size: 11px;
+  color: var(--muted-color);
+}
+
+/* Who's batting, and the winner, stand out; the side that lost steps back. */
+.cv-pinned-score-row.is-batting .cv-pinned-score-team,
+.cv-pinned-score-row.is-won .cv-pinned-score-team {
+  font-weight: 800;
+}
+
+.cv-pinned-score-row.is-lost .cv-pinned-score-team,
+.cv-pinned-score-row.is-lost .cv-pinned-score-runs strong {
+  font-weight: 600;
+  color: var(--muted-color);
+}
+
+/* ---- Foot: the state of play, or the result ---- */
+.cv-pinned-score-foot {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--adm-text-2);
+  background: var(--adm-hover, rgba(0, 0, 0, 0.04));
+  border-top: 1px solid var(--adm-line, rgba(0, 0, 0, 0.06));
+}
+
+.cv-pinned-score-foot span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cv-pinned-score-foot i {
+  flex: none;
+  font-size: 11px;
+  color: var(--ps-accent);
+}
+
+.cv-pinned-score.is-result .cv-pinned-score-foot {
+  color: var(--success);
+}
+
+.cv-pinned-score.is-result .cv-pinned-score-foot i {
+  color: inherit;
+}
+
+/* ---- Popped out (scoreWindow.ts): the card fills its own window ---- */
+body.cv-score-window {
+  margin: 0;
+  overflow: hidden;
+  background: var(--adm-surface, #fff);
+}
+
+.cv-pinned-score.is-popped {
+  position: static;
+  width: 100%;
+  height: 100vh;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  animation: none;
+}
+
+.cv-pinned-score.is-popped .cv-pinned-score-body {
+  flex: 1;
+  justify-content: center;
+}
+
+.cv-pinned-score.is-popped .cv-pinned-score-team {
+  font-size: 15px;
+}
+
+.cv-pinned-score.is-popped .cv-pinned-score-runs strong {
+  font-size: 18px;
+}
+
+/* Phones: a compact card (narrower, tighter, smaller type) that covers less
+   of the page, above the bottom tab bar on the main screens. */
+@media (max-width: 769px) {
+  .cv-pinned-score:not(.is-popped) {
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    width: min(220px, calc(100vw - 24px));
+    border-radius: 12px;
+  }
+  .layout-wrapper:not(.is-subpage) .cv-pinned-score:not(.is-popped) {
+    bottom: calc(70px + env(safe-area-inset-bottom));
+  }
+  .cv-pinned-score:not(.is-popped)::before {
+    height: 3px;
+  }
+  .cv-pinned-score:not(.is-popped) .cv-pinned-score-head {
+    gap: 6px;
+    padding: 5px 4px 0 10px;
+  }
+  .cv-pinned-score:not(.is-popped) .cv-pinned-score-status {
+    padding: 1px 6px;
+    font-size: 9px;
+  }
+  .cv-pinned-score:not(.is-popped) .cv-pinned-score-stage {
+    font-size: 10px;
+  }
+  .cv-pinned-score:not(.is-popped) .cv-pinned-score-icon {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+  }
+  .cv-pinned-score:not(.is-popped) .cv-pinned-score-body {
+    gap: 4px;
+    padding: 5px 10px 7px;
+  }
+  .cv-pinned-score:not(.is-popped) .cv-pinned-score-row {
+    gap: 6px;
+  }
+  .cv-pinned-score:not(.is-popped) .cv-pinned-score-badge {
+    width: 18px;
+    height: 18px;
+    font-size: 9px;
+  }
+  .cv-pinned-score:not(.is-popped) .cv-pinned-score-team {
+    font-size: 12px;
+  }
+  .cv-pinned-score:not(.is-popped) .cv-pinned-score-runs strong {
+    font-size: 13px;
+  }
+  .cv-pinned-score:not(.is-popped) .cv-pinned-score-runs small,
+  .cv-pinned-score:not(.is-popped) .cv-pinned-score-runs.is-empty {
+    font-size: 10px;
+  }
+  .cv-pinned-score:not(.is-popped) .cv-pinned-score-foot {
+    gap: 5px;
+    padding: 5px 10px;
+    font-size: 10.5px;
+  }
+}
+
+/* Dragged anywhere (PinnedScore.tsx): a grab cursor, and no page scroll or
+   text selection while a finger or mouse moves it. */
+.cv-pinned-score.is-draggable {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.cv-pinned-score.is-draggable .cv-pinned-score-body {
+  cursor: inherit;
+}
+
+.cv-pinned-score.is-dragging {
+  cursor: grabbing;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.32);
+}

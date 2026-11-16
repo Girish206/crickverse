@@ -1,18 +1,26 @@
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   type CricketTournamentInput,
   useCreateCricketTournament,
   useCricketTournaments,
   useSetCricketTournamentImages,
+  useSetCricketTournamentOrganisers,
   useUpdateCricketTournament,
 } from "../../../api/hooks/cricket/useCricketTournaments";
+import { CoOrganisersSheet } from "./OrganisersSheet";
+import { BottomSheet } from "../BottomSheet";
+import { TournamentLogo } from "./TournamentLogo";
+import { seasonLabelOf, seasonOf as seasonInfoOf, seasonsOf, seriesOf } from "./TournamentCard";
+import { useCricketMe } from "../../../api/hooks/cricket/useCricketPlayers";
 import type {
   CricketBallType,
   CricketCategory,
   CricketMatchType,
   CricketPitchType,
+  CricketPlayer,
   CricketTournament,
 } from "../../../api/types";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
@@ -61,6 +69,128 @@ const FIELD_LABELS: Record<keyof Errors, string> = {
   image: "Image",
 };
 
+const NEW_TOURNAMENT = "__new";
+
+// The tournaments a new season can be added to: the ones `mine` says the
+// viewer runs (any season created or co-organised by them), plus `also`
+// (opened from that tournament's page). Ones with seasons come first,
+// then newest first; each with its last season, whose details it copies.
+type SeriesChoice = {
+  key: string;
+  name: string;
+  last: CricketTournament;
+  lastSeason: string;
+  // Every season's name, for numbering the next one.
+  seasonLabels: string[];
+  count: number;
+  hasSeasons: boolean;
+};
+
+function seriesChoices(tournaments: CricketTournament[], mine: (t: CricketTournament) => boolean, also?: string) {
+  const byKey = new Map<string, SeriesChoice>();
+  for (const t of tournaments) {
+    const { key, name } = seriesOf(t);
+    if (byKey.has(key)) continue;
+    const seasons = seasonsOf(tournaments, key);
+    if (key !== also && !seasons.some(mine)) continue;
+    byKey.set(key, {
+      key,
+      name,
+      last: seasons[0],
+      lastSeason: seasonLabelOf(seasons[0], tournaments),
+      seasonLabels: seasons.map((t) => seasonLabelOf(t, tournaments)),
+      count: seasons.length,
+      hasSeasons: seasonInfoOf(seasons[0], tournaments) !== null,
+    });
+  }
+  const when = (c: SeriesChoice) => c.last.startDate ?? c.last.createdAt;
+  return [...byKey.values()].sort((a, b) => Number(b.hasSeasons) - Number(a.hasSeasons) || when(b).localeCompare(when(a)));
+}
+
+// "New season" -> "Which tournament?": a sheet listing every tournament the
+// viewer organised or co-organised, with a search once there are many.
+function SeriesSheet({
+  series,
+  pickedKey,
+  onPick,
+  onClose,
+}: {
+  series: SeriesChoice[];
+  pickedKey: string | null;
+  onPick: (key: string) => void;
+  onClose: () => void;
+}) {
+  const [search, setSearch] = useState("");
+  const term = search.trim().toLowerCase();
+  const shown = term ? series.filter((s) => s.name.toLowerCase().includes(term)) : series;
+  return (
+    <BottomSheet title="Your tournaments" icon="fa-solid fa-layer-group" count={series.length} onClose={onClose}>
+      <p className="admin-hint">Tournaments you organised or co-organised. Pick one to add its next season.</p>
+      {series.length > 5 && (
+        <input
+          type="search"
+          className="cricket-picker-search"
+          placeholder="Search your tournaments"
+          aria-label="Search your tournaments"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      )}
+      {shown.length === 0 ? (
+        <div className="admin-empty-state">No tournament of yours matches "{search}".</div>
+      ) : (
+        <ul className="cricket-picker-list">
+          {shown.map((s) => (
+            <li key={s.key}>
+              <button
+                type="button"
+                className={`cricket-picker-item ${s.key === pickedKey ? "is-picked" : ""}`.trim()}
+                aria-pressed={s.key === pickedKey}
+                onClick={() => {
+                  onPick(s.key);
+                  onClose();
+                }}
+              >
+                <TournamentLogo tournament={s.last} className="cricket-picker-avatar" />
+                <span className="cricket-picker-text">
+                  <strong>{s.name}</strong>
+                  <small>
+                    {s.hasSeasons
+                      ? `${s.count} season${s.count === 1 ? "" : "s"} · last: ${s.lastSeason}`
+                      : "No seasons yet: this one becomes Season 2"}
+                  </small>
+                </span>
+                <i
+                  className={`fa-solid ${s.key === pickedKey ? "fa-circle-check" : "fa-chevron-right"} cricket-app-row-chevron`}
+                  aria-hidden="true"
+                ></i>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </BottomSheet>
+  );
+}
+
+// A season's number from its name, wherever it is: "Season 38",
+// "APL Season 38", "S38", "Edition 4", "APL 38". A year ("2026") isn't one.
+export function seasonNumberOf(label: string): number | null {
+  const text = label.trim();
+  const named = /\b(?:season|edition|s)\s*-?\s*(\d{1,3})\b/i.exec(text);
+  if (named) return Number(named[1]);
+  const trailing = /(?:^|\D)(\d{1,3})\s*$/.exec(text);
+  return trailing ? Number(trailing[1]) : null;
+}
+
+// The next season's name: one past the highest numbered season so far
+// ("APL Season 38" → "Season 39"), and never below the count of seasons
+// (seasons named without a number, like "Nov 2026", still count).
+export function nextSeason(labels: string[], count: number) {
+  const numbers = labels.map(seasonNumberOf).filter((n): n is number => n !== null);
+  return `Season ${Math.max(count, ...numbers) + 1}`;
+}
+
 // A picked image: a new file (with a preview URL), the current one, or none.
 export function useImagePick(current: string | null | undefined) {
   const [file, setFile] = useState<File | null | undefined>(undefined);
@@ -102,23 +232,33 @@ export function tournamentInputOf(t: CricketTournament): CricketTournamentInput 
 
 export interface CricketTournamentFormProps {
   existing?: CricketTournament;
+  // A new season of this tournament (its series key), from its page.
+  seasonOf?: string;
   onSaved: () => void;
 }
 
-export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFormProps) {
+export function CricketTournamentForm({ existing, seasonOf, onSaved }: CricketTournamentFormProps) {
   const navigate = useNavigate();
   const { admin } = useAdminAuth();
   const { data: tournaments } = useCricketTournaments();
   const createTournament = useCreateCricketTournament();
   const updateTournament = useUpdateCricketTournament();
   const setImages = useSetCricketTournamentImages();
+  const setOrganisers = useSetCricketTournamentOrganisers();
+  const queryClient = useQueryClient();
+  // New tournaments only; an existing one changes them from its settings.
+  const [coOrganisers, setCoOrganisers] = useState<CricketPlayer[]>([]);
+  const organiserIds = coOrganisers.map((p) => p.id);
+  const [editingCoOrganisers, setEditingCoOrganisers] = useState(false);
 
   // A new tournament starts from the organiser's last one (newest first).
   const previous = existing ? undefined : tournaments?.[0];
   const start = existing ?? previous;
 
   const [name, setName] = useState(existing?.name ?? "");
-  const [seriesName, setSeriesName] = useState(existing?.seriesName ?? "");
+  // Editing a season: its tournament's name (named, else read from its own
+  // name) and the season's name, as on create.
+  const [seriesName, setSeriesName] = useState(existing ? (existing.seriesName ?? seriesOf(existing).name) : "");
   const [season, setSeason] = useState(existing?.season ?? "");
   const [city, setCity] = useState(start?.city ?? "");
   const [ground, setGround] = useState(start?.ground ?? "");
@@ -144,6 +284,90 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
   const logo = useImagePick(existing?.logoUrl);
   const banner = useImagePick(existing?.bannerUrl);
   const [errors, setErrors] = useState<Errors>({});
+
+  // New ones: a one-off tournament, a tournament with seasons (APL, its
+  // Season 1), or the next season of one already run. A season is stored
+  // as "APL Season 2" with APL as its series; inside APL it shows as just
+  // "Season 2". Picking a tournament copies its last season's details.
+  const { data: me } = useCricketMe();
+  const myPlayerId = me?.player?.id;
+  // Mine = the ones I created or co-organise: the server's own list (/me),
+  // plus a check by id while it loads.
+  const myTournaments = me?.createdTournaments;
+  const series = useMemo(() => {
+    const mineIds = new Set((myTournaments ?? []).map((t) => t.id));
+    const all = [...new Map([...(tournaments ?? []), ...(myTournaments ?? [])].map((t) => [t.id, t])).values()];
+    return seriesChoices(
+      all,
+      (t) =>
+        mineIds.has(t.id) ||
+        (t.createdById != null && String(t.createdById) === admin?.sub) ||
+        (myPlayerId !== undefined && (t.organiserIds ?? []).includes(myPlayerId)),
+      seasonOf,
+    );
+  }, [tournaments, myTournaments, admin?.sub, myPlayerId, seasonOf]);
+  const [seriesKey, setSeriesKey] = useState<string>(NEW_TOURNAMENT);
+  // "New season" chosen: which tournament, from a searchable list.
+  const [addingSeason, setAddingSeason] = useState(false);
+  const [choosingSeries, setChoosingSeries] = useState(false);
+  const [repeats, setRepeats] = useState(Boolean(existing && (existing.seriesName || existing.season)));
+  const [seasonTouched, setSeasonTouched] = useState(false);
+  // Editing: the full name is rebuilt only once its tournament or season
+  // name is changed, so an untouched one keeps its name as it is.
+  const [editTouched, setEditTouched] = useState(false);
+  const picked = series.find((s) => s.key === seriesKey);
+  const autoSeason = picked ? nextSeason(picked.seasonLabels, picked.count) : "Season 1";
+  const shownSeason = existing || seasonTouched ? season : autoSeason;
+  // A new season starts with its tournament's last logo and banner (kept
+  // unless replaced or removed here).
+  const logoShown = logo.file === undefined ? (existing?.logoUrl ?? picked?.last.logoUrl ?? null) : logo.shown;
+  const bannerShown = banner.file === undefined ? (existing?.bannerUrl ?? picked?.last.bannerUrl ?? null) : banner.shown;
+  const isSeason = existing ? repeats && editTouched : Boolean(picked) || repeats;
+  const fullName = existing
+    ? repeats && editTouched
+      ? `${seriesName.trim()} ${season.trim()}`.trim()
+      : name
+    : picked
+      ? `${picked.name} ${shownSeason}`
+      : repeats
+        ? `${name.trim()} ${shownSeason}`
+        : name;
+
+  function copyFrom(t: CricketTournament) {
+    setCity(t.city ?? "");
+    setGround(t.ground ?? "");
+    if (t.organiserName) setOrganiserName(t.organiserName);
+    if (t.organiserMobile) setOrganiserMobile(t.organiserMobile);
+    if (t.organiserEmail) setOrganiserEmail(t.organiserEmail);
+    setCategory(t.category);
+    setBallType(t.ballType);
+    setPitchType(t.pitchType);
+    if (t.matchType) setMatchType(t.matchType);
+    if (t.overs) setOvers(String(t.overs));
+    setBallsPerOver(t.ballsPerOver ?? (t.matchType === "hundred" ? 5 : 6));
+    setBowlerLimit(t.bowlerOverLimit ? String(t.bowlerOverLimit) : "");
+    setLastManStands(Boolean(t.lastManStands));
+    setImpactPlayer(Boolean(t.impactPlayer));
+    setFreeHit(t.freeHit !== false);
+    setHasPowerplay(Boolean(t.powerplayOvers));
+    setPowerplayOvers(t.powerplayOvers ? String(t.powerplayOvers) : "");
+  }
+
+  function pickSeries(key: string | null) {
+    const next = key ?? NEW_TOURNAMENT;
+    setSeriesKey(next);
+    setAddingSeason(next !== NEW_TOURNAMENT);
+    setSeasonTouched(false);
+    clear("name");
+    const choice = series.find((s) => s.key === next);
+    if (choice) {
+      setSeriesName(choice.name);
+      copyFrom(choice.last);
+    } else {
+      setSeriesName("");
+      setName("");
+    }
+  }
 
   // The list loads after the form opens: fill the blanks from the last
   // tournament once it arrives, without touching anything already typed.
@@ -171,8 +395,16 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
     }
   }
 
-  const saving = createTournament.isPending || updateTournament.isPending || setImages.isPending;
+  const saving = createTournament.isPending || updateTournament.isPending || setImages.isPending || setOrganisers.isPending;
   const clear = (key: keyof Errors) => setErrors((current) => ({ ...current, [key]: undefined }));
+
+  // Opened from a tournament's page ("New season"): start on it once the
+  // list has loaded.
+  const [seasonApplied, setSeasonApplied] = useState(!seasonOf);
+  if (!seasonApplied && seasonOf && series.some((s) => s.key === seasonOf)) {
+    setSeasonApplied(true);
+    pickSeries(seasonOf);
+  }
 
   function pickImage(pick: ReturnType<typeof useImagePick>, options: CompressOptions) {
     return async (e: ChangeEvent<HTMLInputElement>) => {
@@ -198,7 +430,8 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
   function validate(): Errors {
     const found: Errors = {};
     const required = "Required";
-    if (!name.trim()) found.name = required;
+    if (addingSeason && !picked) found.name = "Pick the tournament";
+    else if (!(picked ? shownSeason : existing && repeats ? seriesName : name).trim()) found.name = required;
     if (!city.trim()) found.city = required;
     if (!ground.trim()) found.ground = required;
     if (!organiserName.trim()) found.organiserName = required;
@@ -243,9 +476,10 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
       return;
     }
     const input = {
-      name: name.trim(),
-      seriesName: seriesName.trim() || null,
-      season: season.trim() || null,
+      name: fullName.trim(),
+      // A tournament with seasons is the series; each season one entry in it.
+      seriesName: (existing ? (repeats ? seriesName : "") : picked ? picked.name : repeats ? name : "").trim() || null,
+      season: (existing ? (repeats ? season : "") : isSeason ? shownSeason : "").trim() || null,
       city: city.trim(),
       ground: ground.trim(),
       organiserName: organiserName.trim(),
@@ -267,9 +501,20 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
     };
     const saved = existing
       ? await updateTournament.mutateAsync({ id: existing.id, ...input })
-      : await createTournament.mutateAsync(input);
+      : await createTournament.mutateAsync({ ...input, imagesFrom: picked?.last.id });
     if (logo.file !== undefined || banner.file !== undefined) {
       await setImages.mutateAsync({ id: saved.id, logo: logo.file, banner: banner.file });
+    }
+    if (!existing) {
+      // The organiser named on the form (when it isn't you) is already a
+      // co-organiser; add the ones picked here alongside. If this fails
+      // (shown as a toast), they can be added again from its settings.
+      if (organiserIds.length > 0) {
+        const playerIds = [...new Set([...(saved.organiserIds ?? []), ...organiserIds])];
+        await setOrganisers.mutateAsync({ id: saved.id, playerIds }).catch(() => undefined);
+      }
+      // A number new to RunMitra became a player, to show on the Info tab.
+      void queryClient.invalidateQueries({ queryKey: ["cricket-players"] });
     }
     onSaved();
     if (!existing) navigate(`/tournaments/${saved.id}`);
@@ -307,10 +552,12 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
 
   return (
     <ModalForm onSubmit={onSubmit}>
-      <div className="cricket-tour-media">
-        <label className="cricket-banner-pick" style={banner.shown ? { backgroundImage: `url(${banner.shown})` } : undefined}>
+
+      {/* The banner, with the logo centred over its bottom edge. */}
+      <div className={`cricket-tour-media ${logoShown ? "has-logo" : ""}`.trim()}>
+        <label className="cricket-banner-pick" style={bannerShown ? { backgroundImage: `url(${bannerShown})` } : undefined}>
           <input type="file" accept="image/*" hidden onChange={pickImage(banner, TOURNAMENT_BANNER)} />
-          {!banner.shown && (
+          {!bannerShown && (
             <span>
               <i className="fa-regular fa-image" aria-hidden="true"></i> Add banner
             </span>
@@ -319,28 +566,33 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
             <i className="fa-solid fa-camera" aria-hidden="true"></i>
           </span>
         </label>
-        {banner.shown && (
+        {bannerShown && (
           <button type="button" className="cricket-media-remove is-banner" onClick={() => banner.setFile(null)}>
             Remove banner
           </button>
         )}
-        <div className="cricket-logo-wrap">
-          <label className="cricket-logo-pick" style={logo.shown ? { backgroundImage: `url(${logo.shown})` } : undefined}>
+        <div className="cricket-logo-wrap is-centered">
+          <label
+            className="cricket-logo-pick"
+            aria-label={logoShown ? "Change logo" : "Add logo"}
+            style={logoShown ? { backgroundImage: `url(${logoShown})` } : undefined}
+          >
             <input type="file" accept="image/*" hidden onChange={pickImage(logo, TOURNAMENT_LOGO)} />
-            {!logo.shown && <i className="fa-solid fa-shield-halved" aria-hidden="true"></i>}
+            {!logoShown && (
+              <>
+                <i className="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                <span className="cricket-logo-pick-label">Logo</span>
+              </>
+            )}
             <span className="cricket-media-cam">
               <i className="fa-solid fa-camera" aria-hidden="true"></i>
             </span>
           </label>
-          <span className="cricket-logo-caption">
-            {logo.shown ? (
-              <button type="button" className="cricket-media-remove" onClick={() => logo.setFile(null)}>
-                Remove logo
-              </button>
-            ) : (
-              "Add logo"
-            )}
-          </span>
+          {logoShown && (
+            <button type="button" className="cricket-media-remove" onClick={() => logo.setFile(null)}>
+              Remove logo
+            </button>
+          )}
         </div>
       </div>
       {errors.image && <div className="admin-banner admin-banner-error mt-2">{errors.image}</div>}
@@ -348,28 +600,171 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
       {/* Laid out like the match form: titled groups, evenly spaced; the
           text fields keep their floating-label inputs. */}
       <div className="cricket-app-form cricket-tour-form">
-        <h2 className="cricket-app-group-title">Tournament</h2>
+        {/* 1. A new tournament, or the next season of one already run. */}
+        {!existing && series.length > 0 && (
+          <>
+            <h2 className="cricket-app-group-title">What are you creating?</h2>
+            <div className="cricket-create-kind" role="radiogroup" aria-label="What are you creating?">
+              {(
+                [
+                  ["new", "fa-trophy", "New tournament", "Set up a new one from scratch"],
+                  ["season", "fa-layer-group", "New season", "Continue one you already run"],
+                ] as const
+              ).map(([value, icon, title, note]) => {
+                const on = (value === "season") === addingSeason;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    className={`cricket-create-kind-option ${on ? "is-on" : ""}`.trim()}
+                    onClick={() => {
+                      if (value === "new") return pickSeries(NEW_TOURNAMENT);
+                      setAddingSeason(true);
+                      if (!picked) setChoosingSeries(true);
+                    }}
+                  >
+                    <span className="cricket-create-kind-icon">
+                      <i className={`fa-solid ${icon}`} aria-hidden="true"></i>
+                    </span>
+                    <span className="cricket-create-kind-text">
+                      <strong>{title}</strong>
+                      <small>{note}</small>
+                    </span>
+                    {on && <i className="fa-solid fa-circle-check cricket-create-kind-check" aria-hidden="true"></i>}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* 2. Its name: a tournament's, or the season's within one. */}
+        <h2 className="cricket-app-group-title">{addingSeason ? "Season" : "Tournament"}</h2>
         <div className="cricket-tour-fields">
-          <InputComp label="Tournament name" required value={name} error={errors.name} maxLength={150} onChange={text(setName, "name")} />
-          <div className="cricket-form-row">
+          {addingSeason && (
+            <button type="button" className="cricket-picker-item cricket-select-field" onClick={() => setChoosingSeries(true)}>
+              {picked ? (
+                <TournamentLogo tournament={picked.last} className="cricket-picker-avatar" />
+              ) : (
+                <span className="cricket-picker-avatar cricket-stage-icon">
+                  <i className="fa-solid fa-layer-group" aria-hidden="true"></i>
+                </span>
+              )}
+              <span className="cricket-picker-text">
+                <strong>{picked ? picked.name : "Choose the tournament"}</strong>
+                <small>
+                  {picked
+                    ? `${picked.count} season${picked.count === 1 ? "" : "s"} so far · last: ${picked.lastSeason}`
+                    : "From the ones you organise"}
+                </small>
+              </span>
+              <i className="fa-solid fa-chevron-down cricket-app-row-chevron" aria-hidden="true"></i>
+            </button>
+          )}
+          {addingSeason && errors.name && !picked && <small className="text-danger">Choose the tournament first</small>}
+          {choosingSeries && (
+            <SeriesSheet series={series} pickedKey={picked?.key ?? null} onPick={pickSeries} onClose={() => setChoosingSeries(false)} />
+          )}
+          {picked ? (
             <InputComp
-              label="Series (optional)"
-              value={seriesName}
-              maxLength={100}
-              {...seriesSuggest.inputProps}
-              onChange={(e) => setSeriesName(e.target.value)}
-            />
-            {seriesSuggest.menu}
-            <InputComp
-              label="Season (e.g. 2025, Season 3)"
-              value={season}
+              label="Season name"
+              required
+              value={shownSeason}
+              error={errors.name}
               maxLength={40}
-              onChange={(e) => setSeason(e.target.value)}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                setSeasonTouched(true);
+                setSeason(e.target.value);
+                clear("name");
+              }}
             />
-          </div>
-          <small className="admin-hint d-block">
-            Seasons with the same series name are grouped together, with their combined stats on the series page.
-          </small>
+          ) : addingSeason ? null : existing && repeats ? (
+            <>
+              <InputComp
+                label="Tournament name"
+                required
+                value={seriesName}
+                error={errors.name}
+                maxLength={100}
+                {...seriesSuggest.inputProps}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                  setSeriesName(e.target.value);
+                  setEditTouched(true);
+                  clear("name");
+                }}
+              />
+              {seriesSuggest.menu}
+              <InputComp
+                label="Season name"
+                value={season}
+                maxLength={40}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                  setSeason(e.target.value);
+                  setEditTouched(true);
+                }}
+              />
+            </>
+          ) : (
+            <InputComp
+              label="Tournament name"
+              required
+              value={name}
+              error={errors.name}
+              maxLength={repeats ? 100 : 150}
+              onChange={text(setName, "name")}
+            />
+          )}
+          {!addingSeason && (
+            <div className="cricket-app-group">
+              <SwitchRow
+                icon="fa-solid fa-layer-group"
+                label="Runs in seasons"
+                // What turning it on does, or what it means once on.
+                note={
+                  !repeats
+                    ? "Turn on if you'll hold it again: Season 1, Season 2…"
+                    : existing
+                      ? "Kept together with its other seasons and their combined stats."
+                      : "Starts as Season 1. Add later seasons from its page."
+                }
+                on={repeats}
+                onChange={(on) => {
+                  setRepeats(on);
+                  // Editing a one-off into a season: start from its name.
+                  if (existing && on) {
+                    if (!seriesName.trim()) setSeriesName(name);
+                    if (!season.trim()) setSeason("Season 1");
+                    setEditTouched(true);
+                  }
+                }}
+              />
+            </div>
+          )}
+          {!existing && repeats && !addingSeason && (
+            <InputComp
+              label="First season name"
+              value={shownSeason}
+              maxLength={40}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                setSeasonTouched(true);
+                setSeason(e.target.value);
+              }}
+            />
+          )}
+          {isSeason && fullName.trim() && (
+            <small className="admin-hint d-block">
+              <i className="fa-regular fa-circle-check me-1" aria-hidden="true"></i>
+              Will be called <strong>{fullName.trim()}</strong>
+              {picked ? ". Venue, organiser and rules are copied from the last season." : "."}
+            </small>
+          )}
+        </div>
+
+        {/* 3. Where it's played. */}
+        <h2 className="cricket-app-group-title">Venue</h2>
+        <div className="cricket-tour-fields">
           <div className="cricket-form-row">
             <InputComp
               label="City"
@@ -394,11 +789,17 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
           </div>
         </div>
 
+        {/* 4. Who runs it: the contact shown on it, and who else manages it. */}
         <h2 className="cricket-app-group-title">Organiser</h2>
         <div className="cricket-tour-fields">
+          <small className="admin-hint d-block">
+            {existing
+              ? "The contact people see on the tournament."
+              : "The contact people see. Creating it for someone else? Enter their details: they'll manage it with you."}
+          </small>
           <div className="cricket-form-row">
             <InputComp
-              label="Organiser name"
+              label="Name"
               required
               value={organiserName}
               error={errors.organiserName}
@@ -406,7 +807,7 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
               onChange={text(setOrganiserName, "organiserName")}
             />
             <InputComp
-              label="Organiser number"
+              label="Mobile number"
               required
               type="tel"
               inputMode="tel"
@@ -417,13 +818,34 @@ export function CricketTournamentForm({ existing, onSaved }: CricketTournamentFo
             />
           </div>
           <InputComp
-            label="Organiser email"
+            label="Email (optional)"
             type="email"
             value={organiserEmail}
             error={errors.organiserEmail}
             maxLength={150}
             onChange={text(setOrganiserEmail, "organiserEmail")}
           />
+          {!existing && (
+            <button type="button" className="cricket-add-row" onClick={() => setEditingCoOrganisers(true)}>
+              <i className="fa-solid fa-user-plus" aria-hidden="true"></i>
+              <span>
+                <strong>
+                  {coOrganisers.length === 0
+                    ? "Add co-organisers"
+                    : `${coOrganisers.length} co-organiser${coOrganisers.length === 1 ? "" : "s"}`}
+                </strong>
+                <small>
+                  {coOrganisers.length === 0
+                    ? "Optional · people who manage it with you"
+                    : coOrganisers.map((p) => p.name).join(", ")}
+                </small>
+              </span>
+              <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
+            </button>
+          )}
+          {editingCoOrganisers && (
+            <CoOrganisersSheet value={coOrganisers} onChange={setCoOrganisers} onClose={() => setEditingCoOrganisers(false)} />
+          )}
         </div>
 
         {/* Rows like a match's date & time. */}
