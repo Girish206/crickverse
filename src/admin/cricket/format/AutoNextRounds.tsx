@@ -111,7 +111,7 @@ export function AutoNextRounds({ tournamentId, card = false }: { tournamentId: n
     if (done.length === 0) return;
     const when = dayText(planned[0]?.scheduledAt ?? null);
     toast.success(`${done.join(", ")} scheduled${when ? ` from ${when}` : ""}`, {
-      description: "Reschedule any of them from the match page.",
+      description: "Reschedule any of them, or change a team, from the match page.",
     });
   }
 
@@ -126,7 +126,7 @@ export function AutoNextRounds({ tournamentId, card = false }: { tournamentId: n
             <li key={line}>{line}</li>
           ))}
         </ul>
-        <span>Teams come from the table. Check it first — fix a result and this updates.</span>
+        <span>Teams come from the table. Check it first — fix a result and this updates. A team can still be changed from the match page.</span>
       </div>
       <Button variant="primary" disabled={busy} onClick={schedule}>
         <i className="fa-solid fa-calendar-plus" aria-hidden="true"></i> Schedule

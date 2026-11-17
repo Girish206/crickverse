@@ -13,6 +13,7 @@ export type PresetId =
   | "ipl"
   | "league-semis"
   | "league-final"
+  | "league-eliminator"
   | "groups-knockout"
   | "groups-super"
   | "knockout"
@@ -75,6 +76,15 @@ export const PRESETS: Preset[] = [
     unfit: atLeast(3),
     usesGroups: false,
     defaults: () => ({ ...base, qualify: 2 }),
+  },
+  {
+    id: "league-eliminator",
+    name: "League + eliminator",
+    note: "Round-robin, then 2nd v 3rd in the Eliminator; the winner meets the league toppers in the Final",
+    icon: "fa-stairs",
+    unfit: atLeast(3),
+    usesGroups: false,
+    defaults: () => ({ ...base, qualify: 3 }),
   },
   {
     id: "groups-knockout",
@@ -307,6 +317,17 @@ export function buildFormat(id: PresetId, options: PresetOptions, groups: number
       ];
       break;
     }
+    case "league-eliminator": {
+      const [first, second, third] = top(3);
+      phases = [
+        roundRobin("p1", "League", groups, legs, 3),
+        knockout("p2", "Playoffs", [
+          slot("E", "Eliminator", "eliminator", second, third),
+          slot("F", "Final", "final", first, winner("E")),
+        ]),
+      ];
+      break;
+    }
     case "groups-knockout": {
       const seeds = crossover(groups.length, qualify, "p1");
       phases = [
@@ -351,6 +372,21 @@ export function buildFormat(id: PresetId, options: PresetOptions, groups: number
     phases[0] = { ...phases[0], legs: 1, matchesPerTeam: options.matchesPerTeam };
   }
   return { preset: id, phases };
+}
+
+// The options a saved format was built with, so reopening it starts there.
+export function optionsOf(format: CricketFormat, teamCount: number): PresetOptions {
+  const first = format.phases[0];
+  const defaults = presetOf(format.preset)?.defaults(teamCount) ?? base;
+  return {
+    ...defaults,
+    legs: first.kind === "round-robin" ? first.legs : defaults.legs,
+    matchesPerTeam: first.matchesPerTeam ?? null,
+    groupCount: Math.max(1, first.groups.length),
+    qualify: first.kind === "round-robin" ? first.qualify : defaults.qualify,
+    seriesLength: first.kind === "series" ? first.legs : defaults.seriesLength,
+    thirdPlace: format.phases.some((phase) => phase.slots.some((s) => s.stage === "third-place")),
+  };
 }
 
 // The first phase's teams split into groups, in turn (snake order keeps
