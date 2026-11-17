@@ -27,6 +27,7 @@ import {
   type ScheduleOptions,
 } from "./formatEngine";
 import { defaultSchedule, ScheduleFields } from "./ScheduleFields";
+import { SlotTeamsPicker } from "./SlotTeamsPicker";
 import { TeamMark } from "../teams/TeamMark";
 import "./format.css";
 
@@ -192,7 +193,11 @@ export function FormatView({
           <i className="fa-solid fa-sliders" aria-hidden="true"></i>
           <span>
             <strong>Change the format</strong>
-            <small>Allowed until its first match is played</small>
+            <small>
+              {matches.some((match) => match.phaseId && match.status !== "scheduled")
+                ? "Only the rounds still to come can change"
+                : "Teams, groups, fixtures and all"}
+            </small>
           </span>
           <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
         </Link>
@@ -486,7 +491,8 @@ function StartPhaseSheet({
   );
 }
 
-// Schedules one bracket match whose teams are now known.
+// Schedules one bracket match whose teams are now known: those by default,
+// or whichever teams the organiser picks instead.
 function ScheduleSlotSheet({
   tournament,
   matches,
@@ -507,12 +513,18 @@ function ScheduleSlotSheet({
   const addFixtures = useAddCricketFixtures();
   const [options, setOptions] = useState<ScheduleOptions>(() => defaultSchedule(tournament, matches));
   const fixture = slotFixture(phase, slot, resolve);
+  const suggested: [number, number] | null = fixture ? [fixture.teamAIndex, fixture.teamBIndex] : null;
+  const [teams, setTeams] = useState<[number, number]>(suggested ?? [0, 1]);
 
   async function save() {
     if (!fixture) return;
     try {
       // Just this match, on the date and at the time picked.
-      const { fixtures } = planSchedule([fixture], { ...options, oneDay: true, pitches: 1 });
+      const { fixtures } = planSchedule([{ ...fixture, teamAIndex: teams[0], teamBIndex: teams[1] }], {
+        ...options,
+        oneDay: true,
+        pitches: 1,
+      });
       await addFixtures.mutateAsync({ id: tournament.id, phaseId: phase.id, fixtures });
     } catch {
       return; // Shown as a toast.
@@ -527,15 +539,23 @@ function ScheduleSlotSheet({
       icon="fa-solid fa-calendar-plus"
       onClose={onClose}
       footer={
-        <button type="button" className="cricket-sheet-submit" disabled={!fixture || addFixtures.isPending} onClick={save}>
+        <button
+          type="button"
+          className="cricket-sheet-submit"
+          disabled={!fixture || teams[0] === teams[1] || addFixtures.isPending}
+          onClick={save}
+        >
           <i className="fa-solid fa-check" aria-hidden="true"></i> Schedule
         </button>
       }
     >
       {fixture && (
-        <p className="cricket-sheet-context">
-          {teamName(fixture.teamAIndex)} v {teamName(fixture.teamBIndex)}
-        </p>
+        <>
+          <p className="cricket-sheet-context">
+            {teamName(teams[0])} v {teamName(teams[1])}
+          </p>
+          <SlotTeamsPicker teams={tournament.teams} value={teams} onChange={setTeams} suggested={suggested} />
+        </>
       )}
       <ScheduleFields value={options} onChange={setOptions} single />
     </BottomSheet>

@@ -44,6 +44,7 @@ import { messageFor } from "../../../api/mutationErrors";
 import { QrScannerSheet, type ScanReply } from "../qr/QrScannerSheet";
 import type { QrTarget } from "../qr/qrLinks";
 import { TeamMark } from "../teams/TeamMark";
+import { SlotTeamsPicker } from "../format/SlotTeamsPicker";
 import { useSwipeTabs } from "../../useSwipeTabs";
 
 // <input type="datetime-local"> wants local "YYYY-MM-DDTHH:mm".
@@ -268,6 +269,12 @@ export function CricketMatchForm({
 
   const standalone = tournamentId === null;
   const tournament = tournaments?.find((t) => t.id === tournamentId);
+  // A knockout / playoff match not yet started can take other teams than
+  // the ones the format put in; league and group matches keep theirs.
+  const knockoutTeams =
+    existing?.status === "scheduled" &&
+    Boolean(existing.slot) &&
+    tournament?.format?.phases.find((phase) => phase.id === existing.phaseId)?.kind === "knockout";
 
   // A new match takes the tournament's details (overs, ground, city, match /
   // ball / pitch type); they can still be changed for this one match.
@@ -826,6 +833,20 @@ export function CricketMatchForm({
                 );
               })}
             </div>
+          </>
+        )}
+
+        {knockoutTeams && teamA !== null && teamB !== null && (
+          <>
+            <h2 className="cricket-app-group-title">Teams</h2>
+            <SlotTeamsPicker
+              teams={tournament!.teams}
+              value={[teamA, teamB]}
+              onChange={([a, b]) => {
+                setTeamA(a);
+                setTeamB(b);
+              }}
+            />
           </>
         )}
 

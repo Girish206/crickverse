@@ -59,6 +59,56 @@ export function matchesPerTeamChoices(groups: number[][]) {
   return Array.from({ length: Math.max(0, most) }, (_, i) => i + 1).filter((count) => !evenOnly || count % 2 === 0);
 }
 
+const sourceKey = (source: CricketTeamSource) =>
+  source.from === "team"
+    ? `team:${source.teamIndex}`
+    : source.from === "rank"
+      ? `rank:${source.phaseId}:${source.group ?? ""}:${source.rank}`
+      : `${source.from}:${source.slot}`;
+const groupKey = (group: CricketPhaseGroup) => `${group.name}|${group.teamIndexes.join(",")}|${group.seeds.map(sourceKey).join(",")}`;
+
+// Once a format's matches have begun, what a new format can't change: a
+// phase with matches keeps its teams, groups and how it's played (and who
+// goes through, once the phase after it has begun too), and a bracket keeps
+// every match already made. Phases nobody has reached are free to change.
+// Null = the change is allowed. Kept in step with the API's copy.
+export function lockedChange(
+  current: CricketFormat,
+  next: CricketFormat,
+  matches: Pick<CricketMatch, "phaseId" | "slot">[],
+): string | null {
+  const started = new Set(matches.flatMap((match) => (match.phaseId ? [match.phaseId] : [])));
+  for (const [i, phase] of current.phases.entries()) {
+    if (!started.has(phase.id)) continue;
+    const other = next.phases[i];
+    const keep = `${phase.name} has started, so it has to stay as it is.`;
+    if (!other || other.id !== phase.id || other.kind !== phase.kind) return keep;
+    if (phase.kind === "knockout") {
+      for (const slot of phase.slots) {
+        if (!matches.some((match) => match.phaseId === phase.id && match.slot === slot.code)) continue;
+        const same = other.slots.find((s) => s.code === slot.code);
+        if (!same || same.stage !== slot.stage || sourceKey(same.home) !== sourceKey(slot.home) || sourceKey(same.away) !== sourceKey(slot.away)) {
+          return `${slot.label} has been scheduled, so it has to stay.`;
+        }
+      }
+      continue;
+    }
+    if (
+      other.legs !== phase.legs ||
+      (other.matchesPerTeam ?? null) !== (phase.matchesPerTeam ?? null) ||
+      Boolean(other.carryPoints) !== Boolean(phase.carryPoints) ||
+      other.groups.map(groupKey).join(";") !== phase.groups.map(groupKey).join(";")
+    ) {
+      return keep;
+    }
+    const after = current.phases[i + 1];
+    if (other.qualify !== phase.qualify && after && started.has(after.id)) {
+      return `${after.name} has started, so who goes through from ${phase.name} can't change.`;
+    }
+  }
+  return null;
+}
+
 // The format's matches in a phase's slot (knockout or series), if scheduled.
 export const slotMatch = (code: string, matches: CricketMatch[]) => matches.find((match) => match.slot === code);
 

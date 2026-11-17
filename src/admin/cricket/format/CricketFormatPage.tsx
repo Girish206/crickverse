@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { useCricketMatches } from "../../../api/hooks/cricket/useCricketMatches";
 import { useCricketMe } from "../../../api/hooks/cricket/useCricketPlayers";
 import { useClearCricketFormat, useCricketTournament, useSetCricketFormat } from "../../../api/hooks/cricket/useCricketTournaments";
-import type { CricketTournament } from "../../../api/types";
+import type { CricketMatch, CricketTournament } from "../../../api/types";
 import { useAdminAuth } from "../../../context/AdminAuthContext";
 import { canManageTournament } from "../canManage";
 import { FINISHED_NOTE } from "../tournaments/tournamentLifecycle";
@@ -18,13 +18,24 @@ import {
   expectedMatches,
   formatMatchCount,
   laterRoundDays,
+  lockedChange,
   makeResolver,
   matchesPerTeamChoices,
   openingFixtures,
   planSchedule,
   type ScheduleOptions,
 } from "./formatEngine";
-import { buildFormat, GROUP_NAMES, knockoutDraw, PRESETS, presetOf, snakeGroups, type PresetId, type PresetOptions } from "./formatPresets";
+import {
+  buildFormat,
+  GROUP_NAMES,
+  knockoutDraw,
+  optionsOf,
+  PRESETS,
+  presetOf,
+  snakeGroups,
+  type PresetId,
+  type PresetOptions,
+} from "./formatPresets";
 import { defaultSchedule, prefsOf, ScheduleFields } from "./ScheduleFields";
 import "./format.css";
 import "../../dms/css/adminDisplays.css";
@@ -87,7 +98,8 @@ function OptionRow<T extends number | boolean>({
 // Picks how the tournament is played — a preset (league + IPL playoffs,
 // groups + super league, knockout, series...), its options, the groups or
 // the draw — and when the opening matches are, then makes them. Opened from
-// the Points Table tab.
+// the Points Table tab. Once its matches have begun, only what's still to
+// come can change (see lockedChange), so only those choices are offered.
 export function CricketFormatPage() {
   const id = Number(useParams().id);
   const { data: tournament, isLoading } = useCricketTournament(id);
@@ -97,7 +109,6 @@ export function CricketFormatPage() {
   const canManage = canManageTournament(admin, tournament, me?.player?.id);
   const backTo = `/tournaments/${id}?tab=points`;
 
-  const played = (matches ?? []).some((match) => match.phaseId && match.status !== "scheduled");
   const problem = !tournament
     ? "Tournament not found."
     : !canManage
@@ -106,9 +117,7 @@ export function CricketFormatPage() {
         ? FINISHED_NOTE
         : tournament.teams.length < 2
           ? "Add at least two teams on the Teams tab first."
-          : played
-            ? "Format matches have already been played, so the format can't be changed now."
-            : null;
+          : null;
 
   if (isLoading || loadingMatches || problem) {
     return (
@@ -124,10 +133,10 @@ export function CricketFormatPage() {
       </>
     );
   }
-  return <FormatBuilder tournament={tournament!} backTo={backTo} />;
+  return <FormatBuilder tournament={tournament!} matches={matches ?? []} backTo={backTo} />;
 }
 
-function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; backTo: string }) {
+function FormatBuilder({ tournament, matches, backTo }: { tournament: CricketTournament; matches: CricketMatch[]; backTo: string }) {
   const navigate = useNavigate();
   const setFormat = useSetCricketFormat();
   const clearFormat = useClearCricketFormat();
@@ -135,13 +144,25 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
   const teamIndexes = useMemo(() => tournament.teams.map((_, index) => index), [tournament.teams]);
   const teamName = (index: number) => tournament.teams[index]?.name ?? "Removed team";
 
-  const firstFit = (PRESETS.find((p) => p.id === tournament.format?.preset && !p.unfit(teamCount)) ??
-    PRESETS.find((p) => !p.unfit(teamCount)))!;
+  const current = tournament.format;
+  // Format matches played: the opening phase (at least) is fixed, so only
+  // the rounds still to come can change.
+  const locked = Boolean(current && presetOf(current.preset)) && matches.some((match) => match.phaseId && match.status !== "scheduled");
+  const firstFit = locked
+    ? presetOf(current!.preset)!
+    : (PRESETS.find((p) => p.id === current?.preset && !p.unfit(teamCount)) ?? PRESETS.find((p) => !p.unfit(teamCount)))!;
   const [presetId, setPresetId] = useState<PresetId>(firstFit.id);
-  const [options, setOptions] = useState<PresetOptions>(() => firstFit.defaults(teamCount));
+  // Reopened, it starts from the options it was saved with.
+  const [options, setOptions] = useState<PresetOptions>(() =>
+    current?.preset === firstFit.id ? optionsOf(current, teamCount) : firstFit.defaults(teamCount),
+  );
   // An existing format's first phase keeps its line-up when it's reopened.
   const [lineUp, setLineUp] = useState<number[][]>(() => {
-    const existing = tournament.format?.preset === firstFit.id ? tournament.format.phases[0] : null;
+    const existing = current?.preset === firstFit.id ? current.phases[0] : null;
+    if (locked && existing) {
+      // As it's being played, whatever the teams are now.
+      return existing.kind === "knockout" ? [knockoutDraw(existing)] : existing.groups.map((g) => g.teamIndexes);
+    }
     if (existing?.kind === "knockout") {
       // Back in seed order (byes included), as long as it's still every team.
       const draw = knockoutDraw(existing);
@@ -157,7 +178,29 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
   const [maxTotal, setMaxTotal] = useState<number | null>(null);
   const preset = presetOf(presetId)!;
 
+  // Under way, another preset keeps the opening phase as it's being played:
+  // the same line-up and how it's played; the rest follows the preset.
+  function lockedOptions(id: PresetId): PresetOptions {
+    const defaults = presetOf(id)!.defaults(teamCount);
+    return {
+      ...defaults,
+      legs: options.legs,
+      matchesPerTeam: options.matchesPerTeam,
+      groupCount: options.groupCount,
+      seriesLength: options.seriesLength,
+      thirdPlace: options.thirdPlace,
+      qualify: id === presetId ? options.qualify : defaults.qualify,
+    };
+  }
+  // Whether these choices are still possible (always, before any match).
+  const allows = (id: PresetId, next: PresetOptions) => !locked || lockedChange(current!, buildFormat(id, next, lineUp), matches) === null;
+
   function pickPreset(next: PresetId) {
+    if (locked) {
+      setPresetId(next);
+      setOptions(lockedOptions(next));
+      return;
+    }
     const nextOptions = presetOf(next)!.defaults(teamCount);
     setPresetId(next);
     setOptions(nextOptions);
@@ -177,7 +220,9 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
   }
 
   function moveTeam(teamIndex: number, toGroup: number) {
-    setLineUp((groups) => groups.map((group, g) => (g === toGroup ? [...group.filter((t) => t !== teamIndex), teamIndex] : group.filter((t) => t !== teamIndex))));
+    setLineUp((groups) =>
+      groups.map((group, g) => (g === toGroup ? [...group.filter((t) => t !== teamIndex), teamIndex] : group.filter((t) => t !== teamIndex))),
+    );
   }
 
   // What's wrong with the line-up, if anything.
@@ -204,15 +249,17 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
   // Under a limit, the most matches that fit; otherwise the organiser's
   // choice, a set count that no longer fits the line-up dropping to the
   // nearest one below.
-  const limited = roundRobinFirst && maxTotal !== null;
+  const limited = !locked && roundRobinFirst && maxTotal !== null;
   const underLimit = limited ? plays.find((play) => formatMatchCount(formatWith(play)) <= maxTotal) : undefined;
   const play = limited
     ? (underLimit ?? plays[plays.length - 1])
-    : {
-        legs: options.legs,
-        matchesPerTeam:
-          options.matchesPerTeam === null ? null : ([...perTeamChoices].reverse().find((count) => count <= options.matchesPerTeam!) ?? null),
-      };
+    : locked
+      ? { legs: options.legs, matchesPerTeam: options.matchesPerTeam }
+      : {
+          legs: options.legs,
+          matchesPerTeam:
+            options.matchesPerTeam === null ? null : ([...perTeamChoices].reverse().find((count) => count <= options.matchesPerTeam!) ?? null),
+        };
   const format = formatWith(play);
   const totalMatches = formatMatchCount(format);
   const openingMatches = format.phases[0].groups.reduce((sum, group) => sum + expectedMatches(format.phases[0], group), 0);
@@ -235,9 +282,12 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
   // organiser sets them.
   const laterDays = laterRoundDays(format, 0);
   const schedule = reserveEdited ? when : { ...when, reserveDays: laterDays };
-  const plan = planSchedule(lineUpError ? [] : openingFixtures(format, tournament), schedule);
+  // Under way, its opening matches are already made.
+  const plan = planSchedule(lineUpError || locked ? [] : openingFixtures(format, tournament), schedule);
   const fixtures = plan.fixtures;
-  const resolve = makeResolver(tournament, format, []);
+  const previewMatches = locked ? matches : [];
+  const resolve = makeResolver(tournament, format, previewMatches);
+  const lockError = locked ? lockedChange(current!, format, matches) : null;
 
   function changeSchedule(next: ScheduleOptions) {
     if (next.reserveDays !== schedule.reserveDays) setReserveEdited(true);
@@ -248,8 +298,38 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
   const perGroup = Math.floor(teamCount / options.groupCount);
   const groupCounts = [2, 3, 4].filter((g) => teamCount / g >= (presetId === "groups-super" ? 3 : 2) && (presetId !== "groups-knockout" || g !== 3));
   const hasSemis = format.phases.some((phase) => phase.slots.some((slot) => slot.stage === "semi-final"));
+  // Under way: only the presets, cut lines and 3rd-place choices still possible.
+  const presetChoices = PRESETS.filter(
+    (p) => !locked || p.id === presetId || (!p.unfit(teamCount) && p.usesGroups === firstFit.usesGroups && allows(p.id, lockedOptions(p.id))),
+  );
+  const qualifyChoices = (presetId === "groups-knockout" ? [1, 2] : [2, 3])
+    .filter((q) => q < perGroup)
+    .filter((q) => q === options.qualify || allows(presetId, { ...options, qualify: q }));
+  const thirdPlaceChoices = [false, true].filter((v) => v === options.thirdPlace || allows(presetId, { ...options, thirdPlace: v }));
+  const nothingToChange =
+    locked && presetChoices.length <= 1 && (!preset.usesGroups || qualifyChoices.length <= 1) && (!hasSemis || thirdPlaceChoices.length <= 1);
 
   async function save() {
+    if (locked) {
+      const ok = await confirmAction(
+        "Update the format?",
+        "Matches already made stay as they are; the rounds still to come follow the new format.",
+        "Update",
+      );
+      if (!ok) return;
+      try {
+        await setFormat.mutateAsync({
+          id: tournament.id,
+          format: { ...format, schedule: current!.schedule },
+          fixtures: [],
+        });
+      } catch {
+        return; // Shown as a toast.
+      }
+      toast.success("Format updated");
+      navigate(backTo);
+      return;
+    }
     if (tournament.format) {
       const ok = await confirmAction(
         "Replace the format?",
@@ -259,7 +339,11 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
       if (!ok) return;
     }
     try {
-      await setFormat.mutateAsync({ id: tournament.id, format: { ...format, schedule: prefsOf(schedule) }, fixtures });
+      await setFormat.mutateAsync({
+        id: tournament.id,
+        format: { ...format, schedule: prefsOf(schedule) },
+        fixtures,
+      });
     } catch {
       return; // Shown as a toast.
     }
@@ -268,11 +352,7 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
   }
 
   async function remove() {
-    const ok = await confirmAction(
-      "Remove the format?",
-      "Its unplayed fixtures are deleted. Matches you scheduled by hand stay.",
-      "Remove",
-    );
+    const ok = await confirmAction("Remove the format?", "Its unplayed fixtures are deleted. Matches you scheduled by hand stay.", "Remove");
     if (!ok) return;
     try {
       await clearFormat.mutateAsync(tournament.id);
@@ -282,13 +362,35 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
     navigate(backTo);
   }
 
+  if (nothingToChange) {
+    return (
+      <div className="cricket-page cricket-format-page">
+        <PageHeader title="Tournament Format" subtitle={tournament.name} back={backTo} backLabel="Back to points table" />
+        <ListCard title="Tournament Format">
+          <p>Matches have been played, and nothing about this format can change now: the rounds still to come depend on how it's being played.</p>
+        </ListCard>
+        <div className="cricket-format-actions">
+          <Button variant="danger-text" disabled={clearFormat.isPending} onClick={remove}>
+            Remove format
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="cricket-page cricket-format-page">
       <PageHeader title="Tournament Format" subtitle={tournament.name} back={backTo} backLabel="Back to points table" />
 
+      {locked && (
+        <div className="admin-banner mb-3">
+          Matches have been played, so only the rounds still to come can change. Just the choices still possible are shown.
+        </div>
+      )}
+
       <ListCard title="1. Format" subtitle={`${teamCount} teams`}>
         <div className="cricket-preset-grid" role="radiogroup" aria-label="Format">
-          {PRESETS.map((p) => {
+          {presetChoices.map((p) => {
             const unfit = p.unfit(teamCount);
             return (
               <button
@@ -310,11 +412,14 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
       </ListCard>
 
       <ListCard title="2. Options">
-        {presetId === "series" ? (
+        {locked ? null : presetId === "series" ? (
           <OptionRow
             label="Matches in the series"
             value={options.seriesLength}
-            options={[1, 2, 3, 4, 5, 7].map((n) => ({ value: n, label: String(n) }))}
+            options={[1, 2, 3, 4, 5, 7].map((n) => ({
+              value: n,
+              label: String(n),
+            }))}
             onChange={(n) => setOption("seriesLength", n)}
           />
         ) : (
@@ -329,7 +434,14 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
                   ...(perTeamChoices.length ? [{ value: 0, label: "Set number of matches" }] : []),
                 ]}
                 onChange={(n) =>
-                  choosePlay(n ? { legs: n, matchesPerTeam: null } : { legs: 1, matchesPerTeam: perTeamChoices[perTeamChoices.length - 1] })
+                  choosePlay(
+                    n
+                      ? { legs: n, matchesPerTeam: null }
+                      : {
+                          legs: 1,
+                          matchesPerTeam: perTeamChoices[perTeamChoices.length - 1],
+                        },
+                  )
                 }
               />
               {play.matchesPerTeam && (
@@ -337,7 +449,10 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
                   <OptionRow
                     label="Matches per team"
                     value={play.matchesPerTeam}
-                    options={perTeamChoices.map((count) => ({ value: count, label: String(count) }))}
+                    options={perTeamChoices.map((count) => ({
+                      value: count,
+                      label: String(count),
+                    }))}
                     onChange={(count) => choosePlay({ legs: 1, matchesPerTeam: count })}
                   />
                   <small className="admin-hint d-block mx-1">
@@ -351,34 +466,42 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
         )}
         {preset.usesGroups && (
           <>
-            <OptionRow
-              label="Groups"
-              value={options.groupCount}
-              options={groupCounts.map((g) => ({ value: g, label: `${g} groups` }))}
-              onChange={(g) => setOption("groupCount", g)}
-            />
-            <OptionRow
-              label="Go through from each group"
-              value={options.qualify}
-              options={(presetId === "groups-knockout" ? [1, 2] : [2, 3])
-                .filter((q) => q < perGroup)
-                .map((q) => ({ value: q, label: `Top ${q}` }))}
-              onChange={(q) => setOption("qualify", q)}
-            />
+            {!locked && (
+              <OptionRow
+                label="Groups"
+                value={options.groupCount}
+                options={groupCounts.map((g) => ({
+                  value: g,
+                  label: `${g} groups`,
+                }))}
+                onChange={(g) => setOption("groupCount", g)}
+              />
+            )}
+            {(!locked || qualifyChoices.length > 1) && (
+              <OptionRow
+                label="Go through from each group"
+                value={options.qualify}
+                options={qualifyChoices.map((q) => ({
+                  value: q,
+                  label: `Top ${q}`,
+                }))}
+                onChange={(q) => setOption("qualify", q)}
+              />
+            )}
           </>
         )}
-        {hasSemis && (
+        {hasSemis && (!locked || thirdPlaceChoices.length > 1) && (
           <OptionRow
             label="3rd place play-off"
             value={options.thirdPlace}
-            options={[
-              { value: false, label: "No" },
-              { value: true, label: "Yes" },
-            ]}
+            options={thirdPlaceChoices.map((v) => ({
+              value: v,
+              label: v ? "Yes" : "No",
+            }))}
             onChange={(v) => setOption("thirdPlace", v)}
           />
         )}
-        {roundRobinFirst && (
+        {roundRobinFirst && !locked && (
           <div className="cricket-app-group mt-3">
             <label className="cricket-app-row">
               <span className="cricket-app-row-label">
@@ -402,9 +525,10 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
           {limited && underLimit && ` — the most that fit under ${maxTotal}`}.
         </p>
         {limitError && <div className="admin-banner admin-banner-error mt-2">{limitError}</div>}
+        {lockError && <div className="admin-banner admin-banner-error mt-2">{lockError}</div>}
       </ListCard>
 
-      {preset.usesGroups && (
+      {preset.usesGroups && !locked && (
         <ListCard
           title="3. Groups"
           action={
@@ -441,7 +565,7 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
         </ListCard>
       )}
 
-      {presetId === "knockout" && (
+      {presetId === "knockout" && !locked && (
         <ListCard
           title="3. Draw"
           subtitle={
@@ -482,9 +606,14 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
         </ListCard>
       )}
 
-      <ListCard title={`${preset.usesGroups || presetId === "knockout" ? 4 : 3}. Schedule`} subtitle="For the opening phase; later rounds are scheduled once their teams are known">
-        <ScheduleFields value={schedule} onChange={changeSchedule} plan={plan} laterRounds={format.phases.length > 1} />
-      </ListCard>
+      {!locked && (
+        <ListCard
+          title={`${preset.usesGroups || presetId === "knockout" ? 4 : 3}. Schedule`}
+          subtitle="For the opening phase; later rounds are scheduled once their teams are known"
+        >
+          <ScheduleFields value={schedule} onChange={changeSchedule} plan={plan} laterRounds={format.phases.length > 1} />
+        </ListCard>
+      )}
 
       <ListCard title="Preview">
         <ol className="cricket-phase-steps" aria-label="Phases">
@@ -504,39 +633,41 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
               <header className="cricket-format-phase-head">
                 <h3>{phase.name}</h3>
               </header>
-              <BracketChart format={format} phase={phase} matches={[]} resolve={resolve} teamName={teamName} />
+              <BracketChart format={format} phase={phase} matches={previewMatches} resolve={resolve} teamName={teamName} />
             </section>
           ))}
-        <section className="cricket-format-phase">
-          <header className="cricket-format-phase-head">
-            <h3>Opening fixtures</h3>
-            <span className="cricket-fixture-head-end">
-              {roundRobinFirst && fixtures.length > 1 && (
-                <button
-                  type="button"
-                  className="cricket-fixture-regenerate"
-                  title="New pairings and match order, same settings. Nothing is saved until you save."
-                  onClick={regenerate}
-                >
-                  <i className="fa-solid fa-rotate" aria-hidden="true"></i> Regenerate
-                </button>
-              )}
-              <span className="cricket-phase-state">{fixtures.length} matches</span>
-            </span>
-          </header>
-          <ol className="cricket-fixture-preview">
-            {fixtures.map((fixture, i) => (
-              <li key={i}>
-                <span className="cricket-fixture-no">Match {i + 1}</span>
-                <span className="cricket-fixture-when">{fixtureDate(fixture.scheduledAt)}</span>
-                <span className="cricket-fixture-teams">
-                  {teamName(fixture.teamAIndex)} <small>v</small> {teamName(fixture.teamBIndex)}
-                </span>
-                {format.phases[0].groups.length > 1 && fixture.group && <span className="cricket-role-tag">{fixture.group}</span>}
-              </li>
-            ))}
-          </ol>
-        </section>
+        {!locked && (
+          <section className="cricket-format-phase">
+            <header className="cricket-format-phase-head">
+              <h3>Opening fixtures</h3>
+              <span className="cricket-fixture-head-end">
+                {roundRobinFirst && fixtures.length > 1 && (
+                  <button
+                    type="button"
+                    className="cricket-fixture-regenerate"
+                    title="New pairings and match order, same settings. Nothing is saved until you save."
+                    onClick={regenerate}
+                  >
+                    <i className="fa-solid fa-rotate" aria-hidden="true"></i> Regenerate
+                  </button>
+                )}
+                <span className="cricket-phase-state">{fixtures.length} matches</span>
+              </span>
+            </header>
+            <ol className="cricket-fixture-preview">
+              {fixtures.map((fixture, i) => (
+                <li key={i}>
+                  <span className="cricket-fixture-no">Match {i + 1}</span>
+                  <span className="cricket-fixture-when">{fixtureDate(fixture.scheduledAt)}</span>
+                  <span className="cricket-fixture-teams">
+                    {teamName(fixture.teamAIndex)} <small>v</small> {teamName(fixture.teamBIndex)}
+                  </span>
+                  {format.phases[0].groups.length > 1 && fixture.group && <span className="cricket-role-tag">{fixture.group}</span>}
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
       </ListCard>
 
       <div className="cricket-format-actions">
@@ -545,9 +676,13 @@ function FormatBuilder({ tournament, backTo }: { tournament: CricketTournament; 
             Remove format
           </Button>
         )}
-        <Button variant="primary" disabled={Boolean(lineUpError || limitError || plan.problem) || setFormat.isPending} onClick={save}>
+        <Button
+          variant="primary"
+          disabled={Boolean(lineUpError || limitError || lockError || (!locked && plan.problem)) || setFormat.isPending}
+          onClick={save}
+        >
           <i className="fa-solid fa-check" aria-hidden="true"></i>{" "}
-          {fixtures.length ? `Save & create ${fixtures.length} matches` : "Save format"}
+          {locked ? "Update format" : fixtures.length ? `Save & create ${fixtures.length} matches` : "Save format"}
         </Button>
       </div>
     </div>
