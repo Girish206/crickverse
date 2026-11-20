@@ -992,3 +992,162 @@ span.cv-win-ring small {
 .cv-sheet-list li.is-live .cv-sheet-row:hover {
   background: rgba(var(--danger-rgb), 0.1);
 }
+
+/* ---------- Home: quick actions and milestones ---------- */
+
+/* Shortcut tiles under the hero: five across, on phones too. */
+.cv-home-actions {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: -12px;
+}
+.cv-home-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 9px 4px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--adm-surface, #fff);
+  color: var(--adm-text, inherit);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.cv-home-action:hover,
+.cv-home-action:focus-visible {
+  border-color: rgba(var(--primary-rgb), 0.45);
+  box-shadow: var(--shadow-card);
+  transform: translateY(-2px);
+  color: var(--adm-text, inherit);
+}
+.cv-home-action:active {
+  transform: translateY(0);
+}
+.cv-home-action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(var(--primary-rgb), 0.12);
+  color: var(--primary);
+  font-size: var(--fs-base);
+}
+.cv-home-action-label {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+}
+@media (max-width: 576px) {
+  .cv-home-actions {
+    gap: 6px;
+    margin-top: -8px;
+  }
+  .cv-home-action {
+    padding: 8px 2px 7px;
+  }
+  .cv-home-action-icon {
+    width: 30px;
+    height: 30px;
+  }
+  /* Two short lines when a label won't fit the narrow tile. */
+  .cv-home-action-label {
+    font-size: var(--fs-2xs);
+    white-space: normal;
+    text-wrap: balance;
+  }
+}
+
+/* Milestones & bests: six bests in a grid beside three progress bars. */
+.cv-milestones {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+.cv-bests {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+}
+.cv-bests > div {
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--adm-surface, #fff);
+}
+.cv-bests dt {
+  color: var(--muted-color);
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cv-bests dd {
+  margin: 1px 0 0;
+  font-size: var(--fs-md);
+  line-height: 1.25;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.cv-milestone-bars {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 9px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--adm-surface, #fff);
+}
+.cv-milestone-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.cv-milestone-head i {
+  width: 1.1em;
+  color: var(--muted-color);
+}
+.cv-milestone-head small {
+  color: var(--muted-color);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+}
+.cv-milestone-head small strong {
+  color: var(--primary);
+}
+.cv-milestone-track {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(var(--primary-rgb), 0.12);
+}
+.cv-milestone-track > span {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(var(--primary-rgb), 0.7), var(--primary));
+  transition: width 0.6s ease;
+}
+@media (max-width: 768px) {
+  .cv-milestones {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

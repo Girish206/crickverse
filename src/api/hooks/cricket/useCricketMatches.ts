@@ -5,7 +5,7 @@ import { isAxiosError } from "axios";
 import { followLive } from "./followLive";
 import { toast } from "sonner";
 import { messageFor, UserFacingError } from "../../mutationErrors";
-import { clearQueue, dequeue, enqueue, isSaved, onNudge, readQueue, useBallQueue, type QueuedItem } from "./ballQueue";
+import { clearQueue, dequeue, enqueue, isSaved, onNudge, previewBall, readQueue, useBallQueue, type QueuedItem } from "./ballQueue";
 import type {
   ApiEnvelope,
   CricketBall,
@@ -78,9 +78,12 @@ export function useTournamentsMatches(tournamentIds: number[], { enabled = true 
       queryKey: ["cricket-matches", "list", id],
       enabled,
       refetchOnWindowFocus: true,
+      // Each refresh brings every match in full (every ball), so not too
+      // often: with several people on the feed it adds up. The live match's
+      // own page follows ball by ball (followLive).
       refetchInterval: (query: { state: { data?: CricketMatch[] } }) => {
         const hasLive = query.state.data?.some((m) => m.status === "live");
-        return hasLive ? 10_000 : 60_000;
+        return hasLive ? 30_000 : 120_000;
       },
       queryFn: async () => {
         const { data } = await apiClient.get<ApiEnvelope<CricketMatch[]>>("/admin/cricket/matches", {
@@ -258,6 +261,12 @@ export function useMarkCricketBowling() {
 export const isStaleScore = (error: unknown) =>
   isAxiosError(error) && error.response?.status === 409 && error.response.data?.error?.code === "STALE_SCORE";
 
+// A ball gives up well before other requests: on a weak signal at the ground
+// it moves to the queue (ballQueue) and the pad is free again, rather than
+// the scorer waiting the full 20 seconds. The queue resends it; the ball
+// count it carries keeps the server from saving it twice.
+const BALL_TIMEOUT_MS = 7_000;
+
 // No answer at all (offline, timed out), or one worth asking again (the
 // server busy or failing): a waiting ball keeps waiting.
 const isTransient = (error: unknown) =>
@@ -285,15 +294,29 @@ export function useAddCricketBall() {
         inningsIndex: Math.max(0, (held?.innings.length ?? 1) - 1),
         expectedBalls: held?.innings[held.innings.length - 1]?.balls.length ?? 0,
       };
+      // Shown on the scoreboard straight away, not only once the API answers
+      // (seconds, on a slow connection). A wicket and the like can't be
+      // worked out here, so those still wait for the answer.
+      const key = ["cricket-matches", id];
+      const shown = held ? previewBall(held, send) : null;
+      if (shown) {
+        await queryClient.cancelQueries({ queryKey: key, exact: true });
+        queryClient.setQueryData(key, shown);
+      }
       try {
-        const { data } = await apiClient.post<ApiEnvelope<CricketMatch>>(url(id, "/balls"), {
-          ...send.ball,
-          inningsIndex: send.inningsIndex,
-          expectedBalls: send.expectedBalls,
-        });
+        const { data } = await apiClient.post<ApiEnvelope<CricketMatch>>(
+          url(id, "/balls"),
+          { ...send.ball, inningsIndex: send.inningsIndex, expectedBalls: send.expectedBalls },
+          { timeout: BALL_TIMEOUT_MS },
+        );
         return data.data;
       } catch (error) {
+        // Back to the API's copy (unless something newer arrived meanwhile).
+        // A ball that didn't get through still shows: it's in the queue,
+        // which is played on top of that copy.
+        // (Queued first, so it never blinks off the screen in between.)
         if (isTransient(error)) enqueue(id, send);
+        if (shown && queryClient.getQueryData(key) === shown) queryClient.setQueryData(key, held);
         throw error;
       }
     },
@@ -349,14 +372,27 @@ export function useSendBallQueue(match: CricketMatch | undefined, enabled: boole
           throw new Error("the score changed on another device");
         }
       }
-      const { data } =
-        item.kind === "ball"
-          ? await apiClient.post<ApiEnvelope<CricketMatch>>(url(id, "/balls"), {
-              ...item.ball,
-              inningsIndex: item.inningsIndex,
-              expectedBalls: item.expectedBalls,
-            })
-          : await apiClient.put<ApiEnvelope<CricketMatch>>(url(id, "/current"), { bowlerId: item.bowlerId });
+      let data: ApiEnvelope<CricketMatch>;
+      try {
+        ({ data } =
+          item.kind === "ball"
+            ? await apiClient.post<ApiEnvelope<CricketMatch>>(
+                url(id, "/balls"),
+                { ...item.ball, inningsIndex: item.inningsIndex, expectedBalls: item.expectedBalls },
+                { timeout: BALL_TIMEOUT_MS },
+              )
+            : await apiClient.put<ApiEnvelope<CricketMatch>>(url(id, "/current"), { bowlerId: item.bowlerId }));
+      } catch (error) {
+        // An earlier try may have got through after all, its answer lost on a
+        // slow connection: then the server's copy already has it. Fetch that
+        // copy and carry on with the rest, instead of dropping them all.
+        if (!isStaleScore(error)) throw error;
+        const fresh = (await apiClient.get<ApiEnvelope<CricketMatch>>(`/admin/cricket/matches/${id}`)).data.data;
+        queryClient.setQueryData(["cricket-matches", id], fresh);
+        if (!isSaved(fresh, item)) throw error;
+        dequeue(id, item);
+        return fresh;
+      }
       // The saved match first, then off the queue, so the page never shows
       // the ball missing in between.
       queryClient.setQueryData(["cricket-matches", id], data.data);

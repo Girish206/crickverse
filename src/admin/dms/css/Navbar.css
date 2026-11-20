@@ -108,7 +108,7 @@
    phones (Navbar.tsx swaps the image). */
 .navbar-logo {
   display: block;
-  height: 48px;
+  height: 38px;
   width: auto;
 }
 
@@ -124,11 +124,6 @@
   letter-spacing: -0.3px;
   white-space: nowrap;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
-}
-@media (max-width: 359.98px) {
-  .navbar-brand-name {
-    font-size: 1.1rem;
-  }
 }
 .navbar-brand-name-gold {
   background: linear-gradient(180deg, #fff3b0 0%, #ffd23f 45%, #ff9a1f 100%);
@@ -763,7 +758,11 @@
 
   /* A size down on phones, so it fits beside the buttons */
   .navbar-logo {
-    height: 38px;
+    height: 28px;
+  }
+
+  .navbar-brand-name {
+    font-size: 1.15rem;
   }
 
   .navbar-module-switcher-btn {
@@ -786,10 +785,15 @@
   }
 }
 
-/* The mark alone (Navbar.tsx), at the buttons' height */
-@media (max-width: 359px) {
+/* The narrowest phones: the mark alone, at the buttons' height, with
+   the name hidden so the bar never crowds. */
+@media (max-width: 359.98px) {
   .navbar-logo {
-    height: 44px;
+    height: 32px;
+  }
+
+  .navbar-brand-name {
+    display: none;
   }
 }
 
@@ -857,11 +861,6 @@
    On the gradient: the top bar's contents in white, in both themes. Each
    selector is listed again under the dark theme, to out-rank dark.css.
    =========================== */
-/* The logo mark (/logo-mark.svg) in its own colours, with a thin white
-   glow along its edges so it stands out from the red bar. */
-.navbar .navbar-logo {
-  filter: drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px #fff) drop-shadow(0 0 3px rgba(255, 255, 255, 0.7));
-}
 .navbar .fa-bars,
 .navbar .navbar-notif-btn,
 .navbar .navbar-notif-btn.has-unread,

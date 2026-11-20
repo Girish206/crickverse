@@ -5,7 +5,14 @@ import { useAppText } from "./appText";
 // Each home section's own colour (tinted panel and icon badge), so they're
 // easy to tell apart at a glance. The player Home and the admin dashboard
 // share them.
-export type SectionTone = "live" | "next" | "last" | "tournaments" | "following";
+export type SectionTone =
+  | "live"
+  | "next"
+  | "last"
+  | "tournaments"
+  | "following"
+  | "milestones"
+  | "discover";
 
 export function HomeSection({
   title,

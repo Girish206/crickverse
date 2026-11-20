@@ -80,7 +80,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar, isDark, toggleTheme, onS
                     <div className="d-flex align-items-center">
                         {/* Sidebar toggle for mobile */}
                         <Link
-                            className="text-body d-md-none me-3"
+                            className="text-body d-md-none me-2"
                             to="#"
                             onClick={toggleSidebar}
                         >
