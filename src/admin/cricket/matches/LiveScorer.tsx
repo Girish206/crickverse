@@ -182,6 +182,15 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   const abandon = useAbandonCricketMatch();
   const interruption = useCricketInterruption();
   const busy = setPlayers.isPending || editBall.isPending || interruption.isPending || addBall.isPending || undoBall.isPending || endInnings.isPending || abandon.isPending;
+  // A ball already on the scoreboard (shown before the API answers, see
+  // useAddCricketBall) leaves the pad as it is while it sends — no grey
+  // flash on every tap. A tap in that moment is held and sent right after.
+  const shownSendRef = useRef(false);
+  const sendingShown = addBall.isPending && shownSendRef.current;
+  const padBusy = sendingShown
+    ? setPlayers.isPending || editBall.isPending || interruption.isPending || undoBall.isPending || endInnings.isPending || abandon.isPending
+    : busy;
+  const heldTaps = useRef<Parameters<typeof addBall.mutate>[0][]>([]);
 
   const ballsScrollRef = useRef<HTMLDivElement>(null);
 
@@ -206,6 +215,10 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   // Sends a ball, or keeps it to send later. If another phone got there
   // first the match refreshes itself, so say so gently rather than as an error.
   const sendBall = ({ id, ...ball }: Parameters<typeof addBall.mutate>[0]) => {
+    if (sendingShown) {
+      heldTaps.current.push({ id, ...ball });
+      return;
+    }
     if (queueing) {
       if (queue.blocked) {
         toast.error("The last ball has to send first — check the connection or tap Retry");
@@ -219,6 +232,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
       enqueue(id, { kind: "ball", ball, inningsIndex: match.innings.length - 1, expectedBalls: innings.balls.length });
       return;
     }
+    shownSendRef.current = whyNotQueued(match, ball) === null;
     addBall.mutate(
       { id, ...ball },
       {
@@ -228,6 +242,13 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
       },
     );
   };
+
+  // The previous ball is in: send a tap held while it was on its way.
+  useEffect(() => {
+    if (addBall.isPending || heldTaps.current.length === 0) return;
+    sendBall(heldTaps.current.shift()!);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addBall.isPending]);
 
   const [picks, setPicks] = useState<{ strikerId: number | null; nonStrikerId: number | null; bowlerId: number | null }>({
     strikerId: null,
@@ -465,7 +486,7 @@ export function LiveScorer({ match, nameOf, settingsOpen, onCloseSettings, match
   }, [showOver?.balls.length]);
 
   // The pad stays live between overs — tapping it brings the prompt back.
-  const padDisabled = busy || queue.blocked || (needsPlayers && !overEndPending);
+  const padDisabled = padBusy || queue.blocked || (needsPlayers && !overEndPending);
   const scoreOr = (action: () => void) => () => (overEndPending ? setOverPromptSeen(null) : action());
 
   // Saves the picks for the empty slots (called once the last one is chosen).

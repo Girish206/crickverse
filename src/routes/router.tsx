@@ -19,6 +19,9 @@ export const router = createBrowserRouter([
     // screen, the layout itself — shows a friendly full screen instead of
     // React Router's default.
     errorElement: <RouteError full />,
+    // Pages load on demand: nothing in the meantime on first open (the
+    // splash in index.html covers it), said here so React Router doesn't warn.
+    HydrateFallback: () => null,
     Component: ScrollToTop,
     children: [
       // The live-stream scorebug (a see-through page for OBS), signed in or not.

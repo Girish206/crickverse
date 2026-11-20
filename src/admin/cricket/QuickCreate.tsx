@@ -7,7 +7,8 @@ import { QrScannerSheet } from "./qr/QrScannerSheet";
 import { CreateSavedTeamForm } from "./teams/SavedTeamPage";
 import "./cricket.css";
 
-type Step = "choose" | "match" | "tournament" | "team" | "scan" | null;
+type Step = "choose" | CreateStep | null;
+export type CreateStep = "match" | "tournament" | "team" | "scan";
 
 const CHOICES = [
   {
@@ -40,7 +41,6 @@ const CHOICES = [
 // form. Each opens what it made once saved. Or scan a team's or player's QR
 // code, which opens its page.
 export function QuickCreate() {
-  const navigate = useNavigate();
   const [step, setStep] = useState<Step>(null);
   const close = () => setStep(null);
 
@@ -77,6 +77,18 @@ export function QuickCreate() {
           </ul>
         </BottomSheet>
       )}
+      <CreateSheets step={step} onClose={close} />
+    </>
+  );
+}
+
+// A create form (or the QR scanner) in its sheet: from the "+" above, or a
+// home page shortcut tile.
+export function CreateSheets({ step, onClose }: { step: Step; onClose: () => void }) {
+  const navigate = useNavigate();
+  const close = onClose;
+  return (
+    <>
       {step === "match" && (
         <BottomSheet title="New Match" icon="fa-solid fa-baseball-bat-ball" onClose={close} wide fullScreen>
           <CricketMatchForm onSaved={close} />

@@ -21,6 +21,8 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <!-- Older iPhones still read the Apple-only name. -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="RunMitra" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -52,7 +54,7 @@
       .cv-splash {
         /* Centre of the stumps and of the finished logo, a little above
            the screen's centre to leave room for the name */
-        --cv-sp-mid: calc(50vh - 36px);
+        --cv-sp-mid: calc(50vh - 26px);
         --cv-sp-hit: 1.05s;
         position: fixed;
         inset: 0;
@@ -133,10 +135,10 @@
       /* ---------- Stumps ---------- */
       .cv-splash-stumps {
         position: absolute;
-        left: calc(50% - 36px);
-        top: calc(var(--cv-sp-mid) - 60px);
-        width: 72px;
-        height: 120px;
+        left: calc(50% - 24px);
+        top: calc(var(--cv-sp-mid) - 40px);
+        width: 48px;
+        height: 80px;
         overflow: visible;
         transform-origin: 50% 100%;
         animation:
@@ -192,13 +194,13 @@
       }
 
       @keyframes cvSplashBailL {
-        50% { transform: translate(-44px, -80px) rotate(-260deg); opacity: 1; }
-        100% { transform: translate(-70px, -30px) rotate(-420deg); opacity: 0; }
+        50% { transform: translate(-30px, -54px) rotate(-260deg); opacity: 1; }
+        100% { transform: translate(-46px, -20px) rotate(-420deg); opacity: 0; }
       }
 
       @keyframes cvSplashBailR {
-        50% { transform: translate(42px, -96px) rotate(300deg); opacity: 1; }
-        100% { transform: translate(70px, -44px) rotate(460deg); opacity: 0; }
+        50% { transform: translate(28px, -64px) rotate(300deg); opacity: 1; }
+        100% { transform: translate(46px, -30px) rotate(460deg); opacity: 0; }
       }
 
       /* ---------- The delivery ----------
@@ -220,7 +222,7 @@
 
       @keyframes cvSplashBallX {
         from { transform: translateX(-60px); }
-        to { transform: translateX(calc(50vw - 15px)); }
+        to { transform: translateX(calc(50vw - 11px)); }
       }
 
       @keyframes cvSplashBallY {
@@ -229,11 +231,11 @@
           animation-timing-function: ease-in;
         }
         66% {
-          transform: translateY(calc(var(--cv-sp-mid) + 28px));
+          transform: translateY(calc(var(--cv-sp-mid) + 18px));
           animation-timing-function: ease-out;
         }
         100% {
-          transform: translateY(calc(var(--cv-sp-mid) - 15px));
+          transform: translateY(calc(var(--cv-sp-mid) - 11px));
         }
       }
 
@@ -243,9 +245,9 @@
 
       .cv-splash-ball {
         display: block;
-        width: 30px;
-        height: 30px;
-        filter: drop-shadow(0 0 10px rgba(255, 90, 40, 0.7));
+        width: 22px;
+        height: 22px;
+        filter: drop-shadow(0 0 8px rgba(255, 90, 40, 0.7));
         animation: cvSplashSpin 0.3s linear infinite;
       }
 
@@ -256,11 +258,11 @@
       /* Motion streak behind the ball */
       .cv-splash-streak {
         position: absolute;
-        right: 20px;
-        top: 9px;
-        width: 70px;
-        height: 12px;
-        border-radius: 6px;
+        right: 14px;
+        top: 6px;
+        width: 50px;
+        height: 10px;
+        border-radius: 5px;
         background: linear-gradient(90deg, transparent, rgba(255, 170, 60, 0.55));
         filter: blur(2px);
       }
@@ -283,9 +285,9 @@
         position: absolute;
         left: 50%;
         top: var(--cv-sp-mid);
-        width: 180px;
-        height: 180px;
-        margin: -90px;
+        width: 120px;
+        height: 120px;
+        margin: -60px;
         border-radius: 50%;
         border: 3px solid #ffcd00;
         opacity: 0;
@@ -330,9 +332,9 @@
       }
 
       @keyframes cvSplashLogoIn {
-        0% { opacity: 0; transform: translateY(-36px) scale(0.2) rotate(-14deg); }
-        55% { opacity: 1; transform: translateY(-36px) scale(1.6) rotate(2deg); }
-        100% { opacity: 1; transform: translateY(-36px) scale(1.375); }
+        0% { opacity: 0; transform: translateY(-26px) scale(0.15) rotate(-14deg); }
+        55% { opacity: 1; transform: translateY(-26px) scale(1.05) rotate(2deg); }
+        100% { opacity: 1; transform: translateY(-26px) scale(0.875); }
       }
 
       /* A glossy streak sweeps across the logo once it has landed */
@@ -340,9 +342,9 @@
         position: absolute;
         left: 50%;
         top: var(--cv-sp-mid);
-        width: 176px;
-        height: 176px;
-        margin: -88px;
+        width: 112px;
+        height: 112px;
+        margin: -56px;
         pointer-events: none;
         -webkit-mask: url("/favicon.svg") center / contain no-repeat;
         mask: url("/favicon.svg") center / contain no-repeat;
@@ -360,7 +362,7 @@
         position: absolute;
         left: 0;
         right: 0;
-        top: calc(50% + 66px);
+        top: calc(50% + 44px);
         text-align: center;
         font-family: "Outfit", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
         font-weight: 800;
@@ -368,7 +370,7 @@
         letter-spacing: 0.04em;
         text-transform: uppercase;
         line-height: 1.2;
-        font-size: 2.1rem;
+        font-size: 1.55rem;
         color: #f3f4f6;
         text-shadow: 0 3px 14px rgba(0, 0, 0, 0.85), 0 1px 2px rgba(0, 0, 0, 0.7);
         animation: cvSplashName 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) 1.5s both;
@@ -434,7 +436,7 @@
 
         .cv-splash-logo {
           opacity: 1;
-          transform: translateY(-36px) scale(1.375);
+          transform: translateY(-26px) scale(0.875);
         }
       }
     </style>
@@ -482,26 +484,26 @@
 
       <div class="cv-splash-flash"></div>
       <div class="cv-splash-wave"></div>
-        <i class="cv-splash-p" style="background:#ffd23f;box-shadow:0 0 8px #ffd23f;--dx:120px;--dy:0px"></i>
-        <i class="cv-splash-p" style="background:#ff7a1f;box-shadow:0 0 8px #ff7a1f;--dx:150px;--dy:87px"></i>
-        <i class="cv-splash-p" style="background:#fff;box-shadow:0 0 8px #fff;--dx:165px;--dy:154px"></i>
-        <i class="cv-splash-p" style="background:#ffcd00;box-shadow:0 0 8px #ffcd00;--dx:95px;--dy:140px"></i>
-        <i class="cv-splash-p" style="background:#d7261e;box-shadow:0 0 8px #d7261e;--dx:16px;--dy:221px"></i>
-        <i class="cv-splash-p" style="background:#ffd23f;box-shadow:0 0 8px #ffd23f;--dx:-25px;--dy:163px"></i>
-        <i class="cv-splash-p" style="background:#ff7a1f;box-shadow:0 0 8px #ff7a1f;--dx:-80px;--dy:203px"></i>
-        <i class="cv-splash-p" style="background:#fff;box-shadow:0 0 8px #fff;--dx:-126px;--dy:100px"></i>
-        <i class="cv-splash-p" style="background:#ffcd00;box-shadow:0 0 8px #ffcd00;--dx:-193px;--dy:92px"></i>
-        <i class="cv-splash-p" style="background:#d7261e;box-shadow:0 0 8px #d7261e;--dx:-153px;--dy:35px"></i>
-        <i class="cv-splash-p" style="background:#ffd23f;box-shadow:0 0 8px #ffd23f;--dx:-210px;--dy:0px"></i>
-        <i class="cv-splash-p" style="background:#ff7a1f;box-shadow:0 0 8px #ff7a1f;--dx:-132px;--dy:-77px"></i>
-        <i class="cv-splash-p" style="background:#fff;box-shadow:0 0 8px #fff;--dx:-151px;--dy:-140px"></i>
-        <i class="cv-splash-p" style="background:#ffcd00;box-shadow:0 0 8px #ffcd00;--dx:-84px;--dy:-123px"></i>
-        <i class="cv-splash-p" style="background:#d7261e;box-shadow:0 0 8px #d7261e;--dx:-14px;--dy:-201px"></i>
-        <i class="cv-splash-p" style="background:#ffd23f;box-shadow:0 0 8px #ffd23f;--dx:22px;--dy:-143px"></i>
-        <i class="cv-splash-p" style="background:#ff7a1f;box-shadow:0 0 8px #ff7a1f;--dx:72px;--dy:-184px"></i>
-        <i class="cv-splash-p" style="background:#fff;box-shadow:0 0 8px #fff;--dx:111px;--dy:-88px"></i>
-        <i class="cv-splash-p" style="background:#ffcd00;box-shadow:0 0 8px #ffcd00;--dx:175px;--dy:-84px"></i>
-        <i class="cv-splash-p" style="background:#d7261e;box-shadow:0 0 8px #d7261e;--dx:134px;--dy:-30px"></i>
+        <i class="cv-splash-p" style="background:#ffd23f;box-shadow:0 0 8px #ffd23f;--dx:84px;--dy:0px"></i>
+        <i class="cv-splash-p" style="background:#ff7a1f;box-shadow:0 0 8px #ff7a1f;--dx:105px;--dy:61px"></i>
+        <i class="cv-splash-p" style="background:#fff;box-shadow:0 0 8px #fff;--dx:115px;--dy:108px"></i>
+        <i class="cv-splash-p" style="background:#ffcd00;box-shadow:0 0 8px #ffcd00;--dx:66px;--dy:98px"></i>
+        <i class="cv-splash-p" style="background:#d7261e;box-shadow:0 0 8px #d7261e;--dx:11px;--dy:155px"></i>
+        <i class="cv-splash-p" style="background:#ffd23f;box-shadow:0 0 8px #ffd23f;--dx:-18px;--dy:114px"></i>
+        <i class="cv-splash-p" style="background:#ff7a1f;box-shadow:0 0 8px #ff7a1f;--dx:-56px;--dy:142px"></i>
+        <i class="cv-splash-p" style="background:#fff;box-shadow:0 0 8px #fff;--dx:-88px;--dy:70px"></i>
+        <i class="cv-splash-p" style="background:#ffcd00;box-shadow:0 0 8px #ffcd00;--dx:-135px;--dy:64px"></i>
+        <i class="cv-splash-p" style="background:#d7261e;box-shadow:0 0 8px #d7261e;--dx:-107px;--dy:24px"></i>
+        <i class="cv-splash-p" style="background:#ffd23f;box-shadow:0 0 8px #ffd23f;--dx:-147px;--dy:0px"></i>
+        <i class="cv-splash-p" style="background:#ff7a1f;box-shadow:0 0 8px #ff7a1f;--dx:-92px;--dy:-54px"></i>
+        <i class="cv-splash-p" style="background:#fff;box-shadow:0 0 8px #fff;--dx:-106px;--dy:-98px"></i>
+        <i class="cv-splash-p" style="background:#ffcd00;box-shadow:0 0 8px #ffcd00;--dx:-59px;--dy:-86px"></i>
+        <i class="cv-splash-p" style="background:#d7261e;box-shadow:0 0 8px #d7261e;--dx:-10px;--dy:-141px"></i>
+        <i class="cv-splash-p" style="background:#ffd23f;box-shadow:0 0 8px #ffd23f;--dx:15px;--dy:-100px"></i>
+        <i class="cv-splash-p" style="background:#ff7a1f;box-shadow:0 0 8px #ff7a1f;--dx:50px;--dy:-129px"></i>
+        <i class="cv-splash-p" style="background:#fff;box-shadow:0 0 8px #fff;--dx:78px;--dy:-62px"></i>
+        <i class="cv-splash-p" style="background:#ffcd00;box-shadow:0 0 8px #ffcd00;--dx:122px;--dy:-59px"></i>
+        <i class="cv-splash-p" style="background:#d7261e;box-shadow:0 0 8px #d7261e;--dx:94px;--dy:-21px"></i>
 
       <img src="/favicon.svg" alt="" class="cv-splash-logo" />
       <span class="cv-splash-shine"></span>
@@ -534,6 +536,8 @@
         } catch (e) {
           // Private mode: it just shows again next time.
         }
+        // ?splash in the address replays it every time (for previewing).
+        if (/[?&]splash(=|&|$)/.test(location.search)) seen = false;
         if (seen) return remove();
         var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         setTimeout(remove, reduced ? 1200 : 3500);

@@ -175,6 +175,10 @@ export function canQueueBowler(match: CricketMatch, bowlerId: number) {
 
 // ===== Playing it out =====
 
+// A ball on its way to the API, shown at once (null when it can't be worked
+// out here, like a wicket: that one waits for the API's answer).
+export const previewBall = (match: CricketMatch, item: QueuedItem) => applyItem(match, item);
+
 // The match with one waiting item played onto it, or null when that can't
 // be done here (it waits for the API to say what happens).
 function applyItem(match: CricketMatch, item: QueuedItem): CricketMatch | null {

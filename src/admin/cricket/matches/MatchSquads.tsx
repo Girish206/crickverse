@@ -13,7 +13,7 @@ import { ManageSquadSheet } from "./scorer/ManageSquadSheet";
 const ROLE_ORDER: CricketPlayerRole[] = ["batter", "wicket-keeper", "all-rounder", "bowler"];
 
 // The "Squads" tab: both sides facing each other, the playing XI first and
-// (once the match has started) anyone in the team who sat out.
+// (once the match has started) the substitutes: everyone else in the team.
 export function MatchSquads({
   match,
   tournament,
@@ -50,11 +50,12 @@ export function MatchSquads({
   // (benched, marked as such).
   const impactIn = new Set(match.teams.flatMap((team) => (team.impactInId != null ? [team.impactInId] : [])));
   const impactOut = new Set(match.teams.flatMap((team) => (team.impactOutId != null ? [team.impactOutId] : [])));
-  const bench = match.teams.map((team, slot) =>
-    started
-      ? byRole([...new Set([...(team.impactOutId != null ? [team.impactOutId] : []), ...roster(slot)])].filter((id) => !playing.has(id)))
-      : [],
+  // Substitutes: everyone in the team who isn't playing. Not whoever an
+  // Impact Player replaced, who takes no further part.
+  const subs = match.teams.map((_, slot) =>
+    started ? byRole(roster(slot).filter((id) => !playing.has(id) && !impactOut.has(id))) : [],
   );
+  const subbedOut = match.teams.map((team) => (started && team.impactOutId != null ? [team.impactOutId] : []));
 
   const cell = (playerId: number | undefined, side: "left" | "right", benched: boolean) => {
     if (playerId === undefined) return <div className={`cricket-squad-cell is-${side}`}></div>;
@@ -126,7 +127,8 @@ export function MatchSquads({
       ) : (
         <>
           {section(started ? "Playing XI" : "Squad", xi)}
-          {section("Bench · not playing", bench, true)}
+          {section("Substitutes", subs, true)}
+          {section("Subbed out", subbedOut, true)}
         </>
       )}
     </div>

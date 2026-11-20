@@ -34,6 +34,7 @@ export function AddPlayerSheet({
   // less anyone already playing in this match.
   const { data: roster } = useTeamPlayers(teamKeyOf(match, team));
   const playing = new Set(match.teams.flatMap((side) => side.playerIds));
+  // Everyone in the side's team who isn't playing is a substitute.
   const candidates = [...new Set([...(roster ?? []), ...(addId !== null ? [addId] : [])])].filter((id) => !playing.has(id));
   const term = search.trim().toLowerCase();
   const shown = candidates.filter((id) => nameOf(id).toLowerCase().includes(term));
@@ -97,17 +98,22 @@ export function AddPlayerSheet({
           {candidates.length === 0 ? `Everyone in ${match.teams[team].name} is already playing.` : `No one matches "${search}".`}
         </p>
       ) : (
-        <div className="cricket-player-card-list">
-          {shown.map((id) => (
-            <PlayerCard
-              key={id}
-              player={playerById.get(id)}
-              fallbackName={nameOf(id)}
-              selected={addId === id}
-              onClick={() => setAddId(addId === id ? null : id)}
-            />
-          ))}
-        </div>
+        <section className="cricket-player-card-group">
+          <h3 className="cricket-player-card-group-title">
+            Substitutes <span>{shown.length}</span>
+          </h3>
+          <div className="cricket-player-card-list">
+            {shown.map((id) => (
+              <PlayerCard
+                key={id}
+                player={playerById.get(id)}
+                fallbackName={nameOf(id)}
+                selected={addId === id}
+                onClick={() => setAddId(addId === id ? null : id)}
+              />
+            ))}
+          </div>
+        </section>
       )}
 
       <label className="cricket-sheet-label">Replacing (optional)</label>

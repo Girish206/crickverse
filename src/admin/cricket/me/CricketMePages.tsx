@@ -27,6 +27,7 @@ import { BottomSheet } from "../BottomSheet";
 import { CreateSavedTeamForm } from "../teams/SavedTeamPage";
 import { TeamMark } from "../teams/TeamMark";
 import { BannerCount, FormLine, Scoreline, SummaryBanner, WinRing, type FormResult } from "./SummaryBanner";
+import { MilestonesSection, OpenTournamentsSection, QuickActions } from "./HomeExtras";
 import { useSwipeTabs } from "../../useSwipeTabs";
 import { SwipePanels } from "../../SwipePanels";
 
@@ -298,6 +299,7 @@ function HomeFeed({ me }: { me: CricketMe }) {
     <div className="cricket-home is-feed">
       {tips.element}
       <HomeHero me={me} />
+      <QuickActions me={me} />
 
       {live.length > 0 && (
         <HomeSection
@@ -315,6 +317,8 @@ function HomeFeed({ me }: { me: CricketMe }) {
           <HomeRail>{next.map((m) => card(m, startsText(m)))}</HomeRail>
         </HomeSection>
       )}
+
+      <MilestonesSection me={me} />
 
       {lastResult && (
         <HomeSection title="Your last match" icon="fa-solid fa-flag-checkered" tone="last" link={{ to: "/my-matches", label: "History" }}>
@@ -337,6 +341,12 @@ function HomeFeed({ me }: { me: CricketMe }) {
           </HomeRail>
         </HomeSection>
       )}
+
+      <OpenTournamentsSection
+        me={me}
+        tournaments={tournaments ?? []}
+        matches={[...mine, ...tournamentMatches, ...following]}
+      />
 
       <HomeSection title="Players you follow" icon="fa-solid fa-users" tone="following" link={{ to: "/following", label: "Manage" }} tour="following">
         {followedIds.length === 0 ? (

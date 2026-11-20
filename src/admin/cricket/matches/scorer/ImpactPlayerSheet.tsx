@@ -26,6 +26,7 @@ export function ImpactPlayerSheet({ match, nameOf, team, onClose }: { match: Cri
   // The side's whole team, less anyone already playing in this match.
   const { data: roster } = useTeamPlayers(teamKeyOf(match, team));
   const playing = new Set(match.teams.flatMap((s) => s.playerIds));
+  // Everyone in the side's team who isn't playing is a substitute.
   const candidates = [...new Set([...(roster ?? []), ...(inId !== null ? [inId] : [])])].filter((id) => !playing.has(id));
   const term = search.trim().toLowerCase();
   const shown = candidates.filter((id) => nameOf(id).toLowerCase().includes(term));
@@ -96,17 +97,22 @@ export function ImpactPlayerSheet({ match, nameOf, team, onClose }: { match: Cri
           {candidates.length === 0 ? `Everyone in ${side.name} is already playing — add someone by mobile number.` : `No one matches "${search}".`}
         </p>
       ) : (
-        <div className="cricket-player-card-list">
-          {shown.map((id) => (
-            <PlayerCard
-              key={id}
-              player={playerById.get(id)}
-              fallbackName={nameOf(id)}
-              selected={inId === id}
-              onClick={() => setInId(inId === id ? null : id)}
-            />
-          ))}
-        </div>
+        <section className="cricket-player-card-group">
+          <h3 className="cricket-player-card-group-title">
+            Substitutes <span>{shown.length}</span>
+          </h3>
+          <div className="cricket-player-card-list">
+            {shown.map((id) => (
+              <PlayerCard
+                key={id}
+                player={playerById.get(id)}
+                fallbackName={nameOf(id)}
+                selected={inId === id}
+                onClick={() => setInId(inId === id ? null : id)}
+              />
+            ))}
+          </div>
+        </section>
       )}
     </BottomSheet>
   );

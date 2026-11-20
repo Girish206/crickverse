@@ -4830,7 +4830,7 @@
     display: none;
   }
 }
-/* A short screen: the pad gives up some height before anything has to scroll. */
+/* A short screen: the dock's padding tightens a little; the keys keep their size and the scorer scrolls. */
 @media (max-height: 760px) {
   .cricket-scorer.is-fit .cricket-scorer-dock {
     gap: 6px;
@@ -4842,11 +4842,6 @@
   }
   .cricket-scorer.is-fit .cricket-pad-side {
     grid-template-rows: repeat(4, minmax(0, 1fr));
-  }
-  .cricket-scorer.is-fit .cricket-pad-main .cricket-pad-btn,
-  .cricket-scorer.is-fit .cricket-pad-side .cricket-pad-btn {
-    min-height: 30px;
-    height: auto;
   }
 }
 /* Batting and bowling rows keep one height at any width: long names are cut short
