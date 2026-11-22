@@ -50,19 +50,27 @@ window.addEventListener("vite:preloadError", (event) => {
 // Crashes nothing else caught go to the organisers' error list.
 reportUncaughtErrors();
 
-// The Android app: back button, share sheet and clipboard (app-shell/nativeShell).
-if (isNativeApp) void import("./app-shell/nativeShell").then(({ installNativeShell }) => installNativeShell());
+// The Android app: back button, share sheet and clipboard (app-shell/nativeShell),
+// and new deploys without a Play Store release (app-shell/liveUpdate).
+if (isNativeApp) {
+  void import("./app-shell/nativeShell").then(({ installNativeShell }) => installNativeShell());
+  void import("./app-shell/liveUpdate").then(({ setupLiveUpdates }) => setupLiveUpdates());
+}
 
 // The service worker makes the app installable and opens it offline. Only
 // in a production build: in dev it would cache Vite's modules. Not in the
-// Android app, which carries its own copy of every file (a cached one could
-// outlive an app update).
-if (import.meta.env.PROD && !isNativeApp && "serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {
-      // Not supported here (e.g. a private window): the app works without it.
+// Android app, which carries its own copy of every file and gets new deploys
+// through live updates instead.
+if (import.meta.env.PROD && !isNativeApp) {
+  // A tab left open moves to a new deploy without waiting for a reload.
+  void import("./app-shell/webUpdate").then(({ setupWebUpdates }) => setupWebUpdates());
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/sw.js").catch(() => {
+        // Not supported here (e.g. a private window): the app works without it.
+      });
     });
-  });
+  }
 }
 
 createRoot(document.getElementById("root")!).render(

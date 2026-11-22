@@ -1,0 +1,81 @@
+import { App } from "@capacitor/app";
+import { CapacitorUpdater } from "@capgo/capacitor-updater";
+import { siteOrigin } from "./platform";
+import { sayIfJustUpdated, whenFree } from "./updateTiming";
+
+// Live updates for the Android app. The app carries its own copy of the
+// website, so a deploy wouldn't reach it until a new app release. Instead,
+// every website build also publishes that copy as a zip, with
+// app-update/latest.json naming the newest one (scripts/pack-app-update.mjs).
+// The app checks it, downloads a newer copy in the background, and switches
+// to it once nobody is mid-task (not while scoring), as the website does. If a
+// new copy fails to start, the plugin goes back to the last one that worked.
+//
+// Only web code changes this way. A change to the app itself (a new plugin,
+// Android settings) still needs a new release in the Play Store.
+
+// This build's version (vite.config.ts), "1.0.<seconds since 1970>".
+declare const __APP_BUILD__: string;
+
+const CHECK_EVERY_MS = 5 * 60_000;
+
+// The number that orders builds: the last part of "1.0.<seconds>".
+const buildNumber = (version: string) => Number(version.split(".").pop()) || 0;
+
+let checking = false;
+let applying = false;
+
+async function checkForUpdate() {
+  if (checking || applying || !navigator.onLine) return;
+  checking = true;
+  try {
+    const response = await fetch(`${siteOrigin()}/app-update/latest.json`, { cache: "no-store" });
+    if (!response.ok) return;
+    const latest = (await response.json()) as { version?: string; url?: string };
+    if (!latest.version || !latest.url) return;
+    // Only ever forward, never back to an older build.
+    if (buildNumber(latest.version) <= buildNumber(__APP_BUILD__)) return;
+
+    // Downloaded already (on an earlier check)? Use that copy.
+    const { bundles } = await CapacitorUpdater.list();
+    let bundle = bundles.find((b) => b.version === latest.version && b.status !== "error");
+    if (!bundle) {
+      bundle = await CapacitorUpdater.download({
+        url: new URL(latest.url, siteOrigin()).toString(),
+        version: latest.version,
+      });
+    }
+    const id = bundle.id;
+    // Used on the next start even if it isn't switched to now.
+    await CapacitorUpdater.next({ id });
+    applying = true;
+    whenFree(() => {
+      void CapacitorUpdater.set({ id }).catch(() => {
+        applying = false;
+      });
+    });
+  } catch {
+    // Offline, the server mid-deploy, or a failed download: the next check
+    // tries again.
+  } finally {
+    checking = false;
+  }
+}
+
+export function setupLiveUpdates() {
+  sayIfJustUpdated();
+  // This copy started fine; without this the plugin would go back to the
+  // previous one.
+  void CapacitorUpdater.notifyAppReady().catch(() => {});
+  // A test build (npm run android:*:dev, on the dev API) must not swap itself
+  // for the live app's build.
+  if (import.meta.env.MODE !== "production") return;
+
+  void checkForUpdate();
+  void App.addListener("appStateChange", ({ isActive }) => {
+    if (isActive) void checkForUpdate();
+  });
+  window.setInterval(() => {
+    if (document.visibilityState === "visible") void checkForUpdate();
+  }, CHECK_EVERY_MS);
+}

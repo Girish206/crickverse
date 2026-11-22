@@ -18,6 +18,16 @@ const config: CapacitorConfig = {
       // page's theme-color.
       style: "DARK",
     },
+    // Live updates from RunMitra's own website (src/app-shell/liveUpdate.ts),
+    // not Capgo's cloud: the app checks and switches itself, and nothing is
+    // reported anywhere.
+    CapacitorUpdater: {
+      autoUpdate: false,
+      statsUrl: "",
+      channelUrl: "",
+      // A new copy that doesn't start within 10 s is rolled back.
+      appReadyTimeout: 10000,
+    },
   },
 };
 
