@@ -31,8 +31,9 @@ async function checkForUpdate() {
   try {
     const response = await fetch(`${siteOrigin()}/app-update/latest.json`, { cache: "no-store" });
     if (!response.ok) return;
-    const latest = (await response.json()) as { version?: string; url?: string };
-    if (!latest.version || !latest.url) return;
+    const latest = (await response.json()) as { version?: string; url?: string; checksum?: string };
+    // The updater won't download without the zip's SHA-256.
+    if (!latest.version || !latest.url || !latest.checksum) return;
     // Only ever forward, never back to an older build.
     if (buildNumber(latest.version) <= buildNumber(__APP_BUILD__)) return;
 
@@ -43,6 +44,7 @@ async function checkForUpdate() {
       bundle = await CapacitorUpdater.download({
         url: new URL(latest.url, siteOrigin()).toString(),
         version: latest.version,
+        checksum: latest.checksum,
       });
     }
     const id = bundle.id;

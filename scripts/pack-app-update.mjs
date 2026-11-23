@@ -1,8 +1,9 @@
 // Packs the built website (dist/) as a live update for the Android app:
 //   dist/app-update/runmitra-<version>.zip   the app's files
-//   dist/app-update/latest.json              { version, url } of that zip
+//   dist/app-update/latest.json              { version, url, checksum } of that zip
 // Deployed with the website, so the app can fetch and switch to it
 // (src/app-shell/liveUpdate.ts). Runs after `vite build` (npm run build).
+import { createHash } from "node:crypto";
 import { readdirSync, readFileSync, mkdirSync, writeFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -29,5 +30,8 @@ const zip = zipSync(files, { level: 9 });
 mkdirSync(outDir, { recursive: true });
 const zipName = `runmitra-${version}.zip`;
 writeFileSync(join(outDir, zipName), zip);
-writeFileSync(join(outDir, "latest.json"), JSON.stringify({ version, url: `/app-update/${zipName}` }));
+// The updater refuses a download without the zip's SHA-256 ("Checksum
+// required"), and checks the file it got against it.
+const checksum = createHash("sha256").update(zip).digest("hex");
+writeFileSync(join(outDir, "latest.json"), JSON.stringify({ version, url: `/app-update/${zipName}`, checksum }));
 console.log(`App update ${version}: ${Object.keys(files).length} files, ${(zip.length / 1024 / 1024).toFixed(1)} MB`);
