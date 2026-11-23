@@ -1,8 +1,19 @@
 import { useEffect, useId, useState, type FocusEvent, type KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
+import { visibleArea } from "../../app-shell/keyboard";
 
 // The list scrolls; this just keeps a huge one from rendering in full.
 const MAX_SHOWN = 50;
+
+// The list's height: up to MENU_MAX (cricket.css), shrunk to the room that's
+// visible, never below a few rows. It opens above the field when there's
+// less than MENU_COMFORT below (a field low down, with the keyboard up).
+const MENU_MAX = 260;
+const MENU_MIN = 120;
+const MENU_COMFORT = 180;
+const MENU_GAP = 4;
+
+type Placement = { rect: DOMRect; above: boolean; maxHeight: number };
 
 // Type-ahead suggestions for a free-text input (a ground, a city): spread
 // `inputProps` on the input and render `menu` next to it. The list is
@@ -26,7 +37,7 @@ export function useSuggestions({
   const [input, setInput] = useState<HTMLInputElement | null>(null);
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
-  const [rect, setRect] = useState<DOMRect | null>(null);
+  const [placement, setPlacement] = useState<Placement | null>(null);
 
   const typed = value.trim().toLowerCase();
   // Names starting with what's typed first, then ones containing it.
@@ -39,14 +50,28 @@ export function useSuggestions({
   const rows = [...matches.map((s) => ({ value: s, isNew: false })), ...(typed && !exact ? [{ value: value.trim(), isNew: true }] : [])];
   const shown = open && rows.length > 0 && !(exact && matches.length === 1);
 
-  // Follow the field (the whole row when it's in one) while the list is up.
+  // Follow the field (the whole row when it's in one) while the list is up,
+  // on whichever side of it has the room: with the keyboard up, the visible
+  // area ends at the keyboard (app-shell/keyboard).
   useEffect(() => {
     if (!shown || !input) return;
-    const place = () => setRect((input.closest(".cricket-app-row, .input-group-custom") ?? input).getBoundingClientRect());
+    const place = () => {
+      const rect = (input.closest(".cricket-app-row, .input-group-custom") ?? input).getBoundingClientRect();
+      const area = visibleArea();
+      const below = area.bottom - rect.bottom - MENU_GAP * 2;
+      const roomAbove = rect.top - area.top - MENU_GAP * 2;
+      const above = below < MENU_COMFORT && roomAbove > below;
+      setPlacement({ rect, above, maxHeight: Math.max(MENU_MIN, Math.min(MENU_MAX, above ? roomAbove : below)) });
+    };
     place();
+    const viewport = window.visualViewport;
+    viewport?.addEventListener("resize", place);
+    viewport?.addEventListener("scroll", place);
     window.addEventListener("resize", place);
     window.addEventListener("scroll", place, true);
     return () => {
+      viewport?.removeEventListener("resize", place);
+      viewport?.removeEventListener("scroll", place);
       window.removeEventListener("resize", place);
       window.removeEventListener("scroll", place, true);
     };
@@ -99,13 +124,20 @@ export function useSuggestions({
   };
 
   const menu =
-    shown && rect
+    shown && placement
       ? createPortal(
           <ul
             id={listId}
             role="listbox"
             className="cricket-suggest-menu"
-            style={{ top: rect.bottom + 4, left: rect.left, width: rect.width }}
+            style={{
+              ...(placement.above
+                ? { bottom: window.innerHeight - placement.rect.top + MENU_GAP }
+                : { top: placement.rect.bottom + MENU_GAP }),
+              left: placement.rect.left,
+              width: placement.rect.width,
+              maxHeight: placement.maxHeight,
+            }}
           >
             {rows.map((row, index) => (
               <li

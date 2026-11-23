@@ -18,8 +18,10 @@
      still read as bars on the near-black background. */
   --brand-gradient-top: linear-gradient(90deg, #26272c 0%, #1f2024 45%, #18191c 100%);
   --brand-gradient-center: linear-gradient(90deg, #26272c 0%, #1a1b1e 50%, #26272c 100%);
-  --bar-bg: var(--brand-gradient-top);
-  --bar-bg-center: var(--brand-gradient-center);
+  /* Flat, and the same as the phone's status and navigation strips
+     (theme-color, useAdminTheme.ts), so the bars run into them seamlessly. */
+  --bar-bg: #1f2024;
+  --bar-bg-center: #1f2024;
   --bar-ink: #ffffff;
   --bar-ink-rgb: 255, 255, 255;
   --bar-line: transparent;

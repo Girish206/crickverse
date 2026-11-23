@@ -2,6 +2,15 @@ import React from "react";
 import Select from "react-select";
 import CreatableSelect from "react-select/creatable";
 import "../css/components/SelectInput.css";
+import { visibleArea } from "../../../app-shell/keyboard";
+
+// The menu's height: react-select's usual 300 at most, shrunk to the room
+// there is (never below a few rows), and it flips above the field when there
+// are fewer than MENU_COMFORT pixels below.
+const MENU_MAX = 300;
+const MENU_MIN = 120;
+const MENU_COMFORT = 250;
+const MENU_GAP = 8;
 
 interface Option {
     value: any;
@@ -52,15 +61,36 @@ const SelectInput: React.FC<SelectProps> = ({
     const [isFocused, setIsFocused] = React.useState(false);
     const wrapperRef = React.useRef<HTMLDivElement>(null);
     const [menuPlacement, setMenuPlacement] = React.useState<"top" | "bottom">("bottom");
+    const [maxMenuHeight, setMaxMenuHeight] = React.useState(MENU_MAX);
+    const [menuOpen, setMenuOpen] = React.useState(false);
 
     // react-select's "auto" placement scrolls the page instead of flipping, which
     // clips the menu inside modals — so pick the side with room on every open.
-    const placeMenu = () => {
+    // The room is what's actually visible: with the keyboard up, that ends at
+    // the keyboard (app-shell/keyboard), and the menu is sized to fit it.
+    const placeMenu = React.useCallback(() => {
         const rect = wrapperRef.current?.getBoundingClientRect();
         if (!rect) return;
-        const below = window.innerHeight - rect.bottom;
-        setMenuPlacement(below < 250 && rect.top > below ? "top" : "bottom");
-    };
+        const area = visibleArea();
+        const below = area.bottom - rect.bottom - MENU_GAP;
+        const above = rect.top - area.top - MENU_GAP;
+        const onTop = below < MENU_COMFORT && above > below;
+        setMenuPlacement(onTop ? "top" : "bottom");
+        setMaxMenuHeight(Math.max(MENU_MIN, Math.min(MENU_MAX, onTop ? above : below)));
+    }, []);
+
+    // A searchable select opens the keyboard after the menu: place it again
+    // whenever the visible area changes while it's open.
+    React.useEffect(() => {
+        if (!menuOpen) return;
+        const viewport = window.visualViewport;
+        viewport?.addEventListener("resize", placeMenu);
+        window.addEventListener("resize", placeMenu);
+        return () => {
+            viewport?.removeEventListener("resize", placeMenu);
+            window.removeEventListener("resize", placeMenu);
+        };
+    }, [menuOpen, placeMenu]);
 
     const hasValue = isMulti
         ? Array.isArray(value) && value.length > 0
@@ -84,7 +114,13 @@ const SelectInput: React.FC<SelectProps> = ({
         isLoading,
         menuPosition: "absolute" as const,
         menuPlacement,
-        onMenuOpen: placeMenu,
+        maxMenuHeight,
+        minMenuHeight: MENU_MIN,
+        onMenuOpen: () => {
+            placeMenu();
+            setMenuOpen(true);
+        },
+        onMenuClose: () => setMenuOpen(false),
         // The menu is portaled to <body>; scrolling it "into view" would scroll
         // the page locked behind an open modal and jam the menu in place.
         menuShouldScrollIntoView: false,

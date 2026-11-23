@@ -20,6 +20,17 @@ export const API_BASE = isNativeApp
 const SITE_URL = import.meta.env.VITE_SITE_URL || "https://app.runmitra.in";
 export const siteOrigin = () => (isNativeApp ? SITE_URL : window.location.origin);
 
+// The API names the newest web app build on every reply (X-App-Build). In
+// the app, api/client passes it on as this event and app-shell/liveUpdate
+// fetches the update when it's newer than the running copy.
+export const LATEST_BUILD_EVENT = "runmitra:latest-build";
+
+export function noticeLatestBuild(headers: unknown) {
+  if (!isNativeApp || !headers || typeof headers !== "object") return;
+  const version = (headers as Record<string, unknown>)["x-app-build"];
+  if (typeof version === "string") window.dispatchEvent(new CustomEvent(LATEST_BUILD_EVENT, { detail: version }));
+}
+
 // Uploaded pictures come back as "/api/files/<id>", which the website
 // serves on its own address. In the app that address is the phone, so they
 // are pointed at the API. Walks the whole response; only in the app.

@@ -1,6 +1,6 @@
 import { App } from "@capacitor/app";
 import { CapacitorUpdater } from "@capgo/capacitor-updater";
-import { siteOrigin } from "./platform";
+import { LATEST_BUILD_EVENT, siteOrigin } from "./platform";
 import { sayIfJustUpdated, whenFree } from "./updateTiming";
 
 // Live updates for the Android app. The app carries its own copy of the
@@ -11,19 +11,27 @@ import { sayIfJustUpdated, whenFree } from "./updateTiming";
 // to it once nobody is mid-task (not while scoring), as the website does. If a
 // new copy fails to start, the plugin goes back to the last one that worked.
 //
+// When to check: on opening, on coming back to the front, and whenever an API
+// reply says a newer build is out (the X-App-Build header, see platform.ts).
+// No timer: a phone only asks for latest.json when there's something to get.
+//
 // Only web code changes this way. A change to the app itself (a new plugin,
 // Android settings) still needs a new release in the Play Store.
 
 // This build's version (vite.config.ts), "1.0.<seconds since 1970>".
 declare const __APP_BUILD__: string;
 
-const CHECK_EVERY_MS = 5 * 60_000;
+// An API reply says there's a newer build: check, but not more often than
+// this while it's still there (a download that keeps failing would otherwise
+// be retried on every reply).
+const RETRY_AFTER_MS = 30_000;
 
 // The number that orders builds: the last part of "1.0.<seconds>".
 const buildNumber = (version: string) => Number(version.split(".").pop()) || 0;
 
 let checking = false;
 let applying = false;
+let lastNoticeCheck = 0;
 
 async function checkForUpdate() {
   if (checking || applying || !navigator.onLine) return;
@@ -77,7 +85,11 @@ export function setupLiveUpdates() {
   void App.addListener("appStateChange", ({ isActive }) => {
     if (isActive) void checkForUpdate();
   });
-  window.setInterval(() => {
-    if (document.visibilityState === "visible") void checkForUpdate();
-  }, CHECK_EVERY_MS);
+  window.addEventListener(LATEST_BUILD_EVENT, (event) => {
+    const version = (event as CustomEvent<string>).detail;
+    if (buildNumber(version) <= buildNumber(__APP_BUILD__)) return;
+    if (Date.now() - lastNoticeCheck < RETRY_AFTER_MS) return;
+    lastNoticeCheck = Date.now();
+    void checkForUpdate();
+  });
 }

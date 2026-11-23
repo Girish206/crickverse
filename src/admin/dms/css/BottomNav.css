@@ -23,6 +23,11 @@
     box-shadow: var(--bar-shadow-up);
     transition: transform 0.25s ease;
   }
+  /* Typing: the keyboard is up (app-shell/keyboard.ts), and the bar would
+     ride on top of it, covering the field. Out of the way until it closes. */
+  :root.is-keyboard-open .cv-bottom-nav {
+    display: none;
+  }
   /* Scrolling down (BottomNav.tsx): slid off the bottom. */
   .cv-bottom-nav.is-hidden {
     /* Extra distance so the raised active circle slides fully out too. */

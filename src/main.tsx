@@ -10,6 +10,7 @@ import { AdminAuthProvider } from "./context/AdminAuthContext";
 import { showMutationError } from "./api/mutationErrors";
 import { AppToaster } from "./admin/components/AppToaster";
 import { reloadOnceForNewBuild } from "./app-shell/chunkReload";
+import { installKeyboardWatch } from "./app-shell/keyboard";
 import { isNativeApp } from "./app-shell/platform";
 import { reportUncaughtErrors } from "./app-shell/reportError";
 
@@ -49,6 +50,10 @@ window.addEventListener("vite:preloadError", (event) => {
 
 // Crashes nothing else caught go to the organisers' error list.
 reportUncaughtErrors();
+
+// The on-screen keyboard: keeps the field being typed in visible and the
+// bottom tab bar out of the way (app-shell/keyboard).
+installKeyboardWatch();
 
 // The Android app: back button, share sheet and clipboard (app-shell/nativeShell),
 // and new deploys without a Play Store release (app-shell/liveUpdate).

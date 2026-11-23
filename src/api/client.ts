@@ -1,5 +1,5 @@
 import axios from "axios";
-import { API_BASE, withAbsoluteFileUrls } from "../app-shell/platform";
+import { API_BASE, noticeLatestBuild, withAbsoluteFileUrls } from "../app-shell/platform";
 
 // Same API as Girish Creations (portfolio-server): cricket endpoints live
 // under /api/admin/cricket and sign-in is the shared /api/admin/auth/login.
@@ -46,10 +46,12 @@ apiClient.interceptors.request.use((config) => {
 
 apiClient.interceptors.response.use(
   (response) => {
+    noticeLatestBuild(response.headers);
     response.data = withAbsoluteFileUrls(response.data);
     return response;
   },
   (error) => {
+    noticeLatestBuild(error.response?.headers);
     // A wrong password or code on the sign-in screen isn't a lost session.
     // Otherwise the session has ended (expired, or signed out everywhere):
     // AdminAuthContext signs out in place, and the routes take it from there
