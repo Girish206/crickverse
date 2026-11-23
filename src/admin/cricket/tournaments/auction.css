@@ -62,7 +62,7 @@
 .cricket-auction-primary {
   border: 0;
   background: var(--primary-fill);
-  color: #fff;
+  color: var(--on-primary);
 }
 .cricket-auction-secondary {
   border: 1px solid var(--adm-line-strong);
@@ -151,7 +151,7 @@
 .is-leading .cricket-auction-bid {
   background: var(--primary-fill);
   border-color: var(--primary-fill);
-  color: #fff;
+  color: var(--on-primary);
   opacity: 1;
 }
 
@@ -223,7 +223,7 @@
 }
 .cricket-auction-hammer .cricket-auction-primary {
   background: #fff;
-  color: var(--brand-accent-fill);
+  color: var(--brand-accent);
 }
 .cricket-auction-hammer .cricket-auction-secondary {
   border-color: rgba(255, 255, 255, 0.5);

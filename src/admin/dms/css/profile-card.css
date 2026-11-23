@@ -1,5 +1,5 @@
 .donor-card {
-  border: 1px solid #dee2e6;
+  border: 1px solid #e3e1db;
   border-radius: var(--radius-md);
   padding: 24px;
   background-color: #fff;
@@ -21,7 +21,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #6c757d;
+  color: #6a6b72;
   font-size: var(--fs-base);
 }
 .donor-btn {
@@ -30,7 +30,7 @@
 }
 .progress {
   height: 6px;
-  background-color: #e9ecef;
+  background-color: #ebe9e4;
 }
 .progress-bar {
   background-color: #000;

@@ -1,74 +1,91 @@
 /* ==========================================================================
-   RunMitra colours. Deliberately restrained: cool neutrals for surfaces and
-   text, one flat red accent from the logo's name for actions and the current
-   selection, and
-   any other colour only where it means something (live / wicket / error,
-   win, warning, awards). Every screen reads these through admin/dms/index.css
-   and dark.css; change a value here and the app follows.
+   RunMitra colours: Graphite & Amber, the palette shared with Pocket and the
+   portfolio. Graphite for ink, the bars and the hero cards; amber for
+   actions and the current selection; any other colour only where it means
+   something (live / wicket / error, win, warning, awards). Every screen
+   reads these through admin/dms/index.css and dark.css; change a value here
+   and the app follows. (The previous red theme is kept on the
+   `backup/red-theme` git branch.)
 
    The variable names are roles kept from the earlier palettes: "navy" is the
-   dark ink, "crimson" is the danger red, "amber" is the muted awards gold and
-   "orange" follows the accent.
+   dark ink (graphite), "crimson" is the danger red, "amber" is the muted
+   awards gold and "orange" follows the accent.
 
    Which variant to use:
-   - plain (--brand-accent …): the colour itself, for text on a light surface.
-   - -deep: darker shades that keep white text on them, and small text on a
-     white background, readable (≥ 4.5:1).
+   - plain (--brand-accent …): deep amber, for text on a light surface
+     (readable, ≥ 4.5:1) and fills under white text.
+   - -fill: the vivid amber, for buttons, active tabs and selected options.
+     Text on it is --brand-on-accent (graphite), never white.
    - -bright: lighter shades for text and accents on the dark background.
    ========================================================================== */
 
 :root {
   /* Ink and the accent */
-  --brand-navy: #171a20;
-  /* The accent is the gradient of the logo's name, each stop where it reads:
-     its deep start as text on light surfaces, its red as fills under white
-     text, its orange end as text on the charcoal. */
-  --brand-accent: #b8322a;
-  --brand-accent-fill: #d7261e;
-  --brand-accent-bright: #f26a1b;
+  --brand-navy: #17181c; /* graphite */
+  --brand-accent: #9e6207; /* deep amber: text on light, fills under white text */
+  --brand-accent-fill: #d9901a; /* amber: buttons and selections */
+  --brand-accent-bright: #e9a12c; /* amber on graphite */
+  --brand-on-accent: #17181c; /* text on an amber fill */
 
   /* Roles from the earlier palette */
   --brand-crimson: #b42318;
   --brand-orange: var(--brand-accent);
-  --brand-amber: #b8923e;
+  --brand-amber: #d9a531; /* awards gold, the brand gold */
 
   /* Readable on white / under white text */
   --brand-crimson-deep: #b42318;
   --brand-orange-deep: var(--brand-accent);
-  --brand-amber-deep: #7d5f1a;
+  --brand-amber-deep: #8a5606;
 
   /* Readable on the dark base */
   --brand-crimson-bright: #f0796e;
   --brand-orange-bright: var(--brand-accent-bright);
-  --brand-amber-bright: #d9bd74;
+  --brand-amber-bright: #f5c66b;
 
-  /* The logo name's gradient, deep red to orange: the edge line of the top
-     and bottom bars (Navbar.css, BottomNav.css) */
-  --brand-gradient: linear-gradient(90deg, #9a2219 0%, #d7261e 45%, #f26a1b 100%);
-  /* The top and bottom bars' fill: spreading sideways from the centre,
-     deep maroon there and lightening evenly through the brand red to
-     orange at the left and right ends (like the match card's result strip). */
-  --brand-gradient-bar: var(--brand-gradient-top); /* bars match the top bar */
-  /* The top bars' fill (Navbar.css, PageHeader.css): the other way round,
-     orange at the centre deepening through the brand red to maroon at the
-     left and right ends. */
-  --brand-gradient-top: linear-gradient(90deg, #d0473b 0%, var(--brand-accent) 35%, #a12a22 65%, #7a1d17 100%); /* the top bar: the profile card's red, light (left) to dark (right) */
-  --brand-gradient-center: linear-gradient(90deg, #d0473b 0%, #ce463a 5%, #c84338 10%, #be3e34 15%, #b2382f 20%, #a53229 25%, #982c23 30%, #8c261e 35%, #82211a 40%, #7c1e18 45%, #7a1d17 50%, #7c1e18 55%, #82211a 60%, #8c261e 65%, #982c23 70%, #a53229 75%, #b2382f 80%, #be3e34 85%, #c84338 90%, #ce463a 95%, #d0473b 100%); /* the bottom tab bar: dark in the centre, easing lighter to both ends (eased stops, so there's no crease in the middle) */
+  /* The amber gradient (gold → amber → burnt orange): page title icons and
+     the edge line of the bars. Graphite text on it. */
+  --brand-gradient: linear-gradient(120deg, #e6a32f 0%, #d9901a 55%, #cc8314 100%);
+  /* Graphite bars, white text on them: the public pages' top bar and the
+     pinned score's edge, and the app bars in the dark theme (dark.css). */
+  --brand-gradient-bar: linear-gradient(90deg, #2a2b31 0%, #222328 45%, #17181c 100%);
+  --brand-gradient-top: var(--brand-gradient-bar);
+  --brand-gradient-center: linear-gradient(90deg, #2a2b31 0%, #1c1d21 50%, #2a2b31 100%);
 
-  /* Charcoal surfaces (dark theme) */
-  --brand-navy-night: #121418;
-  --brand-navy-surface: #1b1e24;
-  --brand-navy-raised: #252931;
+  /* The app's bars (Navbar.css, PageHeader.css, BottomNav.css), like
+     Pocket's: frosted white with graphite contents in the light theme;
+     dark.css swaps them for the graphite gradient with white contents. */
+  --bar-bg: #ffffff;
+  --bar-bg-center: #ffffff;
+  --bar-ink: var(--brand-navy);
+  --bar-ink-rgb: var(--brand-navy-rgb);
+  --bar-line: rgba(var(--brand-navy-rgb), 0.08);
+  --bar-shadow: 0 2px 12px rgba(var(--brand-navy-rgb), 0.08);
+  --bar-shadow-up: 0 -2px 12px rgba(var(--brand-navy-rgb), 0.08);
+  --bar-text-shadow: none;
+  /* Around the raised active tab: light amber */
+  --bar-ring: #f6e2bd;
+  --bar-gold: linear-gradient(180deg, #e6a32f 0%, #b8780f 100%); /* "Mitra" */
+  --bar-art-opacity: 0.1; /* the page header's cricket scene */
+  /* Feature cards (profile, hero, score panels): graphite with an amber
+     glow, white text on top. */
+  --brand-hero: radial-gradient(120% 150% at 100% 0%, rgba(217, 144, 26, 0.3) 0%, transparent 55%),
+    linear-gradient(135deg, #2a2b31 0%, #17181c 65%);
+
+  /* Graphite surfaces (dark theme) */
+  --brand-navy-night: #0f1012;
+  --brand-navy-surface: #1b1c20;
+  --brand-navy-raised: #25262b;
 
   /* "r, g, b" triplets, for rgba(var(--brand-…-rgb), alpha) */
-  --brand-navy-rgb: 23, 26, 32;
-  --brand-navy-night-rgb: 18, 20, 24;
-  --brand-accent-rgb: 184, 50, 42;
-  --brand-accent-bright-rgb: 242, 106, 27;
+  --brand-navy-rgb: 23, 24, 28;
+  --brand-navy-night-rgb: 15, 16, 18;
+  --brand-accent-rgb: 158, 98, 7;
+  --brand-accent-fill-rgb: 217, 144, 26;
+  --brand-accent-bright-rgb: 233, 161, 44;
   --brand-crimson-rgb: 180, 35, 24;
   --brand-orange-rgb: var(--brand-accent-rgb);
   --brand-orange-deep-rgb: var(--brand-accent-rgb);
-  --brand-amber-rgb: 184, 146, 62;
+  --brand-amber-rgb: 217, 165, 49;
 
   /* Status. Text and borders use the plain token (dark.css lightens it);
      -fill stays deep in both themes, for solid chips under white text. */
@@ -79,7 +96,7 @@
   --success-rgb: 31, 122, 77;
   --success-fill: #1f7a4d;
   --success-bright: #57bd8a;
-  --warning: #935f0e;
-  --warning-rgb: 147, 95, 14;
-  --warning-fill: #935f0e;
+  --warning: #b4530b;
+  --warning-rgb: 180, 83, 11;
+  --warning-fill: #b4530b;
 }

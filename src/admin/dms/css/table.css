@@ -7,7 +7,7 @@
 
 /* Modern striped rows with subtle colors */
 .rdt_TableBody>.rdt_TableRow:nth-of-type(even) {
-  background-color: #f8f9fa !important;
+  background-color: #faf9f6 !important;
 }
 
 .rdt_TableBody>.rdt_TableRow:nth-of-type(odd) {
@@ -16,7 +16,7 @@
 
 /* Hover effect for rows */
 .rdt_TableBody>.rdt_TableRow:hover {
-  background-color: #e9ecef !important;
+  background-color: #ebe9e4 !important;
   transition: background-color 0.2s ease;
 }
 
@@ -43,7 +43,7 @@
   -moz-appearance: none;
   width: 20px;
   height: 20px;
-  border: 2px solid #cbd5e1;
+  border: 2px solid #d4d1c9;
   border-radius: var(--radius-sm);
   outline: none;
   cursor: pointer;
@@ -98,7 +98,7 @@
 table {
   border-collapse: collapse;
   width: 100%;
-  border: 1px solid #e5e7eb !important;
+  border: 1px solid #e3e1db !important;
   page-break-inside: auto;
   font-size: var(--fs-base) !important;
   table-layout: auto;
@@ -116,7 +116,7 @@ table th {
 
 table th,
 table td {
-  border: 1px solid #e5e7eb !important;
+  border: 1px solid #e3e1db !important;
   padding: 12px !important;
   text-align: left;
   vertical-align: middle !important;
@@ -133,11 +133,11 @@ table.table-striped>tbody>tr:nth-of-type(odd) {
 }
 
 table.table-striped>tbody>tr:nth-of-type(even) {
-  background-color: #f8f9fa !important;
+  background-color: #faf9f6 !important;
 }
 
 table.table-striped>tbody>tr:hover {
-  background-color: #e9ecef !important;
+  background-color: #ebe9e4 !important;
   transition: background-color 0.2s ease;
 }
 
@@ -156,7 +156,7 @@ table.sticky-header {
   border-collapse: separate;
   border-spacing: 0;
   width: 100%;
-  border: 1px solid #e5e7eb;
+  border: 1px solid #e3e1db;
   border-radius: var(--radius-md);
   overflow: hidden;
 }
@@ -164,7 +164,7 @@ table.sticky-header {
 /* Common cell borders & spacing */
 table.sticky-header th,
 table.sticky-header td {
-  border: 1px solid #e5e7eb !important;
+  border: 1px solid #e3e1db !important;
   padding: 12px !important;
   text-align: left;
 }
@@ -194,11 +194,11 @@ table.sticky-header.table-striped>tbody>tr:nth-of-type(odd) {
 }
 
 table.sticky-header.table-striped>tbody>tr:nth-of-type(even) {
-  background-color: #f8f9fa !important;
+  background-color: #faf9f6 !important;
 }
 
 table.sticky-header.table-striped>tbody>tr:hover {
-  background-color: #e9ecef !important;
+  background-color: #ebe9e4 !important;
   transition: background-color 0.2s ease;
 }
 
@@ -206,11 +206,11 @@ table.sticky-header.table-striped>tbody>tr:hover {
 .sticky-header-container table table thead {
   position: static !important;
   z-index: auto !important;
-  background-color: #f3f4f6 !important;
+  background-color: #f3f2ee !important;
 }
 
 .sticky-header-container table table thead th {
-  background-color: #f3f4f6 !important;
+  background-color: #f3f2ee !important;
   color: #374151 !important;
   font-weight: 600 !important;
 }
@@ -310,7 +310,7 @@ table.sticky-header.table-striped>tbody>tr:hover {
   z-index: 10 !important;
   background-clip: padding-box;
   background-color: inherit;
-  box-shadow: -1px 0 0 0 #e2e8f0;
+  box-shadow: -1px 0 0 0 #e3e1db;
   /* Match border color to mask gaps */
 }
 
@@ -321,7 +321,7 @@ table.sticky-header.table-striped>tbody>tr:hover {
   z-index: 9 !important;
   background-clip: padding-box;
   background-color: inherit;
-  box-shadow: -1px 0 0 0 #e2e8f0;
+  box-shadow: -1px 0 0 0 #e3e1db;
 }
 
 /* Stacking Level 3 (Default: Right 299px) */
@@ -331,7 +331,7 @@ table.sticky-header.table-striped>tbody>tr:hover {
   z-index: 8 !important;
   background-clip: padding-box;
   background-color: inherit;
-  box-shadow: -1px 0 0 0 #e2e8f0;
+  box-shadow: -1px 0 0 0 #e3e1db;
 }
 
 /* Sticky Top-Right (Corner) */
@@ -342,7 +342,7 @@ table.sticky-header.table-striped>tbody>tr:hover {
   right: -1px !important;
   z-index: 30 !important;
   background-clip: padding-box;
-  box-shadow: -1px 0 0 0 #e2e8f0;
+  box-shadow: -1px 0 0 0 #e3e1db;
 }
 
 .sticky-top-right-2 {
@@ -351,7 +351,7 @@ table.sticky-header.table-striped>tbody>tr:hover {
   right: 149px !important;
   z-index: 29 !important;
   background-clip: padding-box;
-  box-shadow: -1px 0 0 0 #e2e8f0;
+  box-shadow: -1px 0 0 0 #e3e1db;
 }
 
 .sticky-top-right-3 {
@@ -360,7 +360,7 @@ table.sticky-header.table-striped>tbody>tr:hover {
   right: 299px !important;
   z-index: 28 !important;
   background-clip: padding-box;
-  box-shadow: -1px 0 0 0 #e2e8f0;
+  box-shadow: -1px 0 0 0 #e3e1db;
 }
 
 
@@ -386,7 +386,7 @@ table.sticky-header.table-striped>tbody>tr:hover {
   font-weight: 600;
   border-bottom: 2px solid var(--adm-line-strong) !important;
   /* --primary-light-4 */
-  border-right: 1px solid #e2e8f0 !important;
+  border-right: 1px solid #e3e1db !important;
   padding: 12px 16px !important;
   background-clip: padding-box;
 }

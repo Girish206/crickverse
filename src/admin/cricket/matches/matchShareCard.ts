@@ -6,7 +6,9 @@ import {
   CARD_CONTENT_TOP,
   CARD_FOOT_H,
   CARD_GAP,
-  CARD_RED,
+  CARD_ACCENT,
+  CARD_LIVE,
+  CARD_ON_ACCENT,
   cardPalette,
   drawBadge,
   drawBrandedFrame,
@@ -48,8 +50,8 @@ const PHOTO_BODY_H = 190;
 // The same colours as the app's status badge (.cricket-match-status).
 const STATUS_PILLS: Record<CricketMatchStatus, CardPill> = {
   scheduled: { label: "UPCOMING", fill: AMBER, text: NAVY },
-  live: { label: "LIVE", fill: CARD_RED, text: "#ffffff" },
-  completed: { label: "COMPLETED", fill: "#ffffff", text: NAVY, outline: "rgba(23, 26, 32, 0.16)" },
+  live: { label: "LIVE", fill: CARD_LIVE, text: "#ffffff" },
+  completed: { label: "COMPLETED", fill: "#ffffff", text: NAVY, outline: "rgba(23, 24, 28, 0.16)" },
   abandoned: { label: "ABANDONED", fill: "#444850", text: "#ffffff" },
 };
 
@@ -123,7 +125,7 @@ function drawScoreboard(ctx: Ctx, palette: CardPalette, match: CricketMatch, log
     const badgeX = PAD + 36 + 48;
     drawBadge(ctx, logos[slot], monogram(match.teams[slot].name), colors[slot], badgeX, cy, 48);
     if (battingNow === slot) {
-      ctx.fillStyle = CARD_RED;
+      ctx.fillStyle = CARD_ACCENT;
       ctx.beginPath();
       ctx.arc(badgeX + 36, cy - 36, 13, 0, Math.PI * 2);
       ctx.fill();
@@ -259,12 +261,12 @@ function drawPlayerPhoto(ctx: Ctx, palette: CardPalette, data: MatchCardData, ro
   const ribbon = "Player of the match";
   ctx.font = `800 30px ${FONT}`;
   const ribbonW = ctx.measureText(ribbon).width + 56;
-  ctx.fillStyle = CARD_RED;
+  ctx.fillStyle = CARD_ACCENT;
   ctx.beginPath();
   ctx.roundRect(PAD, top, ribbonW, 68, [24, 0, 24, 0]);
   ctx.fill();
   ctx.textAlign = "left";
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = CARD_ON_ACCENT;
   ctx.fillText(ribbon, PAD + 28, top + 35);
 
   const bodyTop = top + PHOTO_H;

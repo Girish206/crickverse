@@ -153,7 +153,7 @@
   padding: 0 18px;
   border: 0;
   background: var(--primary);
-  color: #fff;
+  color: var(--on-primary-solid);
 }
 .cv-tip-next:focus-visible,
 .cv-tip-back:focus-visible,

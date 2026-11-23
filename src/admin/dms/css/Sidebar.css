@@ -3,7 +3,7 @@
   --sidebar-collapsed-width: 80px;
   --sidebar-bg: #ffffff;
   --sidebar-text: var(--theme-text-dark);
-  --sidebar-text-muted: #64748b;
+  --sidebar-text-muted: #6a6b72;
   --sidebar-accent: var(--primary);
   --sidebar-shadow: 0 30px 70px rgba(0, 0, 0, 0.12);
   --transition-speed: 0.4s;
@@ -252,7 +252,7 @@
   background: var(--primary);
   border: none;
   border-radius: 50%;
-  color: white;
+  color: var(--on-primary-solid);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -326,7 +326,7 @@
 }
 
 .submenu-link:hover {
-  color: #0f172a !important;
+  color: #17181c !important;
 }
 
 /* Submenu Styles */
@@ -344,7 +344,7 @@
   padding: 10px 15px !important;
   font-size: var(--fs-base) !important;
   border-radius: var(--radius-md) !important;
-  color: #64748b !important;
+  color: #6a6b72 !important;
   display: flex !important;
   align-items: center;
   gap: 12px;
@@ -388,7 +388,7 @@
 
 .user-role-text {
   font-weight: 600;
-  color: #64748b;
+  color: #6a6b72;
   font-size: var(--fs-xs);
 }
 
@@ -580,7 +580,7 @@
 
 .sidebar-open .nav-item.active > .nav-link .icon {
   background: var(--primary-fill);
-  color: #ffffff !important;}
+  color: var(--on-primary) !important;}
 
 .sidebar-open .nav-item.active::before {
   display: none;

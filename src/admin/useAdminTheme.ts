@@ -28,7 +28,7 @@ export function useAdminTheme() {
     root.setAttribute("data-bs-theme", theme.isDark ? "dark" : "light");
     // The status bar (and the browser's own bar on a phone) carries on from
     // the top bar: the ends of its brand gradient (brand.css / dark.css).
-    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme.isDark ? "#2a1d22" : "#a8261c");
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme.isDark ? "#1f2024" : "#ffffff");
     return () => root.removeAttribute("data-bs-theme");
   }, [theme.isDark]);
 

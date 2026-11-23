@@ -4,15 +4,20 @@
    src/styles/brand.css, so the admin matches the public portfolio: change a
    brand colour there and both follow. */
 :root {
-  /* Primary: the deep red of the logo's name (readable on white) */
+  /* Primary: deep amber, readable as text on white */
   --primary: var(--brand-accent);
   /* Same as --primary, as an "r, g, b" triplet for rgba(var(--primary-rgb), alpha) */
   --primary-rgb: var(--brand-accent-rgb);
-  /* Primary buttons and highlights, and the red hero and score panels: the
-     brand red deepening to the right, under white text (dark.css swaps both
-     for its own). A gradient, so use it with `background`, not -color. */
+  /* Text on a solid --primary background: white on the deep amber here,
+     graphite on dark.css's bright amber. */
+  --on-primary-solid: #ffffff;
+  /* Primary buttons and highlights: the vivid amber, graphite text on it
+     (--on-primary). */
   --primary-fill: var(--brand-accent-fill);
-  --hero-fill: linear-gradient(120deg, var(--brand-accent) 45%, #7a1d17);
+  --on-primary: var(--brand-on-accent);
+  /* The hero and score panels: graphite with an amber glow, white text on
+     top. A gradient, so use it with `background`, not -color. */
+  --hero-fill: var(--brand-hero);
 
   /* Lighter shades (tints) */
   --primary-light-1: color-mix(in srgb, var(--primary) 88%, #fff);
@@ -29,10 +34,10 @@
   --primary-dark-3: color-mix(in srgb, var(--primary) 42%, #000);
   --primary-dark-4: color-mix(in srgb, var(--primary) 20%, #000);
 
-  /* Secondary: slate, for quiet labels and tints beside the accent */
-  --secondary: #475467;
+  /* Secondary: warm graphite grey, for quiet labels and tints beside the accent */
+  --secondary: #4d4e56;
   /* Same as --secondary, as an "r, g, b" triplet for rgba(var(--secondary-rgb), alpha) */
-  --secondary-rgb: 71, 84, 103;
+  --secondary-rgb: 77, 78, 86;
 
   /* Lighter shades (tints) */
   --secondary-light-1: color-mix(in srgb, var(--secondary) 88%, #fff);
@@ -50,22 +55,22 @@
 
   /* Common */
   --theme-text-dark: var(--brand-navy);
-  --muted-color: #5b6472;
-  --border-color: #dde1e7;
-  --background-color: #f2f4f7;
+  --muted-color: #5f6068;
+  --border-color: #e3e1db;
+  --background-color: #f6f5f2;
   --theme-text-light: #ffffff;
 
   /* Surfaces, in both themes (dark.css has the charcoal ones). */
   /* The page behind the cards: near-white, so the white cards sit lightly on it. */
-  --adm-bg: #f7f8fa;
+  --adm-bg: #f6f5f2;
   --adm-surface: #ffffff;
-  --adm-raised: #f8f9fb;
+  --adm-raised: #faf9f6;
   --adm-glass: #ffffff;
-  --adm-line: #dde1e7;
-  --adm-line-strong: #d0d5dd;
-  --adm-hover: rgba(16, 24, 40, 0.04);
+  --adm-line: #e3e1db;
+  --adm-line-strong: #d4d1c9;
+  --adm-hover: rgba(23, 24, 28, 0.04);
   --adm-text: var(--brand-navy);
-  --adm-text-2: #3d4553;
+  --adm-text-2: #44454c;
 
   /* Bootstrap's status utilities (text-warning, btn-success …) on this palette. */
   --bs-primary-rgb: var(--brand-accent-rgb);
@@ -80,10 +85,10 @@
   --ball-four-text: #ffffff;
   --ball-six: #b45309;
   --ball-six-text: #ffffff;
-  --ball-extra: #64748b;
+  --ball-extra: #6a6b72;
   --ball-extra-rgb: 100, 116, 139;
-  --ball-extra-text: #475569;
+  --ball-extra-text: #4d4e56;
 
   /* A neutral series beside the accent in a chart. */
-  --series-slate: #475467;
+  --series-slate: #4d4e56;
 }

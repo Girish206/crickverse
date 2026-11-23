@@ -2,7 +2,7 @@
 
 .btn-custom-primary {
   background-color: var(--primary-fill) !important;
-  color: var(--theme-text-light) !important;
+  color: var(--on-primary) !important;
   border: none !important;
   transition: filter 0.15s ease;
 }
@@ -15,7 +15,6 @@
 }
 
 /* Bootstrap's filled buttons, on the palette. */
-:root .btn-primary,
 :root .btn-success {
   --bs-btn-color: #fff;
   --bs-btn-hover-color: #fff;
@@ -23,6 +22,10 @@
   --bs-btn-disabled-color: #fff;
 }
 :root .btn-primary {
+  --bs-btn-color: var(--on-primary);
+  --bs-btn-hover-color: var(--on-primary);
+  --bs-btn-active-color: var(--on-primary);
+  --bs-btn-disabled-color: var(--on-primary);
   --bs-btn-bg: var(--primary-fill);
   --bs-btn-border-color: var(--primary-fill);
   --bs-btn-hover-bg: var(--primary-fill);
@@ -50,14 +53,14 @@
 
 .btn-outline-custom-primary:hover {
   background-color: var(--primary-fill) !important;
-  color: var(--theme-text-light) !important;
+  color: var(--on-primary) !important;
   border-color: var(--primary-fill) !important;
 }
 
 .btn-outline-custom-primary:active {
   background-color: var(--primary-fill) !important;
   border-color: var(--primary-fill) !important;
-  color: var(--theme-text-light) !important;
+  color: var(--on-primary) !important;
 }
 
 /* Base */
@@ -116,7 +119,7 @@
 /* Modern Search Button */
 .btn-search-primary {
   background-color: var(--primary-fill) !important;
-  color: white !important;
+  color: var(--on-primary) !important;
   border: none !important;
   border-radius: var(--radius-md) !important;
   padding: 0.5rem 1.5rem !important;
@@ -150,7 +153,7 @@
 /* Modern Badges */
 .badge-modern-primary {
   background-color: var(--primary-fill) !important;
-  color: white !important;
+  color: var(--on-primary) !important;
   border-radius: var(--radius-lg) !important;
   padding: 0.5rem 1rem !important;
   font-weight: 500 !important;

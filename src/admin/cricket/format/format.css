@@ -40,8 +40,8 @@
   overflow: hidden;
   isolation: isolate;
   border-radius: var(--radius-md);
-  background: var(--brand-gradient);
-  box-shadow: 0 4px 14px rgba(var(--brand-crimson-rgb), 0.22);
+  background: var(--hero-fill);
+  box-shadow: 0 4px 14px rgba(var(--brand-navy-rgb), 0.22);
   color: #fff;
   text-decoration: none;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
@@ -49,7 +49,7 @@
 a.cricket-champion:hover,
 a.cricket-champion:focus-visible {
   color: #fff;
-  box-shadow: 0 6px 18px rgba(var(--brand-crimson-rgb), 0.32);
+  box-shadow: 0 6px 18px rgba(var(--brand-navy-rgb), 0.32);
 }
 a.cricket-champion:active {
   transform: scale(0.99);
@@ -188,7 +188,7 @@ a.cricket-champion:active {
 .cricket-phase-steps > li.is-done .cricket-phase-dot {
   border-color: var(--primary);
   background: var(--primary);
-  color: #fff;
+  color: var(--on-primary-solid);
 }
 .cricket-phase-name {
   margin-top: 2px;
@@ -395,13 +395,13 @@ a.cricket-champion:active {
   margin-left: 6px;
   border-radius: 50%;
   background: var(--primary);
-  color: #fff;
+  color: var(--on-primary-solid);
   font-size: 0.62rem;
   font-weight: 700;
   vertical-align: 1px;
 }
 .cricket-q-tag.is-out {
-  background: #6b7280;
+  background: #6a6b72;
 }
 .cricket-seed-list {
   display: grid;

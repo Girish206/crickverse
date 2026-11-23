@@ -11,9 +11,9 @@ import { logoFor } from "./tournamentArt";
 // with Share / Download / Copy as text.
 
 export const W = 1080;
-export const NAVY = "#171a20";
+export const NAVY = "#17181c";
 export const RED = "#b42318";
-export const AMBER = "#d9bd74";
+export const AMBER = "#f5c66b";
 export const FONT = "Outfit, system-ui, sans-serif";
 
 export const loadImage = (src: string) =>
@@ -73,10 +73,10 @@ export async function drawCardFrame(
   canvas.height = height;
   const ctx = canvas.getContext("2d")!;
 
-  ctx.fillStyle = "#1c2028";
+  ctx.fillStyle = "#1b1c20";
   ctx.fillRect(0, 0, W, height);
   // Accent band.
-  ctx.fillStyle = "#d7261e";
+  ctx.fillStyle = "#d9901a";
   ctx.fillRect(0, 0, W, 12);
 
   const pad = 80;
@@ -113,10 +113,10 @@ export async function drawCardFrame(
   ctx.font = `600 24px ${FONT}`;
   const countW = ctx.measureText(count).width;
   const pillX = mid - (pillW + 16 + countW) / 2;
-  ctx.fillStyle = "#d7261e";
+  ctx.fillStyle = "#d9901a";
   roundRect(ctx, pillX, 282, pillW, 46, 23);
   ctx.textAlign = "left";
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = "#17181c";
   ctx.font = `800 28px ${FONT}`;
   ctx.fillText(pillLabel, pillX + 22, 306);
   ctx.fillStyle = "rgba(255, 255, 255, 0.7)";

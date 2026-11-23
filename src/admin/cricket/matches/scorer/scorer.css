@@ -137,7 +137,7 @@ button.cricket-chip-btn:disabled {
 }
 .cricket-manage-sides button.active {
   background: var(--primary-fill);
-  color: #fff;
+  color: var(--on-primary);
   box-shadow: 0 1px 4px rgba(var(--primary-rgb), 0.3);
 }
 .cricket-manage-sides button.active small {
@@ -389,7 +389,7 @@ button.cricket-chip-btn:disabled {
   padding: 1px 6px;
   border-radius: 999px;
   background: var(--primary);
-  color: #fff;
+  color: var(--on-primary-solid);
   font-size: 0.58rem;
   font-weight: 800;
   letter-spacing: 0.03em;

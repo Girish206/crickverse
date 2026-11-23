@@ -30,16 +30,16 @@
 
 :root[data-bs-theme="dark"] .cv-shell-msg {
   --cv-shell-bg: var(--adm-bg, var(--brand-navy-night));
-  --cv-shell-text: var(--theme-text-dark, #f3f4f6);
-  --cv-shell-muted: var(--muted-color, #a3a2bf);
+  --cv-shell-text: var(--theme-text-dark, #f3f2ee);
+  --cv-shell-muted: var(--muted-color, #a3a4a9);
   --cv-shell-accent: var(--primary, var(--brand-accent-bright));
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-bs-theme]) .cv-shell-msg {
     --cv-shell-bg: var(--brand-navy-night);
-    --cv-shell-text: #f3f4f6;
-    --cv-shell-muted: #a3a2bf;
+    --cv-shell-text: #f3f2ee;
+    --cv-shell-muted: #a3a4a9;
     --cv-shell-accent: var(--brand-accent-bright);
   }
 }
@@ -138,7 +138,7 @@
   gap: 2px;
 }
 .cv-section-error small {
-  color: var(--muted-color, #6b7280);
+  color: var(--muted-color, #6a6b72);
 }
 .cv-section-error button {
   flex: none;

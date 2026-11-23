@@ -15,12 +15,12 @@
     align-items: stretch;
     height: calc(62px + env(safe-area-inset-bottom));
     padding: 0 6px env(safe-area-inset-bottom);
-    /* The brand red, darkest in the centre, with white tabs */
-    background: var(--brand-gradient-center);
+    /* Frosted white (light) or graphite, darkest in the centre (dark) */
+    background: var(--bar-bg-center);
     border-top: 0;
     /* Rounded along the top, mirroring the top bar's bottom */
     border-radius: 20px 20px 0 0;
-    box-shadow: 0 -2px 10px rgba(var(--brand-navy-rgb), 0.18);
+    box-shadow: var(--bar-shadow-up);
     transition: transform 0.25s ease;
   }
   /* Scrolling down (BottomNav.tsx): slid off the bottom. */
@@ -46,7 +46,7 @@
   padding: 0;
   border: 0;
   background: none;
-  color: rgba(255, 255, 255, 0.72);
+  color: rgba(var(--bar-ink-rgb), 0.6);
   font-size: var(--fs-3xs);
   font-weight: 600;
   letter-spacing: 0.01em;
@@ -72,23 +72,23 @@
 .cv-bottom-tab:active .app-icon {
   transform: scale(0.9);
 }
-/* Active tab: the icon rises into a white circle above the bar. A ring in
-   the bar's red joins it to the bar, so it reads right over any content. */
+/* Active tab: the icon rises into an amber circle above the bar. A ring in
+   the bar's colour joins it to the bar, so it reads right over any content. */
 .cv-bottom-tab.is-active {
-  color: #fff;
+  color: var(--bar-ink);
 }
 .cv-bottom-tab.is-active .app-icon {
   padding: 11px;
   margin-top: -26px;
-  background: #fff;
-  color: var(--brand-accent-fill);
+  background: var(--primary-fill);
+  color: var(--on-primary);
   box-shadow:
-    0 0 0 4px #c42e21,
-    0 6px 14px rgba(var(--brand-navy-rgb), 0.35);
+    0 0 0 4px var(--bar-ring),
+    0 6px 14px rgba(var(--brand-navy-rgb), 0.2);
 }
 :root[data-bs-theme="dark"] .cv-bottom-tab.is-active .app-icon {
   box-shadow:
-    0 0 0 4px #6a1d17,
+    0 0 0 4px var(--bar-ring),
     0 6px 14px rgba(0, 0, 0, 0.5);
 }
 .cv-bottom-tab.is-active:active .app-icon {

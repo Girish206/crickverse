@@ -10,7 +10,9 @@ import { playerStats, pointsTable, tournamentStats, type NameOf, type PlayerStat
 import {
   CARD_CONTENT_TOP,
   CARD_GAP,
-  CARD_RED,
+  CARD_ACCENT,
+  CARD_LIVE,
+  CARD_ON_ACCENT,
   drawBadge,
   drawCover,
   drawFitted,
@@ -147,7 +149,7 @@ export async function drawFixtureDays(start: StartCard, days: FixtureDay[]) {
       ctx.textAlign = "left";
       ctx.fillStyle = palette.text;
       drawFitted(ctx, f.tag, 700, 26, 18, META_W - 14, PAD + 22, cy - 18);
-      ctx.fillStyle = f.live ? CARD_RED : palette.muted;
+      ctx.fillStyle = f.live ? CARD_LIVE : palette.muted;
       drawFitted(ctx, f.live ? "LIVE" : (f.time ?? f.stage), f.live ? 800 : 500, 24, 16, META_W - 14, PAD + 22, cy + 20);
 
       const left = PAD + 22 + META_W;
@@ -296,12 +298,12 @@ function drawLeadHero(ctx: Ctx, palette: CardPalette, hero: Hero, name: string, 
     drawCover(ctx, photo, PAD, top, INNER, HERO_PHOTO_H, 0);
     ctx.restore();
     ctx.font = `800 30px ${FONT}`;
-    ctx.fillStyle = CARD_RED;
+    ctx.fillStyle = CARD_ACCENT;
     ctx.beginPath();
     ctx.roundRect(PAD, top, ctx.measureText(hero.title).width + 56, 68, [24, 0, 24, 0]);
     ctx.fill();
     ctx.textAlign = "left";
-    ctx.fillStyle = "#ffffff";
+    ctx.fillStyle = CARD_ON_ACCENT;
     ctx.fillText(hero.title, PAD + 28, top + 35);
   }
 

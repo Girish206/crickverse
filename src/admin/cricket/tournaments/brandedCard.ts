@@ -16,7 +16,10 @@ const BRAND_H = 104;
 export const CARD_CONTENT_TOP = BRAND_H + 190;
 export const CARD_GAP = 28;
 export const CARD_FOOT_H = 32;
-export const CARD_RED = "#d7261e";
+// The brand amber (graphite text on it), and the red kept for LIVE only.
+export const CARD_ACCENT = "#d9901a";
+export const CARD_ON_ACCENT = "#17181c";
+export const CARD_LIVE = "#d7261e";
 
 const BRAND_LOGO_H = 72;
 const BRAND_LOGO_W = Math.round((BRAND_LOGO_H * 268.5) / 64);
@@ -33,23 +36,23 @@ export interface CardPalette {
 }
 
 const DARK: CardPalette = {
-  background: "#1c2028",
+  background: "#1b1c20",
   panel: "rgba(255, 255, 255, 0.07)",
   rule: "rgba(255, 255, 255, 0.1)",
   text: "#ffffff",
   muted: "rgba(255, 255, 255, 0.6)",
-  accent: "#d9bd74",
-  highlight: "rgba(217, 189, 116, 0.12)",
+  accent: "#f5c66b",
+  highlight: "rgba(245, 198, 107, 0.12)",
 };
 
 const LIGHT: CardPalette = {
   background: "#ffffff",
-  panel: "#f2f4f7",
-  rule: "rgba(23, 26, 32, 0.1)",
-  text: "#171a20",
-  muted: "rgba(23, 26, 32, 0.62)",
-  accent: "#7d5f1a",
-  highlight: "rgba(184, 146, 62, 0.16)",
+  panel: "#f3f2ee",
+  rule: "rgba(23, 24, 28, 0.1)",
+  text: "#17181c",
+  muted: "rgba(23, 24, 28, 0.62)",
+  accent: "#8a5606",
+  highlight: "rgba(217, 144, 26, 0.16)",
 };
 
 // The site and the app both mark the theme on <body> (useDarkTheme).
@@ -124,7 +127,7 @@ export function drawBrandedFrame(
   ctx.textBaseline = "middle";
   ctx.fillStyle = palette.background;
   ctx.fillRect(0, 0, W, height);
-  ctx.fillStyle = CARD_RED;
+  ctx.fillStyle = CARD_ACCENT;
   ctx.fillRect(0, 0, W, 12);
 
   // The file sets only a viewBox, so its size is given here.
@@ -194,7 +197,7 @@ export async function startBrandedCard(head: CardHead, contentH: number, pillLab
     badge: head.badge,
     title: head.title,
     detail,
-    pill: { label: pillLabel, fill: CARD_RED, text: "#ffffff" },
+    pill: { label: pillLabel, fill: CARD_ACCENT, text: CARD_ON_ACCENT },
   });
   return { canvas, ctx, palette };
 }

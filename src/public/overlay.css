@@ -8,7 +8,7 @@ html.cv-overlay-root #root {
 }
 
 .cv-overlay {
-  --ov-bg: rgba(10, 18, 36, 0.92);
+  --ov-bg: rgba(15, 16, 18, 0.92);
   --ov-panel: rgba(255, 255, 255, 0.08);
   --ov-text: #fff;
   --ov-muted: rgba(255, 255, 255, 0.7);
@@ -140,7 +140,7 @@ html.cv-overlay-root #root {
   color: #111;
 }
 .cv-overlay-odds span:last-child {
-  background: rgba(10, 18, 36, 0.92);
+  background: rgba(15, 16, 18, 0.92);
   text-align: right;
 }
 

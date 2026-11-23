@@ -6,7 +6,8 @@ import type { LeagueTable, PointsRow } from "../stats";
 import {
   CARD_CONTENT_TOP,
   CARD_GAP,
-  CARD_RED,
+  CARD_ACCENT,
+  CARD_ON_ACCENT,
   drawBadge,
   drawFitted,
   INNER,
@@ -100,7 +101,7 @@ function drawTable(ctx: Ctx, palette: CardPalette, table: LeagueTable, titled: b
     ctx.textAlign = "left";
     ctx.fillStyle = palette.text;
     // Once the places are final: Q through, E out.
-    const tag = settled && qualify > 0 ? (i < qualify ? { label: "Q", fill: CARD_RED } : { label: "E", fill: "#6b7280" }) : null;
+    const tag = settled && qualify > 0 ? (i < qualify ? { label: "Q", fill: CARD_ACCENT } : { label: "E", fill: "#6a6b72" }) : null;
     const nameW = columnsLeft - 10 - nameX - (tag ? TAG_R * 2 + 10 : 0);
     drawFitted(ctx, row.name, 700, 32, 20, nameW, nameX, cy);
     if (tag) {
@@ -109,7 +110,7 @@ function drawTable(ctx: Ctx, palette: CardPalette, table: LeagueTable, titled: b
       ctx.beginPath();
       ctx.arc(tagX, cy, TAG_R, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = "#ffffff";
+      ctx.fillStyle = tag.fill === CARD_ACCENT ? CARD_ON_ACCENT : "#ffffff";
       ctx.font = `800 20px ${FONT}`;
       ctx.textAlign = "center";
       ctx.fillText(tag.label, tagX, cy + 1);
@@ -125,7 +126,7 @@ function drawTable(ctx: Ctx, palette: CardPalette, table: LeagueTable, titled: b
 
   if (cut) {
     const y = top + ROW_H * cut;
-    ctx.strokeStyle = CARD_RED;
+    ctx.strokeStyle = CARD_ACCENT;
     ctx.lineWidth = 3;
     ctx.setLineDash([14, 10]);
     ctx.beginPath();

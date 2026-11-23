@@ -29,8 +29,8 @@
   --radius-sm: 6px; /* chips, small badges */
 
   /* Depth: cards rest on a hairline, only what floats over the page lifts. */
-  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.05);
-  --shadow-float: 0 8px 24px rgba(16, 24, 40, 0.14);
+  --shadow-card: 0 1px 2px rgba(23, 24, 28, 0.05);
+  --shadow-float: 0 8px 24px rgba(23, 24, 28, 0.14);
 
   /* The fixed PageHeader on screens outside the main menu: Layout.css pads
      those screens by it and their sticky tab bars pin under it. */
@@ -98,7 +98,7 @@ textarea {
   color: var(--primary);
 }
 :root[data-bs-theme="dark"] .cv-wordmark {
-  color: #f3f4f6;
+  color: #f3f2ee;
 }
 :root[data-bs-theme="dark"] .cv-wordmark em {
   color: var(--brand-amber);
@@ -115,10 +115,10 @@ textarea {
   font-size: var(--fs-sm);
   font-weight: 700;
   line-height: 1;
-  color: var(--brand-crimson-deep);
+  color: var(--brand-accent);
 }
 :root[data-bs-theme="dark"] .cv-wordmark-kn {
-  color: var(--brand-crimson-bright);
+  color: var(--brand-accent-bright);
 }
 
 .admin-login-badge {

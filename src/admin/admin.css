@@ -43,7 +43,7 @@ body.admin-page {
   gap: 16px;
   padding: 0 20px;
   background-color: var(--white);
-  box-shadow: 0 1px 2px 0 rgba(26, 31, 44, 0.25);
+  box-shadow: 0 1px 2px 0 rgba(27, 28, 32, 0.25);
 }
 
 .admin-navbar-left {
@@ -128,7 +128,7 @@ body.admin-page {
   bottom: 0;
   width: var(--admin-sidebar-width);
   background-color: var(--white);
-  box-shadow: 0 1px 2px 0 rgba(26, 31, 44, 0.25);
+  box-shadow: 0 1px 2px 0 rgba(27, 28, 32, 0.25);
   padding: 20px 12px;
   overflow-y: auto;
   overflow-x: hidden;
@@ -155,7 +155,7 @@ body.admin-page {
   justify-content: center;
   font-size: var(--fs-2xs);
   cursor: pointer;
-  box-shadow: 0 1px 2px 0 rgba(26, 31, 44, 0.25);
+  box-shadow: 0 1px 2px 0 rgba(27, 28, 32, 0.25);
 }
 
 .admin-sidebar-collapse-btn:hover {
@@ -440,18 +440,18 @@ body.admin-page {
   justify-content: center;
   border-radius: var(--radius-md);
   background: var(--brand-gradient);
-  color: #fff;
+  color: var(--on-primary);
   font-size: var(--fs-sm);
   box-shadow:
-    0 4px 10px -4px rgba(215, 38, 30, 0.55),
+    0 4px 10px -4px rgba(var(--brand-accent-fill-rgb), 0.55),
     inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 .admin-page-title-icon > i {
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.18));
 }
-/* Dark theme: the dark top bar's deep reds instead of the bright gradient. */
+/* Dark theme: the same amber, a touch deeper so it sits on graphite. */
 :root[data-bs-theme="dark"] .admin-page-title-icon {
-  background: linear-gradient(145deg, #a8261c 0%, #6a1d17 100%);
+  background: linear-gradient(145deg, #e6a32f 0%, #b8780f 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow:
     0 4px 12px -4px rgba(0, 0, 0, 0.6),
@@ -917,7 +917,7 @@ body.admin-page {
 }
 .admin-segmented button.active {
   background: var(--primary-fill);
-  color: #fff;
+  color: var(--on-primary);
   box-shadow: none;
 }
 
@@ -958,7 +958,7 @@ body.admin-page {
 .admin-filter-chips button.active {
   border-color: transparent;
   background: var(--primary-fill);
-  color: #fff;
+  color: var(--on-primary);
 }
 .admin-filter-count {
   min-width: 20px;
@@ -1071,7 +1071,7 @@ body.admin-page {
   box-shadow: none;
 }
 .admin-user-card-inactive {
-  background: repeating-linear-gradient(-45deg, transparent 0 10px, rgba(100, 116, 139, 0.04) 10px 20px);
+  background: repeating-linear-gradient(-45deg, transparent 0 10px, rgba(106, 107, 114, 0.04) 10px 20px);
 }
 .admin-user-card-inactive .admin-user-avatar,
 .admin-user-card-inactive .admin-user-identity,
@@ -1104,7 +1104,7 @@ body.admin-page {
   height: 13px;
   border: 2px solid var(--bs-body-bg, #fff);
   border-radius: 50%;
-  background: #98a2b3;
+  background: #a3a4a9;
 }
 .admin-user-status-dot.is-active {
   background: var(--success-fill);
@@ -1404,7 +1404,7 @@ body.admin-page {
 .admin-icon-grid button.active {
   border-color: transparent;
   background: var(--primary-fill);
-  color: #fff;
+  color: var(--on-primary);
 }
 :root[data-bs-theme="dark"] .admin-category-icon-editor,
 :root[data-bs-theme="dark"] .admin-icon-grid button {

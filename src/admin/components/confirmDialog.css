@@ -79,7 +79,7 @@
 .cv-confirm-btn.is-confirm {
   border: 0;
   background: var(--primary-fill);
-  color: #fff;
+  color: var(--on-primary);
   box-shadow: none;
 }
 .cv-confirm-btn.is-confirm:hover {
@@ -95,7 +95,7 @@
   color: var(--theme-text-dark);
 }
 .cv-confirm-btn.is-cancel:hover {
-  background: rgba(15, 23, 42, 0.05);
+  background: rgba(23, 24, 28, 0.05);
 }
 
 :root[data-bs-theme="dark"] .swal2-popup.cv-confirm {

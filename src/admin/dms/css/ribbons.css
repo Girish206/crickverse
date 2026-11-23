@@ -312,56 +312,56 @@
   border-left-color: #dbdbdb;
 }
 .ribbon-dark {
-  background: #2c323f;
+  background: #2a2b31;
 }
 .ribbon-dark {
-  background: #2c323f;
+  background: #2a2b31;
 }
 .ribbon-bookmark.ribbon-dark:before {
-  border-color: #2c323f;
+  border-color: #2a2b31;
   border-right-color: transparent;
 }
 .ribbon-bookmark.ribbon-right.ribbon-dark:before {
-  border-right-color: #2c323f;
+  border-right-color: #2a2b31;
   border-left-color: transparent;
 }
 .ribbon-bookmark.ribbon-vertical-left.ribbon-dark:before,
 .ribbon-bookmark.ribbon-vertical-right.ribbon-dark:before {
-  border-right-color: #2c323f;
+  border-right-color: #2a2b31;
   border-bottom-color: transparent;
 }
 .ribbon-dark.ribbon-corner:before {
-  border-top-color: #2c323f;
-  border-left-color: #2c323f;
+  border-top-color: #2a2b31;
+  border-left-color: #2a2b31;
 }
 .ribbon-dark.ribbon-corner.ribbon-right:before {
-  border-right-color: #2c323f;
+  border-right-color: #2a2b31;
   border-left-color: transparent;
 }
 .ribbon-dark.ribbon-corner.ribbon-bottom:before {
   border-top-color: transparent;
-  border-bottom-color: #2c323f;
+  border-bottom-color: #2a2b31;
 }
 .ribbon-dark.ribbon-clip:before {
   border-color: transparent;
-  border-top-color: #171a21;
-  border-right-color: #171a21;
+  border-top-color: #17181c;
+  border-right-color: #17181c;
 }
 .ribbon-dark.ribbon-clip-right:before {
   border-right-color: transparent;
-  border-top-color: #171a21;
-  border-left-color: #171a21;
+  border-top-color: #17181c;
+  border-left-color: #17181c;
 }
 .ribbon-dark.ribbon-clip-bottom:before {
   border-top-color: transparent;
-  border-bottom-color: #171a21;
-  border-right-color: #171a21;
+  border-bottom-color: #17181c;
+  border-right-color: #17181c;
 }
 .ribbon-dark.ribbon-clip-bottom-right:before {
   border-top-color: transparent;
-  border-bottom-color: #171a21;
+  border-bottom-color: #17181c;
   border-right-color: transparent;
-  border-left-color: #171a21;
+  border-left-color: #17181c;
 }
 .ribbon-warning {
   background: #f8d62b;

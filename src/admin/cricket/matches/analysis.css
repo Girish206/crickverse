@@ -16,7 +16,7 @@
    one-line explainer under the title. */
 .cricket-insights {
   --inn-0: var(--primary);
-  --inn-1: #98a2b3;
+  --inn-1: #a3a4a9;
   --inn-2: var(--brand-amber-bright, #f5b301);
   --inn-3: #7a5af8;
   display: grid;
@@ -91,7 +91,7 @@
   gap: 6px;
   padding: 3px 10px;
   border-radius: 999px;
-  background: var(--adm-raised, #f2f4f7);
+  background: var(--adm-raised, #f3f2ee);
   font-size: var(--fs-xs);
   color: var(--theme-text-dark);
 }
@@ -115,7 +115,7 @@
 .is-inn-1 .cricket-insight-swatch,
 .cricket-manhattan-bar.is-inn-1,
 .cricket-glance-bar .is-inn-1 {
-  background: var(--inn-1, #98a2b3);
+  background: var(--inn-1, #a3a4a9);
 }
 .is-inn-2 .cricket-insight-swatch,
 .cricket-manhattan-bar.is-inn-2 {
@@ -141,7 +141,7 @@
   gap: 2px;
   padding: 10px 12px;
   border-radius: 10px;
-  background: var(--adm-raised, #f2f4f7);
+  background: var(--adm-raised, #f3f2ee);
   box-shadow: inset 3px 0 0 var(--inn-0);
 }
 .cricket-glance-team.is-inn-1 {
@@ -344,7 +344,7 @@
   height: 22px;
   overflow: hidden;
   border-radius: 6px;
-  background: var(--adm-raised, #f2f4f7);
+  background: var(--adm-raised, #f3f2ee);
 }
 .cricket-source-bar span {
   display: grid;
@@ -359,7 +359,7 @@
 .cricket-source-bar .is-running,
 .cricket-source-dot.is-running,
 .cricket-source-dot.is-b {
-  background: #98a2b3;
+  background: #a3a4a9;
 }
 .cricket-source-bar .is-fours,
 .cricket-source-dot.is-fours,
@@ -375,7 +375,7 @@
   background: var(--brand-amber-bright, #f5b301);
 }
 .cricket-source-bar .is-extras {
-  color: #101828;
+  color: #17181c;
 }
 .cricket-source-key {
   display: flex;
@@ -412,7 +412,7 @@
   justify-items: center;
   padding: 6px 0;
   border-radius: 8px;
-  background: var(--adm-raised, #f2f4f7);
+  background: var(--adm-raised, #f3f2ee);
 }
 .cricket-source-counts strong {
   font-size: var(--fs-base);
@@ -455,7 +455,7 @@
   stroke: var(--primary);
 }
 .cricket-worm-series.is-inn-1 polyline {
-  stroke: #98a2b3;
+  stroke: #a3a4a9;
 }
 .cricket-worm-wkt {
   fill: var(--danger-fill);
@@ -624,7 +624,7 @@
   height: 4px;
   overflow: hidden;
   border-radius: 2px;
-  background: rgba(152, 162, 179, 0.16);
+  background: rgba(163, 164, 169, 0.16);
 }
 .is-a > .cricket-stand-track {
   justify-content: flex-end;
@@ -721,7 +721,7 @@
   justify-content: center;
   min-height: 44px;
   border-radius: 4px;
-  background: color-mix(in srgb, var(--primary) calc(var(--heat, 0) * 85%), var(--adm-raised, #f2f4f7));
+  background: color-mix(in srgb, var(--primary) calc(var(--heat, 0) * 85%), var(--adm-raised, #f3f2ee));
   color: var(--theme-text-dark);
   font-size: var(--fs-xs);
   line-height: 1.15;
@@ -768,7 +768,7 @@
   background: var(--primary);
 }
 .cricket-winprob-bar .is-defending {
-  background: #98a2b3;
+  background: #a3a4a9;
 }
 
 /* ===== Milestone banner ===== */
@@ -790,9 +790,9 @@
   gap: 12px;
   padding: 10px 14px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #1d2939, #101828);
+  background: linear-gradient(135deg, #1d2939, #17181c);
   color: #fff;
-  box-shadow: 0 10px 30px rgba(16, 24, 40, 0.35);
+  box-shadow: 0 10px 30px rgba(23, 24, 28, 0.35);
 }
 .cricket-milestone-card > i {
   flex: none;
@@ -802,7 +802,7 @@
   height: 36px;
   border-radius: 50%;
   background: #f5b301;
-  color: #101828;
+  color: #17181c;
   font-size: 16px;
 }
 .cricket-milestone-card.is-hat-trick > i,
@@ -892,7 +892,7 @@
   background: var(--border-color);
 }
 .cricket-h2h-bar .is-b {
-  background: #98a2b3;
+  background: #a3a4a9;
 }
 .cricket-h2h-list {
   margin: 12px 0 0;
@@ -905,7 +905,7 @@
   display: grid;
   padding: 8px 10px;
   border-radius: 8px;
-  background: var(--adm-raised, #f2f4f7);
+  background: var(--adm-raised, #f3f2ee);
   color: var(--theme-text-dark);
   text-decoration: none;
   font-size: var(--fs-sm);
@@ -995,7 +995,7 @@
   padding: 6px 0;
   border: 0;
   border-radius: 10px;
-  background: var(--adm-raised, #f2f4f7);
+  background: var(--adm-raised, #f3f2ee);
   font-size: 20px;
   line-height: 1;
   transition: transform 0.1s ease;
