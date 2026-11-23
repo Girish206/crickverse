@@ -22,9 +22,9 @@
 :root {
   /* Ink and the accent */
   --brand-navy: #17181c; /* graphite */
-  --brand-accent: #9e6207; /* deep amber: text on light, fills under white text */
-  --brand-accent-fill: #d9901a; /* amber: buttons and selections */
-  --brand-accent-bright: #e9a12c; /* amber on graphite */
+  --brand-accent: #a0410d; /* deep amber: text on light, fills under white text */
+  --brand-accent-fill: #d2601a; /* amber: buttons and selections */
+  --brand-accent-bright: #f0894a; /* amber on graphite */
   --brand-on-accent: #17181c; /* text on an amber fill */
 
   /* Roles from the earlier palette */
@@ -35,16 +35,16 @@
   /* Readable on white / under white text */
   --brand-crimson-deep: #b42318;
   --brand-orange-deep: var(--brand-accent);
-  --brand-amber-deep: #8a5606;
+  --brand-amber-deep: #8a3608;
 
   /* Readable on the dark base */
   --brand-crimson-bright: #f0796e;
   --brand-orange-bright: var(--brand-accent-bright);
-  --brand-amber-bright: #f5c66b;
+  --brand-amber-bright: #f5b48a;
 
   /* The amber gradient (gold → amber → burnt orange): page title icons and
      the edge line of the bars. Graphite text on it. */
-  --brand-gradient: linear-gradient(120deg, #e6a32f 0%, #d9901a 55%, #cc8314 100%);
+  --brand-gradient: linear-gradient(120deg, #e0783a 0%, #d2601a 55%, #b84e12 100%);
   /* Graphite bars, white text on them: the public pages' top bar and the
      pinned score's edge, and the app bars in the dark theme (dark.css). */
   --brand-gradient-bar: linear-gradient(90deg, #2a2b31 0%, #222328 45%, #17181c 100%);
@@ -63,12 +63,12 @@
   --bar-shadow-up: 0 -2px 12px rgba(var(--brand-navy-rgb), 0.08);
   --bar-text-shadow: none;
   /* Around the raised active tab: light amber */
-  --bar-ring: #f6e2bd;
-  --bar-gold: linear-gradient(180deg, #e6a32f 0%, #b8780f 100%); /* "Mitra" */
+  --bar-ring: #f6d3bd;
+  --bar-gold: linear-gradient(180deg, #e0783a 0%, #a8480f 100%); /* "Mitra" */
   --bar-art-opacity: 0.1; /* the page header's cricket scene */
   /* Feature cards (profile, hero, score panels): graphite with an amber
      glow, white text on top. */
-  --brand-hero: radial-gradient(120% 150% at 100% 0%, rgba(217, 144, 26, 0.3) 0%, transparent 55%),
+  --brand-hero: radial-gradient(120% 150% at 100% 0%, rgba(210, 96, 26, 0.3) 0%, transparent 55%),
     linear-gradient(135deg, #2a2b31 0%, #17181c 65%);
 
   /* Graphite surfaces (dark theme) */

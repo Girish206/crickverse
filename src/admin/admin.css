@@ -451,7 +451,7 @@ body.admin-page {
 }
 /* Dark theme: the same amber, a touch deeper so it sits on graphite. */
 :root[data-bs-theme="dark"] .admin-page-title-icon {
-  background: linear-gradient(145deg, #e6a32f 0%, #b8780f 100%);
+  background: linear-gradient(145deg, #e0783a 0%, #a8480f 100%);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow:
     0 4px 12px -4px rgba(0, 0, 0, 0.6),
