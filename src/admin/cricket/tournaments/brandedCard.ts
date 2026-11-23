@@ -17,8 +17,8 @@ export const CARD_CONTENT_TOP = BRAND_H + 190;
 export const CARD_GAP = 28;
 export const CARD_FOOT_H = 32;
 // The brand amber (graphite text on it), and the red kept for LIVE only.
-export const CARD_ACCENT = "#d2601a";
-export const CARD_ON_ACCENT = "#17181c";
+export const CARD_ACCENT = "#c62828";
+export const CARD_ON_ACCENT = "#ffffff";
 export const CARD_LIVE = "#d7261e";
 
 const BRAND_LOGO_H = 72;
@@ -41,8 +41,8 @@ const DARK: CardPalette = {
   rule: "rgba(255, 255, 255, 0.1)",
   text: "#ffffff",
   muted: "rgba(255, 255, 255, 0.6)",
-  accent: "#f5b48a",
-  highlight: "rgba(245, 180, 138, 0.12)",
+  accent: "#f5a3a3",
+  highlight: "rgba(245, 163, 163, 0.12)",
 };
 
 const LIGHT: CardPalette = {
@@ -51,8 +51,8 @@ const LIGHT: CardPalette = {
   rule: "rgba(23, 24, 28, 0.1)",
   text: "#17181c",
   muted: "rgba(23, 24, 28, 0.62)",
-  accent: "#8a3608",
-  highlight: "rgba(210, 96, 26, 0.16)",
+  accent: "#7f1414",
+  highlight: "rgba(198, 40, 40, 0.16)",
 };
 
 // The site and the app both mark the theme on <body> (useDarkTheme).

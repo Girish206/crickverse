@@ -260,7 +260,7 @@ const CONFETTI = Array.from({ length: 18 }, (_, i) => {
     y: Math.round(Math.sin(a) * d * 0.8),
     r: (i * 67) % 360,
     // A six's colours (the brand amber and gold), and white.
-    color: ["var(--brand-amber)", "#d2601a", "#fff", "var(--brand-amber-bright)", "#b84e12", "var(--brand-amber-deep)"][i % 6],
+    color: ["var(--brand-amber)", "#c62828", "#fff", "var(--brand-amber-bright)", "#9e1b1b", "var(--brand-amber-deep)"][i % 6],
   };
 });
 
