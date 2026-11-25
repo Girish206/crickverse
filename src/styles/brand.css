@@ -52,18 +52,21 @@
   --brand-gradient-center: linear-gradient(90deg, #2a2b31 0%, #1c1d21 50%, #2a2b31 100%);
 
   /* The app's bars (Navbar.css, PageHeader.css, BottomNav.css), like
-     Pocket's: frosted white with graphite contents in the light theme;
-     dark.css swaps them for the graphite gradient with white contents. */
-  --bar-bg: #ffffff;
-  --bar-bg-center: #ffffff;
+     Pocket's: white with graphite contents in the light theme; dark.css
+     swaps them for graphite with white contents. Each bar is white at the
+     screen edge (matching the phone's strips) and deepens to a light
+     cherry blush where it meets the page: --bar-bg for the top bar and
+     the page header, --bar-bg-center for the bottom tab bar. */
+  --bar-bg: linear-gradient(180deg, #ffffff 0%, #fff8f7 40%, #fdeeed 75%, #fbe4e2 100%);
+  --bar-bg-center: linear-gradient(0deg, #ffffff 0%, #fff8f7 40%, #fdeeed 75%, #fbe4e2 100%);
   --bar-ink: var(--brand-navy);
   --bar-ink-rgb: var(--brand-navy-rgb);
   --bar-line: rgba(var(--brand-navy-rgb), 0.08);
-  --bar-shadow: 0 2px 12px rgba(var(--brand-navy-rgb), 0.08);
-  --bar-shadow-up: 0 -2px 12px rgba(var(--brand-navy-rgb), 0.08);
+  --bar-shadow: 0 3px 14px rgba(198, 40, 40, 0.08);
+  --bar-shadow-up: 0 -3px 14px rgba(198, 40, 40, 0.08);
   --bar-text-shadow: none;
-  /* Around the raised active tab: light amber */
-  --bar-ring: #f6c8c8;
+  /* Around the raised active tab: the blush at the tab bar's top edge */
+  --bar-ring: #fbe4e2;
   --bar-gold: linear-gradient(180deg, #d9443f 0%, #b02222 100%); /* "Mitra" */
   --bar-art-opacity: 0.1; /* the page header's cricket scene */
   /* Feature cards (profile, hero, score panels): graphite with an amber
